@@ -141,24 +141,20 @@ dRestaurant:
           }
           else if !<c.item> == c.item && !<c.item> == i@air && !<c.item> == i@order {
           - if !<c.item.display> == null {
-              - narrate "<green><c.item.display> added to your ticket!"
-              - flag player order:->:<c.item>
-              - determine passively cancelled
-              - determine passively cancelled
-              - inventory update
-              }
-              else {
-              - narrate "<green><c.item.material.name.replace[_].with[ ]> added to your ticket!"
-              - flag player order:->:<c.item>
-              - determine passively cancelled
-              - determine passively cancelled
-              - inventory update
-              }
+            - narrate "<green><c.item.display> added to your ticket!"
+            - flag player order:->:<c.item>
+            - determine passively cancelled
+            - inventory update
+            }
+            else {
+            - narrate "<green><c.item.material.name.replace[_].with[ ]> added to your ticket!"
+            - flag player order:->:<c.item>
+            - determine passively cancelled
+            - inventory update
             }
           }
-
+        }
       - if <c.inventory> == in@<player.name>_restaurant {
-        - define item <c.item>
         - if <c.item> == i@order_accept {
           - inventory close d:<player.inventory>
           - note remove as:in@<player.name>_restaurant
@@ -166,8 +162,7 @@ dRestaurant:
           - determine passively cancelled
           - inventory update
           - action "on order placed" context:player:<player>
-          }
-          else if <c.item> == i@back {
+          } else if <c.item> == i@back {
           - inventory open d:<player.flag[restaurant].as_npc.inventory>
           - determine passively cancelled
           - inventory update
@@ -175,17 +170,18 @@ dRestaurant:
           }
           else if !<c.item> == c.item && !<c.item> == i@air {
           - if !<c.item.display> == null {
-              - narrate "<red><c.item.display> removed from your ticket!"
-              }
-              else {
-              - narrate "<red><c.item.material.name.replace[_].with[ ]> removed from your ticket!"
-              }
+            - narrate "<red><c.item.display> removed from your ticket!"
+            }
+            else {
+            - narrate "<red><c.item.material.name.replace[_].with[ ]> removed from your ticket!"
+            }
           - adjust <c.item> quantity:0 save:item1
           - flag player order:<-:<entry[item1].result>
           - take from:in@<player.name>_restaurant <c.item> qty:!
           - determine passively cancelled
           - inventory update
           }
+        }
 
     on player right clicks with i@chefegg:
       - create player chef712 <player.location.cursor_on.add[0.5,1,0.5]>
