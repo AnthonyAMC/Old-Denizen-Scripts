@@ -117,7 +117,7 @@ dRestaurant:
             - note in@restaurantinventory as:<player.name>_restaurant
             - foreach <player.flag[order].as_list.unescaped> {
               - adjust %value% lore:"click to remove item" save:item
-              - give <entry[item].result> to:in@<player.name>_restaurant 
+              - give <entry[item].result> to:in@<player.name>_restaurant
               }
             - give i@back to:in@<player.name>_restaurant slot:10
             - give i@order_accept to:in@<player.name>_restaurant slot:18
@@ -128,16 +128,16 @@ dRestaurant:
           }
           else if <c.item> == i@back {
           - determine passively cancelled
-          - inventory update  
+          - inventory update
           }
           else if <c.item> == i@order_accept {
           - determine passively cancelled
-          - inventory update  
+          - inventory update
           }
         - if <player.flag[order].as_list.size.is[OR_MORE].than[9]> {
           - narrate "<red>your order size is maxed out"
           - determine passively cancelled
-          - inventory update  
+          - inventory update
           }
           else if !<c.item> == c.item && !<c.item> == i@air && !<c.item> == i@order {
           - if !<c.item.display> == null {
@@ -156,7 +156,7 @@ dRestaurant:
               }
             }
           }
-        
+
       - if <c.inventory> == in@<player.name>_restaurant {
         - define item <c.item>
         - if <c.item> == i@order_accept {
@@ -166,7 +166,8 @@ dRestaurant:
           - determine passively cancelled
           - inventory update
           - action "on order placed" context:player:<player>
-          } else if <c.item> == i@back {
+          }
+          else if <c.item> == i@back {
           - inventory open d:<player.flag[restaurant].as_npc.inventory>
           - determine passively cancelled
           - inventory update
@@ -1217,7 +1218,7 @@ MasterWaitressNPC:
   collectMenus:
     - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
     - define players '<npc.flag[dRestaurant_MenuQueue].as_list>'
-    - if !<def[players].is_empty> {
+    - if !<def[players].is_empty||true> {
       - foreach %players% {
         - define player '<def[value].as_player>'
         - define loc '<def[player].location.find.surface_blocks[<npc.flag[Pathfind.FidgetPathMaterial].as_list>].within[5].random||<npc.location>>'
@@ -1237,7 +1238,7 @@ MasterWaitressNPC:
   processTicketQueue:
   # Run through a list of orders waiting to be delivered. Rinse and repeat until
   # the queue is cleared.
-    - if !<npc.flag[TicketQueue].as_list.is_empty> {
+    - if !<npc.flag[TicketQueue].as_list.is_empty||true> {
       - flag npc Status:deliver
       - foreach <npc.flag[TicketQueue].as_list> {
         - if <npc.has_flag[dRestaurant_MenuQueue]> {
@@ -1520,9 +1521,9 @@ MasterChefNPC:
       - define chef '<def[ticket].split_by[/].get[2].as_npc>'
       - inject locally orderin_<def[chef].flag[Status]||drunk> as:%chef%
 
-  on cook complete:
-  # Custom action sent when an unattended cooking operation has completed.
-  # - ^action "cook complete" context:ticket|%ticketNumber%|equipmentLoc|%stove%|walkLoc|%walkLoc%|displayEntity|<entry[cookedFood].dropped>|cookedFood|%cookedFood%
+    on cook complete:
+    # Custom action sent when an unattended cooking operation has completed.
+    # - ^action "cook complete" context:ticket|%ticketNumber%|equipmentLoc|%stove%|walkLoc|%walkLoc%|displayEntity|<entry[cookedFood].dropped>|cookedFood|%cookedFood%
       - define ticketNumber '<c.ticket>'
       - define tickets '<server.flag[RestaurantTickets].as_list||null>'
       - define ticket '<def[tickets].get[<def[tickets].get_sub_items[1].split_by[/].find[%ticketNumber%]>]||null>'
@@ -1582,7 +1583,7 @@ MasterChefNPC:
   processOrderQueue:
   # Run through a list of orders waiting to be cooked. Rinse and repeat until
   # the queue is cleared.
-    - if !<npc.flag[OrderQueue].as_list.is_empty> {
+    - if !<npc.flag[OrderQueue].as_list.is_empty||true> {
       - flag npc Status:cooking
       - foreach <npc.flag[OrderQueue].as_list> {
         - define tickets '<server.flag[dRestaurantTickets].as_list>'
@@ -1600,7 +1601,7 @@ MasterChefNPC:
   # Run through a list of orders waiting to be delivered. Rinse and repeat until
   # the queue is cleared.
   # - flag npc DeliveryQueue:->:%ticketNumber%/%equipmentLoc%/%walkLoc%/%displayEntity%/%cookedFood%
-    - if !<npc.flag[DeliveryQueue].as_list.is_empty> {
+    - if !<npc.flag[DeliveryQueue].as_list.is_empty||true> {
       - flag npc Status:deliver
       - foreach <npc.flag[DeliveryQueue].as_list> {
         - define tickets '<server.flag[dRestaurantTickets].as_list>'
