@@ -144,13 +144,11 @@ dRestaurant:
             - narrate "<green><c.item.display> added to your ticket!"
             - flag player order:->:<c.item>
             - determine passively cancelled
-            - determine passively cancelled
             - inventory update
             }
             else {
             - narrate "<green><c.item.material.name.replace[_].with[ ]> added to your ticket!"
             - flag player order:->:<c.item>
-            - determine passively cancelled
             - determine passively cancelled
             - inventory update
             }
