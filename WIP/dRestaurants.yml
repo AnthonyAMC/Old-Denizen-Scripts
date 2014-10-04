@@ -22,7 +22,7 @@
 # restaurant will unlock additional menu items.
 #
 #  You can create new menu items by creating a new dRestaurant_item script. Copy
-# the provided template and build your "recipe" using the provided animations. 
+# the provided template and build your "recipe" using the provided animations.
 # dRestaurant will keep track of ingredient stock and equipment. If a menu item
 # can't be made for whatever reason, it will be removed from the menu for that
 # specific restaurant.
@@ -79,7 +79,7 @@
 #   - flag server dRestaurantTickets:->:%ticketNumber%/%chef%/%waitress%/<player>/%foodItems%
 #
 #  To remove an existing ticket use the %ticket% object as defined above
-#   - flag server dRestaurantTickets:<-:%ticket% 
+#   - flag server dRestaurantTickets:<-:%ticket%
 #
 #
 ################################################################################
@@ -475,7 +475,7 @@ dRestaurant:
   # redstone_lamp_on above that. It must have a carpet block in front of it.
   # This is the same window that the Chef places food on. The Waitress picks up
   # the cooked food from outside the kitchen.
-  # Be sure to have an air block on the side of the window opposite the carpet 
+  # Be sure to have an air block on the side of the window opposite the carpet
   # (outside the kitchen) so the chef and waitress are finding the same windows!
     - define stairs 'li@acacia_stairs,4|birch_wood_stairs,4|brick_stairs,4|cobblestone_stairs,4|dark_oak_stairs,4|jungle_wood_stairs,4|nether_brick_stairs,4|quartz_stairs,4|sandstone_stairs,4|smooth_stairs,4|spruce_wood_stairs,4|wood_stairs,4|acacia_stairs,5|birch_wood_stairs,5|brick_stairs,5|cobblestone_stairs,5|dark_oak_stairs,5|jungle_wood_stairs,5|nether_brick_stairs,5|quartz_stairs,5|sandstone_stairs,5|smooth_stairs,5|spruce_wood_stairs,5|wood_stairs,5|acacia_stairs,6|birch_wood_stairs,6|brick_stairs,6|cobblestone_stairs,6|dark_oak_stairs,6|jungle_wood_stairs,6|nether_brick_stairs,6|quartz_stairs,6|sandstone_stairs,6|smooth_stairs,6|spruce_wood_stairs,6|wood_stairs,6|acacia_stairs,7|birch_wood_stairs,7|brick_stairs,7|cobblestone_stairs,7|dark_oak_stairs,7|jungle_wood_stairs,7|nether_brick_stairs,7|quartz_stairs,7|sandstone_stairs,7|smooth_stairs,7|spruce_wood_stairs,7|wood_stairs,7'
     - define windowBlocks '<npc.location.find.blocks[%stairs%].within[%range%]||null>'
@@ -753,7 +753,7 @@ dRestaurant:
     - ^wait 10t
 
   boilFood_Unattended:
-  # Walk to stove and start cooking. 
+  # Walk to stove and start cooking.
     - ^inject locally findStove instantly
     - ^define destination '<def[locations].random>'
     - ^define stove '<def[destination].split[/].get[1].as_location>'
@@ -1471,7 +1471,7 @@ MasterChefNPC:
       - define displayEntity '<c.equipmentLoc>'
       - define cookedFood '<c.cookedFood>'
       - inject locally cookComplete_<def[chef].flag[Status]||drunk> as:%chef%
-    
+
 
 
   assignment:
@@ -1640,9 +1640,7 @@ dRestaurant_potato:
   lore:
     - A tasty Baked Potato
     - prepared by a Master Chef
-
   price: 5
-
   ingredients:
     - potato_item
 
@@ -1665,9 +1663,7 @@ dRestaurant_steak:
   lore:
     - A tasty Steak prepared
     - by a Master Chef
-
   price: 15
-
   ingredients:
     - raw_beef
 
