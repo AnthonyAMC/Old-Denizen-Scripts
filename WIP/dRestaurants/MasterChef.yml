@@ -1,0 +1,210 @@
+################################################################################
+#
+#  Master Cher Assignment Script
+#
+# The Chef will greet players, deliver menus, take orders, and deliver food.
+#
+MasterChefNPC:
+  type: assignment
+  speed: 1t
+  debug: true
+
+  actions:
+    on assignment:
+      - run locally assignment instantly
+    on spawn:
+      - run locally spawn instantly
+    on despawn:
+      - run locally despawn instantly delay:5s
+    on click:
+      - run locally click instantly
+    on damage:
+      - run locally damage instantly
+    on chat:
+      - wait 10t
+      - run locally chat instantly def:<c.message>
+
+    on order in:
+    # Custom action sent from the waitress after a player places an order.
+    # Each menu item should come in as an individual order.
+    # Orders should be queued in a FIFO manner.
+    # Should write a utility that checks if the kitchen has the required food
+    # items for the order.
+      # - inject locally checkStock
+
+      - define ticketNumber '<c.ticket>'
+      - define tickets '<server.flag[RestaurantTickets].as_list||null>'
+      - define ticket '<def[tickets].get[<def[tickets].get_sub_items[1].split_by[/].find[%ticketNumber%]>]||null>'
+      - if <def[ticket].is[==].to[null]> {
+        - announce "<&b>dRestaurant<&co> <&c>Something went wrong!" to_console
+        - announce "<&b>dRestaurant<&co> <&3>Ticket <&b>%ticketNumber%<&3> was not found in RestaurantTickets" to_console
+        - queue clear
+        }
+      # Let the chef decide what to do based on status
+      - define chef '<def[ticket].split_by[/].get[2].as_npc>'
+      - inject locally orderin_<def[chef].flag[Status]||drunk> as:%chef%
+
+    on cook complete:
+    # Custom action sent when an unattended cooking operation has completed.
+    # - ^action "cook complete" context:ticket|%ticketNumber%|equipmentLoc|%stove%|walkLoc|%walkLoc%|displayEntity|<entry[cookedFood].dropped>|cookedFood|%cookedFood%
+      - define ticketNumber '<c.ticket>'
+      - define tickets '<server.flag[RestaurantTickets].as_list||null>'
+      - define ticket '<def[tickets].get[<def[tickets].get_sub_items[1].split_by[/].find[%ticketNumber%]>]||null>'
+      - if <def[ticket].is[==].to[null]> {
+        - announce "<&b>dRestaurant<&co> <&c>Something went wrong!" to_console
+        - announce "<&b>dRestaurant<&co> <&3>Ticket <&b>%ticketNumber%<&3> was not found in RestaurantTickets" to_console
+        - queue clear
+        }
+      # Let the chef decide what to do based on status
+      - define chef '<def[ticket].split_by[/].get[2].as_npc>'
+      - define equipmentLoc '<c.equipmentLoc>'
+      - define walkLoc '<c.walkLoc>'
+      - define displayEntity '<c.equipmentLoc>'
+      - define cookedFood '<c.cookedFood>'
+      - inject locally cookComplete_<def[chef].flag[Status]||drunk> as:%chef%
+
+
+
+  assignment:
+    - trigger name:chat state:true radius:5 cooldown:5s
+    - trigger name:click state:true radius:5 cooldown:5s
+    - trigger name:proximity state:false
+    - trigger name:damage state:true radius:5 cooldown:5s
+    - vulnerable state:false
+    - lookclose true range:5 realistic
+    - flag npc respawn_location:<npc.location>
+    - flag npc Pathfind.FidgetRadius:5
+    - flag npc Pathfind.FidgetSpeed:0.7
+    - flag npc Pathfind.FidgetWait:10
+    - flag npc Pathfind.FidgetLocation:<npc.location>
+    - flag npc Pathfind.FidgetHeight:1
+    - flag npc Pathfind.FidgetPathMaterial:<npc.location.standing_on.material.name>
+    - inject locally spawn instantly
+
+  spawn:
+    - chat "Alright, time to start work..." no_target
+    - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
+    - inject locally processOrderQueue
+    - run s@Fidget id:fidgetQueue_<npc.id>
+
+  despawn:
+    - chat "Phew... I<&sq>m glad to be done work for the day!" no_target
+
+  damage:
+    - chat "Why would you do that?" no_target
+
+  click:
+    - chat "I don<&sq>t have anything to say right now." no_target
+
+
+#
+#--------------------------------------
+#
+#  Logic Utilities
+#
+#
+  processOrderQueue:
+  # Run through a list of orders waiting to be cooked. Rinse and repeat until
+  # the queue is cleared.
+    - if !<npc.flag[OrderQueue].as_list.is_empty||true> {
+      - flag npc Status:cooking
+      - foreach <npc.flag[OrderQueue].as_list> {
+        - define tickets '<server.flag[dRestaurantTickets].as_list>'
+        - define ticket '<def[tickets].get[<def[tickets].get_sub_items[1].split_by[/].find[%ticketNumber%]>]>'
+        - define player '<def[ticket].split_by[/].get[4].as_player>'
+        - define food '<def[ticket].split_by[/].get[5]>'
+        - inject s@dRestaurant_%food% p:cook
+        - flag npc OrderQueue:<-:%ticketNumber%
+        }
+      - inject processOrderQueue locally
+      }
+    - flag npc Status:available
+
+  processDeliveryQueue:
+  # Run through a list of orders waiting to be delivered. Rinse and repeat until
+  # the queue is cleared.
+  # - flag npc DeliveryQueue:->:%ticketNumber%/%equipmentLoc%/%walkLoc%/%displayEntity%/%cookedFood%
+    - if !<npc.flag[DeliveryQueue].as_list.is_empty||true> {
+      - flag npc Status:deliver
+      - foreach <npc.flag[DeliveryQueue].as_list> {
+        - define tickets '<server.flag[dRestaurantTickets].as_list>'
+        - define ticket '<def[tickets].get[<def[tickets].get_sub_items[1].split_by[/].find[%ticketNumber%]>]>'
+        - define player '<def[ticket].split_by[/].get[4].as_player>'
+        - define food '<def[ticket].split_by[/].get[5]>'
+        - define equipmentLoc '<def[value].split_by[/].get[2]>'
+        - define walkLoc '<def[value].split_by[/].get[3]>'
+        - define displayEntity '<def[value].split_by[/].get[4]>'
+        - define cookedFood '<def[value].split_by[/].get[5]>'
+        - inject s@dRestaurant_%food% p:cookComplete
+        - flag npc DeliveryQueue:<-:%ticketNumber%/%equipmentLoc%/%walkLoc%/%displayEntity%/%cookedFood%
+        }
+      - inject processDeliveryQueue locally
+      }
+    - flag npc Status:available
+
+
+#
+#  END Logic Utilities
+#
+#--------------------------------------
+#
+#  MasterChef Status Actions
+#
+# We're using an NPC status system for action responses. This is a low latency
+# and low load method that allows for very fast NPC reactions since they do not
+# have to do ANY comparisons. They just run the correct subscript based on the
+# action and their current status.
+#
+#
+#--------------------------------------
+#  Order In Responses
+#
+  orderin_drunk:
+  # A catchall if something derps
+    - flag npc status:drunk
+    - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
+    - chat "I<&sq>m not feeling well... I have to go." no_target
+    - wait 2s
+    - despawn <npc>
+
+  orderin_available:
+  # When the Chef is available for whatever
+    - flag npc status:cooking
+    - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
+    - flag npc OrderQueue:->:%ticketNumber%
+    - inject locally processOrderQueue
+
+  orderin_cooking:
+  # When the Chef is cooking food
+    - flag npc OrderQueue:->:%ticketNumber%
+
+#
+#--------------------------------------
+#  Cook Complete Responses
+#
+  cookComplete_drunk:
+  # A catchall if something derps
+    - flag npc status:drunk
+    - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
+    - chat "I<&sq>m not feeling well... I have to go." no_target
+    - wait 2s
+    - despawn <npc>
+
+  cookComplete_available:
+  # When the Chef is available for whatever
+    - flag npc status:cooking
+    - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
+    - flag npc DeliveryQueue:->:%ticketNumber%/%equipmentLoc%/%walkLoc%/%displayEntity%/%cookedFood%
+    - inject locally processDeliveryQueue
+
+  cookComplete_cooking:
+  # When the Chef is cooking food
+    - flag npc DeliveryQueue:->:%ticketNumber%/%equipmentLoc%/%walkLoc%/%displayEntity%/%cookedFood%
+
+#
+#  END MasterWaitress Status Actions
+#--------------------------------------
+#
+#
+#  END MASTERCHEF ASSIGNMENT SCRIPT CONTAINER
+#

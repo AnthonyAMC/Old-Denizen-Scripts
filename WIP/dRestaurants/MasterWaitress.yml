@@ -1,0 +1,357 @@
+################################################################################
+#
+#  Master Waitress Assignment Script
+#
+# The Waitress will greet players, deliver menus, take orders, and deliver food.
+#
+MasterWaitressNPC:
+  type: assignment
+  speed: 1t
+  debug: true
+
+  actions:
+    on assignment:
+      - run locally assignment instantly
+    on spawn:
+      - run locally spawn instantly
+    on despawn:
+      - run locally despawn instantly delay:5s
+    on click:
+      - run locally click_<npc.flag[status]||drunk> instantly
+    # Custom event fired by the chef when an order is complete
+    on order up:
+      # take a snapshot of all current tickets so we aren't effected by any list
+      # changes that could happen during processing and get the ticket object.
+      - define ticketNumber '<c.ticket>'
+      - define tickets '<server.flag[dRestaurantTickets].as_list||null>'
+      - define ticket '<def[tickets].get[<def[tickets].get_sub_items[1].split_by[/].find[%ticketNumber%]>]||null>'
+      - if <def[ticket].is[==].to[null]> {
+        - announce "<&b>dRestaurant<&co> <&c>Something went wrong!" to_console
+        - announce "<&b>dRestaurant<&co> <&3>Ticket <&b>%ticketNumber%<&3> was not found in dRestaurantTickets" to_console
+        - queue clear
+        }
+      # Let the waitress decide what to do based on status
+      - define waitress '<def[ticket].split_by[/].get[3].as_npc>'
+      - inject locally orderup_<def[waitress].flag[Status]||drunk> as:%waitress%
+    # Custom event fired by the world script when a player places an order
+    on order placed:
+      # take a snapshot of all current tickets so we aren't effected by any list
+      # changes that could happen during processing and get the ticket object.
+      - define player '<c.player>'
+      - define orderDetails <def[player].flag[dRestaurant_Order].as_list>
+      - define restaurant <def[orderDetails].get[1]>
+      - define foodItems <def[orderDetails].get[2].split[/]>
+      - inject locally assignWaitress
+      - flag %waitress% dRestaurant_MenuQueue:->:<player>
+      - if <def[waitress].flag[Status].is[==].to[Available]> {
+        - flag npc status:order
+        - inject locally collectMenus
+        - flag npc status:Available
+        }
+      - foreach %foodItems% {
+        - inject locally assignWaitress
+        - inject locally assignChef
+        - inject locally assignTicketNumber
+        - flag server dRestaurantTickets:->:%ticketNumber%/%chef%/%waitress%/<player>/%foodItems%
+        - action "order in" context:ticket|%ticketNumber%
+        }
+
+
+  assignment:
+  # What happens on assignment. We want this as a subscript so we can run it
+  # outside the on assignment action if needed.
+    - trigger name:chat state:true radius:5 cooldown:5s
+    - trigger name:click state:true radius:5 cooldown:5s
+    - trigger name:proximity state:false
+    - trigger name:damage state:true radius:5 cooldown:5s
+    - vulnerable state:false
+    - lookclose true range:5 realistic
+    - flag npc respawn_location:<npc.location>
+    - flag npc Pathfind.FidgetRadius:15
+    - flag npc Pathfind.FidgetSpeed:0.7
+    - flag npc Pathfind.FidgetWait:5
+    - flag npc Pathfind.FidgetLocation:<npc.location>
+    - flag npc Pathfind.FidgetHeight:1
+    - flag npc Pathfind.FidgetPathMaterial:<npc.location.standing_on.material.name>
+    - inject locally spawn instantly
+
+  spawn:
+    - chat "Alright, time to start work..." no_target
+    - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
+    - inject locally processTicketQueue
+    - run s@Fidget id:fidgetQueue_<npc.id>
+
+  despawn:
+  # Just a code stub
+    - chat "Phew... I<&sq>m glad to be done work for the day!" no_target
+
+  damage:
+  # Just a code stub
+    - chat "Why would you do that?" no_target
+
+#
+#--------------------------------------
+#
+#  Logic Utilities
+#
+#
+  collectMenus:
+    - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
+    - define players '<npc.flag[dRestaurant_MenuQueue].as_list>'
+    - if !<def[players].is_empty||true> {
+      - foreach %players% {
+        - define player '<def[value].as_player>'
+        - define loc '<def[player].location.find.surface_blocks[<npc.flag[Pathfind.FidgetPathMaterial].as_list>].within[5].random||<npc.location>>'
+        - ~walk %loc% 'speed:<npc.flag[Pathfind.FidgetSpeed].as_money.add[0.1]>'
+        - look <def[player].eye_location> d:2s
+        - wait 10t
+        - chat "Your order should be out in just a moment." targets:%player%
+        - take i@menu player:%player%
+        - flag %waitress% dRestaurant_MenuQueue:<-:%player%
+        - wait 10t
+        }
+      - inject collectMenus locally
+      }
+    - flag %waitress% dRestaurant_MenuQueue:!
+    # Now the waitress can go back to what she was doing
+
+  processTicketQueue:
+  # Run through a list of orders waiting to be delivered. Rinse and repeat until
+  # the queue is cleared.
+    - if !<npc.flag[TicketQueue].as_list.is_empty||true> {
+      - flag npc Status:deliver
+      - foreach <npc.flag[TicketQueue].as_list> {
+        - if <npc.has_flag[dRestaurant_MenuQueue]> {
+          - inject locally collectMenus
+          }
+        - define tickets '<server.flag[dRestaurantTickets].as_list>'
+        - define ticket '<def[tickets].get[<def[tickets].get_sub_items[1].split_by[/].find[%ticketNumber%]>]>'
+        - define player '<def[ticket].split_by[/].get[4].as_player>'
+        - define foodItems '<def[ticket].split_by[/].get[5]>'
+        - define displayItems '<def[value].split[/].get[2]>'
+        - inject s@dRestaurant p:deliverFood_waitress
+        - flag npc TicketQueue:<-:%ticketNumber%/%displayItems%
+        - flag server dRestaurantTickets:<-:%ticket%
+        }
+      - inject processTicketQueue locally
+      }
+    - if <npc.has_flag[dRestaurant_MenuQueue]> {
+      - inject locally collectMenus
+      }
+    - flag npc Status:available
+
+  findRestaurant:
+  # This requires an NPC object and should only be run when the player is
+  # getting a menu from a waitress in the on click action
+    - define restaurants li@
+    - foreach <npc.location.cuboids> {
+      - if <def[value].notable_name.split[_].get[1].is[==].to[Restaurant]> {
+        - define restaurant '<def[value].notable_name.split[_].get[2]>'
+        - define owner '<server.flag[dRestaurant.%restaurant%.Owner].as_player>'
+        - if <def[owner].is[==].to[<npc.owner>]> {
+          - define restaurants '<def[restaurants].include[%restaurant%]>'
+          }
+        }
+      }
+    # Because why else would any sane admin have restaurant cuboids overlap?
+    - define restaurant '<def[restaurants].random>'
+
+  assignWaitress:
+  # This assumes we know the restaurant
+    - define waitresses li@
+    - define owner '<server.flag[dRestaurant.%restaurant%.Owner].as_player>'
+    - foreach <el@val[Restaurant_%restaurant%].as_cuboid.list_npcs> {
+      - define npc %value%
+      - if <def[owner].is[==].to[<npc.owner>]>
+        && <def[npc].script.is[==].to[MasterWaitressNPC]> {
+        - define waitresses '<def[waitresses].include[%npc%]>'
+        }
+      }
+    # Now we have a list of waitresses, let's find the least busy
+    - define waitress <def[waitresses].get[1]>
+    - foreach <def[waitresses].get[2].to[<def[waitresses].size>]> {
+      - if <def[value].flag[TicketQueue].size.is[LESS].than[<def[waitress].flag[TicketQueue].size>]> {
+        - define waitress %value%
+        }
+      }
+
+  assignChef:
+  # This assumes we know the restaurant
+    - define chefs li@
+    - define owner '<server.flag[dRestaurant.%restaurant%.Owner].as_player>'
+    - foreach <el@val[Restaurant_%restaurant%].as_cuboid.list_npcs> {
+      - define npc %value%
+      - if <def[owner].is[==].to[<npc.owner>]>
+        && <def[npc].script.is[==].to[MasterChefNPC]> {
+        - define chefs '<def[chefs].include[%npc%]>'
+        }
+      }
+    # Now we have a list of chefs, let's find the least busy
+    - define chef <def[chefs].get[1]>
+    - foreach <def[chefs].get[2].to[<def[chefs].size>]> {
+      - if <def[value].flag[TicketQueue].size.is[LESS].than[<def[chef].flag[TicketQueue].size>]> {
+        - define chef %value%
+        }
+      }
+
+  assignTicketNumber:
+    - repeat 20 {
+      - define ticketNumber <util.random.duuid>
+      - define ticketList <server.flag[dRestaurantTickets].get_sub_items[1].split_by[/]>
+      - if !<def[ticketList].contains[%ticketNumber%]> repeat stop
+      - if <def[value].is[OR_MORE].than[20]> {
+        - define ticketNumber "LastLostTicketDetails"
+        - announce "<&b>dRestaurant<&co> <&c>Order Lost - Couldn<&sq>t get a valid ticket number!" to_console
+        - announce "<&b>dRestaurant<&co> <&c>%ticketNumber%" to_console
+        - announce "<&b>dRestaurant<&co> <&c>Chef<&co> %chef%" to_console
+        - announce "<&b>dRestaurant<&co> <&c>Waitress<&co> %waitress%" to_console
+        - announce "<&b>dRestaurant<&co> <&c>Player<&co> <player>" to_console
+        - announce "<&b>dRestaurant<&co> <&c>foodItems<&co> %foodItems%" to_console
+        }
+      }
+
+
+  placeOrder:
+  # We could remove the cuboid search if we have the restaurant name when the order is placed
+    # The Waitress will determine a list of possible restaurants based on
+    # npc.owner and restaurant region owner.
+    - define restaurants li@
+    - foreach <npc.location.cuboids> {
+      - if <def[value].notable_name.split[_].get[1].is[==].to[Restaurant]> {
+        - define restaurant '<def[value].notable_name.split[_].get[2]>'
+        - define owner '<server.flag[dRestaurant.%restaurant%.Owner].as_player>'
+        - if <def[owner].is[==].to[<npc.owner>]> {
+          - define restaurants '<def[restaurants].include[%restaurant%]>'
+          }
+        }
+      }
+    # Now the Waitress looks for all chefs in these valid restaurant regions
+    - define chefs li@
+    - foreach %restaurants% {
+      - define restaurant %value%
+      - foreach <el@val[Restaurant_%restaurant%].as_cuboid.list_npcs> {
+        - define npc %value%
+        - if <def[npc].owner.is[==].to[<npc.owner>]>
+          && <def[npc].script.is[==].to[MasterChefNPC]> {
+          - define chefs '<def[chefs].include[%npc%]>'
+          }
+        }
+      }
+    # Now the Waitress has a list of chefs, let's find the least busy
+    - define chef <def[chefs].get[1]>
+    - foreach <def[chefs].get[2].to[<def[chefs].size>]> {
+      - if <def[value].flag[OrderQueue].size.is[LESS].than[<def[chef].flag[OrderQueue].size>]> {
+        - define chef %value%
+        }
+      }
+    # Let's try to get a valid ticket number
+    - repeat 20 {
+      - define ticketNumber <util.random.duuid>
+      - define ticketList <server.flag[dRestaurantTickets].get_sub_items[1].split_by[/]>
+      - if !<def[ticketList].contains[%ticketNumber%]> repeat stop
+      - if <def[value].is[OR_MORE].than[20]> {
+        - define ticketNumber "LastLostTicketDetails"
+        - announce "<&b>dRestaurant<&co> <&c>Order Lost - Couldn<&sq>t get a valid ticket number!" to_console
+        - announce "<&b>dRestaurant<&co> <&c>%ticketNumber%" to_console
+        - announce "<&b>dRestaurant<&co> <&c>Chef<&co> %chef%" to_console
+        - announce "<&b>dRestaurant<&co> <&c>Waitress<&co> %waitress%" to_console
+        - announce "<&b>dRestaurant<&co> <&c>Player<&co> <player>" to_console
+        - announce "<&b>dRestaurant<&co> <&c>foodItems<&co> %foodItems%" to_console
+        }
+      }
+    # Finally let's place the order
+    - flag server dRestaurantTickets:->:%ticketNumber%/%chef%/%waitress%/<player>/%foodItems%
+    - action "order in" context:ticket|%ticketNumber%
+
+#
+#  END Logic Utilities
+#
+#--------------------------------------
+#
+#  MasterWaitress Status Actions
+#
+# We're using an NPC status system for action responses. This is a low latency
+# and low load method that allows for very fast NPC reactions since they do not
+# have to do ANY comparisons. They just run the correct subscript based on the
+# action and their current status.
+#
+#
+#--------------------------------------
+#  Click Responses
+#
+  click_drunk:
+  # A catchall if something derps
+    - flag npc status:drunk
+    - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
+    - chat "I<&sq>m not feeling well... I have to go." no_target
+    - wait 2s
+    - despawn <npc>
+
+  click_available:
+  # When the Waitress is available for whatever
+    - if <player.has_flag[dRestaurant_Order]> {
+      - chat "I should make you are not spam clicking me getting multiple menus."
+      }
+    - flag npc status:order
+    - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
+    - define loc <player.location.find.surface_blocks[<npc.flag[Pathfind.FidgetPathMaterial].as_list>].within[5]||<npc.location>>
+    - ~walk %loc% 'speed:<npc.flag[Pathfind.FidgetSpeed].as_money.add[0.1]>'
+    - look <player.eye_location> d:2s
+    - wait 10t
+    - chat "Here you go. Take a look through our menu and choose what you would like."
+    - inject locally findRestaurant
+    - adjust i@menu title:%RestaurantName% save:menu
+    - give <entry[menu].result>
+    - flag <player> dRestaurant_Order:%RestaurantName%
+    - wait 30t
+    - chat "Someone will come grab the menu when you are ready."
+    - wait 30t
+    - flag npc status:available
+    # Now the waitress can go back to what she was doing
+
+  click_order:
+  # When the Waitress is taking an order
+    - wait 15t
+    - chat "I<&sq>ll be right with you <player.name>."
+
+  click_deliver:
+  # When the Waitress is delivering food
+    - wait 15t
+    - chat "We<&sq>re a little busy right now <player.name>."
+    - wait 15t
+    - chat "Please have a seat and a Waitress will be right with you."
+
+#
+#--------------------------------------
+#  Order Up Responses
+#
+  orderup_drunk:
+  # A catchall if something derps
+    - flag npc status:drunk
+    - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
+    - chat "I<&sq>m not feeling well... I have to go." no_target
+    - wait 2s
+    - despawn <npc>
+
+  orderup_available:
+  # When the Waitress is available for whatever
+    - flag npc status:deliver
+    - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
+    - flag npc TicketQueue:->:%ticketNumber%/<c.displayItems>
+    - inject locally processTicketQueue
+
+  orderup_order:
+  # When the Waitress is taking an order
+    - flag npc TicketQueue:->:%ticketNumber%
+
+  orderup_deliver:
+  # When the Waitress is delivering food
+    - flag npc TicketQueue:->:%ticketNumber%
+
+#
+#  END MasterWaitress Status Actions
+#--------------------------------------
+#
+#
+#  END MASTERWAITRESS ASSIGNMENT SCRIPT CONTAINER
+#
