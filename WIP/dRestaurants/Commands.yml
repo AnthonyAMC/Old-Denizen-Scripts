@@ -1,0 +1,184 @@
+################################################################################
+#
+#  Restaurant Command Script Container
+#
+# This script covers all dRestaurant commands
+#
+#
+#  DATA STORAGE
+#   - Currently using flags. Might convert to yaml.
+#
+#
+#
+#
+#--------------------------------------
+#
+#  dRestaurant Command Script Basics
+#
+# The basic stuff required in a command script container
+#
+dRestaurantCommand:
+  type: command
+  debug: false
+  name: drestaurant
+  description: Commands to create and manage dRestaurants.
+  usage: <&nl>/drestaurant <&lt>tool<&gt><&nl>/drestaurant <&lt>create<&gt> <&lt>name<&gt><&nl>/drestaurant <&lt>edit<&gt> <&lt>name<&gt><&nl>/drestaurant <&lt>delete<&gt> <&lt>name<&gt><&nl>/drestaurant <&lt>hire<&gt> <&lt>waitress/chef<&gt><&nl>/drestaurant <&lt>fire<&gt> <&lt>waitress/chef<&gt><&nl>/drestaurant <&lt>buy<&gt> <&lt>restaurant<&gt><&nl>/drestaurant <&lt>sell<&gt> <&lt>restaurant<&gt>
+  aliases:
+  - restaurant
+  - dr
+  - drest
+  allowed help:
+  - determine <player.has_permission[dRestaurant.user]>
+# This is what is run when someone types the root command. This subscript
+# quickly passes the command on to the command argument handlers below. If the
+# argument doesn't exist, or is not specified, it runs the help subscript.
+  script:
+    - define arg1 '<c.args.get[1].escaped||help>'
+    - define args 'li@help|tool|create|edit|delete|buy|sell|hire|fire'
+    - if !<def[args].contains[%arg1%]> inject locally help
+      else inject locally %arg1%
+
+#
+#  END dRestaurant Command Script Basics
+#--------------------------------------
+#
+#  dRestaurant Command Arguments
+#
+# Each of these subscripts is an argument for the root command.
+#
+  help:
+    - if <player.has_permission[dRestaurant.create]> inject locally msgsHelpAdmin instantly
+      else inject locally msgsHelpUser instantly
+    - define footerText '<&f><&sp><&sp>Authors<&co> <&7>|Anthony| <&7>calico-kid'
+    - inject locally msgsFooter instantly
+    - queue stop
+
+  tool:
+    - if <player.has_permission[dRestaurant.create]> {
+      - give i@dRestaurantTool
+      - narrate "<&b><&l>dRestaurant<&co><&r> <&a>Right click to select pos1"
+      - narrate "<&b><&l>dRestaurant<&co><&r> <&a>Left click to select pos2"
+      - queue stop
+      }
+
+  create:
+    - if <player.has_permission[dRestaurant.create]> {
+      - define name '<c.args.get[2].escaped||null>'
+      - if <def[name].is[==].to[null]> {
+        - narrate "<&4><&l>ERROR<&co><&r> <&a>You must specify a name!"
+        - queue stop
+        }
+      - if <cu@restaurant_%name%||null> != null {
+        - narrate "<&4><&l>ERROR<&co><&r> <&a>There is already a restaurant by this name!"
+        - queue stop
+        }
+      - define pos1 <player.flag[dRestaurantToolPOS1]||null>
+      - define pos2 <player.flag[dRestaurantToolPOS2]||null>
+      - if <def[pos1].is[==].to[null]>
+        || <def[pos2].is[==].to[null]> {
+        - narrate "<&4><&l>ERROR<&co><&r> <&a>You must use the dRestaurant region tool to select 2 locations!"
+        - queue stop
+        }
+      - take i@dRestaurantTool
+      - note cu@%pos1%|%pos2% 'as:restaurant_%name%'
+      - flag server dRestaurant.%name%.Owner:<player>
+      - flag player dRestaurantToolPOS1:!
+      - flag player dRestaurantToolPOS2:!
+      }
+
+  edit:
+    - define name '<c.args.get[2].escaped||null>'
+    - if <player.has_permission[dRestaurant.admin]>
+      || <el@val[<player.has_permission[dRestaurant.edit]>].and[<server.flag[dRestaurant.%name%.Owner].is[==].to[<player>]>]> {
+      - if <def[name].is[==].to[null]> {
+        - narrate "<&4><&l>ERROR<&co><&r> <&a>You must specify a name!"
+        - queue stop
+        }
+      - if <cu@restaurant_%name%||null> == null {
+        - narrate "<&4><&l>ERROR<&co><&r> <&a>There is no restaurant by this name!"
+        - queue stop
+        }
+      - define pos1 <player.flag[dRestaurantToolPOS1]||null>
+      - define pos2 <player.flag[dRestaurantToolPOS2]||null>
+      - if <def[pos1].is[==].to[null]>
+        || <def[pos2].is[==].to[null]> {
+        - narrate "<&4><&l>ERROR<&co><&r> <&a>You must use the dRestaurant region tool to select 2 locations!"
+        - queue stop
+        }
+      - take i@dRestaurantTool
+      - note cu@%pos1%|%pos2% 'as:restaurant_%name%'
+      - flag player dRestaurantToolPOS1:!
+      - flag player dRestaurantToolPOS2:!
+      }
+
+  delete:
+    - define name '<c.args.get[2].escaped||null>'
+    - if <player.has_permission[dRestaurant.admin]>
+      || <el@val[<player.has_permission[dRestaurant.create]>].and[<server.flag[dRestaurant.%name%.Owner].is[==].to[<player>]>]> {
+      - if <def[name].is[==].to[null]> {
+        - narrate "<&4><&l>ERROR<&co><&r> <&a>You must specify a name!"
+        - queue stop
+        }
+      - if <cu@restaurant_%name%||null> == null {
+        - narrate "<&4><&l>ERROR<&co><&r> <&a>There is no restaurant by this name!"
+        - queue stop
+        }
+      - note remove 'as:restaurant_%name%'
+      - flag server dRestaurant.%name%:!
+      }
+
+  hire:
+    - stub
+
+  fire:
+    - stub
+
+  buy:
+    - stub
+
+  sell:
+    - stub
+
+#
+#  END dRestaurant Command Arguments
+#--------------------------------------
+#
+#  dRestaurant Command Messages
+#
+# These are not complete! They are mostly just stubs till the rest is fleshed out!
+#
+  msgsHeader:
+    - ^narrate "<&5>|----------------------------------------|"
+    - ^narrate "<&5>|<&sp><&sp><&sp><&6>dRestaurant   <&7>%msgsHeaderTitle%"
+    - ^narrate "<&5>|<&sp><&sp><&sp><&e>MineConomy    <&f>Exclusive"
+    - ^narrate "<&5>|<&f>"
+
+  msgsFooter:
+    - ^narrate "<&5>|<def[footerText]||>"
+    - ^narrate "<&d>|-----------S-c-r-o-l-l---U-p-------------|"
+
+  msgsHelpAdmin:
+    - define msgsHeaderTitle 'Admin Help'
+    - inject locally msgsHeader instantly
+    - ^narrate "<&5>|<&sp><&sp><&sp><&sp><&f>You can create restaurants and staff them"
+    - ^narrate "<&5>|<&sp><&sp><&f>with chefs and waitresses that will automagically"
+    - ^narrate "<&5>|<&sp><&sp><&f>tend to your guests. Just keep your restaurant"
+    - ^narrate "<&5>|<&sp><&sp><&f>stocked with the materials for your menu and have"
+    - ^narrate "<&5>|<&sp><&sp><&f>the proper kitchen equipment."
+    - ^narrate "<&5>|<&sp><&f>"
+
+  msgsHelpUser:
+    - define msgsHeaderTitle 'User Help'
+    - inject locally msgsHeader instantly
+    - ^narrate "<&5>|<&sp><&sp><&sp><&sp><&f>dRestaurant brings a realistic restaurant"
+    - ^narrate "<&5>|<&sp><&sp><&f>experience to Minecraft. Fully automated NPCs will"
+    - ^narrate "<&5>|<&sp><&sp><&f>serve your customers and prepare their food."
+    - ^narrate "<&5>|<&sp><&f>"
+
+#
+#  END dRestaurant Command Messages
+#--------------------------------------
+#
+#
+#  END DRESTAURANT COMMAND SCRIPT
+#

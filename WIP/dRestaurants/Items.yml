@@ -1,0 +1,135 @@
+################################################################################
+#
+#  dRestaurant Custom Items
+#
+# dRestaurant uses a lot of custom items to do different things.
+#
+#
+#--------------------------------------
+#
+#  Menu items
+#
+menu:
+  type: item
+  material: i@book
+  display name: menu
+
+dRestaurant_potato:
+  type: item
+  material: i@baked_potato
+  display name: Baked Potato
+  lore:
+    - A tasty Baked Potato
+    - prepared by a Master Chef
+  price: 5
+  ingredients:
+    - potato_item
+
+  cook:
+    - ^lookclose <npc> state:false
+    - ^define foodItems li@potato_item
+    - ^inject s@dRestaurant p:getFood_FancyFridge
+    - ^inject s@dRestaurant p:washFood
+    - ^inject s@dRestaurant p:prepFood
+    - ^define foodItem baked_potato
+    - ^inject s@dRestaurant p:bakeFood_Attended
+    - ^lookclose <npc> state:true
+    - ^define foodItems li@baked_potato
+    - ^inject s@dRestaurant p:deliverFood_chef
+
+dRestaurant_steak:
+  type: item
+  material: i@cooked_beef
+  display name: Steak
+  lore:
+    - A tasty Steak prepared
+    - by a Master Chef
+  price: 15
+  ingredients:
+    - raw_beef
+
+  cook:
+    - ^lookclose <npc> state:false
+    - ^define foodItems li@raw_beef
+    - ^inject s@dRestaurant p:getFood_FancyFridge
+    - ^inject s@dRestaurant p:prepFood
+    - ^define rawFood raw_beef
+    - ^define cookedFood cooked_beef
+    - ^define cookTime 30
+    - ^inject s@dRestaurant p:grillFood_Attended
+    - ^lookclose <npc> state:true
+    - ^define foodItems li@cooked_beef
+    - ^inject s@dRestaurant p:deliverFood_chef
+
+dRestaurant_stew:
+  type: item
+  material: i@mushroom_soup
+  display name: Mushroom Stew
+  lore:
+    - A tasty Mushroom Stew
+    - prepared by a Master Chef
+  comment: Going to use the stew as the test bed for intermediate level recipes
+  price: 15
+  ingredients:
+    - brown_mushroom
+    - red_mushroom
+
+  cook:
+  # This is the recipe the chef will follow.
+    - ^define foodItems li@brown_mushroom|red_mushroom
+    - ^inject s@dRestaurant p:getFood_FancyFridge
+    - ^inject s@dRestaurant p:washFood
+    - ^inject s@dRestaurant p:prepFood
+    - ^define rawFood bowl
+    - ^define cookedFood mushroom_soup
+    - ^define cookTime 30
+    - ^inject s@dRestaurant p:boilFood_Unattended
+
+  cookComplete:
+    - ^inject s@dRestaurant p:boilFood_Unattended_Get
+    - ^define foodItems li@mushroom_soup
+    - ^inject s@dRestaurant p:deliverFood_chef
+
+
+beefstew:
+  type: item
+  material: mushroom_soup
+  display name: "beef stew"
+
+mushroomstew:
+  type: item
+  material: mushroom_soup
+  display name: "mushroom stew"
+
+#
+#  END Menu Items
+#--------------------------------------
+#
+#  Other items
+#
+waitressegg:
+  type: item
+  material: m@monster_egg
+  display name: waitress
+
+chefegg:
+  type: item
+  material: m@monster_egg
+  display name: chef
+
+dRestaurantTool:
+  type: item
+  material: stick
+  display name: <&3>Restaurant Region Tool
+  lore:
+  - <&f>Right click to set pos1
+  - <&f>Left click to set pos2
+
+#
+#  END Other Items
+#--------------------------------------
+#
+#
+#  END DRESTAURANT CUSTOM ITEMS
+#
+################################################################################
