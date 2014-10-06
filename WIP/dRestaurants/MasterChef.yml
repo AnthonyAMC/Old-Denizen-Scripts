@@ -173,6 +173,7 @@ MasterChefNPC:
     - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
     - flag npc OrderQueue:->:%ticketNumber%
     - inject locally processOrderQueue
+    - run s@Fidget id:fidgetQueue_<npc.id>
 
   orderin_cooking:
   # When the Chef is cooking food
