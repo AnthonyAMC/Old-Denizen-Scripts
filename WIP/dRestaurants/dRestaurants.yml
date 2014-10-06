@@ -108,7 +108,7 @@ dRestaurant:
           - queue clear
           }
         - if <c.item> == i@order {
-          - if <player.flag[order].as_list.size.is_empty||false> {
+          - if <player.flag[order].as_list.is_empty||false> {
             - narrate "<red>you must place items on your ticket before reviewing them"
             - determine passively cancelled
             - inventory update
