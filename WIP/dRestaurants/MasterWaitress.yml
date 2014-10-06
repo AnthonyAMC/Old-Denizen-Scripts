@@ -330,18 +330,18 @@ MasterWaitressNPC:
   click_available:
   # When the Waitress is available for whatever
     - if <player.has_flag[dRestaurant_Order]> {
-      - chat "I should make you are not able to spam clicking me to get multiple menus."
+      - chat "I should make sure you are not able to spam click me to get multiple menus."
       }
     - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
     - flag npc status:order
-    - define loc <player.location.find.surface_blocks[<npc.flag[Pathfind.FidgetPathMaterial].as_list>].within[5]||<npc.location>>
+    - define loc <player.location.find.surface_blocks[<npc.flag[Pathfind.FidgetPathMaterial].as_list>].within[2]||<npc.location>>
     - ~walk %loc% 'speed:<npc.flag[Pathfind.FidgetSpeed].as_money.add[0.1]>'
     - look <player.eye_location> d:2s
     - wait 10t
     - inject locally findRestaurant
     - chat "Here you go. Take a look through our menu and choose what you would like."
     - give i@menu
-    - flag <player> dRestaurant_Order:%RestaurantName%
+    - flag <player> dRestaurant_Order:%restaurant%
     - wait 30t
     - chat "Someone will come grab the menu when you are ready."
     - wait 30t
