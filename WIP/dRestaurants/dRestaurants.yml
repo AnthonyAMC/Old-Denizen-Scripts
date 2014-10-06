@@ -98,16 +98,16 @@ dRestaurant:
 #  dRestaurant NPC events
 #
     on player right clicks with i@menu:
-      - if !<player.flag[ordered]> == true {
+      - if <player.flag[ordered].is[!=].to[true]> {
         - inventory open d:<player.flag[restaurant].as_npc.inventory>
         }
 
     on player clicks in inventory:
-      - if <c.inventory> == <player.flag[restaurant].as_npc.inventory> {
-        - if <player> == <player.flag[restaurant].as_npc.owner> {
+      - if <c.inventory.is[==].to[<player.flag[restaurant].as_npc.inventory>]||false> {
+        - if <player.is[==].to[<player.flag[restaurant].as_npc.owner>]||false> {
           - queue clear
           }
-        - if <c.item> == i@order {
+        - if <c.item.is[==].to[i@order]||false> {
           - if <player.flag[order].as_list.is_empty||false> {
             - narrate "<red>you must place items on your ticket before reviewing them"
             - determine passively cancelled
@@ -126,11 +126,11 @@ dRestaurant:
             - inventory update
             }
           }
-          else if <c.item> == i@back {
+          else if <c.item.is[==].to[i@back]> {
           - determine passively cancelled
           - inventory update
           }
-          else if <c.item> == i@order_accept {
+          else if <c.item.is[==].to[i@order_accept]> {
           - determine passively cancelled
           - inventory update
           }
@@ -139,8 +139,8 @@ dRestaurant:
           - determine passively cancelled
           - inventory update
           }
-          else if !<c.item> == c.item && !<c.item> == i@air && !<c.item> == i@order {
-          - if !<c.item.display> == null {
+          else if <c.item.is[!=].to[c.item]> && <c.item.is[!=].to[i@air]> && <c.item.is[!=].to[i@order]> {
+          - if <c.item.display.is[!=].to[null]> {
             - narrate "<green><c.item.display> added to your ticket!"
             - flag player order:->:<c.item>
             - determine passively cancelled
@@ -157,9 +157,9 @@ dRestaurant:
           }
         }
 
-      - if <c.inventory> == in@<player.name>_restaurant {
+      - if <c.inventory.is[==].to[in@<player.name>_restaurant]> {
         - define item <c.item>
-        - if <c.item> == i@order_accept {
+        - if <c.item.is[==].to[i@order_accept]> {
           - inventory close d:<player.inventory>
           - note remove as:in@<player.name>_restaurant
           - flag player ordered
@@ -167,14 +167,14 @@ dRestaurant:
           - inventory update
           - action "on order placed" context:player:<player>
           }
-          else if <c.item> == i@back {
+          else if <c.item.is[==].to[i@back]> {
           - inventory open d:<player.flag[restaurant].as_npc.inventory>
           - determine passively cancelled
           - inventory update
           - queue clear
           }
-          else if !<c.item> == c.item && !<c.item> == i@air {
-          - if !<c.item.display> == null {
+          else if <c.item.is[!=].to[c.item]> && <c.item.is[!=].to[i@air]> {
+          - if <c.item.display.is[!=].to[null]> {
             - narrate "<red><c.item.display> removed from your ticket!"
             }
             else {
