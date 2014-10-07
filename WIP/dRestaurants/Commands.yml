@@ -81,6 +81,7 @@ dRestaurantCommand:
         }
       - take i@dRestaurantTool
       - note cu@%pos1%|%pos2% 'as:restaurant_%name%'
+      - note in@menuinventory as:%name%
       - flag server dRestaurant.%name%.Owner:<player>
       - flag player dRestaurantToolPOS1:!
       - flag player dRestaurantToolPOS2:!
