@@ -911,7 +911,7 @@ dRestaurant:
       - displayitem <def[value].as_item> '%windowLoc%' d:30s save:displayItem_%loop_index%
       - define displayItems '<def[displayItems].include[<entry[displayItem_%loop_index%].dropped>]>'
       }
-    - ^action "order up" context:ticket|%ticketNumber%|displayItems|%displayItems%
+    - ^action "order up" context:ticket|%ticketNumber%|displayItems|<def[displayItems].replace[li@].replace[|].with[/]>
 
 
 #-----------------------
