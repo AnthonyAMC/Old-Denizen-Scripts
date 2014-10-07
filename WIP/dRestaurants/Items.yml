@@ -125,6 +125,29 @@ dRestaurantTool:
   - <&f>Right click to set pos1
   - <&f>Left click to set pos2
 
+restaurantinventory:
+  type: inventory
+  size: 18
+
+menuinventory:
+  type: inventory
+  size: 36
+
+order:
+  type: item
+  material: i@bowl
+  display name: "<green>click to review your order"
+
+order_accept:
+  type: item
+  material: i@mushroom_soup
+  display name: "<green>click to accept this order"
+
+back:
+  type: item
+  material: i@book
+  display name: "<red>go back to menu"
+
 #
 #  END Other Items
 #--------------------------------------

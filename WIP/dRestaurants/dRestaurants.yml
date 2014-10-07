@@ -101,12 +101,13 @@ dRestaurant:
       - narrate "Menu click"
       - if <player.flag[ordered].is[!=].to[true]||true> {
         - define restaurantName '<player.flag[dRestaurant_Order].get[1]||null>'
-        - define menuHolder '<server.flag[dRestaurants.%restaurantName%.menuHolder].as_npc||null>'
-        - if <el@list[%restaurantName%|%menuHolder%].contains[null]||true> {
+        - define menuinventory <def[restaurantName].inventory||null>'
+        - if <el@list[%restaurantName%|%menuinventory%].contains[null]||true> {
           - take i@menu
           - narrate "I don<&sq>t think you should have this... and even if you were supposed to have it, I have no idea what I<&sq>m doing right now!"
+          - queue clear
           }
-        - inventory open d:%menuHolder%
+        - inventory open d:<def[restaurantName].inventory>
         - narrate "Should open menu"
         }
 
@@ -115,8 +116,8 @@ dRestaurant:
       # Setup some data and do a basic null check
       - define restaurantName '<player.flag[dRestaurant_Order].split_by[/].get[1]||null>'
       - define order '<player.flag[dRestaurant_Order].split_by[/].get[2].as_list||li@>'
-      - define menuHolder '<server.flag[dRestaurants.%restaurantName%.menuHolder].as_npc.inventory||null>'
-      - if <el@list[%restaurantName%|%menuHolder%].contains[null]||true> {
+      - define menuinventory <def[restaurantName].inventory||null>'
+      - if <el@list[%restaurantName%|%menuinventory%].contains[null]||true> {
         - determine passively cancelled
         - take i@menu
         - chat "I don<&sq>t think you should have this... and even if you were supposed to have it, I have no idea what I<&sq>m doing right now!"
@@ -128,13 +129,13 @@ dRestaurant:
       # link to an admin interface where the player can hire/fire employees,
       # add/remove items from the menu, and adjust menu prices.
       - if <server.flag[dRestaurants.%restaurantName%.Owner].as_player.is[==].to[<player>]||false>
-        && <c.inventory.is[==].to[%menuHolder%]||false> {
+        && <c.inventory.is[==].to[%menuinventory%]||false> {
         - chat "Still need to write a management GUI"
         - queue clear
         }
 
       # The menu of available items this restaurant sells
-      - if <c.inventory.is[==].to[%menuHolder%]||false> {
+      - if <c.inventory.is[==].to[%menuinventory%]||false> {
         - determine passively cancelled
         - if <c.item.is[==].to[i@order]||false> {
           - if <def[order].is_empty||true> {
@@ -153,30 +154,10 @@ dRestaurant:
             - inventory update
             }
           }
-<<<<<<< HEAD
-          else if <c.item> == i@back {
-          - determine passively cancelled
-          - inventory update  
-          }
-          else if <c.item> == i@order_accept {
-          - determine passively cancelled
-          - inventory update  
-=======
-          else if <c.item.is[==].to[i@back]> {
-          - inventory update
-          }
-          else if <c.item.is[==].to[i@order_accept]> {
-          - inventory update
->>>>>>> c412dcdb80ca8b1774dc0fd3494207f2c3b88752
-          }
         - if <def[order].size.is[OR_MORE].than[9]> {
           - narrate "<red>your order size is maxed out"
-<<<<<<< HEAD
           - determine passively cancelled
-          - inventory update  
-=======
           - inventory update
->>>>>>> c412dcdb80ca8b1774dc0fd3494207f2c3b88752
           }
           else if <c.item.is[!=].to[c.item]> && <c.item.is[!=].to[i@air]> && <c.item.is[!=].to[i@order]> {
           - if <c.item.display.is[!=].to[null]> {
@@ -189,31 +170,19 @@ dRestaurant:
           - inventory update
           }
         }
-<<<<<<< HEAD
-      - if <c.inventory> == in@<player.name>_restaurant {
-        - if <c.item> == i@order_accept {
-=======
 
       # The order review gui
       - if <c.inventory.is[==].to[in@<player.name>_restaurant]> {
         - determine passively cancelled
-        - define item <c.item>
         - if <c.item.is[==].to[i@order_accept]> {
->>>>>>> c412dcdb80ca8b1774dc0fd3494207f2c3b88752
           - inventory close d:<player.inventory>
           - note remove as:in@<player.name>_restaurant
           - flag player ordered
           - inventory update
           - action "on order placed" context:player:<player>
-<<<<<<< HEAD
-          } else if <c.item> == i@back {
-          - inventory open d:<player.flag[restaurant].as_npc.inventory>
-          - determine passively cancelled
-=======
           }
           else if <c.item.is[==].to[i@back]> {
-          - inventory open d:%menuHolder%
->>>>>>> c412dcdb80ca8b1774dc0fd3494207f2c3b88752
+          - inventory open d:in@%menuinventory%
           - inventory update
           - queue clear
           }
