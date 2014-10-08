@@ -98,29 +98,28 @@ dRestaurant:
 #  dRestaurant NPC events
 #
     on player right clicks with i@menu:
-      - narrate "Menu click"
       - if <player.flag[ordered].is[!=].to[true]||true> {
-        - define restaurantName '<player.flag[dRestaurant_Order].get[1]||null>'
-        - define menuinventory '<def[restaurantName].inventory||null>'
+        - define restaurantName '<player.flag[dRestaurant_Order].split[/].get[1]||null>'
+        - define menuinventory '<el@val[in@%restaurantName%].as_inventory||null>'
         - if <el@list[%restaurantName%|%menuinventory%].contains[null]||true> {
+          - narrate "%restaurantName%"
+          - narrate "%menuinventory%"
           - take i@menu
           - narrate "I don<&sq>t think you should have this... and even if you were supposed to have it, I have no idea what I<&sq>m doing right now!"
+          - flag <player> dRestaurant_Order:!
           - queue clear
           }
-        - inventory open d:<def[restaurantName].inventory>
-        - narrate "Should open menu"
+        - inventory open d:%menuinventory%
         }
 
     on player clicks in inventory:
-
       # Setup some data and do a basic null check
       - define restaurantName '<player.flag[dRestaurant_Order].split_by[/].get[1]||null>'
       - define order '<player.flag[dRestaurant_Order].split_by[/].get[2].as_list||li@>'
-      - define menuinventory '<def[restaurantName].inventory||null>'
+      - define menuinventory '<el@val[in@%restaurantName%].as_inventory||null>'
+      # If the defs are null then it must not be a menu? We should have
+      # something to uniquely and instantly identify menu inventories.
       - if <el@list[%restaurantName%|%menuinventory%].contains[null]||true> {
-        - determine passively cancelled
-        - take i@menu
-        - chat "I don<&sq>t think you should have this... and even if you were supposed to have it, I have no idea what I<&sq>m doing right now!"
         - queue stop
         }
 
