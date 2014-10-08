@@ -1,0 +1,123 @@
+################################################################################
+#                                                                              #
+#                        U t i l i t y   S c r i p t s                         #
+#                                                                              #
+#                                                                              #
+#  Just some common scripts. Use as needed                                     #
+#                                                                              #
+################################################################################
+
+#------------------------------------------------------------------------------#
+#  Chat Stuff                                                                  #
+
+
+#########################
+#
+# Clear Chat Command
+#
+#
+ClearChatCommand:
+  type: world
+  debug: false
+  events:
+
+    on clearchat command:
+    - if !<player.has_permission[denizen.clearchat]> queue stop
+    - repeat 100 {
+      - narrate ""
+      }
+
+
+ToggleChatListener:
+  type: task
+  script:
+    - trigger name:click state:false
+    - trigger name:chat state:true
+    - wait %1%s
+    - trigger name:chat state:false
+    - trigger name:click state:true
+
+  on:
+    - trigger name:click state:false
+    - trigger name:chat state:true
+
+  off:
+    - trigger name:chat state:false
+    - trigger name:click state:true
+
+
+ToggleVulnerable:
+#
+# Toggles npc vlunerability for the specified duration
+#
+  type: task
+  script:
+    - ^if <npc.flag[Bio.Vulnerable]> {
+      - vulnerable state:false
+      - wait '<def[1] || 5>'s
+      - vulnerable state:true
+      }
+
+#------------------------------------------------------------------------------#
+#  Some handy utilities                                                        #
+
+
+# +-----------------------------------
+# | ISBETWEEN utility script
+# +-----------------------------------
+# Find out if a number is between 2 other numbers.
+# Usage: <proc[isbetween].context[5|1|10]>
+
+isbetween:
+  type: procedure
+  definitions: val|low|high
+
+  script:
+  - if %val% matches double && %val% >= %low% && %val% <= %high%
+    determine true
+    else determine false
+
+
+
+#------------------------------------------------------------------------------#
+#  Some Commands                                                               #
+
+
+
+ServerNameCommand:
+#
+# Used for some of the Network stuff so the scripts are dynamic enough to work
+# on all servers.
+#
+  type: world
+  events:
+    on servername command:
+    - determine passively fulfilled
+    - if <context.args.is_empty||true> {
+      - narrate "<&b>Connected to<&co> <&a><server.flag[ServerName]>"
+      - queue clear
+      }
+    - if <player.has_permission[servername.admin]>
+      && !<context.args.is_empty||false> {
+      - flag server ServerName:<context.args.get[1]>
+      - narrate "<&b>Server name set to<&co> <&a><server.flag[ServerName]>"
+      - queue clear
+      }
+
+
+
+#------------------------------------------------------------------------------#
+#  Simple Animations                                                           #
+
+
+MarkerAnimation:
+  type: task
+  debug: false
+  definitions: location|target|delay|repeat
+  script:
+    - ^define counter '<def[counter] || 0>'
+    - ^if !<def[counter].is[LESS].than[<def[repeat]>]> queue stop
+    - ^define counter <def[counter].add[1]>
+    - ^playeffect <def[location]> effect:ENDER_SIGNAL visibility:15 qty:10 targets:<def[target]>
+    - wait <def[delay]>t
+    - inject s@MarkerAnimation

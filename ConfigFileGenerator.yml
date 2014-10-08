@@ -1,0 +1,466 @@
+# ---------------------------------------------------------------------------- #
+#                                                                              |
+#                                                                              |
+#                     C o n f i g F i l e G e n e r a t o r                    |
+#                                                                              |
+#         A system for extracting default config files for your scripts        |
+#                                                                              |
+#                                                                              |
+#   Author: |Anthony|                                                          |
+#   Version: 0.3                                                               |
+#   dScript Version: 0.9.5-b1518                                               |
+#                                                                              |
+# ---------------------------------------------------------------------------- #
+#                                                                              |
+#                                                                              |
+# ABOUT:                                                                       |
+#                                                                              |
+#       Use the ConfigFileGenerator for any scripts that use config files or   |
+#     YAML file storage. It will generate any default files for you based on   |
+#     what you define in the Configurations Script Container.                  |
+#                                                                              |
+#       At its core, the ConfigFileGenerator is really a data extraction and   |
+#     insertion tool. The provided helper script makes it super easy for end   |
+#     users to get basic functionality (creating default config files). More   |
+#     advanced users can bypass the helper script and get right to the core.   |
+#     The advanced usage allows you to extract data from any yaml file and     |
+#     insert it into any other yaml file.                                      |
+#                                                                              |
+#                                                                              |
+# -------------                                                                |
+#                                                                              |
+# USAGE:                                                                       |
+#                                                                              |
+#   - Build your Configurations Script Container file as needed following the  |
+#     examples shown here.                                                     |
+#                                                                              |
+#   - Use the ConfigFileGeneratorHelper to generate the files defined in your  |
+#     Configurations Script Container.                                         |
+#     - run s@ConfigFileGeneratorHelper def:%readID%|%readPath%                |
+#                                                                              |
+#   - Use the ConfigFileGenerator directly to extract data from any yaml file  |
+#     to any other yaml file.                                                  
+#     - run s@ConfigFileGenerator def:%readID%|%writeID%|%readPath%|%writePath%|%dryrun%|%verbose%|%forcewrite% instantly
+#                                                                              
+#                                                                              |
+#                                                                              |
+#--- Example:                                                                  |
+#                                                                              |
+#     There is an example Configurations Script Container at the end of this   |
+#   file that you can use to see how the ConfigFileGeneratorHelper works.      |
+#                                                                              |
+#   There is also a command script supplied to make it easy to test. Assign    |
+#   youself the denizen.cfg permission node to use the command:  /cfg          |
+#                                                                              |
+#   This will create 3 files inside /plugins/denizen/ConfigFileGeneratorTest   |
+#                                                                              |
+#   You can also specify any or all of the 3 options for the /cfg command.     |
+#     /cfg --dryrun --verbose --force                                          |
+#                                                                              |
+#__________                                                                    |
+#                                                                              |
+################################################################################
+#                                                                              #
+#                                                                              #
+#                 S O M E   N O T   S O   E M P T Y   S P A C E                #
+#                                                                              #
+#                                                                              #
+################################################################################
+#
+# Config File Generator Helper
+#
+#   This is specifically for creating NEW files! This script tells the
+# s@ConfigFileGenerator which files to generate based on the script
+# container you reference. The files names and paths are determined based
+# on this info!
+#
+#   Check the usage below for how to reference your script container.
+# 
+# 
+# Bare minimum usage:
+#
+#  - Running the script
+#
+#    This helper script expects that you will have a script container that
+#   matches a certain naming convention. It will fail if you do not!
+#
+#      example:
+#        - define readID YourScript
+#        - define readPath Configurations
+#        - run s@ConfigFileGeneratorHelper def:%readID%|%readPath% instantly
+#
+#    The above will look for a Script_Container named 'YourScript_Configurations'
+#   because it reconstructs the %readPath% to be '%readID%_%readPath%'. After it
+#   verifies the Script_Container it will load/reload the yaml file and identify
+#   it as %readID% which in our example would be 'YourScript'. It will unload
+#   this yaml file when it's finished.
+#
+#    It then builds a %keylist% from all the child nodes it finds in that
+#   Script_Container excluding the required nodes for any script container. The
+#   first level child nodes it finds under the Script_Container will each be a
+#   new file. Check this example:
+#
+#      YourScript_Configurations:
+#        type: task
+#        debug: false
+#        script: []
+#
+#        file1:
+#          key: value
+#
+#        file2:
+#          key: value
+#
+#    This example Script_Container would generate and load 2 new yaml files. It
+#   follows a similar naming convention as before. Here's an oversimplification
+#   of what it's doing behind the scenes for you:
+#    - yaml create 'id:YourScript_file1'
+#    - yaml create 'id:YourScript_file2'
+#    - yaml 'savefile:YourScript/file1.yml' 'id:YourScript_file1'
+#    - yaml 'savefile:YourScript/file2.yml' 'id:YourScript_file1'
+#
+#    A new folder will be generated in the denizen folder named:   YourScript
+#   Inside this folder there will be 2 new files:   file1.yml   file2.yml
+#   It will unload these files when it's finished.
+#
+# -----
+#
+#  - Injecting the script
+#    - define readID
+#    - define readPath
+#    - inject s@ConfigFileGeneratorHelper
+#
+#    Alternate functionality is available when injecting this helper script.
+#   I'll document that later...
+#
+#
+#
+# NOTES:
+#
+#  - I want to update this so you can specify a single file to build from any
+#    config container. Currently it tries to build every file but will not
+#    overwrite existing files by default (you CAN specify the --force option)
+#
+#__________
+#
+ConfigFileGeneratorHelper:
+  type: task
+  debug: false
+  script:
+    - ^define readID '<def[readID]||%1%>'
+    - ^define readPath '<def[readPath]||%readID%_%2%>'
+    - ^define scriptPath '<def[readPath].as_script.relative_filename||null>'
+    - ^define dryrun '<def[dryrun]||<def[3]||false>>'
+    - ^define verbose '<def[verbose]||<def[4]||false>>'
+    - ^define forcewrite '<def[forcewrite]||<def[5]||false>>'
+    - ^if <def[scriptPath].is[==].to[null]> {
+      - announce "<&b>ConfigFileGenerator<&co> <&c><def[readID]> is not a valid readID." to_console
+      - queue stop
+      }
+    - ^if <server.has_file[%scriptPath%]> {
+      - if <yaml.list.contains[%readID%]> yaml unload 'id:%readID%'
+      - yaml 'load:<def[scriptPath]>' 'id:%readID%'
+      }
+      else {
+      - announce "<&b>ConfigFileGenerator<&co> <&c>%scriptPath% does not exist!" to_console
+      - queue stop
+      }
+    - ^define keylist '<yaml[%readID%].list_keys[%readPath%].exclude[type|debug|scriptPath|script]>'
+    - ^if <def[keylist].is_empty> {
+      - announce "<&b>ConfigFileGenerator<&co> <&c>The default <def[readID]> config file is emtpy!" to_console
+      - yaml unload 'id:%readID%'
+      - queue stop
+      }
+    - ^foreach <def[keylist]> {
+      - define file <def[value]>
+      - inject s@ConfigFileGeneratorHelper p:buildFile
+      }
+    - ^announce "<&b>ConfigFileGenerator<&co> <&a><def[readID]> has Completed!" to_console
+    - ^announce "<&b>ConfigFileGenerator<&co> <&a><def[readID]> has Completed!" to_flagged:ConfigFileGeneratorNotify
+    - ^yaml unload 'id:%readID%'
+
+  buildFile:
+    - if !<server.has_file[%readID%/%file%.yml]> || <def[forcewrite]> {
+      - announce "<&b>ConfigFileGenerator<&co> <&3>Generating default <def[readID]> %file%.yml file..." to_console
+      - announce "<&b>ConfigFileGenerator<&co> <&3>Generating default <def[readID]> %file%.yml file..." to_flagged:ConfigFileGeneratorNotify
+      - announce "" to_flagged:ConfigFileGeneratorNotify
+      - define newReadPath '%readPath%.%file%'
+      - define writePath '%file%'
+      - define writeID '%readID%_%file%'
+      - yaml create 'id:%writeID%'
+      - run s@ConfigFileGenerator def:<def[readID]>|<def[writeID]>|<def[newReadPath]>|<def[writePath]>|<def[dryrun]>|<def[verbose]>|<def[forcewrite]> instantly
+      - if !<def[dryrun]> {
+        - yaml 'savefile:%readID%/%file%.yml' 'id:%writeID%'
+        - announce "<&b>ConfigFileGenerator<&co> <&a><def[readID]> %file%.yml Save Complete!" to_console
+        - announce "<&b>ConfigFileGenerator<&co> <&a><def[readID]> %file%.yml Save Complete!" to_flagged:ConfigFileGeneratorNotify
+        - announce "" to_flagged:ConfigFileGeneratorNotify
+        - yaml unload 'id:%writeID%'
+        }
+        else {
+        - announce "<&b>ConfigFileGenerator<&co> <&a><def[readID]> %file%.yml Dryrun Complete!" to_console
+        - announce "<&b>ConfigFileGenerator<&co> <&a><def[readID]> %file%.yml Dryrun Complete!" to_flagged:ConfigFileGeneratorNotify
+        - announce "" to_flagged:ConfigFileGeneratorNotify
+        - yaml unload 'id:%writeID%'
+        }
+      }
+      else {
+      - announce "<&b>ConfigFileGenerator<&co> <&a><def[readID]> %file%.yml already exists!" to_console
+      - announce "<&b>ConfigFileGenerator<&co> <&a><def[readID]> %file%.yml already exists!" to_flagged:ConfigFileGeneratorNotify
+      }
+#
+#
+################################################################################
+#                                                                              #
+#                                                                              #
+#                 W H A T   A R E   Y O U   L O O K I N G   A T                #
+#                                                                              #
+#                                                                              #
+################################################################################
+#
+# Config File Generator
+#
+#
+#   This new script differs from the original in that it maintains the readPath
+# and writePath seperately! This allows you to extract ALL data from %readPath%
+# in your already loaded %readID% yaml file and insert it at any %writePath% in
+# the already loaded %writeID% yaml file.
+# 
+#  example:
+#    - define readID 'YourScript'
+#    - define writeID 'YourYamlFile'
+#    - yaml 'load:Input/FilePath.yml' 'id:%readID%'
+#    - yaml 'load:Output/FilePath.yml' 'id:%writeID%'
+#    - define readPath 'Some.Yaml.Node.To.Read'
+#    - define writePath 'Some.Yaml.Node.To.Write'
+#    - run s@ConfigFileGenerator def:%readID%|%writeID%|%readPath%|%writePath%|false|false|false instantly
+#    - yaml unload 'id:%readID%'
+#    - yaml 'savefile:Output/FilePath.yml' 'id:%writeID%'
+#
+#__________
+# 
+ConfigFileGenerator:
+  type: task
+  debug: false
+  definitions: readID|writeID|readPath|writePath|dryrun|verbose|forcewrite
+  script:
+    - ^define keylist '<yaml[<def[readID]>].list_keys[<def[readPath]>]>'
+    - ^if <def[keylist]> != null {
+      - inject s@ConfigFileGenerator p:foreachKeylist instantly
+      }
+      else {
+      - define entry '<yaml[<def[readID]>].read[<def[readPath]>]>'
+      - if <def[dryrun]> || <def[verbose]> {
+        - announce "<&b>ConfigFileGenerator<&co> <&a>Reading<&co> <&b><def[readPath]>" to_console
+        - announce "<&b>ConfigFileGenerator<&co> <&a>Reading<&co> <&b><def[readPath]>" to_flagged:ConfigFileGeneratorNotify
+        }
+      - if <yaml[<def[readID]>].is_list[<def[readPath]>]> {
+        - inject s@ConfigFileGenerator p:foreachEntrylist instantly
+        }
+        else {
+        - inject s@ConfigFileGenerator p:singleEntry instantly
+        }
+      }
+
+  foreachKeylist:
+    - foreach <def[keylist]> {
+      - define key '<def[value]>'
+      - define newReadPath '%readPath%.%key%'
+      - define newWritePath '%writePath%.%key%'
+      - run s@ConfigFileGenerator def:<def[readID]>|<def[writeID]>|<def[newReadPath]>|<def[newWritePath]>|<def[dryrun]>|<def[verbose]>|<def[forcewrite]> instantly
+      }
+
+  foreachEntrylist:
+    # This first yaml command clears the node of any values
+    - yaml 'write:%writePath%' 'id:%writeID%'
+    - foreach <def[entry]> {
+      - if !<def[dryrun]> {
+        - yaml set <def[writePath]>:->:<def[value]> 'id:<def[writeID]>'
+        }
+      - if <def[dryrun]> || <def[verbose]> {
+        - announce "<&b>ConfigFileGenerator<&co> <&a>Writing<&co> <&9>%writePath%<&co> <&2>%value%" to_console
+        - announce "<&b>ConfigFileGenerator<&co> <&a>Writing<&co> <&9>%writePath%<&co> <&2>%value%" to_flagged:ConfigFileGeneratorNotify
+        }
+      }
+    - if <def[dryrun]> || <def[verbose]> {
+      - announce "<&b>ConfigFileGenerator<&co> <&3>*-----*" to_flagged:ConfigFileGeneratorNotify
+      - announce "" to_flagged:ConfigFileGeneratorNotify
+      }
+
+  singleEntry:
+    - if <def[dryrun].is[==].to[false]> {
+      - yaml 'write:<def[writePath]>' 'value:<def[entry]>' 'id:<def[writeID]>'
+      }
+    - if <def[dryrun].is[==].to[true]> || <def[verbose].is[==].to[true]> {
+      - announce "<&b>ConfigFileGenerator<&co> <&a>Writing<&co> <&c>%writePath%<&co> <&e>%entry%" to_console
+      - announce "<&b>ConfigFileGenerator<&co> <&a>Writing<&co> <&c>%writePath%<&co> <&e>%entry%" to_flagged:ConfigFileGeneratorNotify
+      - announce "<&b>ConfigFileGenerator<&co> <&4>*-----*" to_flagged:ConfigFileGeneratorNotify
+      - announce "<&b>ConfigFileGenerator<&co> " to_flagged:ConfigFileGeneratorNotify
+      }
+#
+#
+################################################################################
+#                                                                              #
+#                    N O T H I N G   T O   S E E   H E R E                     #
+#                                                                              #
+#                            M O V E   A L O N G                               #
+#                                                                              #
+################################################################################
+#
+# Configuration File Generator Command
+#
+#  Use this to build the example config files. You /could/ use it to build files
+# for other scripts, but use at your own risk!
+#
+# I suppose you could add something like this to accept container names...
+#
+#    - if <c.args.find[-b].is[MORE].than[0]> {
+#      - define file <c.args.get[<c.args.find[-b].add[1].as_int>]>
+#      }
+#      else {
+#      - narrate "<&4>You must specify the readPath!"
+#      }
+#    - if <c.args.find[-i].is[MORE].than[0]> {
+#      - define readID <c.args.get[<c.args.find[-i].add[1].as_int>]>
+#      - narrate "%readID%"
+#      }
+#      else {
+#      - narrate "<&4>You must specify the readID!"
+#      }
+#
+#__________
+#
+'ConfigFileGeneratorCommand':
+  type: world
+  debug: false
+  events:
+
+    on cfg command:
+    - if !<player.has_permission[denizen.cfg]> queue stop
+    - determine passively fulfilled
+    - flag <player> ConfigFileGeneratorNotify:true
+    - define dryrun '<tern[<c.args.contains[--dryrun]>]:true || false>'
+    - define verbose '<tern[<c.args.contains[--verbose]>]:true || false>'
+    - define forcewrite '<tern[<c.args.contains[--force]>]:true || false>'
+    - run s@ConfigFileGeneratorHelper def:ConfigFileGeneratorTest|Configurations|%dryrun%|%verbose%|%forcewrite% instantly
+    - flag <player> ConfigFileGeneratorNotify:!
+#
+#
+################################################################################
+#                                                                              #
+#                  A N D   N O W   F O R   S O M E T H I N G                   #
+#                                                                              #
+#                   C O M P L E T E L Y   D I F F E R E N T                    #
+#                                                                              #
+################################################################################
+#                                                                              #
+# Example Configurations Script Container                                      #
+#                                                                              #
+#                                                                              #
+#    The Configurations Script Container is the house for your default files.  #
+#   It will be referenced when using the ConfigFileGeneratorHelper.            #
+#                                                                              #
+#   You are able to store any data needed inside this file. It can handle      #
+#   recursive lists too.                                                       #
+#                                                                              #
+#-- Naming the Container                                                       #
+#   * This is important!                                                       #
+#                                                                              # 
+#   This script container should follow the naming convention:                 #
+#       YourScript_Configurations                                              #
+#         %readID%_%readPath%                                                  #
+#                                                                              #
+#   This will be important when you go to run the ConfigFileGeneratorHelper    #
+#                                                                              #
+#      example:                                                                #
+#        - define readID ConfigFileGeneratorTest                               #
+#        - define readPath Configurations                                      #
+#        - run s@ConfigFileGeneratorHelper def:%readID%|%readPath% instantly   #
+#                                                                              #
+#                                                                              #
+# Each parent node under the script container defines a file name to generate. #
+# The child nodes that follow are the entries for that individual file.        #
+#                                                                              #
+# In this example, 3 files are generated in denizen/ConfigFileGeneratorTest/   #
+#                                                                              #
+# Although the examples are a bit robotic, they clearly illustrate a range of  #
+# usage scenarios.                                                             #
+#______________________________________________________________________________#
+#                                                                              #
+#______________________________DO_NOT_EDIT_THIS_FILE___________________________#
+#                                                                              #
+#______________________________________________________________________________#
+
+ConfigFileGeneratorTest_Configurations:
+  type: task
+  debug: false
+  script: ''
+
+
+# ------ Single Value file container ------ #
+
+  singleValues:
+    keyA: 1
+    keyB: 0.1
+    keyC: -1
+    keyD: NaN
+    keyE: This is a StRiNg!
+
+
+# ------ Single Lists file container ------ #
+
+  singleLists:
+    listA:
+      - 1
+      - 0.1
+      - -1
+      - NaN
+      - This is a StRiNg!
+    listB:
+      - 2
+      - 0.2
+      - -2
+      - nAn
+      - This is a sTrInG!
+
+# ------ Recursive Lists file container ------ #
+
+  recursiveLists:
+    list1:
+      list1A:
+        list1A1:
+          key1A1A: 1
+          list1A1A:
+            - 1
+            - 2
+        list1A2:
+          list1A2A:
+            key1A2A1: 1
+            list1A2A1:
+              - 1
+              - 2
+      list1B:
+        - 1
+        - 2
+    list2:
+      list2A:
+        key2A1: 1
+        list2A1:
+          - 1
+          - 2
+      list2B:
+        key2B1: 1
+        list2B1:
+          - 1
+          - 2
+      list2C:
+        key2C1: 1
+        list2C1:
+          - 1
+          - 2
+
+
+################################################################################
+
+
+
+

@@ -1,0 +1,109 @@
+################################################################################
+#                                                                              #
+#                  W e i g h t e d   R a n d o m   C h o i c e                 #
+#                                                                              #
+#                                                                              #
+#  This enables you to have a percent chance that something will happen. Good  #
+#  for things such as NPC interactions and/or for daily loot. Easily set some  #
+#  things as rare and others as common. Check out the example usage for ideas. #
+#                                                                              #
+#  The beauty of this method is that you can use this on a list of any size,   #
+#  so long as the combined percent chance of all options equals 100.           #
+#  Just make sure to keep the correct format in your flag                      #
+#    - flag npc WeightedRandomChoice:percentChance/returnValue|...             #
+#                                                                              #
+#                                                                              #
+#                                                                              #
+#                                                                              #
+#                                                                              #
+################################################################################
+
+'WeightedRandomChoice':
+#
+# Choose a random number from 1 to 100 and return which category the number is
+# within.
+#
+  type: task
+  script:
+    - ^define list <npc.flag[WeightedRandomChoice].as_list>
+    - ^define listSize <def[list].size>
+    - ^define number <util.random.int[1].to[100]>
+    - ^define counter 0
+    - ^foreach <def[list].as_list> {
+      - if <def[counter].is[OR_LESS].than[%listSize%]> {
+        - define counter <def[counter].add[1]>
+        - define entry_<def[counter].as_int> <def[list].get[<def[counter].as_int>]>
+        - define percentChance <def[entry_<def[counter].as_int>].split[/].get[1]>
+        - define returnValue <def[entry_<def[counter].as_int>].split[/].get[2]>
+        - define oldValue '<def[oldValue] || 0>'
+        - define lowValue '<def[oldValue].add[1]>'
+        - define highValue '<def[oldValue].add[%percentChance%]>'
+        - define oldValue '<def[highValue]>'
+
+        - if <proc[isbetween].context[%number%|%lowValue%|%highValue%]> {
+          - ^flag npc WeightedRandomChoice:<def[returnValue]>
+          - ^foreach stop
+          }
+        }
+      }
+    - ^define result <npc.flag[WeightedRandomChoice]>
+
+  asDef:
+    - ^define list '<def[list] || %1%>'
+    - ^define listSize <def[list].size>
+    - ^define number <util.random.int[1].to[100]>
+    - ^foreach <def[list].as_list> {
+      - if <def[loop_index].is[OR_LESS].than[%listSize%]> {
+        - define entry_%loop_index% <def[list].get[%loop_index%]>
+        - define percentChance <def[entry_%loop_index%].split[/].get[1]>
+        - define returnValue <def[entry_%loop_index%].split[/].get[2]>
+        - define oldValue '<def[oldValue] || 0>'
+        - define lowValue '<def[oldValue].add[1]>'
+        - define highValue '<def[oldValue].add[%percentChance%]>'
+        - define oldValue '<def[highValue]>'
+
+        - if <proc[isbetween].context[%number%|%lowValue%|%highValue%]> {
+          - ^define result <def[returnValue]>
+          - ^foreach stop
+          }
+        }
+      }
+
+
+#'Example Weighted Random Choice Usage':
+##
+## Run a random thing based on weight assignment
+## - flag npc WeightedRandomChoice:percentChance/returnValue|...
+##
+## Have as many |percentChance/returnValue| as you need.
+## Make sure the sum of all the options is equal to 100.
+##
+#  type: task
+#  script:
+#    - flag npc WeightedRandomChoice:5/rare|20/lesscommon|25/common|35/morecommon|15/kindarare
+#    - inject s@WeightedRandomChoice instantly
+#
+#    - if <def[result].is[==].to[rare]> {
+#      - chat "5% Chance"
+#      - run s@SomeRareTask
+#      }
+#      else if <def[result].is[==].to[lesscommon]> {
+#      - chat "20% Chance"
+#      - run s@SomeLessCommonTask
+#      }
+#      else if <def[result].is[==].to[common]> {
+#      - chat "25% Chance"
+#      - run s@SomeCommonTask
+#      }
+#      else if <def[result].is[==].to[morecommon]> {
+#      - chat "35% Chance"
+#      - run s@SomeMoreCommonTask
+#      }
+#      else if <def[result].is[==].to[kindarare]> {
+#      - chat "15% Chance"
+#      - run s@SomeKindaRareTask
+#      }
+#      else {
+#      - chat "something went horribly wrong"
+#      }
+#    - flag npc WeightedRandomChoice:!

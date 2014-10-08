@@ -1,0 +1,15 @@
+################################################################################
+#                                                                              #
+#                             F o r m a t t i n g                              #
+#                                                                              #
+#                                                                              #
+#  Just a container for any format scripts.                                    #
+#                                                                              #
+################################################################################
+
+CmdSynFormat:
+#
+# Used when telling a user the correct syntax for a command
+#
+    type: format
+    format: <&4><&l>Syntax<&co><&r> <&e><text>

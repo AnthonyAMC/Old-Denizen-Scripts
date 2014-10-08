@@ -1,0 +1,56 @@
+# ---------------------------------------------------------------------------- #
+#                                                                              |
+#                                                                              |
+#                 V o t i f i e r   V o t e   S i m u l a t o r                |
+#                                                                              |
+#               A system for testing your on votifier vote scripts             |
+#                                                                              |
+#                    ! Requires Votifier and Depenizen !                       |
+#                                                                              |
+#                                                                              |
+#                                                                              |
+#                                                                              |
+#   Author: |Anthony|                                                          |
+#   Version: 0.1                                                               |
+#   dScript Version: 0.9.5-b1517                                               |
+#                                                                              |
+# ---------------------------------------------------------------------------- #
+
+
+VoteSimulator:
+  type: world
+  debug: false
+
+  events:
+    on fakevote command:
+    - inject locally fakeVote instantly
+
+  fakeVote:
+    - if !<context.server> {
+      - if !<player.has_permission[perkpoints.admin]> queue stop
+      }
+    - determine passively FULFILLED
+    - define arg1 '<c.args.get[1].escaped||null>'
+    - define service '<c.args.get[2].escaped||test>'
+    - if <def[arg1].is[!=].to[null]> {
+      - if <util.player_is_valid[%arg1%]> {
+        - define username '%arg1%'
+        - define player '<def[username].as_player>'
+        }
+        else {
+        - narrate "<&b>PerkPoints<&co><&c> %arg1% is not a valid player name!"
+        - queue stop
+        }
+      }
+      else {
+      - if <context.server> {
+        - announce "<&b>PerkPoints<&co><&c> Must specify a username from console!" to_console
+        - queue stop
+        }
+        else {
+        - define player '<player>'
+        - define username '<player.name>'
+        }
+      }
+    - event "votifier vote" 'context:username|%username%|player|%player%|service|%service%' player:%player%
+    - queue stop

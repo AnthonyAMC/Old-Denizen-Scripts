@@ -1,0 +1,1774 @@
+# ---------------------------------------------------------------------------- #
+#                                                                              |
+#                                                                              |
+#                        P e r k P o i n t   S y s t e m                       |
+#                                                                              |
+#               A system for rewarding players for Votifier votes              |
+#                                                                              |
+#                               *REQUIRES MYSQL*                               |
+#                                                                              |
+#                                                                              |
+#   Author: |Anthony|                                                          |
+#   Version: 0.5                                                               |
+#   dScript Version: 0.9.5-b1521                                               |
+#   Depenizen Version: b214                                                    |
+#                                                                              |
+#   Dependencies:                                                              |
+#   - SQLManager:             http://scripts.citizensnpcs.co/view/m3gov1       |
+#   - ConfigFileGenerator:    http://scripts.citizensnpcs.co/view/0coo5b       |
+#                                                                              |
+#   Optional:                                                                  |
+#   - VotifierVoteSimulator:  http://scripts.citizensnpcs.co/view/d0dt1b       |
+#                                                                              |
+# ---------------------------------------------------------------------------- #
+# 
+# 
+# ABOUT:
+# 
+#     This is a BETA version of PerkPoints. It has the bare minimum required
+#   functionality. Check the in game commands for usage and help.
+#
+#   Admin stuff:
+#     * Command -  /perkadmin
+#     * Permission -  perkpoints.admin
+#
+#   User stuff:
+#     * Command -  /perk
+#     * Permission -  perkpoints.user
+#
+#     You can create new perk packages in game or clone packages you've already
+#   made. There is a command to edit the packages from in game. The command
+#   provides syntax and other error checking. You can list all packages and see
+#   detailed package info in game as well.
+#
+#     Packages can be configured to give permissions and add groups when
+#   activated, and take them when the package expires. You can set announcements
+#   that everyone on the server will see and messages that are sent only to the
+#   player. It also can run console commands on activation and expiration.
+#
+#     You can list known and registered voting services. Any time a vote comes
+#   in, it will be included in the known list. You can register voting services
+#   and set an individual point reward for each. This allows you to encourage
+#   players to vote at voting sites you prefer.
+#
+#      PerkPoints REQUIRES my SQLManager AND ConfigFileGenerator scripts!
+# 
+#     The SQL backend functions are almost /completely/ handled by SQLManager.
+#   Automatically goes into offline caching mode if the sql database goes
+#   offline! You won't have to worry about your players losing PerkPoints if
+#   your sql server goes offline for some reason.
+# 
+# 
+# USAGE:
+# 
+# -- Setup
+#
+#   1. Upload PerkPoints.yml SQLManager.yml and ConfigFileGenerator.yml to your
+#      Denizen /scripts directory.
+#
+#   2. Reload your denizen scripts
+#      /denizen reload scripts
+#
+#   3. Start PerkPoints - Run command from console OR in game. In game command
+#      requires perkpoints.admin permission! The system will generate the
+#      default files and then disable itself.
+#      /perkadmin --restart
+#
+#   4. Configure /Denizen/PerkPoints/config.yml
+#      Edit anything you need to! The config file should be self explanatory.
+#      Make sure you set useSql: 'true' when you have all the correct settings!
+#
+#   5. Create an empty sql db with the database: name you set in the config.yml
+#
+#   6. Restart PerkPoints - Now that you have your config and database setup 
+#      the system will run and create the tables in the sql database.
+#      /perkadmin --restart
+#
+#   7. PerkPoints is now Online!
+#
+#
+# -- Permissions
+#
+#    Basic user permission: perkpoints.user
+#    Admin permission: perkpoints.admin
+# 
+#------------------------------------------------
+# 
+#               C h a n g e l o g
+# 
+# 
+# - v0.5  -  9/15/14
+#   - Added --reload - Reread config files to load any manual file changes
+#   - Added some shorthand command args - Totally undocumented eastereggs
+#   - Added concurrentLimit package option - Max active at one time
+#   - Added requirePermission package option - Perm needed for package
+#     - Use the provided command to update your existing packages OR THEY WONT WORK
+#     - /perkupdate
+#   - Some formatting
+#   - Some bugfixes
+# 
+# 
+#------------------------------------------------
+# 
+#          TODO - Future Feature Fluff
+#
+#  - Voting history commands
+#    - Sorting options/filters for player, date, service, server
+#
+#  - Command to show player unactivated purchased packages.
+#
+#  - Package history commands
+#
+#  - Add pagination to all list displays
+#
+#  - Add ability to type list number instead of package name for commands that
+#    require a pack name.
+# 
+#  - Add ellipses to long descriptions for package list display
+# 
+#  - Line wrap all box messages - This is a pita
+# 
+#______________________________________________________________________________#
+
+
+PerkPointUpdateConfig:
+  type: world
+  debug: false
+
+  events:
+    on perkupdate command:
+    - if !<player.has_permission[perkpoints.admin].global> queue stop
+    - determine passively CANCELLED
+    - inject locally updateConfig instantly
+
+  updateConfig:
+    - announce "<&b>PerkPoints<&co><&3> Updating packages.yml file..." to_console
+    - inject s@PerkPointSystem loadYaml instantly
+    - define packList '<yaml[PerkPoints_packages].list_keys[packages]||null>'
+    - if <def[packlist].is[==].to[null]>
+      || <def[packlist].is_empty> queue stop
+    - foreach %packlist% {
+      - if !<yaml[PerkPoints_packages].contains[packages.%value%.requirePermissions]> {
+        - yaml 'write:packages.%value%.requirePermissions' 'id:PerkPoints_packages'
+        }
+      - if !<yaml[PerkPoints_packages].contains[packages.%value%.concurrentLimit]> {
+        - yaml 'write:packages.%value%.concurrentLimit' 'id:PerkPoints_packages'
+        }
+      }
+    - yaml 'savefile:PerkPoints/packages.yml' 'id:PerkPoints_packages'
+    - inject s@PerkPointSystem simpleReloadYaml instantly
+    - announce "<&b>PerkPoints<&co><&a> Update complete!" to_console
+
+
+
+PerkPointSystem:
+  type: world
+  speed: 1t
+  debug: false
+
+  events:
+    on server start:
+    - run locally start delay:2s
+
+    on player joins:
+    - run locally join instantly
+
+    on vote command:
+    - determine passively fulfilled
+    - inject locally listServicesRegistered
+
+    on packs command:
+    - determine passively fulfilled
+    - define page '<c.args.get[1].abs.as_int||null>'
+    - inject listPackagesPaged locally
+
+    on perk command:
+    - inject locally commandHandler instantly
+
+    on perkadmin command:
+    - inject locally adminCommandHandler instantly
+
+    on pa command:
+    - inject locally adminCommandHandler instantly
+
+    on votifier vote:
+    - inject locally voteEvent instantly
+
+################
+#
+# Consider adding an error event when there's more useful info for comparisons
+#
+#    on script generates error:
+#    - announce "<context.message>" to_console
+#    - announce "<context.queue>" to_console
+#    - announce "<context.script>" to_console
+
+
+  start:
+    - ^define yamlName 'PerkPoints'
+    - ^define scriptName '<script.name>'
+    - ^inject locally reloadYaml instantly
+    - ^inject locally loadData instantly
+    - ^if <def[useSql].is[!=].to[true]> {
+      - announce "<&b>PerkPoints<&co><&c> Must be configured to use MySQL!" to_console
+      - inject locally unload
+      - queue stop
+      }
+    # This checks the status as set by SQLManager to not duplicate restart
+    # processes. This is the only time this script needs to set the status. The
+    # SQLManager will handle every other situation.
+    - ^define status '<yaml[SQLManager_Offline].read[Offline_Cache.databases.%db%.status]||null>'
+    - ^if <def[status].is[==].to[connecting]> {
+      - announce "<&b>SQLManager<&co><&c> Already attempting to reconnect to %db% database!" to_console
+      - queue stop
+      }
+      else {
+      - yaml 'write:Offline_Cache.databases.%db%.status' 'value:connecting' 'id:SQLManager_Offline'
+      - yaml 'savefile:SQLManager/cache.yml' 'id:SQLManager_Offline'
+      }
+    - ^inject s@SQLManager
+    - ^if <def[expireOnStartup]> {
+      - inject locally checkAllExpired instantly
+      }
+    - ^if <queue.exists[PerkPoints_ExpireCheck]> {
+      - announce "<&b>PerkPoints<&co><&3> Stopping Expiration Check..." to_console
+      - queue queue:PerkPoints_ExpireCheck stop
+      }
+    - ^run locally expiredCheckLoop def:def:%yamlName%|%scriptName% id:PerkPoints_ExpireCheck
+    - ^announce "<&b>PerkPoints<&co><&a> System loaded!" to_console
+    - queue stop
+
+  reloadYaml:
+  # Reloads the yaml files and generates default files if they don't exist.
+    - announce "<&b>PerkPoints<&co><&3> Loading system config files..." to_console
+    - if !<server.has_file[PerkPoints/config.yml]>
+      || !<server.has_file[PerkPoints/packages.yml]> {
+      - if <player> != null {
+        - flag <player> ConfigFileGeneratorNotify:true
+        - run s@ConfigFileGeneratorHelper def:PerkPoints|Configurations|false|false|false instantly
+        - flag <player> ConfigFileGeneratorNotify:!
+        }
+        else run s@ConfigFileGeneratorHelper def:PerkPoints|Configurations instantly
+      }
+    - if <yaml.list.contains[PerkPoints_config]> yaml unload 'id:PerkPoints_config'
+    - yaml 'load:PerkPoints/config.yml' 'id:PerkPoints_config'
+    - if <yaml.list.contains[PerkPoints_packages]> yaml unload 'id:PerkPoints_packages'
+    - yaml 'load:PerkPoints/packages.yml' 'id:PerkPoints_packages'
+    - inject s@PerkPoints_SQLTables
+    - announce "<&b>PerkPoints<&co><&a> System config files Loaded!" to_console
+
+  simpleReloadYaml:
+    - announce "<&b>PerkPoints<&co><&3> Reloading system config files..." to_console
+    - if <yaml.list.contains[PerkPoints_config]> yaml unload 'id:PerkPoints_config'
+    - yaml 'load:PerkPoints/config.yml' 'id:PerkPoints_config'
+    - if <yaml.list.contains[PerkPoints_packages]> yaml unload 'id:PerkPoints_packages'
+    - yaml 'load:PerkPoints/packages.yml' 'id:PerkPoints_packages'
+    - announce "<&b>PerkPoints<&co><&a> System config files Loaded!" to_console
+
+  loadYaml:
+  # Quickly load the core yaml files if they are not already loaded.
+    - if !<yaml.list.contains[PerkPoints_config]> yaml 'load:PerkPoints/config.yml' 'id:PerkPoints_config'
+    - if !<yaml.list.contains[PerkPoints_packages]> yaml 'load:PerkPoints/packages.yml' 'id:PerkPoints_packages'
+
+  isOffline:
+  # Idk if i'll actually use this, but i'm going to leave it for now...
+    - ^if !<yaml.list.contains[PerkPoints_config]> {
+      - announce "<&b>PerkPoints<&co><&c> ERROR <&b>config.yml<&c> not loaded!" to_console
+      - define offline 'true'
+      }
+    - ^if !<yaml.list.contains[PerkPoints_packages]> {
+      - announce "<&b>PerkPoints<&co><&3> ERROR <&b>packages.yml<&c> not loaded!" to_console
+      - define offline 'true'
+      }
+    - ^if !<yaml.list.contains[SQLManager_Offline]> {
+      - announce "<&b>PerkPoints<&co><&3> ERROR <&b>SQLManager Offline Cache<&c> is not loaded!" to_console
+      - define offline 'true'
+      }
+      else {
+      - define status '<yaml[SQLManager_Offline].read[Offline_Cache.databases.%db%.status]||null>'
+      - if <def[status].is[!=].to[online]||null> {
+        - announce "<&b>PerkPoints<&co><&3> ERROR <&b>SQLManager<&c> reports PerkPoints is NOT ONLINE!" to_console
+        - define offline 'true'
+        }
+      }
+
+  loadData:
+    - ^define yamlName 'PerkPoints'
+    - ^define scriptName '<script.name>'
+    - ^define useSql '<yaml[PerkPoints_config].read[config.MySQL.useSql]||false>'
+    - ^define db '<yaml[PerkPoints_config].read[config.MySQL.database]||false>'
+    - ^define transactionTable '<yaml[PerkPoints_config].read[config.MySQL.tables.Transactions]>'
+    - ^define autoCreateAccounts '<yaml[PerkPoints_config].read[config.General.AutoCreateAccounts]||false>'
+    - ^define points '<yaml[PerkPoints_config].read[config.General.Points]||5>'
+    - ^define transferrable '<yaml[PerkPoints_config].read[config.General.Transferrable]||false>'
+    - ^define expireOnStartup '<yaml[PerkPoints_config].read[config.General.ExpireOnStartup]||false>'
+    - ^define purgeOnStart '<yaml[PerkPoints_config].read[config.General.PurgeOnStart]||false>'
+    - ^define serverName '<yaml[PerkPoints_config].read[config.General.ServerName]||Minecraft Server>'
+    - ^define expireCheck '<yaml[PerkPoints_config].read[config.General.ExpireCheck]||10m>'
+
+  unload:
+    - ^if <queue.exists[PerkPoints_ExpireCheck]> {
+      - announce "<&b>PerkPoints<&co><&3> Stopping Expiration Check..." to_console
+      - queue queue:PerkPoints_ExpireCheck stop
+      }
+    - ^if <yaml.list.contains[PerkPoints_config]> {
+      - announce "<&b>PerkPoints<&co><&3> Unloading config.yml file..." to_console
+      - yaml unload 'id:PerkPoints_config'
+      }
+    - ^if <yaml.list.contains[PerkPoints_packages]> {
+      - announce "<&b>PerkPoints<&co><&3> Unloading packages.yml file..." to_console
+      - yaml unload 'id:PerkPoints_packages'
+      }
+    - define sqlScriptName 'PerkPoints_SQLTables'
+    - if <yaml.list.contains[%sqlScriptName%]> {
+      - announce "<&b>PerkPoints<&co><&3> Unloading %sqlScriptName% file..." to_console
+      - yaml unload 'id:%sqlScriptName%'
+      }
+    - ^announce "<&b>PerkPoints<&co><&c> System disabled..." to_console
+
+  expiredCheckLoop:
+    - ^define yamlName '<def[yamlName]||<def[1]||null>>'
+    - ^define scriptName '<def[scriptName]||<def[2]||null>>'
+    - ^define expireCheck '<yaml[PerkPoints_config].read[config.General.ExpireCheck]||10m>'
+    - ^wait '<def[expireCheck].as_duration>'
+    - ^inject locally loadYaml
+    - ^define db '<yaml[PerkPoints_config].read[config.MySQL.database]||false>'
+    - ^inject locally checkAllExpired instantly
+    - ^inject locally expiredCheckLoop
+
+
+################################################################################
+#
+# Actions stuff
+#
+
+  showPlayerStats:
+    - define db '<yaml[PerkPoints_config].read[config.MySQL.database]>'
+    - define uuid '<def[uuid]||<player.uuid>>'
+    - define tableName '<yaml[PerkPoints_config].read[config.MySQL.tables.PerkPoints]>'
+    - define msgsHeaderTitle 'Player Stats'
+    - inject locally msgsHeader instantly
+    - if <proc[SQLManager_ConnectionCheck].context[%db%]> {
+      - sql id:%db% "query:SELECT playeruuid,created,totalvotes,pointsearned,pointsspent,pointsbalance FROM %tableName% WHERE playeruuid='%uuid%';" save:stats
+      - define stats '<entry[stats].result.get[1].split[/]||null>'
+      - inject locally msgsStats instantly
+      }
+      else {
+      - narrate "<&5>|<&sp><&c>SQL Database is offline!"
+      }
+    - inject locally msgsFooter instantly
+
+  join:
+    - define yamlName 'PerkPoints'
+    - define scriptName '<script.name>'
+    - define db '<yaml[PerkPoints_config].read[config.MySQL.database]>'
+    - if !<server.list_sql_connections.contains[%db%]> queue stop
+    - define uuid '<player.uuid||null>'
+    - define tableName '<yaml[PerkPoints_config].read[config.MySQL.tables.PerkPoints]>'
+    - inject locally checkPlayerRecord
+    - inject locally checkPlayerExpired
+
+  editPoints:
+    - define yamlName 'PerkPoints'
+    - define scriptName '<script.name>'
+    - define db '<yaml[PerkPoints_config].read[config.MySQL.database]||null>'
+    - define tableName '<yaml[PerkPoints_config].read[config.MySQL.tables.PerkPoints]||null>'
+    - inject locally checkPlayerRecord
+    - define pointValue '<def[pointValue]||<yaml[PerkPoints_config].read[config.General.VoteReward]||null>>'
+    - if <def[pointValue].is[==].to[null]>
+      || <def[pointValue]> !matches integer
+      || <def[pointValue].is[OR_LESS].than[0]> {
+      - announce "<&b>PerkPoints<&co> <&c>Tried setting invalid pointValue. Setting sane default 5" to_console
+      - define pointValue '5'
+      }
+    - if <def[action].is[==].to[spend]>
+      || <def[action].is[==].to[-s]> {
+      - define statement "UPDATE %tableName% SET pointsspent = pointsspent + %pointValue%, pointsbalance = pointsbalance - %pointValue% WHERE playeruuid='%uuid%';"
+      - inject s@SQLManager_Offline p:managedUpdateStatement
+      }
+      else if <def[action].is[==].to[give]>
+      || <def[action].is[==].to[-g]> {
+      - define statement "UPDATE %tableName% SET pointsearned = pointsearned + %pointValue%, pointsbalance = pointsbalance + %pointValue% WHERE playeruuid='%uuid%';"
+      - inject s@SQLManager_Offline p:managedUpdateStatement
+      - narrate "<&b>PerkPoints<&co> <&f>Gave %pointValue% to <def[uuid].as_player.name>"
+      }
+      else if <def[action].is[==].to[vote]> {
+      - define statement "UPDATE %tableName% SET pointsearned = pointsearned + %pointValue%, totalvotes = totalvotes + 1, pointsbalance = pointsbalance + %pointValue% WHERE playeruuid='%uuid%';"
+      - inject s@SQLManager_Offline p:managedUpdateStatement
+      }
+      else if <def[action].is[==].to[take]>
+      || <def[action].is[==].to[-t]> {
+      - define statement "UPDATE %tableName% SET pointsearned = pointsearned - %pointValue%, pointsbalance = pointsbalance - %pointValue% WHERE playeruuid='%uuid%';"
+      - inject s@SQLManager_Offline p:managedUpdateStatement
+      - narrate "<&b>PerkPoints<&co> <&f>Took %pointValue% from <def[uuid].as_player.name>"
+      }
+      else if <def[action].is[==].to[reset]>
+      || <def[action].is[==].to[-r]> {
+      - define statement "UPDATE %tableName% SET pointsearned = 0, pointsspent = 0, pointsbalance = 0, totalvotes = 0 WHERE playeruuid='%uuid%';"
+      - inject s@SQLManager_Offline p:managedUpdateStatement
+      - narrate "<&b>PerkPoints<&co> <&f>Reset points for <def[uuid].as_player.name>"
+      }
+
+  getPlayerPointRecord:
+    - sql id:%db% "query:SELECT * FROM %tablename% WHERE playeruuid='%uuid%';" save:record
+    - define record '<entry[record].result.get[1].split[/]||null>'
+    - define playerUuid '<def[record].get[1]||null>'
+    - define created '<def[record].get[2]||null>'
+    - define totalVotes '<def[record].get[3]||null>'
+    - define pointsEarned '<def[record].get[4]||null>'
+    - define pointsSpent '<def[record].get[5]||null>'
+    - define pointsBalance '<def[record].get[6]||null>'
+
+  checkPlayerRecord:
+    - if <proc[SQLManager_ConnectionCheck].context[%db%]> {
+      - sql id:%db% "query:SELECT COUNT(playeruuid) FROM %tablename% WHERE playeruuid='%uuid%';" save:idcount
+      - define idcount '<entry[idcount].result.get[1].split[/].get[1]||null>'
+      - if <def[idcount].is[==].to[0]> {
+        - announce "<&b>PerkPoints<&co> <&a>Creating player record for %uuid%" to_console
+        - define statement "INSERT INTO %tableName% (playeruuid) VALUES ('%uuid%');"
+        - inject s@SQLManager_Offline p:managedUpdateStatement
+        }
+        else if <def[idcount].is[==].to[1]> {
+        - announce "<&b>PerkPoints<&co> <&a>Found player record for %uuid%" to_console
+        }
+        else {
+        - announce "<&b>PerkPoints<&co> <&c>Something went wrong checking the %tableName% table for %uuid%!" to_console
+        - queue stop
+        }
+      }
+      else {
+      - announce "<&b>PerkPoints<&co> <&c>Database Offline!" to_console
+      - define statement "INSERT INTO %tableName% (playeruuid) VALUES ('%uuid%');"
+      - inject s@SQLManager_Offline p:managedUpdateStatement
+      }
+
+
+  checkAllExpired:
+    - if <proc[SQLManager_ConnectionCheck].context[%db%]> {
+      - announce "<&b>PerkPoints<&co> <&3>Checking for expired packages..." to_console
+      - define writeID 'PerkPoints_packages'
+      - define transactionTable '<yaml[PerkPoints_config].read[config.MySQL.tables.Transactions]>'
+      - define serverName '<yaml[PerkPoints_config].read[config.General.ServerName]||Minecraft Server>'
+      - sql id:%db% "query:SELECT * FROM %transactionTable% WHERE expires='1' AND expired='0' AND activated='1' AND expiredate<='<server.current_time_millis>' AND servers='%serverName%';" save:packList
+      - define packList '<entry[packList].result||null>'
+      - foreach %packList% {
+        - define packInfo '<def[value].split[/]>'
+        - if <def[packInfo].is_empty> foreach next
+        - define id '<def[packInfo].get[1]>'
+        - define uuid '<def[packInfo].get[2]>'
+        - define pack '<def[packInfo].get[3]>'
+        - define writePath 'packages.%pack%'
+        - inject locally deactivatePackage
+        - wait 10t
+        }
+      }
+      else {
+      - announce "<&b>PerkPoints<&co> <&c>Database Offline! Expired package check failed!" to_console
+      }
+
+
+  checkPlayerExpired:
+    - if <proc[SQLManager_ConnectionCheck].context[%db%]> {
+      - define writeID 'PerkPoints_packages'
+      - define transactionTable '<yaml[PerkPoints_config].read[config.MySQL.tables.Transactions]>'
+      - define serverName '<yaml[PerkPoints_config].read[config.General.ServerName]||Minecraft Server>'
+      - sql id:%db% "query:SELECT * FROM %transactionTable% WHERE playeruuid='%uuid%' AND expires='1' AND expired='0' AND activated='1' AND servers='%serverName%' AND expiredate<='<server.current_time_millis>';" save:packList
+      - define packList '<entry[packList].result||null>'
+      - foreach %packList% {
+        - define packInfo '<def[value].split[/]>'
+        - if <def[packInfo].is_empty> foreach next
+        - define id '<def[packInfo].get[1]>'
+        - define pack '<def[packInfo].get[3]>'
+        - define writePath 'packages.%pack%'
+        - inject locally deactivatePackage
+        - wait 10t
+        }
+      }
+      else {
+      - announce "<&b>PerkPoints<&co> <&c>Database Offline! Expired package check failed for %uuid%!" to_console
+      }
+
+
+
+################################################################################
+#
+# Voting
+#
+
+  voteEvent:
+    - inject locally loadYaml instantly
+    - define yamlName 'PerkPoints'
+    - define scriptName '<script.name>'
+    - define username '<context.username.sql_escaped||null>'
+    - define uuid '<tern[<util.player_is_valid[%username%]>]:<def[username].as_player.uuid> || null>'
+    - define service '<context.service.sql_escaped.replace[.].with[-]||null>'
+    - define time '<context.time||null>'
+    - if <def[uuid].is[==].to[null]> {
+      - announce "<&6><&l>PerkPoints<&co> <&3><&o><def[username].as_player.name||Someone><&3> voted at <&3><&o><def[service].replace[-].with[.]><&3> but has never logged in!"
+      - queue stop
+      }
+    - if <def[uuid].as_player.is_online> {
+      - run locally fireworks def:%uuid%
+      }
+    - define points '<yaml[PerkPoints_config].read[config.General.Points]||Points>'
+    - define pointValue '<yaml[PerkPoints_config].read[config.Services.%service%.points]||<yaml[PerkPoints_config].read[config.General.VoteReward]||1>>'
+    - announce "<&6><&l>PerkPoints<&co> <&3><&o><def[uuid].as_player.name><&3> has earned <&b>%pointValue%<&3> %points% for voting at <&o><def[service].replace[-].with[.]><&3>!"
+    - narrate "<&6><&l>PerkPoints<&co> <&b>Thank you for your support!" target:<def[uuid].as_player.name>
+    - define action 'vote'
+    - inject locally editPoints
+    - inject locally logVote
+    - queue stop
+
+  fireworks:
+  # Because wtf not
+    - define counter <def[counter].add[1]||0>
+    - if <def[counter].is[MORE].than[<util.random.int[4].to[10]>]> queue stop
+    - if !<def[colors].exists> define colors li@aqua|black|blue|fuchsia|gray|green|lime|maroon|navy|olive|orange|purple|red|silver|teal|white|yellow
+    - firework <def[1].as_player.location.add[0,0.5,0]> 'power:<util.random.int[1].to[4]>' random 'primary:<def[colors].random>' 'fade:<def[colors].random>' flicker trail
+    - wait <util.random.int[1].to[10]>t
+    - inject locally fireworks
+
+  logVote:
+    - define db '<yaml[PerkPoints_config].read[config.MySQL.database]>'
+    - define tableName '<yaml[PerkPoints_config].read[config.MySQL.tables.VoteLogs]>'
+    - define server '<yaml[PerkPoints_config].read[config.General.ServerName]>'
+    - define statement "INSERT INTO %tableName% (playeruuid, service, server, points) VALUES ('%uuid%', '%service%', '%server%', '%pointValue%');"
+    - inject s@SQLManager_Offline p:managedUpdateStatement
+    - queue stop
+
+  listServicesSeen:
+    - define db '<yaml[PerkPoints_config].read[config.MySQL.database]>'
+    - define tableName '<yaml[PerkPoints_config].read[config.MySQL.tables.VoteLogs]>'
+    - define msgsHeaderTitle 'Known Services'
+    - inject locally msgsHeader instantly
+    - if <proc[SQLManager_ConnectionCheck].context[%db%]> {
+      - sql id:%db% "query:SELECT DISTINCT service FROM %tableName%;" save:services
+      - define services '<entry[services].result||null>'
+      - if <def[services].is[==].to[null]>
+        || <def[services].is_empty> {
+        - narrate "<&5>|<&sp><&c>No services have been seen yet!"
+        }
+        else {
+        - foreach %services% {
+          - define service '<def[value].replace[/]>'
+          - narrate "<&5>|<&sp><&f>%loop_index%<&co> <def[service].replace[-].with[.].unescaped>"
+          }
+        }
+      }
+      else {
+      - narrate "<&5>|<&sp><&c>SQL Database is offline!"
+      }
+    - inject locally msgsFooter instantly
+    - queue stop
+
+  listServicesRegistered:
+    - define services '<yaml[PerkPoints_config].list_keys[config.Services].exclude[example|ExampleService]||null>'
+    - define msgsHeaderTitle 'Registered Services'
+    - inject locally msgsHeader instantly
+    - inject locally msgsServiceListHeader instantly
+    - if <def[services].is[==].to[null]>
+      || <def[services].is_empty> {
+      - narrate "<&5>|<&sp><&c>No services have been registered yet!"
+      }
+      else {
+      - define points '<yaml[PerkPoints_config].read[config.General.Points]||Points>'
+      - foreach %services% {
+        - define service %value%
+        - define point '<yaml[PerkPoints_config].read[config.Services.%service%.points]||null>'
+        - define url '<yaml[PerkPoints_config].read[config.Services.%service%.url]||<&c>URL Not Listed!>'
+        - narrate "<&5>|<&sp><&7>%loop_index%. <&e><def[service].replace[-].with[.].unescaped><&co> <&f>%point% %points%"
+        - narrate "<&5>|<&sp><&sp><&sp><&sp><&sp><&9><&n><def[url].unescaped>"
+        - narrate "<&5>|"
+        }
+      }
+    - inject locally msgsFooter instantly
+    - queue stop
+
+  registerService:
+    - define service '<c.args.get[3].replace[.].with[-].escaped||null>'
+    - define pointValue '<c.args.get[4].escaped||null>'
+    - define url '<c.args.get[5].escaped||null>'
+    - if <def[pointValue].is[==].to[null]> {
+      - narrate format:CmdSynFormat "/perkadmin service register \<&lt\>service\<&gt\> \<&lt\>pointValue\<&gt\> \<&lt\>url\<&gt\>"
+      - queue stop
+      }
+    - if <def[pointValue]> !matches integer
+      || <def[pointValue].is[OR_LESS].than[0]> {
+      - narrate "<&b>PerkPoints<&co> <&c>Tried setting invalid pointValue. Setting sane default 5"
+      - define pointValue '5'
+      }
+    - yaml 'write:config.Services.<def[service]>.name' 'value:%service%' 'id:PerkPoints_config'
+    - yaml 'write:config.Services.<def[service]>.points' 'value:%pointValue%' 'id:PerkPoints_config'
+    - yaml 'write:config.Services.<def[service]>.url' 'value:%url%' 'id:PerkPoints_config'
+    - yaml 'savefile:PerkPoints/config.yml' 'id:PerkPoints_config'
+    - narrate "<&b>PerkPoints<&co> <&a>Registed <&b><def[service].replace[-].with[.].unescaped><&a> to give <&b>%pointValue%<&a> <yaml[PerkPoints_config].read[config.General.Points]||Points>."
+    - queue stop
+
+
+  unRegisterService:
+    - define service '<c.args.get[3].replace[.].with[-].escaped||null>'
+    - if <def[service].is[==].to[null]> {
+      - narrate format:CmdSynFormat "/perkadmin service unregister \<&lt\>service\<&gt\>"
+      - queue stop
+      }
+    - define serviceList <yaml[PerkPoints_config].list_keys[config.Services]>
+    - if !<def[serviceList].contains[%service%]> {
+      - narrate "<&b>PerkPoints<&co> <&b><def[service]><&a> is not a registered service"
+      - queue stop
+      }
+    - yaml set config.Services.<def[service]>:! 'id:PerkPoints_config'
+    - yaml 'savefile:PerkPoints/config.yml' 'id:PerkPoints_config'
+    - narrate "<&b>PerkPoints<&co> <&a>Unregisted <&b><def[service].replace[-].with[.].unescaped><&a>. Players will now get the default reward of <&b><yaml[PerkPoints_config].read[config.General.VoteReward]||5> <&a><yaml[PerkPoints_config].read[config.General.Points]||Points>"
+    - queue stop
+
+
+
+################################################################################
+#
+# Packages
+#
+
+  packUserCommandHelper:
+    - inject locally loadYaml
+    - define arg2 '<c.args.get[2].escaped||null>'
+    - if <def[arg2].is[==].to[list]> {
+      - define page '<c.args.get[3].abs.as_int||null>'
+      - inject listPackagesPaged locally
+      - queue stop
+      }
+    - if <def[arg2].is[==].to[buy]> {
+      - inject buyPackage locally
+      - queue stop
+      }
+    - if <def[arg2].is[==].to[info]> {
+      - inject infoPackage locally
+      - queue stop
+      }
+    - if <def[arg2].is[==].to[activate]> {
+      - inject activatePackageCommand locally
+      - queue stop
+      }
+    - define msgsHeaderTitle 'Perk Pack Help'
+    - inject locally msgsHeader instantly
+    - inject locally msgsPackUserCommandHelp
+    - inject locally msgsFooter instantly
+
+  packAdminCommandHelper:
+    - inject locally loadYaml
+    - define arg2 '<c.args.get[2].escaped||null>'
+    - if <def[arg2].is[==].to[create]>
+      || <def[arg2].is[==].to[-c]> {
+      - inject createPackage locally
+      - queue stop
+      }
+    - if <def[arg2].is[==].to[copy]>
+      || <def[arg2].is[==].to[-cp]> {
+      - inject copyPackage locally
+      - queue stop
+      }
+    - if <def[arg2].is[==].to[list]>
+      || <def[arg2].is[==].to[-l]> {
+      - define page '<c.args.get[3].abs.as_int||null>'
+      - inject listPackagesPaged locally
+      - queue stop
+      }
+    - if <def[arg2].is[==].to[edit]>
+      || <def[arg2].is[==].to[-e]> {
+      - inject editPackage locally
+      - queue stop
+      }
+    - if <def[arg2].is[==].to[del]>
+      || <def[arg2].is[==].to[-d]> {
+      - inject delPackage locally
+      - queue stop
+      }
+    - if <def[arg2].is[==].to[info]>
+      || <def[arg2].is[==].to[-i]> {
+      - inject infoPackage locally
+      - queue stop
+      }
+    - define msgsHeaderTitle 'Perk Pack Admin Help'
+    - inject locally msgsHeader instantly
+    - inject locally msgsPackAdminCommandHelp
+    - inject locally msgsFooter instantly
+
+  createPackage:
+  # BUG: Messages duplicate if sent from console. I'm not very concerned though.
+    - define pack '<c.args.get[3].replace[.].with[-].escaped||null>'
+    - define file 'packages'
+    - define node 'ExamplePackage'
+    - if <def[pack].is[==].to[null]> {
+      - narrate "<&b>PerkPoints<&co> <&c>You must specify a package name!"
+      - announce "<&b>PerkPoints<&co> <&c>You must specify a package name!" to_console
+      - narrate format:CmdSynFormat "/perkadmin pack create \<&lt\>PackageName\<&gt\>"
+      - queue stop
+      }
+    - define packList '<yaml[PerkPoints_packages].list_keys[packages]||null>'
+    - if <def[packList].contains_case_sensitive[%pack%]> {
+      - narrate "<&b>PerkPoints<&co> <&c>Package <&b>%pack%<&c> already exists!"
+      - announce "<&b>PerkPoints<&co> <&c>Package <&b>%pack%<&c> already exists!" to_console
+      - queue stop
+      }
+      else {
+      - narrate "<&b>PerkPoints<&co> <&3>Creating <&b>%pack%<&3> Package..."
+      - announce "<&b>PerkPoints<&co> <&3>Creating <&b>%pack%<&3> Package..." to_console
+      - define readID 'PerkPoints_Configurations'
+      - define writeID 'PerkPoints_packages'
+      - define readPath '%readID%.%file%.%node%'
+      - define writePath 'packages.%pack%'
+      - if !<yaml.list.contains[%readID%]> yaml 'load:<script.relative_filename>' 'id:%readID%'
+      - run s@ConfigFileGenerator def:%readID%|%writeID%|%readPath%|%writePath%|false|false|false instantly
+      - yaml unload 'id:%readID%'
+      - yaml 'savefile:PerkPoints/packages.yml' 'id:%writeID%'
+      - narrate "<&b>PerkPoints<&co> <&a>Created <&b>%pack%<&a> package!"
+      - announce "<&b>PerkPoints<&co> <&a>Created <&b>%pack%<&a> package!" to_console
+      }
+
+  copyPackage:
+  # BUG: Messages duplicate if sent from console. I'm not very concerned though.
+    - define newPack '<c.args.get[3].replace[.].with[-].escaped||null>'
+    - define copyPack '<c.args.get[4].replace[.].with[-].escaped||null>'
+    - if <def[newPack].is[==].to[null]> {
+      - narrate "<&b>PerkPoints<&co> <&c>You must specify a new package name!"
+      - announce "<&b>PerkPoints<&co> <&c>You must specify a new package name!" to_console
+      - narrate format:CmdSynFormat "/perkadmin pack copy \<&lt\>NewPackageName\<&gt\> \<&lt\>CopyPackageName\<&gt\>"
+      - queue stop
+      }
+    - if <def[copyPack].is[==].to[null]> {
+      - narrate "<&b>PerkPoints<&co> <&c>You must specify an existing package name to copy!"
+      - announce "<&b>PerkPoints<&co> <&c>You must specify an existing package name to copy!" to_console
+      - narrate format:CmdSynFormat "/perkadmin pack copy %newPack% \<&lt\>CopyPackageName\<&gt\>"
+      - queue stop
+      }
+    - define packList '<yaml[PerkPoints_packages].list_keys[packages]||null>'
+    - if <def[packList].contains_case_sensitive[%newPack%]> {
+      - narrate "<&b>PerkPoints<&co> <&c>Package <&b>%newPack%<&c> already exists!"
+      - announce "<&b>PerkPoints<&co> <&c>Package <&b>%newPack%<&c> already exists!" to_console
+      - queue stop
+      }
+    - if !<def[packList].contains_case_sensitive[%copyPack%]> {
+      - narrate "<&b>PerkPoints<&co> <&c>Package <&b>%copyPack%<&c> does not exist!"
+      - announce "<&b>PerkPoints<&co> <&c>Package <&b>%copyPack%<&c> does not exist!" to_console
+      - queue stop
+      }
+      else {
+      - narrate "<&b>PerkPoints<&co> <&3>Copying <&b>%copyPack%<&3> package..."
+      - announce "<&b>PerkPoints<&co> <&3>Copying <&b>%copyPack%<&3> package..." to_console
+      - define readID 'PerkPoints_packages'
+      - define writeID 'PerkPoints_packages'
+      - define readPath 'packages.%copyPack%'
+      - define writePath 'packages.%newPack%'
+      - run s@ConfigFileGenerator def:%readID%|%writeID%|%readPath%|%writePath%|false|false|false instantly
+      - yaml 'savefile:PerkPoints/packages.yml' 'id:%writeID%'
+      - narrate "<&b>PerkPoints<&co> <&b>Created %newPack%<&a> package!"
+      - announce "<&b>PerkPoints<&co> <&b>Created %newPack%<&a> package!" to_console
+      }
+
+
+  delPackage:
+    - define pack '<c.args.get[3].replace[.].with[-].escaped||null>'
+    - if <def[pack].is[==].to[null]> {
+      - narrate "<&b>PerkPoints<&co> <&c>You must specify a package name!"
+      - announce "<&b>PerkPoints<&co> <&c>You must specify a package name!" to_console
+      - narrate format:CmdSynFormat "/perkadmin pack del \<&lt\>PackageName\<&gt\>"
+      - queue stop
+      }
+    - define packList '<yaml[PerkPoints_packages].list_keys[packages].exclude[ExamplePackage]||null>'
+    - if !<def[packList].contains_case_sensitive[%pack%]> {
+      - narrate "<&b>PerkPoints<&co> <&c>Package <&b>%pack%<&c> does not exist!"
+      - announce "<&b>PerkPoints<&co> <&c>Package <&b>%pack%<&c> does not exist!" to_console
+      - queue stop
+      }
+      else {
+      - narrate "<&b>PerkPoints<&co> <&5>Deleting <&d>%pack%<&5> Package..."
+      - announce "<&b>PerkPoints<&co> <&5>Deleting <&d>%pack%<&5> Package..." to_console
+      - define writeID 'PerkPoints_packages'
+      - define writePath 'packages'
+      - yaml set %writePath%.%pack%:! 'id:%writeID%'
+      - yaml 'savefile:PerkPoints/packages.yml' 'id:%writeID%'
+      - narrate "<&b>PerkPoints<&co> <&4>Deleted <&c>%pack%<&4> Package!"
+      - announce "<&b>PerkPoints<&co> <&4>Deleted <&c>%pack%<&4> Package!" to_console
+      }
+
+
+  editPackage:
+  # This references the ExamplePackage in this script NOT the one in the
+  # packages.yml file! We do this so the end user doesn't bork things (i hope).
+    - define readID 'PerkPoints_Configurations'
+    - define readPath 'PerkPoints_Configurations.packages.ExamplePackage'
+    - define writeID 'PerkPoints_packages'
+    - if <yaml.list.contains[%readID%]> yaml unload 'id:%readID%'
+    - yaml 'load:<script.relative_filename>' 'id:%readID%'
+
+    # We need to check if the package exists
+    - define pack '<c.args.get[3].replace[.].with[-].escaped||null>'
+    - define syntax '/perkadmin pack edit \<&lt\>PackageName\<&gt\> \<&lt\>Option\<&gt\> \<&lt\>SubOption\<&gt\> \<&lt\>value\<&gt\>'
+    - inject locally packageExists
+
+    # Let's check the option the user wants to edit...
+    - define option '<c.args.get[4].replace[.].with[-].escaped||null>'
+    - define optionsList '<yaml[%readID%].list_keys[%readPath%]>'
+    - if !<def[optionsList].contains_case_sensitive[%option%]> {
+      - narrate "<&b>PerkPoints<&co> <&a>Available Options"
+      - narrate "<&b>PerkPoints<&co> <&f><def[optionsList].comma_separated>"
+      - narrate format:CmdSynFormat "/perkadmin pack edit %pack% \<&lt\>Option\<&gt\> \<&lt\>SubOption\<&gt\> \<&lt\>value\<&gt\>"
+      - queue stop
+      }
+    # Ok, that option exists, we'll define some data since we know it
+    - define readPath '%readPath%.%option%'
+    - define writePath '%writePath%.%option%'
+    - define value '<c.args.get[5].replace[.].with[-].escaped||null>'
+
+    # Let's check if that option has sub-options. If it does, do sanity check
+    # and define known data
+    - define subOptionsList '<yaml[%readID%].list_keys[%readPath%]||null>'
+    - if !<def[subOptionsList].is_empty>
+      && !<def[subOptionsList].is[==].to[null]> {
+      - define subOption '<c.args.get[5].replace[.].with[-].escaped||null>'
+      - if !<def[subOptionsList].contains_case_sensitive[%subOption%]> {
+        - narrate "<&b>PerkPoints<&co> <&a>Available Sub Options"
+        - narrate "<&b>PerkPoints<&co> <&f><def[subOptionsList].comma_separated>"
+        - narrate format:CmdSynFormat "/perkadmin pack edit %pack% %option% \<&lt\>SubOption\<&gt\> \<&lt\>value\<&gt\>"
+        - queue stop
+        }
+        else {
+        - define readPath '%readPath%.%subOption%'
+        - define writePath '%writePath%.%subOption%'
+        - define value '<c.args.get[6].replace[.].with[-].escaped||null>'
+        }
+      }
+
+    # By now we should have a %readPath%, %writePath% and a %value%. Let's check
+    - if <el@[null].is[==].to[%value%]> {
+      - narrate "<&b>PerkPoints<&co> <&c>You must specify a value!"
+      - narrate format:CmdSynFormat "/perkadmin pack edit %pack% <tern[<def[subOption].exists>]:%option% <def[subOption]||null> || %option%> \<&lt\>value\<&gt\>"
+      - queue stop
+      }
+    - if !<yaml[%readID%].contains[%readPath%]> {
+      - narrate "<&b>PerkPoints<&co> <&c>%readPath% does not exist!"
+      - queue stop
+      }
+
+    # Let's check if the user supplied the correct type for this option
+    - define ComparedToValue '<yaml[<def[readID]>].read[%readPath%]>'
+    - define TypeMatch '<proc[TypeMatch].context[%value%|%ComparedToValue%]>'
+    - if !<def[TypeMatch].get[1]> {
+      - narrate "<&b>PerkPoints<&co> <&c><def[readPath].split[.].last> option must be a <def[TypeMatch].get[3]> value!"
+      - queue stop
+      }
+
+    # Everything seems good, let's see if we're working with a list item or a
+    # single value and then make the edit
+    # If we're working with a list, we need to know if we're adding or removing
+    - if <yaml[%readID%].is_list[%readPath%]> {
+      - if <yaml[%writeID%].read[%writePath%].contains[%value%]> {
+        - yaml set %writePath%:<-:%value% 'id:%writeID%'
+        - narrate "<&b>PerkPoints<&co> <&b>Removed <&a>'<tern[<def[subOption].exists>]:%option% <def[subOption]||null> || %option%>'<&b> entry from <&a>%pack%<&a> package!"
+        }
+        else {
+        - yaml set %writePath%:->:%value% 'id:%writeID%'
+        - narrate "<&b>PerkPoints<&co> <&b>Added <&a>'<tern[<def[subOption].exists>]:%option% <def[subOption]||null> || %option%>'<&b> entry to <&a>%pack%<&a> package!"
+        }
+      }
+      else {
+      - yaml 'write:%writePath%' 'value:%value%' 'id:%writeID%'
+      - narrate "<&b>PerkPoints<&co> <&b>Set <&a>'<tern[<def[subOption].exists>]:%option% <def[subOption]||null> || %option%>'<&b> value for <&a>%pack%<&a> package!"
+      }
+    - if <yaml.list.contains[%readID%]> yaml unload 'id:%readID%'
+    - yaml 'savefile:PerkPoints/packages.yml' 'id:%writeID%'
+    - queue stop
+
+
+  packageExists:
+    # Did the user type in a package name?
+    - if <def[pack].is[==].to[null]> {
+      - narrate "<&b>PerkPoints<&co> <&c>You must specify a package name!"
+      - narrate format:CmdSynFormat "%syntax%"
+      - queue stop
+      }
+    - define syntax:!
+    - define writePath 'packages.%pack%'
+
+    # Does that package exist?
+    - define packList '<yaml[%writeID%].list_keys[packages].exclude[ExamplePackage]||null>'
+    - if !<def[packList].contains_case_sensitive[%pack%]> {
+      - narrate "<&b>PerkPoints<&co> <&c>Package <&b>%pack%<&c> does not exist!"
+      - queue stop
+      }
+
+
+  listPackages:
+  # Don't really need this anymore since listPackagesPaged works
+    - define msgsHeaderTitle 'Perk Packages List'
+    - inject locally msgsHeader instantly
+    - inject locally msgsPackageListHeader instantly
+    - define packList '<yaml[PerkPoints_packages].list_keys[packages].exclude[ExamplePackage]||null>'
+    - if <def[packList].is[==].to[null]>
+      || <def[packList].is_empty> {
+      - narrate "<&5>|<&sp><&f>No Perk Packs have been created yet!"
+      }
+      else {
+      - if <player.has_permission[perkpoints.admin]> {
+        - foreach %packList% {
+          - define pack %value%
+          - define desc '<yaml[PerkPoints_packages].read[packages.%pack%.description]||Description not available!>'
+          - define active '<yaml[PerkPoints_packages].read[packages.%pack%.active]||false>'
+          - if <def[active].is[!=].to[true]> {
+            - define pack "<&c><&m>%pack%<&e>"
+            }
+          - narrate "<&5>|<&sp><&f>%loop_index%. <&e>%pack%<&co> <&7><def[desc].replace[-].with[.].unescaped>"
+          - narrate "<&5>|"
+          }
+        }
+        else {
+        - foreach %packList% {
+          - define pack %value%
+          - define active '<yaml[PerkPoints_packages].read[packages.%pack%.active]||false>'
+          - if <def[active].is[!=].to[true]> foreach next
+          - define pass true
+          - define desc '<yaml[PerkPoints_packages].read[packages.%pack%.description]||Description not available!>'
+          - narrate "<&5>|<&sp><&f>%loop_index%. <&e>%pack%<&co> <&7><def[desc].unescaped.replace[-].with[.]>"
+          - narrate "<&5>|"
+          }
+        - if !<def[pass].exists> {
+          - narrate "<&5>|<&sp><&f>No Perk Packs have been created yet!"
+          }
+        }
+      }
+    - inject locally msgsFooter instantly
+
+
+  listPackagesPaged:
+  # This is an experimental paginated pack list
+    - if !<def[page].is[MATCHES].to[number]> {
+      - define page '1'
+      }
+    - define packList '<yaml[PerkPoints_packages].list_keys[packages].exclude[ExamplePackage]||null>'
+
+    - if <player.has_permission[perkpoints.admin]> {
+      - define pages '<def[packList].size.div[5].round_up>'
+      - if <def[page].is[MORE].than[%pages%]> {
+        - define page '%pages%'
+        }
+      - define msgsHeaderTitle 'Perk Packs List - Pg %page% of %pages%'
+      - inject locally msgsHeader instantly
+      - inject locally msgsPackageListHeader instantly
+      - if <def[packList].is[==].to[null]>
+        || <def[packList].is_empty> {
+        - narrate "<&5>|<&sp><&f>No Perk Packs have been created yet!"
+        }
+        else {
+        - define points '<yaml[PerkPoints_config].read[config.General.Points]||Points>'
+        - define highNumber '<def[page].mul[5].as_int>'
+        - define lowNumber '<def[highNumber].sub[4].as_int>'
+        - foreach <def[packList].get[%lowNumber%].to[%highNumber%]> {
+          - define pack %value%
+          - define desc '<yaml[PerkPoints_packages].read[packages.%pack%.description]||Description not available!>'
+          - define price '<yaml[PerkPoints_packages].read[packages.%pack%.price]||null>'
+          - define active '<yaml[PerkPoints_packages].read[packages.%pack%.active]||false>'
+          - if <def[active].is[!=].to[true]> {
+            - define pack "<&c><&m>%pack%<&e>"
+            }
+          - narrate "<&5>|<&sp><&f><def[lowNumber].add[<def[loop_index].sub[1]>].as_int>. <&e>%pack%<&co> <&6>%price% %points%"
+          - narrate "<&5>|<&sp><&sp><&sp><&sp><&f>-<&sp><&7><def[desc].replace[-].with[.].unescaped>"
+          }
+        - define footerText '<&f><&sp><&sp>Page<&co> <&b>%page%<&f>/<&9>%pages%'
+        - narrate "<&5>|"
+        }
+      }
+      else if !<player.has_permission[perkpoints.admin]> {
+      - foreach %packList% {
+        - if <yaml[PerkPoints_packages].read[packages.%value%.active].is[!=].to[true]> {
+          - define packlist '<def[packlist].exclude[%value%]>'
+          }
+        }
+      - define pages '<def[packList].size.div[5].round_up>'
+      - if <def[page].is[MORE].than[%pages%]> {
+        - define page '%pages%'
+        }
+      - define msgsHeaderTitle 'Perk Packs List - Pg %page% of %pages%'
+      - inject locally msgsHeader instantly
+      - inject locally msgsPackageListHeader instantly
+      - if <def[packList].is[==].to[null]>
+        || <def[packList].is_empty> {
+        - narrate "<&5>|<&sp><&f>No Perk Packs have been created yet!"
+        }
+        else {
+        - define points '<yaml[PerkPoints_config].read[config.General.Points]||Points>'
+        - define highNumber '<def[page].mul[5].as_int>'
+        - define lowNumber '<def[highNumber].sub[4].as_int>'
+        - foreach <def[packList].get[%lowNumber%].to[%highNumber%]> {
+          - define pack %value%
+          - define desc '<yaml[PerkPoints_packages].read[packages.%pack%.description]||Description not available!>'
+          - define price '<yaml[PerkPoints_packages].read[packages.%pack%.price]||null>'
+          - narrate "<&5>|<&sp><&f><def[lowNumber].add[<def[loop_index].sub[1]>].as_int>. <&e>%pack%<&co> <&6>%price% %points%"
+          - narrate "<&5>|<&sp><&sp><&sp><&sp><&f>-<&sp><&7><def[desc].replace[-].with[.].unescaped>"
+          }
+        - define footerText '<&f><&sp><&sp>Page<&co> <&b>%page%<&f>/<&9>%pages%'
+        - narrate "<&5>|"
+        }
+      }
+    - inject locally msgsFooter instantly
+
+
+  infoPackage:
+  # Maybe add a permissions and requirements check so players only see what they
+  # are able to get.
+    # We need to check if the package exists
+    - define writeID 'PerkPoints_packages'
+    - define pack '<c.args.get[3].replace[.].with[-].escaped||null>'
+    - define syntax '/perk pack info \<&lt\>PackageName\<&gt\>'
+    - inject locally packageExists
+    - define msgsHeaderTitle '%pack% Info'
+    - inject locally msgsHeader instantly
+    - define optionsList '<yaml[%writeID%].list_keys[%writePath%]||null>'
+    - if <def[optionsList].is[==].to[null]>
+      || <def[optionsList].is_empty> {
+      - narrate "<&5>|<&sp><&c>This package is misconfigured!"
+      - inject locally msgsFooter instantly
+      - queue stop
+      }
+    - foreach %optionsList% {
+      - define option %value%
+      - define subOptionsList '<yaml[%writeID%].list_keys[%writePath%.%option%]||null>'
+      - if !<def[subOptionsList].is_empty>
+        && !<def[subOptionsList].is[==].to[null]> {
+        - narrate "<&5>|<&sp><&sp><&f>%option%<&co>"
+        - foreach %subOptionsList% {
+          - define subOption '%value%'
+          - if <yaml[%writeID%].is_list[%writePath%.%option%.%subOption%]> {
+            - narrate "<&5>|<&sp><&sp><&sp><&f>%subOption%<&co>"
+            - define subOptionValues '<yaml[%writeID%].read[%writePath%.%option%.%subOption%]>'
+            - foreach %subOptionValues% {
+              - narrate "<&5>|<&sp><&sp><&sp><&sp><&f>- <&7><def[value].unescaped.replace[-].with[.]>"
+              }
+            }
+            else {
+            - define subOptionValue '<yaml[%writeID%].read[%writePath%.%option%.%subOption%]>'
+            - narrate "<&5>|<&sp><&sp><&sp><&f>%subOption%<&co> <&7><def[subOptionValue].unescaped.replace[-].with[.]>"
+            }
+          }
+        }
+        else {
+        - if <yaml[%writeID%].is_list[%writePath%.%option%]> {
+          - define optionValues '<yaml[%writeID%].read[%writePath%.%option%]>'
+          - narrate "<&5>|<&sp><&sp><&f>%option%<&co>"
+          - foreach %optionValues% {
+            - narrate "<&5>|<&sp><&sp><&sp><&f>- <&7><def[value].unescaped.replace[-].with[.]>"
+            }
+          }
+          else {
+          - define optionValue '<yaml[%writeID%].read[%writePath%.%option%]>'
+          - narrate "<&5>|<&sp><&sp><&f>%option%<&co> <&7><def[optionValue].unescaped.replace[-].with[.]>"
+          }
+        }
+      }
+    - inject locally msgsFooter instantly
+    - queue stop
+
+
+  checkPackageRequirements:
+    - define active '<yaml[%writeID%].read[%writePath%.active]||null>'
+    - define price '<yaml[%writeID%].read[%writePath%.price]||null>'
+    - define limit '<yaml[%writeID%].read[%writePath%.limit]||null>'
+    - define concurrentLimit '<yaml[%writeID%].read[%writePath%.concurrentLimit]||null>'
+    - define requirePermissions '<yaml[%writeID%].read[%writePath%.requirePermissions]||null>'
+    - define prerequisites '<yaml[%writeID%].read[%writePath%.prerequisites]||null>'
+    - define requiredInventorySpace '<yaml[%writeID%].read[%writePath%.requiredInventorySpace]||null>'
+    - if !<def[active]>
+      || <def[active].is[==].to[null]> {
+      - define fail 'true'
+      - narrate "<&5>|<&sp> <&c>%pack% is disabled!"
+      - announce "<&b>PerkPoints<&co> <&c>%pack% is disabled!" to_console
+      }
+    - if <def[price].is[==].to[null]> {
+      - define fail 'true'
+      - narrate "<&5>|<&sp> <&c>%pack% price is misconfigured!"
+      - announce "<&b>PerkPoints<&co> <&c>%pack% price is misconfigured!" to_console
+      }
+      else {
+      - if <def[price].is[MORE].than[%pointsBalance%]> {
+        - define fail 'true'
+        - define points '<yaml[PerkPoints_config].read[config.General.Points]||Points>'
+        - narrate "<&5>|<&sp> <&c>You don<&sq>t have %price% %points% for %pack%!"
+        }
+      }
+    - if <def[limit].is[==].to[null]> {
+      - define fail 'true'
+      - narrate "<&5>|<&sp> <&c>%pack% limit is misconfigured!"
+      - announce "<&b>PerkPoints<&co> <&c>%pack% limit is misconfigured!" to_console
+      }
+      else {
+      - if <def[limit].is[MORE].than[0]> {
+        - sql id:%db% "query:SELECT COUNT(*) FROM %transactionTable% WHERE playeruuid='%uuid%' AND package='%pack%' AND servers='%serverName%';" save:purchased
+        - define purchased '<entry[purchased].result.get[1].split[/].get[1]||null>'
+        - if <def[purchased].is[OR_MORE].than[%limit%]> {
+          - define fail 'true'
+          - narrate "<&5>|<&sp> <&c>You have already purchased this Perk Package %limit% times!"
+          }
+        }
+      }
+    - if <def[concurrentLimit].is[==].to[null]> {
+      - define fail 'true'
+      - narrate "<&5>|<&sp> <&c>%pack% concurrentLimit is misconfigured!"
+      - announce "<&b>PerkPoints<&co> <&c>%pack% concurrentLimit is misconfigured!" to_console
+      }
+      else {
+      - if <def[concurrentLimit].is[MORE].than[0]> {
+        - sql id:%db% "query:SELECT COUNT(*) FROM %transactionTable% WHERE playeruuid='%uuid%' AND package='%pack%' AND servers='%serverName%' AND expires='1' AND expired='0';" save:purchased
+        - define purchased '<entry[purchased].result.get[1].split[/].get[1]||null>'
+        - if <def[purchased].is[OR_MORE].than[%concurrentLimit%]> {
+          - define fail 'true'
+          - narrate "<&5>|<&sp> <&c>You can only have %concurrentLimit% %pack% packages active at once!"
+          }
+        }
+      }
+    - if <def[prerequisites].is[==].to[null]> {
+      - define fail 'true'
+      - narrate "<&5>|<&sp> <&c>%pack% prerequisites is misconfigured!"
+      - announce "<&b>PerkPoints<&co> <&c>%pack% prerequisites is misconfigured!" to_console
+      }
+      else {
+      - if !<def[prerequisites].is_empty> {
+        - sql id:%db% "query:SELECT COUNT(DISTINCT package) FROM %transactionTable% WHERE package IN (<&sq><def[prerequisites].comma_separated.replace[, ].with[<&sq>, <&sq>]><&sq>) AND servers='%serverName%';" save:purchased
+        - define purchased '<entry[purchased].result.get[1].split[/].get[1]||null>'
+        - if <def[prerequisites].size.is[MORE].than[%purchased%]> {
+          - define fail 'true'
+          - narrate "<&5>|<&sp> <&c>You do not have all of the prerequisite packages!"
+          }
+        }
+      }
+    - if <def[requirePermissions].is[==].to[null]> {
+      - define fail 'true'
+      - narrate "<&5>|<&sp> <&c>%pack% requirePermissions is misconfigured!"
+      - announce "<&b>PerkPoints<&co> <&c>%pack% requirePermissions is misconfigured!" to_console
+      }
+      else {
+      - if !<def[requirePermissions].is_empty> {
+        - foreach %requirePermissions% {
+          - if !<player.has_permission[%value%].global> {
+            - define fail 'true'
+            - narrate "<&5>|<&sp> <&c>You do not have all of the required permissions!"
+            - foreach stop
+            }
+          }
+        }
+      }
+    - if <def[requiredInventorySpace].is[==].to[null]> {
+      - define fail 'true'
+      - narrate "<&5>|<&sp> <&c>%pack% requiredInventorySpace is misconfigured!"
+      - announce "<&b>PerkPoints<&co> <&c>%pack% requiredInventorySpace is misconfigured!" to_console
+      }
+      else {
+      - define inventorySpace '<player.inventory.size.sub[<player.inventory.list_contents.exclude[i@air].size>].as_int>'
+      - if <def[requiredInventorySpace].is[MORE].than[%inventorySpace%]> {
+        - define fail 'true'
+        - narrate "<&5>|<&sp> <&c>You need at least %inventorySpace% empty inventory slots!"
+        }
+      }
+
+
+  buyPackage:
+    # Let's make sure the player typed in a valid package name
+    - define writeID 'PerkPoints_packages'
+    - define pack '<c.args.get[3].replace[.].with[-].escaped||null>'
+    - define syntax '/perk pack buy \<&lt\>PackageName\<&gt\>'
+    - inject locally packageExists
+    # Setup some SQL info, check the connection, and then get the player record
+    - define uuid '<player.uuid||null>'
+    - define db '<yaml[PerkPoints_config].read[config.MySQL.database]>'
+    - define serverName '<yaml[PerkPoints_config].read[config.General.ServerName]||Minecraft Server>'
+    - define tableName '<yaml[PerkPoints_config].read[config.MySQL.tables.PerkPoints]>'
+    - define transactionTable '<yaml[PerkPoints_config].read[config.MySQL.tables.Transactions]>'
+    - inject locally checkPlayerRecord
+    - inject locally getPlayerPointRecord
+    # Player is valid and we have their record now check package requirements
+    - define msgsHeaderTitle 'Buy %pack%'
+    - inject locally msgsHeader instantly
+    - inject locally checkPackageRequirements
+    # Terminate if the player doesn't meet any of the requirements
+    - if <def[fail].exists> {
+      - narrate "<&5>|"
+      - narrate "<&5>|<&sp> <&c>Failed to purchase %pack%!"
+      - inject locally msgsFooter instantly
+      - queue stop
+      }
+    # Ok so all checks have passed we can move on to actually buy the package.
+    # Spend the points
+    - define action spend
+    - define pointValue '%price%'
+    - inject locally editPoints
+    # Log the transaction to sql
+    - define activated '0'
+    - define expired '0'
+    - define expires '<tern[<yaml[%writeID%].read[%writePath%.expires]||false>]:1 || 0>'
+    - define global '<tern[<yaml[%writeID%].read[%writePath%.global]||false>]:1 || 0>'
+    - define statement "INSERT INTO %transactionTable% (playeruuid, package, price, activated, expires, expired, servers, global) VALUES ('%uuid%', '%pack%', '%pointValue%', '%activated%', '%expires%', '%expired%', '%serverName%', '%global%');"
+    - inject s@SQLManager_Offline p:managedUpdateStatement
+    # Determine if we need to activate the package now or later
+    - define activateImmediately '<yaml[%writeID%].read[%writePath%.activateImmediately]||true>'
+    - if <def[activateImmediately].is[==].to[true]> {
+      - narrate "<&5>|"
+      - narrate "<&5>|<&sp> <&3>Activating %pack%..."
+      - narrate "<&5>|"
+      - narrate "<&5>|<&sp> <&f>Thank you for showing your support!"
+      - inject locally msgsFooter instantly
+      - inject locally activatePackage
+      }
+      else {
+      - narrate "<&5>|"
+      - narrate "<&5>|<&sp> <&a>You have purchased %pack%!"
+      - narrate "<&5>|"
+      - narrate "<&5>|<&sp> <&f>Activate this perk when you are ready with<&co>"
+      - narrate "<&5>|<&sp><&sp><&sp><&f>- <&e>/perk pack activate %pack%"
+      - inject locally msgsFooter instantly
+      }
+
+
+  activatePackageCommand:
+    - define writeID 'PerkPoints_packages'
+    - define pack '<c.args.get[3].replace[.].with[-].escaped||null>'
+    - define syntax '/perk pack activate \<&lt\>PackageName\<&gt\>'
+    - inject locally packageExists
+
+    - define uuid '<player.uuid||null>'
+    - define db '<yaml[PerkPoints_config].read[config.MySQL.database]>'
+    - define serverName '<yaml[PerkPoints_config].read[config.General.ServerName]||Minecraft Server>'
+    - define transactionTable '<yaml[PerkPoints_config].read[config.MySQL.tables.Transactions]>'
+
+    - sql id:%db% "query:SELECT * FROM %transactionTable% WHERE playeruuid='%uuid%' AND package='%pack%' AND activated='0' AND servers='%serverName%' ORDER BY date DESC;" save:packList
+    - define packList '<entry[packList].result||null>'
+    - define msgsHeaderTitle 'Activate %pack%'
+    - inject locally msgsHeader instantly
+    - if <def[packList].size.is[==].to[0]> {
+      - narrate "<&5>|"
+      - narrate "<&5>|<&sp> <&c>You have not purchased %pack%!"
+      - inject locally msgsFooter instantly
+      }
+      else if <def[packList].size.is[OR_MORE].than[1]> {
+      - narrate "<&5>|"
+      - narrate "<&5>|<&sp> <&3>Activating %pack%..."
+      - narrate "<&5>|"
+      - narrate "<&5>|<&sp> <&f>Thank you for showing your support!"
+      - define id "<def[packList].get[1].split[/].get[1]>"
+      - define yamlName 'PerkPoints'
+      - define scriptName '<script.name>'
+      - inject locally msgsFooter instantly
+      - inject locally activatePackage
+      }
+      else {
+      - narrate "<&5>|"
+      - narrate "<&5>|<&sp> <&c>Something went horibly wrong!"
+      - narrate "<&5>|"
+      - narrate "<&5>|<&sp> <&6>Notify an admin!"
+      - inject locally msgsFooter instantly
+      - announce "<&b>PerkPoints<&co> <&c>Something wnet wrong while activating %pack% for %uuid%" to_console
+      }
+# Add /this/ back in if/when i want to handle more than one result separately
+# The current method will grab the newest unactivated package for the player.
+#      else if <def[packList].size.is[MORE].than[1]> {
+#      - narrate "<&5>|"
+#      - narrate "<&5>|<&sp> <&c>Something went horibly wrong!"
+#      - narrate "<&5>|"
+#      - narrate "<&5>|<&sp> <&6>Notify an admin!"
+#      - inject locally msgsFooter instantly
+#      - announce "<&b>PerkPoints<&co> <&c>Multiple records found while activating %pack% for %uuid%" to_console
+#      - announce "<&b>PerkPoints<&co> <&c> Let<&sq>s dump out the records..." to_console
+#      - foreach %packList% {
+#        - define columns '<def[value].split[/]>'
+#        - foreach %columns% {
+#          - announce "<&b>PerkPoints<&co> <&f>%value%" to_console
+#          }
+#        }
+#      - queue stop
+#      }
+
+
+  activatePackage:
+    # Check if the player must be online and if he is
+    - define requireOnline '<yaml[%writeID%].read[%writePath%.requireOnline]||true>'
+    - if <def[requireOnline].is[==].to[true]>
+      && !<def[uuid].as_player.is_online> {
+      - announce "<&b>PerkPoints<&co> <&c>Tried to activate %pack% for offline player <def[uuid].as_player.name>!" to_console
+      - queue stop
+      }
+    # Read the package for onActivate entries
+    - define permissionSet '<yaml[%writeID%].read[%writePath%.onActivate.permissionSet]||null>'
+    - define groupAdd '<yaml[%writeID%].read[%writePath%.onActivate.groupAdd]||null>'
+    - define commands '<yaml[%writeID%].read[%writePath%.onActivate.commands]||null>'
+    - define announce '<yaml[%writeID%].read[%writePath%.onActivate.announce]||null>'
+    - define tell '<yaml[%writeID%].read[%writePath%.onActivate.tell]||null>'
+    # Set any permissions
+    - if <def[permissionSet].is[!=].to[null]> {
+      - foreach <def[permissionSet].as_list> {
+        - permission add <parse:<def[value].unescaped.replace[-].with[.]>> player:<def[uuid].as_player>
+        }
+      }
+    # Add to any group
+    - if <def[groupAdd].is[!=].to[null]> {
+      - foreach <def[groupAdd].as_list> {
+        - permission add group:<parse:<def[value].unescaped.replace[-].with[.]>> player:<def[uuid].as_player>
+        }
+      }
+    # Run any console commands
+    - if <def[commands].is[!=].to[null]> {
+      - foreach <def[commands].as_list> {
+        - execute as_server <parse:<def[value].unescaped.replace[-].with[.]>> player:<def[uuid].as_player>
+        }
+      }
+    # Broadcast messages to the whole server
+    - if <def[announce].is[!=].to[null]> {
+      - announce ""
+      - foreach <def[announce].as_list> {
+        - announce "<&b>PerkPoints<&co> <&6><parse:<def[value].unescaped.replace[-].with[.]>>" player:<def[uuid].as_player>
+        }
+      }
+    # Tell the player any messages
+    - if <def[tell].is[!=].to[null]> {
+      - narrate ""
+      - foreach <def[tell].as_list> {
+        - narrate "<&b>PerkPoints<&co> <&b><parse:<def[value].unescaped.replace[-].with[.]>>" player:<def[uuid].as_player>
+        }
+      }
+    # Check if this is an expiring package or not and define sql statement
+    - define expires '<yaml[%writeID%].read[%writePath%.expires]||false>'
+    - if <def[expires]> {
+      - define expireTime '<yaml[%writeID%].read[%writePath%.expireTime]||0>'
+      - define expireDate '<def[expireTime].as_duration.in_milliseconds.as_int.add_int[<server.current_time_millis>]>'
+      - define statement "UPDATE %transactionTable% SET activated = 1, expireDate = %expireDate% WHERE id='%id%';"
+      }
+      else {
+      - define statement "UPDATE %transactionTable% SET activated = 1 WHERE id='%id%';"
+      }
+    - inject s@SQLManager_Offline p:managedUpdateStatement
+
+
+  deactivatePackage:
+    # Check if the player must be online and if he is
+    - define requireOnline '<yaml[%writeID%].read[%writePath%.requireOnline]||true>'
+    - if <def[uuid].as_player.is_online>
+      || <def[requireOnline].is[!=].to[true]> {
+      - define permissionTake '<yaml[%writeID%].read[%writePath%.onExpire.permissionTake]||null>'
+      - define groupRemove '<yaml[%writeID%].read[%writePath%.onExpire.groupRemove]||null>'
+      - define commands '<yaml[%writeID%].read[%writePath%.onExpire.commands]||null>'
+      - define announce '<yaml[%writeID%].read[%writePath%.onExpire.announce]||null>'
+      - define tell '<yaml[%writeID%].read[%writePath%.onExpire.tell]||null>'
+      - if <def[permissionTake].is[!=].to[null]> {
+        - foreach <def[permissionTake].as_list> {
+          - permission remove <parse:<def[value].unescaped.replace[-].with[.]>> player:<def[uuid].as_player>
+          }
+        }
+      - if <def[groupRemove].is[!=].to[null]> {
+        - foreach <def[groupRemove].as_list> {
+          - permission remove group:<parse:<def[value].unescaped.replace[-].with[.]>> player:<def[uuid].as_player>
+          }
+        }
+      - if <def[commands].is[!=].to[null]> {
+        - foreach <def[commands].as_list> {
+          - execute as_server <parse:<def[value].unescaped.replace[-].with[.]>> player:<def[uuid].as_player>
+          }
+        }
+      - if <def[announce].is[!=].to[null]> {
+        - foreach <def[announce].as_list> {
+          - announce "<&b>PerkPoints<&co> <&6><parse:<def[value].unescaped.replace[-].with[.]>>" player:<def[uuid].as_player>
+          }
+        }
+      - if <def[tell].is[!=].to[null]> {
+        - foreach <def[tell].as_list> {
+          - narrate "<&b>PerkPoints<&co> <&b>parse:<def[value].unescaped.replace[-].with[.]>>" player:<def[uuid].as_player>
+          }
+        }
+      - define statement "UPDATE %transactionTable% SET expired = 1 WHERE id='%id%';"
+      - inject s@SQLManager_Offline p:managedUpdateStatement
+      }
+      else {
+      - announce "<&b>PerkPoints<&co> <&c>Tried to deactivate %pack% for offline player <def[uuid].as_player.name>!" to_console
+      }
+
+
+
+################################################################################
+#
+# Messages
+#
+
+  msgsHeader:
+    - ^narrate "<&5>|----------------------------------------|"
+    - ^narrate "<&5>|<&sp><&sp><&sp><&6>Perk Points   <&7>%msgsHeaderTitle%"
+    - ^narrate "<&5>|<&sp><&sp><&sp><&e>MineConomy    <&f>Exclusive"
+    - ^narrate "<&5>|<&f>"
+
+  msgsFooter:
+    - ^narrate "<&5>|<def[footerText]||>"
+    - ^narrate "<&d>|-----------S-c-r-o-l-l---U-p-------------|"
+
+  msgsStats:
+    - narrate "<&5>|<&sp><&f>Player<&co> <&6><def[stats].get[1].as_player.name||null>"
+    - narrate "<&5>|<&sp><&sp><&sp><&7>Account Created<&co> <&3><def[stats].get[2]||null>"
+    - narrate "<&5>|<&sp><&sp><&sp><&7>Total Votes<&co> <&3><def[stats].get[3]||null>"
+    - narrate "<&5>|<&sp><&f><yaml[PerkPoints_config].read[config.General.Points]><&co>"
+    - narrate "<&5>|<&sp><&sp><&sp><&7>Earned<&co> <&6><def[stats].get[4]||null>"
+    - narrate "<&5>|<&sp><&sp><&sp><&7>Redeemed<&co> <&c><def[stats].get[5]||null>"
+    - narrate "<&5>|<&sp><&sp><&sp><&7>Available<&co> <&a><def[stats].get[6]||null>"
+
+  msgsAdminHelp:
+    - ^narrate "<&5>|<&sp><&sp><&sp><&f>Points Commands<&co><&sp><&sp><&e>/perkadmin points"
+    - ^narrate "<&5>|<&sp><&sp><&sp><&sp><&sp><&7>Lists of Stuff<&co><&sp><&sp><&6>/perkadmin list"
+    - ^narrate "<&5>|<&sp><&sp><&sp><&f>Voting Sites<&co><&sp><&sp><&e>/perkadmin service"
+    - ^narrate "<&5>|<&sp><&sp><&sp><&sp><&sp><&7>Package Management<&co><&sp><&sp><&6>/perkadmin pack"
+    - ^narrate "<&5>|<&sp><&sp><&sp><&f>Reset System<&co><&sp><&sp><&e>/perkadmin --reset"
+    - ^narrate "<&5>|<&sp><&sp><&sp><&sp><&sp><&7>Restart System<&co><&sp><&sp><&6>/perkadmin --restart"
+    - ^narrate "<&5>|<&sp><&sp><&sp><&f>Reload Files<&co><&sp><&sp><&e>/perkadmin --reload"
+
+  msgsUserHelp:
+    - ^narrate "<&5>|<&sp><&sp><&sp><&sp><&f>Earn points by showing your support of"
+    - ^narrate "<&5>|<&sp><&sp><&f>MineConomy! Voting gives you Perk Points that"
+    - ^narrate "<&5>|<&sp><&sp><&f>you can spend on any available Perk Packages."
+    - ^narrate "<&5>|<&sp><&f>"
+    - ^narrate "<&5>|<&sp><&sp><&f>Check out the commands below."
+    - ^narrate "<&5>|<&sp><&f>"
+    - ^narrate "<&5>|<&sp><&sp><&sp><&f>Check your Stats<&co><&sp><&sp><&e>/perk stats"
+    - ^narrate "<&5>|<&sp><&sp><&sp><&sp><&sp><&7>Package Commands<&co><&sp><&sp><&6>/perk pack"
+#    - ^narrate "<&5>|<&sp><&sp><&sp><&f>List Stuff<&co><&sp><&sp><&e>/perk list"
+    - ^narrate "<&5>|<&sp><&sp><&sp><&f>Where to Vote<&co><&sp><&sp><&e>/vote"
+    - ^narrate "<&5>|<&sp><&sp><&sp><&sp><&sp><&7>See all Perk Packs<&co><&sp><&sp><&6>/packs <&lb><&7>page<&ns><&6><&rb>"
+#    - ^narrate "<&5>|<&sp><&sp><&sp><&f>Where to Vote<&co><&sp><&sp><&e>/vote"
+
+  msgsPackUserCommandHelp:
+    - ^narrate "<&5>|<&sp><&sp><&sp><&f>List Available Packages<&co><&sp><&sp><&e>/perk pack list"
+    - ^narrate "<&5>|<&sp><&sp><&sp><&sp><&sp><&7>Package Info<&co><&sp><&sp><&6>/perk pack info <&lt>packName<&gt>"
+    - ^narrate "<&5>|<&sp><&sp><&sp><&f>Buy Package<&co><&sp><&sp><&e>/perk pack buy <&lt>packName<&gt>"
+    - ^narrate "<&5>|<&sp><&sp><&sp><&sp><&sp><&7>Activate Package<&co><&sp><&sp><&6>/perk pack activate <&lt>packName<&gt>"
+
+  msgsPackAdminCommandHelp:
+    - ^narrate "<&5>|<&sp><&sp><&sp><&f>List Available Packages<&co><&sp><&sp><&e>/perkadmin pack list"
+    - ^narrate "<&5>|<&sp><&sp><&sp><&sp><&sp><&7>Package Info<&co><&sp><&sp><&6>/perkadmin pack info <&lt>packName<&gt>"
+    - ^narrate "<&5>|<&sp><&sp><&sp><&f>Create Package<&co><&sp><&sp><&e>/perkadmin pack create <&lt>packName<&gt>"
+    - ^narrate "<&5>|<&sp><&sp><&sp><&sp><&sp><&7>Clone Pack<&co><&sp><&sp><&6>/perkadmin pack copy <&lt>NewPack<&gt> <&lt>CopyPack<&gt>"
+    - ^narrate "<&5>|<&sp><&sp><&sp><&f>Edit Package<&co><&sp><&sp><&e>/perkadmin pack edit <&lt>packName<&gt>"
+    - ^narrate "<&5>|<&sp><&sp><&sp><&sp><&sp><&7>Delete Package<&co><&sp><&sp><&6>/perkadmin pack del <&lt>packName<&gt>"
+
+  msgsPackageListHeader:
+    - ^narrate "<&5>|<&sp><&sp><&sp><&sp><&f>Earn Perk Points by voting for the <yaml[PerkPoints_config].read[config.General.ServerName]||MineConomy Network>!"
+    - ^narrate "<&5>|<&sp><&sp><&f>Spend your Perk Points on any of these packages!"
+    - ^narrate "<&5>|<&sp><&f>"
+
+  msgsServiceListHeader:
+    - ^narrate "<&5>|<&sp><&sp><&sp><&sp><&f>Here<&sq>s a list of all the places you can vote"
+    - ^narrate "<&5>|<&sp><&sp><&f>for the <yaml[PerkPoints_config].read[config.General.ServerName]||MineConomy Network>! Voting at these sites"
+    - ^narrate "<&5>|<&sp><&sp><&f>gives you Perk Points that you can spend on"
+    - ^narrate "<&5>|<&sp><&sp><&f>any available Perk Packages. Remember, each"
+    - ^narrate "<&5>|<&sp><&sp><&f>server in the MineConomy Network has its own"
+    - ^narrate "<&5>|<&sp><&sp><&f>list of voting sites! Be sure to check them all!"
+    - ^narrate "<&5>|<&sp><&f>"
+
+
+################################################################################
+#
+# Command Handler stuff
+#
+
+  adminCommandHandler:
+    - if !<context.server> {
+      - if !<player.has_permission[perkpoints.admin]> queue stop
+      }
+    - determine passively FULFILLED
+    - define arg1 '<c.args.get[1].escaped||null>'
+    - if <def[arg1].is[==].to[--reload]> {
+      - inject locally simpleReloadYaml
+      - queue stop
+      }
+    - if <def[arg1].is[==].to[--restart]> {
+      - narrate "<&b>PerkPoints<&co> <&d>Restarting System!"
+      - inject locally loadYaml
+      - define yamlName 'PerkPoints'
+      - define scriptName '<script.name>'
+      - define db '<yaml[PerkPoints_config].read[config.MySQL.database]>'
+      - run s@SQLManager p:restart def:%yamlName%|%scriptName%|%db%
+      - queue stop
+      }
+    - if <def[arg1].is[==].to[--reset]> {
+      - narrate "<&b>PerkPoints<&co> <&c>System Reset feature hasn<&sq>t been impelemented yet!"
+      - narrate "<&b>PerkPoints<&co> <&f>Let<&sq>s RESTART the system instead..."
+      - inject locally loadYaml
+      - define yamlName 'PerkPoints'
+      - define scriptName '<script.name>'
+      - define db '<yaml[PerkPoints_config].read[config.MySQL.database]>'
+      - run s@SQLManager p:restart def:%yamlName%|%scriptName%|%db%
+      - queue stop
+      }
+    - if <def[arg1].is[==].to[service]>
+      || <def[arg1].is[==].to[-s]> {
+      - define arg2 '<c.args.get[2].escaped||null>'
+      - if <def[arg2].is[==].to[register]>
+        || <def[arg2].is[==].to[-r]> {
+        - inject locally registerService
+        }
+        else {
+        - if <def[arg2].is[==].to[unregister]>
+          || <def[arg2].is[==].to[-ur]> {
+          - inject locally unRegisterService
+          }
+        }
+        else {
+        - narrate format:CmdSynFormat "/perkadmin service \<&lt\>register/unregister\<&gt\> \<&lt\>service\<&gt\> \<&lb\>pointValue\<&rb\> \<&lb\>url\<&rb\>"
+        }
+      - queue stop
+      }
+    - if <def[arg1].is[==].to[pack]>
+      || <def[arg1].is[==].to[-p]> {
+      - inject locally packAdminCommandHelper
+      - queue stop
+      }
+    - if <def[arg1].is[==].to[list]>
+      || <def[arg1].is[==].to[-l]> {
+      - define arg2 '<c.args.get[2].escaped||null>'
+      - if <def[arg2].is[==].to[services]>
+        || <def[arg2].is[==].to[-s]> {
+        - define arg3 '<c.args.get[3].escaped||null>'
+        - if <def[arg3].is[==].to[known]>
+          || <def[arg3].is[==].to[seen]> {
+          - inject locally listServicesSeen
+          - queue stop
+          }
+        - if <def[arg3].is[==].to[registered]>
+          || <def[arg3].is[==].to[reg]> {
+          - inject locally listServicesRegistered
+          - queue stop
+          }
+        - narrate format:CmdSynFormat "/perkadmin list services \<&lt\>known/registered\<&gt\>"
+        - queue stop
+        }
+      - if <def[arg2].is[==].to[packages]>
+        || <def[arg2].is[==].to[pack]> 
+        || <def[arg2].is[==].to[-pk]> {
+        - define page '<c.args.get[3].abs.as_int||null>'
+        - inject listPackagesPaged locally
+        - queue stop
+        }
+      - narrate format:CmdSynFormat "/perkadmin list \<&lt\>services/players/packages\<&gt\>"
+      - queue stop
+      }
+    - if <def[arg1].is[==].to[points]>
+      || <def[arg1].is[==].to[-pt]> {
+      - inject locally pointsCommandHelper
+      - queue stop
+      }
+    - run locally adminCommandHelp instantly
+    - queue stop
+
+  adminCommandHelp:
+    - define msgsHeaderTitle 'Admin Help'
+    - inject locally msgsHeader instantly
+    - inject locally msgsAdminHelp instantly
+    - inject locally msgsFooter instantly
+
+  commandHandler:
+    - if <context.server> {
+      - determine passively FULFILLED
+      - announce "<&b>PerkPoints user commands must be done in game." to_console
+      - queue stop
+      }
+    - define arg1 '<c.args.get[1].escaped||null>'
+    - define arg2 '<c.args.get[2].escaped||null>'
+    - if !<player.has_permission[perkpoints.user]> queue stop
+    - determine passively FULFILLED
+    - if <def[arg1].is[==].to[stats]> {
+      - if <def[arg2].is[!=].to[null]>
+        && <player.has_permission[perkpoints.admin]> {
+        - if <util.player_is_valid[%arg2%]> {
+          - define uuid '<def[arg2].as_player.uuid||null>'
+          }
+          else {
+          - narrate "<&b>PerkPoints<&co> <&c>%arg2% is an unknown player!"
+          - queue stop
+          }
+        }
+      - inject locally showPlayerStats instantly
+      - queue stop
+      }
+    - if <def[arg1].is[==].to[pack]> {
+      - inject locally packUserCommandHelper
+      - queue stop
+      }
+    - if <def[arg1].is[==].to[list]> {
+      - define arg2 '<c.args.get[2].escaped||null>'
+      - if <def[arg2].is[==].to[services]> {
+        - inject locally listServicesRegistered
+        - queue stop
+        }
+      - if <def[arg2].is[==].to[perks]> {
+        - define page '<c.args.get[3].abs.as_int||null>'
+        - inject listPackagesPaged locally
+        - queue stop
+        }
+      - narrate format:CmdSynFormat "/perk list \<&lt\>services/perks\<&gt\>"
+      - queue stop
+      }
+
+    - run locally commandHelp instantly
+    - queue stop
+
+  commandHelp:
+    - define msgsHeaderTitle 'User Help'
+    - inject locally msgsHeader instantly
+    - inject locally msgsUserHelp instantly
+    - inject locally msgsFooter instantly
+
+  pointsCommandHelper:
+    - define actions 'li@spend|give|take|reset|-s|-g|-t|-r'
+    - define action '<c.args.get[2].escaped||null>'
+    - if <def[actions].contains[<def[action]>]> {
+      - define player '<c.args.get[3].escaped||null>'
+      - define pointValue '<c.args.get[4].escaped||null>'
+      - if <def[player].is[==].to[null]>
+        || !<util.player_is_valid[%player%]> {
+        - narrate "<&b>PerkPoints<&co> <&c>%player% is an unknown player!"
+        - queue stop
+        }
+      - define uuid '<def[player].as_player.uuid>'
+      - inject locally editPoints
+      - queue stop
+      }
+    - narrate format:CmdSynFormat "/perkadmin points \<&lt\>give/take/reset/spend\<&gt\> \<&lt\>player\<&gt\> \<&lt\>amount\<&gt\>"
+
+################################################################################
+#                                                                              #
+# Configuration Files                                                          #
+#                                                                              #
+#   These are the default config files. They will be used to build the default #
+# config file and data storage files.                                          #
+#                                                                              #
+#______________________________________________________________________________#
+#                                                                              #
+#______________________________DO_NOT_EDIT_THIS_DATA___________________________#
+#______________________________________________________________________________#
+
+
+PerkPoints_Configurations:
+  type: task
+  debug: false
+
+  config:
+    General:
+      AutoCreateAccounts: true
+      Points: Points
+      VoteReward: 5
+      Transferrable: false
+      ExpireOnStartup: true
+      PurgeOnStart: true
+      ServerName: Minecraft Server
+      ExpireCheck: 5m
+    Services:
+      example:
+        name: example
+        points: 5
+        url: bit.ly/1tQBqSS
+    MySQL:
+      useSql: false
+      connection:
+        keepAlive: 5m
+        retry: 3
+        retryDelay: 10s
+        host: localhost
+        port: 3306
+        username: root
+        password: password
+      database: PerkPoints
+      tables:
+        VoteLogs: perks_votelog
+        PerkPoints: perks_points
+        Transactions: perks_transactions
+
+  packages:
+    ExamplePackage:
+      active: false
+      price: 100
+      description: This is an example package.
+      limit: 0
+      concurrentLimit: 0
+      activateImmediately: true
+      requireOnline: true
+      requirePermissions: []
+      prerequisites: []
+      requiredInventorySpace: 0
+      expires: false
+      expireTime: 3h
+      onActivate:
+        permissionSet: []
+        groupAdd: []
+        commands: []
+        announce: []
+        tell: []
+      onExpire:
+        permissionTake: []
+        groupRemove: []
+        commands: []
+        announce: []
+        tell: []
+
+
+
+################################################################################
+#                                                                              #
+# SQL Table Structure                                                          #
+#                                                                              #
+#   This is where the table structure is defined. It would be best if you do   #
+# not touch anything in this section!                                          #
+#                                                                              #
+#______________________________________________________________________________#
+#                                                                              #
+#______________________________DO_NOT_EDIT_THIS_DATA___________________________#
+#______________________________________________________________________________#
+
+
+PerkPoints_SQLTables:
+# This script gets injected from the SQLManager on system start. It sets up some
+# data it needs and loads the table structure so it's ready for the SQLManager.
+  type: task
+  debug: false
+
+  script:
+    - define sqlScriptName 'PerkPoints_SQLTables'
+    - define sqlFile '<script.relative_filename>'
+    - if <yaml.list.contains[%sqlScriptName%]> yaml unload 'id:%sqlScriptName%'
+    - yaml 'load:%sqlFile%' 'id:%sqlScriptName%'
+    - if !<yaml.list.contains[%sqlScriptName%]> {
+      - announce "<&c>PerkPoints<&co><&b> An error occurred while loading %sqlScriptname%!" to_console
+      - announce "<&b>PerkPoints<&co><&3> Aborting..." to_console
+      - inject s@%scriptName% p:unload
+      - queue stop
+      }
+
+  tables:
+    VoteLogs:
+      columns:
+        id: INT AUTO_INCREMENT PRIMARY KEY
+        playeruuid: varchar(36)
+        date: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        service: varchar(40)
+        server: varchar(40)
+        points: DECIMAL(19,2) NOT NULL DEFAULT '0'
+    PerkPoints:
+      columns:
+        playeruuid: varchar(36) PRIMARY KEY
+        created: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        totalvotes: INT NOT NULL DEFAULT '0'
+        pointsearned: DECIMAL(19,2) NOT NULL DEFAULT '0'
+        pointsspent: DECIMAL(19,2) NOT NULL DEFAULT '0'
+        pointsbalance: DECIMAL(19,2) NOT NULL DEFAULT '0'
+    Transactions:
+      columns:
+        id: INT AUTO_INCREMENT PRIMARY KEY
+        playeruuid: varchar(36)
+        package: varchar(40)
+        price: DECIMAL(19,2)
+        date: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        activated: BOOLEAN NOT NULL DEFAULT 0
+        expires: BOOLEAN NOT NULL DEFAULT 0
+        expiredate: BIGINT
+        expired: BOOLEAN NOT NULL DEFAULT 0
+        servers: varchar(1000)
+        global: BOOLEAN NOT NULL DEFAULT 0
+
+

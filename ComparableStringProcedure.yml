@@ -1,0 +1,67 @@
+
+################################################################################
+#
+#  TypeMatch Procedure script
+#
+#    This is used in the pack edit command to check if the user supplys the
+#   correct value type
+#
+#    Use this to compare 2 values. Check if they are one of NUMBER, DECIMAL, 
+#   DURATION, BOOLEAN, or any other STRING.
+#
+#   usage:
+#     - define YourValue "Some string"
+#     - define ComparedToValue "5.2"
+#     - define TypeMatch '<proc[TypeMatch].context[%YourValue%|%ComparedToValue%]>'
+#     - if <def[TypeMatch].get[1]> {
+#       - narrate "YourValue and ComparedToValue are both <def[TypeMatch].get[2]> strings."
+#       }
+#       else {
+#       - narrate "YourValue and ComparedToValue Do not Match!"
+#       - narrate "YourValue Type<&co> <def[TypeMatch].get[2]>"
+#       - narrate "ComparedToValue Type<&co> <def[TypeMatch].get[3]>"
+#       }
+#
+TypeMatch:
+  type: procedure
+  debug: false
+  definitions: YourValue|ComparedToValue
+
+  script:
+
+# Get the comparable type for your value
+    - if <def[YourValue].is[MATCHES].to[number]> {
+      - define YourValueType 'number'
+      }
+      else if <def[YourValue].is[MATCHES].to[decimal]> {
+      - define YourValueType 'decimal'
+      }
+      else if <def[YourValue].is[MATCHES].to[duration]> {
+      - define YourValueType 'duration'
+      }
+      else if <def[YourValue].is[MATCHES].to[boolean]> {
+      - define YourValueType 'boolean'
+      }
+      else define YourValueType 'STRING'
+
+# Get the comparable type of the string you're comparing against
+    - if <def[ComparedToValue].is[MATCHES].to[number]> {
+      - define CompareValueType 'number'
+      }
+      else if <def[ComparedToValue].is[MATCHES].to[decimal]> {
+      - define CompareValueType 'decimal'
+      }
+      else if <def[ComparedToValue].is[MATCHES].to[duration]> {
+      - define CompareValueType 'duration'
+      }
+      else if <def[ComparedToValue].is[MATCHES].to[boolean]> {
+      - define CompareValueType 'boolean'
+      }
+      else define CompareValueType 'STRING'
+
+# Return determination
+    - if <def[YourValueType].is[==].to[%CompareValueType%]> determine "li@true|%CompareValueType%"
+      else determine "li@false|%YourValueType%|%CompareValueType%"
+
+
+

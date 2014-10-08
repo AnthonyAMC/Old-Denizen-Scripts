@@ -1,0 +1,259 @@
+################################################################################
+#                                                                              #
+#                  M o b S p a w n   L i m i t   M a n a g e r                 #
+#                                                                              #
+#   Author: |Anthony|                                                          #
+#   Version: 0.1                                                               #
+#   dScript Version: 0.9.4-b1518                                               #
+#                                                                              #
+#                                                                              #
+# A system for controlling how many mobs are able to spawn per chunk in each   #
+# world. Will autogenerate the default config file on first run. Read the help #
+# file in game with /mslimit                                                   #
+#                                                                              #
+# Permission: denizen.mslimit                                                  #
+#                                                                              #
+# Features a dynamic command handler. Command arguments can be supplied in any #
+# order. Syntax checking and error handeling included.                         #
+#                                                                              #
+# Example: Set the ambient mob type limit to 3 in the world named World        #
+#   /mslimit -s -w World -t ambient -l 3                                       #
+#                                                                              #
+################################################################################
+
+
+'MobSpawnManager_Configurations':
+  type: task
+  debug: false
+  script:
+    - narrate "HEY! Why does monkeybot give me a warning if I don<&sq>t have a script subscript path!?!"
+
+
+  # These are the default values. You can edit them... but it's all
+  # configurable from in game so why bother.
+  ambient: 5
+  animal: 15
+  monster: 30
+  water_animal: 2
+
+
+################################################################################
+#
+# This is the meat and potatos of this script. You really shouldn't touch 
+# ANYTHING beyond this point unless you really know wtf you're doing!
+#
+
+'MobSpawnManagerTasks':
+  type: task
+  debug: false
+
+  script:
+    - narrate "HEY! Why does monkeybot give me a warning if I don<&sq>t have a script subscript path!?!"
+
+  config:
+    - define readID 'MobSpawnManager'
+    - define basePath '<def[readID]>_Configurations'
+    - define scriptPath '<script.relative_filename>'
+    - yaml 'load:<def[scriptPath]>' 'id:<def[basePath]>'
+    - define keylist '<yaml[<def[basePath]>].list_keys[<def[basePath]>].exclude[type|debug|script]>'
+    - announce to_console "MobSpawnManager<&co> Generating default config file..."
+    - yaml create 'id:%readID%'
+    - foreach <server.list_worlds> {
+      - define world <def[value]>
+      - announce to_console "MobSpawnManager<&co> Found world <def[world].name>"
+      - foreach %keylist% {
+        - define key %value%
+        - define entry '<yaml[%basePath%].read[%basePath%.%key%]>'
+        - yaml 'write:%readID%.<def[world].name.to_lowercase>.<def[key].to_lowercase>' 'value:%entry%' 'id:%readID%'
+        - adjust <def[world].as_world> %key%_spawn_limit:%entry%
+        }
+      }
+    - yaml 'savefile:%readID%/config.yml' 'id:%readID%'
+    - yaml unload 'id:%readID%'
+    - announce to_console "MobSpawnManager<&co> Done!"
+    - yaml unload 'id:%basePath%'
+
+  load:
+    - announce to_console "MobSpawnManager<&co> Loading config file..."
+    - define readID 'MobSpawnManager'
+    - yaml 'load:%readID%/config.yml' 'id:%readID%'
+    - define worlds '<yaml[%readID%].list_keys[%readID%]>'
+    - foreach %worlds% {
+      - define world %value%
+      - define types '<yaml[%readID%].list_keys[%readID%.%world%]>'
+      - foreach %types% {
+        - define type %value%
+        - define limit '<yaml[%readID%].read[%readID%.%world%.%type%]>'
+        - adjust <def[world].as_world> %type%_spawn_limit:<def[limit]>
+        }
+      }
+    - announce to_console "MobSpawnManager<&co> Done!"
+
+  set:
+    - define worlds <server.list_worlds>
+    - if %world% != null {
+      - if !<def[worlds].contains[<def[world].as_world>]> {
+        - narrate "<&4><&l>ERROR<&co><&r> <&a><def[world]> <&b>does not exist"
+        - queue stop
+        }
+      }
+      else {
+      - narrate "<&4><&l>ERROR<&co><&r> <&b>Must specify a world"
+      - narrate format:CmdSynFormat "/mslimit -w \<&lt\>world\<&gt\>"
+      - queue stop
+      }
+
+    - define types 'ambient|animal|monster|water_animal'
+    - if %type% != null {
+      - if !<def[types].as_list.contains[<def[type]>]> {
+        - narrate "<&4><&l>ERROR<&co><&r> <&a><def[type]> <&b>is not a valid type"
+        - queue stop
+        }
+      }
+      else {
+      - narrate "<&4><&l>ERROR<&co><&r> <&b>Must specify a type"
+      - narrate format:CmdSynFormat "/mslimit -t \<&lt\>type\<&gt\>"
+      - queue stop
+      }
+
+    - if %limit% != null {
+      - if !<def[limit].is[matches].to[integer]> {
+        - narrate "<&4><&l>ERROR<&co><&r> <&a><def[limit]> <&b>is not a valid number"
+        - queue stop
+        }
+      - define limit <def[limit].abs.as_int>
+      }
+      else {
+      - narrate "<&4><&l>ERROR<&co><&r> <&b>Must specify a limit"
+      - narrate format:CmdSynFormat "/mslimit -l \<&lt\>limit\<&gt\>"
+      - queue stop
+      }
+
+    - define readID 'MobSpawnManager'
+    - yaml 'load:%readID%/config.yml' 'id:%readID%'
+    - yaml 'write:%readID%.<def[world].to_lowercase>.<def[type].to_lowercase>' 'value:%limit%' 'id:%readID%'
+    - adjust <def[world].as_world> %type%_spawn_limit:<def[limit]>
+    - yaml 'savefile:%readID%/config.yml' 'id:%readID%'
+    - yaml unload 'id:%readID%'
+    - narrate "<&b><def[type].to_titlecase> <&a>Spawn Limit set to <&b>%limit%<&a> for <&a><def[world].as_world.name><&b>."
+
+  list:
+    - define worlds <server.list_worlds>
+    - if %world% != null {
+      - if !<def[worlds].contains[<def[world].as_world>]> {
+        - narrate "<&4><&l>ERROR<&co><&r> <&a><def[world]> <&b>does not exist"
+        - queue stop
+        }
+      - define worlds <def[world].as_world>
+      }
+    - define types 'ambient|animal|monster|water_animal'
+    - if %type% != null {
+      - if !<def[types].as_list.contains[<def[type]>]> {
+        - narrate "<&4><&l>ERROR<&co><&r> <&a><def[type]> <&b>is not a valid type"
+        - queue stop
+        }
+      - define types <def[type]>
+      }
+    - foreach <def[worlds].as_list> {
+      - define world %value%
+      - narrate ""
+      - narrate "<&e><&l><def[world].name><&r><&6> Spawn Limits"
+      - foreach <def[types].as_list> {
+        - narrate "<&sp><&sp><&sp><&b><def[value].to_titlecase><&co> <&a><def[world].<def[value]>_spawn_limit>"
+        }
+      }
+    - narrate ""
+
+  help:
+    - narrate ""
+    - narrate "<&b>========== <&a>MobSpawnLimit Help <&b>=========="
+    - narrate ""
+    - narrate "A system for controlling how many mobs are able to spawn per chunk in each world."
+    - narrate ""
+    - narrate ""
+    - narrate "<&b>Setting Limits"
+    - narrate "<&sp>Sets the mobspawn limit. Must specify a valid world, type, and number"
+    - narrate "<&sp><&sp><&sp><&e>/mslimit -s"
+    - narrate "<&sp><&sp><&sp><&e>/mslimit --set"
+    - narrate ""
+    - narrate "<&b>Listing Limits"
+    - narrate "<&sp>Shows a list of current limits. Can be filtered by world and/or type"
+    - narrate "<&sp><&sp><&sp><&e>/mslimit -ls"
+    - narrate "<&sp><&sp><&sp><&e>/mslimit --list"
+    - narrate ""
+    - narrate "<&b>Options"
+    - narrate "<&sp><&a>World"
+    - narrate "<&sp><&sp><&sp><&e>-w \<worldname\>"
+    - narrate "<&sp><&a>Type"
+    - narrate "<&sp><&sp><&sp><&e>-t \<type\>"
+    - narrate "<&sp><&sp><&sp>Valid types<&co> <&a>ambient animal monster water_animal"
+    - narrate "<&sp><&a>Limit"
+    - narrate "<&sp><&sp><&sp><&e>-l \<limit\>"
+    - narrate "<&sp><&a>Reset<&f> - Reset all worlds to default limits"
+    - narrate "<&sp><&sp><&sp><&e>--reset"
+    - narrate "<&sp><&a>Reload<&f> - Reloads the config file"
+    - narrate "<&sp><&sp><&sp><&e>--reload"
+    - narrate ""
+    - narrate format:CmdSynFormat "/mslimit <&6>\<&lt\><&e>--set / -s<&6>\<&gt\> \<&lb\><&e>-w worldname -t type -l limit<&6>\<&rb\>"
+    - narrate format:CmdSynFormat "/mslimit <&6>\<&lt\><&e>--list / -ls<&6>\<&gt\> \<&lt\><&e>-w worldname -t type -l limit<&6>\<&gt\>"
+    - narrate ""
+
+################################################################################
+#
+# Handles the commands and server start
+#
+
+'MobSpawnManagerEvents':
+  type: world
+  debug: true
+  events:
+
+    on mslimit command:
+# The command handler. Accepts the command and passes the info to the task scripts
+    - if !<player.has_permission[denizen.mslimit]> queue stop
+    - determine passively fulfilled
+    - define reset '<c.args.contains[--reset] || false>'
+    - define reload '<c.args.contains[--reload] || false>'
+    - define list '<tern[<context.args.contains[-ls]>]:true||<tern[<context.args.contains[--list]>]:true||false>>'
+    - define set '<tern[<context.args.contains[-s]>]:true||<tern[<context.args.contains[--set]>]:true||false>>'
+    - define world '<tern[<c.args.find[-w].is[MORE].than[0]>]:<c.args.get[<c.args.find[-w].add[1].as_int>].escaped> || null>'
+    - define type '<tern[<c.args.find[-t].is[MORE].than[0]>]:<c.args.get[<c.args.find[-t].add[1].as_int>].escaped> || null>'
+    - define limit '<tern[<c.args.find[-l].is[MORE].than[0]>]:<c.args.get[<c.args.find[-l].add[1].as_int>].escaped> || null>'
+
+    - if %list% == true {
+      - inject s@MobSpawnManagerTasks p:list
+      - queue stop
+      }
+
+    - if %set% == true {
+      - inject s@MobSpawnManagerTasks p:set
+      - queue stop
+      }
+
+    - if %reset% == true {
+      - inject s@MobSpawnManagerTasks p:config
+      - queue stop
+      }
+
+    - if %reload% == true {
+      - inject s@MobSpawnManagerTasks p:load
+      - queue stop
+      }
+
+    - if <context.args.is_empty> {
+      - inject s@MobSpawnManagerTasks p:help
+      - queue stop
+      }
+
+    - inject s@MobSpawnManagerTasks p:help
+
+
+    on server start:
+# Checks if the config file exists on server start and reads or generates it.
+    - define readID 'MobSpawnManager'
+    - if <server.has_file[%readID%/config.yml]> {
+      - run s@MobSpawnManagerTasks p:load delay:2s
+      }
+      else {
+      - run s@MobSpawnManagerTasks p:config delay:2s
+      }
