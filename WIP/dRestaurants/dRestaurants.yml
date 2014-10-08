@@ -101,7 +101,7 @@ dRestaurant:
       - narrate "Menu click"
       - if <player.flag[ordered].is[!=].to[true]||true> {
         - define restaurantName '<player.flag[dRestaurant_Order].get[1]||null>'
-        - define menuinventory <def[restaurantName].inventory||null>'
+        - define menuinventory '<def[restaurantName].inventory||null>'
         - if <el@list[%restaurantName%|%menuinventory%].contains[null]||true> {
           - take i@menu
           - narrate "I don<&sq>t think you should have this... and even if you were supposed to have it, I have no idea what I<&sq>m doing right now!"
@@ -116,7 +116,7 @@ dRestaurant:
       # Setup some data and do a basic null check
       - define restaurantName '<player.flag[dRestaurant_Order].split_by[/].get[1]||null>'
       - define order '<player.flag[dRestaurant_Order].split_by[/].get[2].as_list||li@>'
-      - define menuinventory <def[restaurantName].inventory||null>'
+      - define menuinventory '<def[restaurantName].inventory||null>'
       - if <el@list[%restaurantName%|%menuinventory%].contains[null]||true> {
         - determine passively cancelled
         - take i@menu
@@ -146,7 +146,7 @@ dRestaurant:
             - note in@restaurantinventory as:<player.name>_restaurant
             - foreach %order% {
               - adjust %value% lore:"click to remove item" save:item
-              - give <entry[item].result> to:in@<player.name>_restaurant 
+              - give <entry[item].result> to:in@<player.name>_restaurant
               }
             - give i@back to:in@<player.name>_restaurant slot:10
             - give i@order_accept to:in@<player.name>_restaurant slot:18
