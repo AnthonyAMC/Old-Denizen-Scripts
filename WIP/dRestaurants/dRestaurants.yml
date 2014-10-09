@@ -147,8 +147,6 @@ dRestaurant:
               - adjust %value% lore:"click to remove item" save:item
               - give <entry[item].result> to:in@<player.name>_restaurant
               }
-            - give i@back to:in@<player.name>_restaurant slot:10
-            - give i@order_accept to:in@<player.name>_restaurant slot:18
             - inventory open d:in@<player.name>_restaurant
             - inventory update
             }
@@ -157,7 +155,7 @@ dRestaurant:
           - narrate "<red>your order size is maxed out"
           - inventory update
           }
-          else if <c.item.is[!=].to[c.item]> && <c.item.is[!=].to[i@air]> && <c.item.is[!=].to[i@order]> {
+          else if <c.item.is[!=].to[c.item]> && <c.item.is[!=].to[i@air]> && <c.item.is[!=].to[i@order]> && <%menuinventory%.contains[<c.item>]> {
           - if <c.item.display.is[!=].to[null]> {
             - narrate "<green><c.item.display> added to your ticket!"
             }

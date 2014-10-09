@@ -128,10 +128,20 @@ dRestaurantTool:
 restaurantinventory:
   type: inventory
   size: 18
+  title: 'item review'
+  slots:
+    - "[] [] [] [] [] [] [] [] []"
+    - "[i@back] [] [] [] [] [] [] [] [i@order_accept]"
 
 menuinventory:
   type: inventory
   size: 36
+  title: menu
+  slots: 
+    - "[] [] [] [] [] [] [] [] []"
+    - "[] [] [] [] [] [] [] [] []"
+    - "[] [] [] [] [] [] [] [] []"
+    - "[] [] [] [] [] [] [] [] [i@order]"
 
 order:
   type: item
