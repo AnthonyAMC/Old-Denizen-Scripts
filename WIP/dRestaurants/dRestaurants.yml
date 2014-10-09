@@ -93,12 +93,105 @@ dRestaurant:
   type: world
   debug: false
 
-  events:
+#______________________________________
 #--------------------------------------
+#  DRESTAURANT EVENT HANDLERS
+#
+  events:
+#
+#--------------------------------------
+#
 #  dRestaurant NPC events
 #
+    # Custom event fired by the world script when a player places an order
+    on order placed:
+      # Define requisite data and do null check
+      - define player '<c.player||null>'
+      - define orderDetails <def[player].flag[dRestaurant_Order]||null>
+      - define restaurant <def[orderDetails].split[/].get[1]||null>
+      - define foodItems <def[orderDetails].split[/].get[2].as_list||null>
+      - inject s@MasterWaitressNPC p:assignWaitress
+      # This nullCheck should probably be written as a foreach to properly
+      # handle definitions that contain lists
+      - define nullCheck li@%player%|%orderDetails%|%restaurant%|%foodItems%|%waitress%
+      - if <def[nullCheck].contains[null]> {
+        - announce "<&b>dRestaurant<&co> <&c>Something went wrong on <&6>order placed<&c>!" to_console
+        - announce "<&b>dRestaurant<&co> <&3>player<&co> <&b>%player%" to_console
+        - announce "<&b>dRestaurant<&co> <&3>orderDetails<&co> <&b>%orderDetails%" to_console
+        - announce "<&b>dRestaurant<&co> <&3>restaurant<&co> <&b>%restaurant%" to_console
+        - announce "<&b>dRestaurant<&co> <&3>foodItems<&co> <&b>%foodItems%" to_console
+        - announce "<&b>dRestaurant<&co> <&3>waitress<&co> <&b>%waitress%" to_console
+        - queue clear
+        }
+      # Tell the least busy waitress to collect the menu. She'll decide when to
+      # actually get the menu based on status.
+      - flag %waitress% dRestaurant_MenuQueue:->:<player>
+      - if <def[waitress].flag[Status].is[==].to[Available]> {
+        - flag %waitress% status:order
+        - run s@MasterWaitressNPC as:%waitress% p:collectMenus def:true
+        }
+      # Each of the %foodItems% in an order is a unique %ticketNumber%. This
+      # means that all work is evenly distributed amongst the restaurant staff.
+      # We do one final null check before creating each ticket.
+      - foreach %foodItems% {
+        - define food %value%
+        - inject s@MasterWaitressNPC p:assignWaitress
+        - inject s@MasterWaitressNPC p:assignChef
+        - inject s@MasterWaitressNPC p:assignTicketNumber
+        - if <el@list[%waitress%|%chef%|%ticketNumber%].contains[null]> {
+          - announce "<&b>dRestaurant<&co> <&c>Something went wrong on <&6>order placed<&c>!" to_console
+          - announce "<&b>dRestaurant<&co> <&3>player<&co> <&b>%player%" to_console
+          - announce "<&b>dRestaurant<&co> <&3>restaurant<&co> <&b>%restaurant%" to_console
+          - announce "<&b>dRestaurant<&co> <&3>foodItem<&co> <&b>%food%" to_console
+          - announce "<&b>dRestaurant<&co> <&3>waitress<&co> <&b>%waitress%" to_console
+          - announce "<&b>dRestaurant<&co> <&3>chef<&co> <&b>%chef%" to_console
+          - announce "<&b>dRestaurant<&co> <&3>ticketNumber<&co> <&b>%ticketNumber%" to_console
+          - foreach next
+         }
+        - flag server dRestaurantTickets:->:%ticketNumber%/%chef%/%waitress%/<player>/%food%
+        - flag player dRestaurant_Order:!
+        - action "order in" %chef% context:ticket|%ticketNumber%
+        - wait 10t
+        }
+
+    # Custom event fired by the chef when an order is ready for delivery
+    on order up:
+      # Define requisite data and do null check
+      - define ticketNumber '<c.ticket||null>'
+      - define displayItems '<c.displayItems.split_by[/]||null>'
+      - define tickets '<server.flag[dRestaurantTickets].as_list||null>'
+      - define ticket '<def[tickets].get[<def[tickets].get_sub_items[1].split_by[/].find[%ticketNumber%]>]||null>'
+      - define waitress '<def[ticket].split_by[/].get[3].as_npc||null>'
+      # This nullCheck should probably be written as a foreach to properly
+      # handle definitions that contain lists
+      - define nullCheck li@%ticketNumber%|%tickets%|%ticket%|%waitress%
+      - if <def[nullCheck].contains[null]> {
+        - announce "<&b>dRestaurant<&co> <&c>Something went wrong on <&6>order up<&c>!" to_console
+        - announce "<&b>dRestaurant<&co> <&3>ticketNumber<&co> <&b>%ticketNumber%" to_console
+        - announce "<&b>dRestaurant<&co> <&3>tickets<&co> <&b>%tickets%" to_console
+        - announce "<&b>dRestaurant<&co> <&3>ticket<&co> <&b>%ticket%" to_console
+        - announce "<&b>dRestaurant<&co> <&3>waitress<&co> <&b>%waitress%" to_console
+        - queue clear
+        }
+      # Let the waitress decide what to do based on status
+      - define status '<def[waitress].flag[Status]||drunk>'
+      - define statuses li@drunk|available|order|deliver
+      - if <def[statuses].contains[%status%]> {
+        - inject npc:%waitress% s@MasterWaitressNPC p:orderup_%status%
+        }
+        else {
+        - inject npc:%waitress% s@MasterWaitressNPC p:orderup_drunk
+        }
+
+#
+#  END dRestaurant NPC events
+#--------------------------------------
+#
+#  dRestaurant Menu events
+#
     on player right clicks with i@menu:
-      - if <player.flag[ordered].is[!=].to[true]||true> {
+      - if <player.has_flag[dRestaurant_Order]||true>
+        && <player.flag[dRestaurant_Order_Placed].is[!=].to[true]||true> {
         - define restaurantName '<player.flag[dRestaurant_Order].split[/].get[1]||null>'
         - define menuinventory '<el@val[in@%restaurantName%].as_inventory||null>'
         - if <el@list[%restaurantName%|%menuinventory%].contains[null]||true> {
@@ -117,6 +210,12 @@ dRestaurant:
       - define restaurantName '<player.flag[dRestaurant_Order].split_by[/].get[1]||null>'
       - define order '<player.flag[dRestaurant_Order].split_by[/].get[2].as_list||li@>'
       - define menuinventory '<el@val[in@%restaurantName%].as_inventory||null>'
+#      - narrate "<context.item>"
+#      - narrate "<context.inventory>"
+#      - narrate "%menuinventory%"
+#      - narrate "<context.click>"
+#      - narrate "<context.slot_type>"
+#      - narrate "<context.action>"
       # If the defs are null then it must not be a menu? We should have
       # something to uniquely and instantly identify menu inventories.
       - if <el@list[%restaurantName%|%menuinventory%].contains[null]||true> {
@@ -127,24 +226,24 @@ dRestaurant:
       # the menu if the player is the restaurant owner. The admin button will
       # link to an admin interface where the player can hire/fire employees,
       # add/remove items from the menu, and adjust menu prices.
-      - if <server.flag[dRestaurants.%restaurantName%.Owner].as_player.is[==].to[<player>]||false>
+      - if <server.flag[dRestaurant.%restaurantName%.Owner].as_player.is[==].to[<player>]||false>
         && <c.inventory.is[==].to[%menuinventory%]||false> {
-        - chat "Still need to write a management GUI"
-        - queue clear
+        - if <player.has_flag[dRestaurant_MenuEdit]> queue clear
         }
 
       # The menu of available items this restaurant sells
       - if <c.inventory.is[==].to[%menuinventory%]||false> {
         - determine passively cancelled
-        - if <c.item.is[==].to[i@order]||false> {
+        - if <c.item.is[==].to[i@GUI_Button_Order_Review]||false> {
           - if <def[order].is_empty||true> {
             - narrate "<red>you must place items on your ticket before reviewing them!"
             - inventory update
+            - queue clear
             }
             else {
             - note in@restaurantinventory as:<player.name>_restaurant
             - foreach %order% {
-              - adjust %value% lore:"click to remove item" save:item
+              - adjust %value% "lore:click to remove item" save:item
               - give <entry[item].result> to:in@<player.name>_restaurant
               }
             - give i@back to:in@<player.name>_restaurant slot:10
@@ -157,14 +256,14 @@ dRestaurant:
           - narrate "<red>your order size is maxed out"
           - inventory update
           }
-          else if <c.item.is[!=].to[c.item]> && <c.item.is[!=].to[i@air]> && <c.item.is[!=].to[i@order]> {
+          else if <c.item.is[!=].to[c.item]> && <c.item.is[!=].to[i@air]> && <c.item.is[!=].to[i@GUI_Button_Order_Review]> && <%menuinventory%.contains[<c.item>]> {
           - if <c.item.display.is[!=].to[null]> {
             - narrate "<green><c.item.display> added to your ticket!"
             }
             else {
             - narrate "<green><c.item.material.name.replace[_].with[ ]> added to your ticket!"
             }
-          - flag player dRestaurant_Order:%restaurantName%/<def[order].include[<c.item>]||<def[order]||>>
+          - flag player dRestaurant_Order:%restaurantName%/<def[order].include[<c.item||>]>
           - inventory update
           }
         }
@@ -172,15 +271,15 @@ dRestaurant:
       # The order review gui
       - if <c.inventory.is[==].to[in@<player.name>_restaurant]> {
         - determine passively cancelled
-        - if <c.item.is[==].to[i@order_accept]> {
+        - if <c.item.is[==].to[i@GUI_Button_Order_Accept]> {
           - inventory close d:<player.inventory>
           - note remove as:in@<player.name>_restaurant
-          - flag player ordered
+          - flag player dRestaurant_Order_Placed:true
           - inventory update
-          - action "on order placed" context:player:<player>
+          - event "order placed" context:player|<player>
           }
-          else if <c.item.is[==].to[i@back]> {
-          - inventory open d:in@%menuinventory%
+          else if <c.item.is[==].to[i@GUI_Button_Back]> {
+          - inventory open d:%menuinventory%
           - inventory update
           - queue clear
           }
@@ -192,30 +291,16 @@ dRestaurant:
             - narrate "<red><c.item.material.name.replace[_].with[ ]> removed from your ticket!"
             }
           - adjust <c.item> quantity:0 save:item1
-          - flag player dRestaurant_Order:%restaurantName%/<def[order].exclude[<entry[item1].result>]||<def[order]||>>
+          - flag player dRestaurant_Order:%restaurantName%/<def[order].exclude[<c.item||>]>
           - take from:in@<player.name>_restaurant <c.item> qty:!
           - inventory update
           }
         }
 
-    on player right clicks with i@chefegg:
-      - create player chef712 <player.location.cursor_on.add[0.5,1,0.5]>
-      - execute as_op "npc select"
-      - assignment set script:MasterChefNPC npc:<player.selected_npc>
-      - take i@chefegg
-      - give i@waitressegg
-      - flag player chef:<player.selected_npc>
-
-    on player right clicks with i@waitressegg:
-      - create player waitress <player.location.cursor_on.add[0.5,1,0.5]>
-      - execute as_op "npc select"
-      - assignment set script:waitress npc:<player.selected_npc>
-      - take i@waitressegg
-      - flag <player.selected_npc> chef:<player.flag[chef]>
-
 #
-#  END dRestaurant NPC events
+#  END dRestaurant Menu events
 #--------------------------------------
+#
 #  Cuboid Selection
 #
     on player right clicks block with dRestaurantTool:
@@ -240,6 +325,32 @@ dRestaurant:
 
 #
 #  END Cuboid Selection
+#--------------------------------------
+#
+#  NPC Spawn Eggs
+#
+    on player right clicks with i@chefegg:
+      - create player chef712 <player.location.cursor_on.add[0.5,1,0.5]>
+      - execute as_op "npc select"
+      - assignment set script:MasterChefNPC npc:<player.selected_npc>
+      - take i@chefegg
+      - give i@waitressegg
+      - flag player chef:<player.selected_npc>
+
+    on player right clicks with i@waitressegg:
+      - create player waitress <player.location.cursor_on.add[0.5,1,0.5]>
+      - execute as_op "npc select"
+      - assignment set script:waitress npc:<player.selected_npc>
+      - take i@waitressegg
+      - flag <player.selected_npc> chef:<player.flag[chef]>
+
+#
+#  END NPC Spawn Eggs
+#--------------------------------------
+#
+#
+#  END DRESTAURANT EVENT HANDLERS
+#______________________________________
 #--------------------------------------
 #
 #  Kitchen Equipment Locators
@@ -575,7 +686,7 @@ dRestaurant:
         - foreach %cardinals% {
           - define location '<def[%value%]>'
 
-          - if <def[location].material.name.is[==].to[air]>
+          - if <def[location].material.bukkit_enum.is[==].to[CARPET]>
             && <def[location].above.material.name.is[==].to[air]>
             && <def[location].below.material.is_solid> {
             - define locations <def[locations].include[%window%/%location%]>
@@ -586,6 +697,7 @@ dRestaurant:
 
 #
 #  END Kitchen Equipment Locators
+#______________________________________
 #--------------------------------------
 #
 #  Animations
@@ -850,7 +962,7 @@ dRestaurant:
 
 
   boilFood_Unattended_Cooking:
-  # This is the part of the animation that is done without the NPC there
+  # This is the part of the animation that is done without the NPC
     - define ticketNumber %1%
     - define stove %2%
     - define walkLoc %3%
@@ -904,7 +1016,8 @@ dRestaurant:
       - displayitem <def[value].as_item> '%windowLoc%' d:30s save:displayItem_%loop_index%
       - define displayItems '<def[displayItems].include[<entry[displayItem_%loop_index%].dropped>]>'
       }
-    - ^action "order up" context:ticket|%ticketNumber%|displayItems|<def[displayItems].replace[li@].replace[|].with[/]>
+    - ^chat "Ticket %ticketNumber% in the Window!" no_target range:10
+    - ^event "order up" context:ticket|%ticketNumber%|displayItems|<def[displayItems].replace[li@].replace[|].with[/]>
 
 
 #-----------------------
@@ -917,7 +1030,7 @@ dRestaurant:
     - ^inject locally findWindow_waitress instantly
     - ^define destination '<def[locations].random>'
     - ^define windowLoc '<def[destination].split[/].get[1].as_location>'
-    - ~walkto '<def[destination].split[/].get[2].as_location>' speed:0.7
+    - ~walkto '<def[destination].split[/].get[2].as_location>' speed:0.8
     - ^look <npc> %windowLoc%
     - ^wait 10t
     # Pickup the food. This means we need to store the entity id for the display items
@@ -927,7 +1040,7 @@ dRestaurant:
     # Really should have a method to ensure that the player is still online and
     # still in the restaurant before we proceed.
     - ^if <def[player].location.distance[<npc.location>].is[OR_LESS].than[30]> {
-      - ~walkto %player%
+      - ~walkto <def[player].location> speed:0.8
       - ^wait 10t
 # Not sure if this is sane without a table locator or if it's needed at all.
 #      - ^foreach %foodItems% {
@@ -937,6 +1050,8 @@ dRestaurant:
       - ^give player:%player% %foodItems%
       }
       else give player:%player% %foodItems%
+    - ~equip <npc> hand:i@air
+    - chat "Here is <def[foodItems].formatted>"
 
 #
 #  END Animations
@@ -944,4 +1059,5 @@ dRestaurant:
 #
 #
 #  END DRESTAURANT WORLD SCRIPT
-#
+#______________________________________
+#--------------------------------------

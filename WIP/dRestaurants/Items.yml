@@ -128,25 +128,40 @@ dRestaurantTool:
 restaurantinventory:
   type: inventory
   size: 18
+  title: dRestaurant Order Review
+  definitions:
+    accept: i@GUI_Button_Order_Accept
+    back: i@GUI_Button_Back
+  slots:
+    - "[] [] [] [] [] [] [] [] []"
+    - "[back] [] [] [] [] [] [] [] [accept]"
 
 menuinventory:
   type: inventory
+  title: dRestaurant Menu
   size: 36
+  definitions:
+    review: i@GUI_Button_Order_Review
+  slots:
+    - "[] [] [] [] [] [] [] [] []"
+    - "[] [] [] [] [] [] [] [] []"
+    - "[] [] [] [] [] [] [] [] []"
+    - "[] [] [] [] [] [] [] [] [review]"
 
-order:
+GUI_Button_Order_Review:
   type: item
   material: i@bowl
-  display name: "<green>click to review your order"
+  display name: <green>click to review your order
 
-order_accept:
+GUI_Button_Order_Accept:
   type: item
   material: i@mushroom_soup
-  display name: "<green>click to accept this order"
+  display name: <green>click to accept this order
 
-back:
+GUI_Button_Back:
   type: item
   material: i@book
-  display name: "<red>go back to menu"
+  display name: <red>go back to menu
 
 #
 #  END Other Items
