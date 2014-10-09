@@ -68,7 +68,7 @@ dRestaurantCommand:
         - narrate "<&4><&l>ERROR<&co><&r> <&a>You must specify a name!"
         - queue stop
         }
-      - if <cu@restaurant_%name%||null> != null {
+      - if <cu@%name%||null> != null {
         - narrate "<&4><&l>ERROR<&co><&r> <&a>There is already a restaurant by this name!"
         - queue stop
         }
