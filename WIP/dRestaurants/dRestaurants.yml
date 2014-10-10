@@ -295,8 +295,6 @@ dRestaurant:
               - adjust %value% "lore:click to remove item" save:item
               - give <entry[item].result> to:in@<player.name>_restaurant
               }
-            - give i@back to:in@<player.name>_restaurant slot:10
-            - give i@order_accept to:in@<player.name>_restaurant slot:18
             - inventory open d:in@<player.name>_restaurant
             - inventory update
             }
@@ -339,8 +337,9 @@ dRestaurant:
             else {
             - narrate "<red><c.item.material.name.replace[_].with[ ]> removed from your ticket!"
             }
-          - adjust <c.item> quantity:0 save:item1
-          - flag player dRestaurant_Order:%restaurantName%/<def[order].exclude[<c.item||>]>
+          - adjust <c.item> quantity:0 save:item2
+          - adjust <entry[item2].result> lore:li@ save:item1
+          - flag player dRestaurant_Order:%restaurantName%/<def[order].exclude[<entry[item1].result>]>
           - take from:in@<player.name>_restaurant <c.item> qty:!
           - inventory update
           }
