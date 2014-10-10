@@ -162,13 +162,14 @@ MasterWaitressNPC:
         }
       }
     # Now we have a list of waitresses, let's find the least busy
-    - define waitress <def[waitresses].get[1]>
-    - foreach <def[waitresses].get[2].to[<def[waitresses].size>]> {
-      - if <def[value].flag[TicketQueue].size.is[LESS].than[<def[waitress].flag[TicketQueue].size>]> {
-        - define waitress %value%
+    - define waitress <def[waitresses].get[1]||null>
+    - if <def[waitresses].is[MORE].than[1]> {
+      - foreach <def[waitresses].get[2].to[<def[waitresses].size>]> {
+        - if <def[value].flag[TicketQueue].size.is[LESS].than[<def[waitress].flag[TicketQueue].size>]> {
+          - define waitress %value%
+          }
         }
       }
-    - define waitress <def[waitress]||null>
 
   assignChef:
   # This assumes we know the restaurant
@@ -182,18 +183,19 @@ MasterWaitressNPC:
         }
       }
     # Now we have a list of chefs, let's find the least busy
-    - define chef <def[chefs].get[1]>
-    - foreach <def[chefs].get[2].to[<def[chefs].size>]> {
-      - if <def[value].flag[TicketQueue].size.is[LESS].than[<def[chef].flag[TicketQueue].size>]> {
-        - define chef %value%
+    - define chef <def[chefs].get[1]||null>
+    - if <def[chefs].is[MORE].than[1]> {
+      - foreach <def[chefs].get[2].to[<def[chefs].size>]> {
+        - if <def[value].flag[TicketQueue].size.is[LESS].than[<def[chef].flag[TicketQueue].size>]> {
+          - define chef %value%
+          }
         }
       }
-    - define chef <def[chef]||null>
 
   assignTicketNumber:
     - repeat 20 {
       - define ticketNumber <util.random.duuid>
-      - define ticketList <server.flag[dRestaurantTickets].get_sub_items[1].split_by[/]>
+      - define ticketList <server.flag[dRestaurantTickets].get_sub_items[1].split_by[/]||null>
       - if !<def[ticketList].contains[%ticketNumber%]> repeat stop
       - if <def[value].is[OR_MORE].than[20]> {
         - define ticketNumber "LastLostTicketDetails"
@@ -255,9 +257,7 @@ MasterWaitressNPC:
     - wait 15t
     - chat "Someone will come grab the menu when you are ready."
     - wait 30t
-    # Now the waitress can go back fidgeting around
-    - run s@Fidget id:fidgetQueue_<npc.id>
-    - flag npc status:available
+    - inject processTicketQueue locally
 
   click_order:
   # When the Waitress is taking an order

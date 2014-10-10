@@ -37,22 +37,23 @@
 #
 #--- Permissions
 #
+#  dRestaurant.admin   - Admin perm gives access to all commands and features.
+#                      - Can manage all restaurants.
+#  dRestaurant.create  - Can create new dRestaurants.
+#  dRestaurant.delete  - Can delete dRestaurants you own.
+#  dRestaurant.buy     - Can buy dRestaurants that are for sale.
+#  dRestaurant.sell    - Can sell dRestaurants that you own.
+#  dRestaurant.manage  - Can manage dRestaurants you have purchased.
+#  dRestaurant.user    - General user permission to interact with dRestaurant NPCs
 #
 #
 #--- Ticket System
 #
 #  The Ticket System is a single flag that holds all the ticket information for
 # all restaurants. We're using <util.random.duuid> for our %ticketNumber% to
-# avoid some silly incremental indexing method. The only piece of info you need
-# to make available in the custom actions is the %ticketNumber%.
+# avoid some silly incremental indexing method.
 #
-#   Notify the Waitress that a player is ready to place their order:
-#     - ^action "order in" context:ticket|%ticket%
-#   Notify the Waitress that an order is ready to be delivered to the player:
-#     - ^action "order up" context:ticket|%ticket%
-#   Notify the Chef that an order has come in to the kitchen:
-#     - ^action "order in" context:ticket|%ticket%
-#
+#  The server flag that holds the ticket info: <server.flag[dRestaurantTickets]>
 #  It contains a list of lists and is structured like this:
 #   - %ticketNumber%/%chef%/%waitress%/<player>/%foodItems%|...
 #
@@ -80,6 +81,54 @@
 #
 #  To remove an existing ticket use the %ticket% object as defined above
 #   - flag server dRestaurantTickets:<-:%ticket%
+#
+#
+#--- NPC Workflow
+#    - For those that want to know and for me so I don't have to remember
+#
+#  A typical dRestaurant workflow can be outlined as such:
+#
+#  - Player gets menu from a waitress
+#    - <player.flag[dRestaurant_Order]> now holds the name of the restaurant.
+#
+#  - Player selects items from menu and hits the Order Accept button
+#    - <player.flag[dRestaurant_Order]> now has %restaurant%/<def[foodItems].as_list>
+#    - flag player dRestaurant_Order_Placed:true
+#      - Boolean check for getting and opening a menu.
+#    - event "order placed" context:player|<player>
+#
+#  - Notify the least busy Waitress that a player has placed his order
+#    - flag %waitress% dRestaurant_MenuQueue:->:<player>
+#    - Check her status and collect menus if she's available
+#
+#  - Build a new ticket object for each food item the player ordered and notify
+#    the kitchen.
+#    - inject s@MasterWaitressNPC p:assignWaitress
+#    - inject s@MasterWaitressNPC p:assignChef
+#    - inject s@MasterWaitressNPC p:assignTicketNumber
+#    - flag server dRestaurantTickets:->:%ticketNumber%/%chef%/%waitress%/<player>/%food%
+#    - action "order in" %chef% context:ticket|%ticketNumber%
+#
+#  - Chef hears the order and decides what to do
+#    - flag npc OrderQueue:->:%ticketNumber%
+#    - If chef is available he'll run processOrderQueue
+#    - If chef is busy he'll start cooking when he's not
+#
+#  - Chef completes cooking
+#    - Deliver food to window
+#    - flag npc OrderQueue:<-:%ticketNumber%
+#    - event "order up" context:ticket|%ticketNumber%|displayItems|<def[displayItems].replace[li@].replace[|].with[/]>
+#
+#  - Notify the Waitress that an order is ready to be delivered to the player:
+#    - flag npc TicketQueue:->:%ticketNumber%/<def[displayItems].as_list.replace[li@].replace[|].with[\]>
+#    - If waitress is available she'll run processTicketQueue
+#    - If waitress is busy she'll run processTicketQueue
+#
+#  - Deliver food to player
+#    - Waitress walks to window, collects food, brings it to player
+#    - flag npc TicketQueue:<-:%TicketQueueEntry%
+#    - Remove ticket object from master ticket list
+#      - flag server dRestaurantTickets:<-:%ticket%
 #
 #
 ################################################################################
@@ -149,10 +198,10 @@ dRestaurant:
           - foreach next
          }
         - flag server dRestaurantTickets:->:%ticketNumber%/%chef%/%waitress%/<player>/%food%
-        - flag player dRestaurant_Order:!
         - action "order in" %chef% context:ticket|%ticketNumber%
         - wait 10t
         }
+      - flag player dRestaurant_Order:!
 
     # Custom event fired by the chef when an order is ready for delivery
     on order up:
