@@ -2,7 +2,7 @@
 #
 #  Master Cher Assignment Script
 #
-# The Chef will greet players, deliver menus, take orders, and deliver food.
+# The Chef cooks food.
 #
 MasterChefNPC:
   type: assignment
@@ -32,6 +32,7 @@ MasterChefNPC:
     # items for the order.
       # - inject locally checkStock
       - define ticketNumber '<c.ticket>'
+      - flag npc OrderQueue:->:%ticketNumber%
       - define tickets '<server.flag[dRestaurantTickets].as_list||null>'
       - define ticket '<def[tickets].get[<def[tickets].get_sub_items[1].split_by[/].find[%ticketNumber%]>]||null>'
       - if <def[ticket].is[==].to[null]> {
@@ -129,9 +130,9 @@ MasterChefNPC:
       - if !<npc.flag[OrderQueue].as_list.is_empty||true> {
         - inject processOrderQueue locally
         }
-      - if !<npc.flag[DeliveryQueue].as_list.is_empty||true> {
-        - inject processDeliveryQueue locally
-        }
+      }
+    - if !<npc.flag[DeliveryQueue].as_list.is_empty||true> {
+      - inject processDeliveryQueue locally
       }
     - flag npc Status:available
     - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
@@ -168,9 +169,9 @@ MasterChefNPC:
       - if !<npc.flag[DeliveryQueue].as_list.is_empty||true> {
         - inject processDeliveryQueue locally
         }
-      - if !<npc.flag[OrderQueue].as_list.is_empty||true> {
-        - inject processOrderQueue locally
-        }
+      }
+    - if !<npc.flag[OrderQueue].as_list.is_empty||true> {
+      - inject processOrderQueue locally
       }
     - flag npc Status:available
     - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
@@ -208,16 +209,18 @@ MasterChefNPC:
     - flag npc status:cooking
     - lookclose <npc> state:false
     - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
-    - flag npc OrderQueue:->:%ticketNumber%
+#    - flag npc OrderQueue:->:%ticketNumber%
     - inject locally processOrderQueue
 
   orderin_cooking:
   # When the Chef is cooking food
-    - flag npc OrderQueue:->:%ticketNumber%
+    - chat "Ticket %ticketNumber% heard, but I<&sq>m already cooking something." no_target
+#    - flag npc OrderQueue:->:%ticketNumber%
 
   orderin_deliver:
   # When the Chef is cooking food
-    - flag npc OrderQueue:->:%ticketNumber%
+    - chat "Ticket %ticketNumber% heard, but I<&sq>m delivering food right now." no_target
+#    - flag npc OrderQueue:->:%ticketNumber%
 
 #
 #--------------------------------------

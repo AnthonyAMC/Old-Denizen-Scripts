@@ -66,9 +66,10 @@ MasterWaitressNPC:
   # inventory.
   # Should add nullChecks for this
     - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
-    - define players '<npc.flag[dRestaurant_MenuQueue].as_list||null>'
-    - if !<def[players].is_empty||true> {
-      - foreach %players% {
+    - define menuQueue '<npc.flag[dRestaurant_MenuQueue].as_list||null>'
+    - if !<def[menuQueue].is_empty||true> {
+      - flag npc Status:order
+      - foreach %menuQueue% {
         - define player '<def[value].as_player>'
         - if <def[player].is_online||false> && <npc.location.distance[<def[player].location>].is[LESS].than[30]||false> {
           - define loc '<def[player].location.find.surface_blocks[<npc.flag[Pathfind.FidgetPathMaterial].as_list>].within[5].random||<npc.location>>'
@@ -81,20 +82,21 @@ MasterWaitressNPC:
         - flag %player% dRestaurant_Order_Placed:!
         - flag <npc> dRestaurant_MenuQueue:<-:%player%
         - wait 10t
+        - if !<npc.flag[TicketQueue].as_list.is_empty||true> {
+          - inject collectMenus locally
+          }
         }
       - if !<npc.flag[dRestaurant_MenuQueue].as_list.is_empty||true> {
         - inject collectMenus locally
         }
       }
-    - flag <npc> dRestaurant_MenuQueue:!
-    # %1% is only set by the order placed event.
-    - if <def[1].exists||false> {
-      - define 1:!
-      - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
+    - if !<npc.flag[TicketQueue].as_list.is_empty||true> {
       - inject processTicketQueue locally
-      - queue clear
       }
-    # Now the waitress can go back to what she was doing
+    - flag npc Status:available
+    - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
+    - run s@Fidget id:fidgetQueue_<npc.id>
+    - queue clear
 
   processTicketQueue:
   # Run through a list of orders waiting to be delivered. Rinse and repeat until
@@ -105,20 +107,23 @@ MasterWaitressNPC:
       - flag npc Status:deliver
       - foreach <def[ticketQueue]> {
         - define TicketQueueEntry %value%
-        - if <npc.has_flag[dRestaurant_MenuQueue]> {
-          - inject locally collectMenus
-          }
         - define ticketNumber '<def[TicketQueueEntry].split_by[/].get[1]>'
         - define displayItems '<def[TicketQueueEntry].split_by[/].get[2].split_by[\].as_list>'
         - define tickets '<server.flag[dRestaurantTickets].as_list>'
         - define ticket '<def[tickets].get[<def[tickets].get_sub_items[1].split_by[/].find[%ticketNumber%]>]>'
         - define player '<def[ticket].split_by[/].get[4].as_player>'
-        - define foodItems '<def[ticket].split_by[/].get[5]>'
+        - define foodItems '<def[ticket].split_by[/].get[5].as_list>'
         - inject s@dRestaurant p:deliverFood_waitress
         - flag npc TicketQueue:<-:%TicketQueueEntry%
         - flag server dRestaurantTickets:<-:%ticket%
+        - wait 5t
+        - if <npc.has_flag[dRestaurant_MenuQueue]> {
+          - inject locally collectMenus
+          }
         }
-      - inject processTicketQueue locally
+      - if !<npc.flag[TicketQueue].as_list.is_empty||true> {
+        - inject processTicketQueue locally
+        }
       }
     # Finish up by collecting any menus in queue
     - if <npc.has_flag[dRestaurant_MenuQueue]> {
@@ -162,12 +167,10 @@ MasterWaitressNPC:
         }
       }
     # Now we have a list of waitresses, let's find the least busy
-    - define waitress <def[waitresses].get[1]||null>
-    - if <def[waitresses].is[MORE].than[1]> {
-      - foreach <def[waitresses].get[2].to[<def[waitresses].size>]> {
-        - if <def[value].flag[TicketQueue].size.is[LESS].than[<def[waitress].flag[TicketQueue].size>]> {
-          - define waitress %value%
-          }
+    - foreach %waitresses% {
+      - define waitress '<def[waitress]||%value%>'
+      - if <def[value].flag[TicketQueue].size.is[LESS].than[<def[waitress].flag[TicketQueue].size>]> {
+        - define waitress %value%
         }
       }
 
@@ -183,12 +186,10 @@ MasterWaitressNPC:
         }
       }
     # Now we have a list of chefs, let's find the least busy
-    - define chef <def[chefs].get[1]||null>
-    - if <def[chefs].is[MORE].than[1]> {
-      - foreach <def[chefs].get[2].to[<def[chefs].size>]> {
-        - if <def[value].flag[TicketQueue].size.is[LESS].than[<def[chef].flag[TicketQueue].size>]> {
-          - define chef %value%
-          }
+    - foreach %chefs% {
+      - define chef '<def[chef]||%value%>'
+      - if <def[value].flag[OrderQueue].size.is[LESS].than[<def[chef].flag[OrderQueue].size>]> {
+        - define chef %value%
         }
       }
 
