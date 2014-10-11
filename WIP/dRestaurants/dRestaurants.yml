@@ -157,6 +157,7 @@ dRestaurant:
       # Define requisite data and do null check
       - define player '<c.player||null>'
       - define orderDetails <def[player].flag[dRestaurant_Order]||null>
+      - flag player dRestaurant_Order:!
       - define restaurant <def[orderDetails].split[/].get[1]||null>
       - define foodItems <def[orderDetails].split[/].get[2].as_list||null>
       - inject s@MasterWaitressNPC p:assignWaitress
@@ -201,7 +202,6 @@ dRestaurant:
         - action "order in" %chef% context:ticket|%ticketNumber%
         - wait 10t
         }
-      - flag player dRestaurant_Order:!
 
     # Custom event fired by the chef when an order is ready for delivery
     on order up:
