@@ -211,6 +211,7 @@ dRestaurant:
       - define tickets '<server.flag[dRestaurantTickets].as_list||null>'
       - define ticket '<def[tickets].get[<def[tickets].get_sub_items[1].split_by[/].find[%ticketNumber%]>]||null>'
       - define waitress '<def[ticket].split_by[/].get[3].as_npc||null>'
+      - flag %waitress% TicketQueue:->:%ticketNumber%/<def[displayItems].as_list.replace[li@].replace[|].with[\]>
       # This nullCheck should probably be written as a foreach to properly
       # handle definitions that contain lists
       - define nullCheck li@%ticketNumber%|%tickets%|%ticket%|%waitress%
@@ -1064,7 +1065,7 @@ dRestaurant:
       - displayitem <def[value].as_item> '%windowLoc%' d:30s save:displayItem_%loop_index%
       - define displayItems '<def[displayItems].include[<entry[displayItem_%loop_index%].dropped>]>'
       }
-    - ^chat "Ticket %ticketNumber% in the Window!" no_target range:10
+    - ^narrate "Order up!" 'targets:<npc.location.find.players.within[3]>' format:GenericNPCFormat
     - ^event "order up" context:ticket|%ticketNumber%|displayItems|<def[displayItems].replace[li@].replace[|].with[/]>
 
 
@@ -1099,7 +1100,11 @@ dRestaurant:
       }
       else give player:%player% %foodItems%
     - ~equip <npc> hand:i@air
-    - chat "Here is <def[foodItems].formatted>"
+    - define foods li@
+    - foreach %fooditems% {
+      - define foods <def[foods].include[<def[value].display>]>
+      }
+    - narrate format:GenericNPCFormat "Here is your <def[foods].as_list.formatted>" target:%player%
 
 #
 #  END Animations
