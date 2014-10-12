@@ -80,12 +80,12 @@ MasterWaitressNPC:
           - wait 10t
           - narrate format:GenericNPCFormat "Your order should be out in just a moment." targets:%player%
           }
-        - take i@menu player:%player%
+        - take '<player.inventory.slot[<player.inventory.find[menu]>].full>' player:%player%
         - flag %player% dRestaurant_Order_Placed:!
         - flag <npc> dRestaurant_MenuQueue:<-:%player%
         - wait 10t
         - if !<npc.flag[TicketQueue].as_list.is_empty||true> {
-          - inject collectMenus locally
+          - inject processTicketQueue locally
           }
         }
       - if !<npc.flag[dRestaurant_MenuQueue].as_list.is_empty||true> {
@@ -268,7 +268,7 @@ MasterWaitressNPC:
       - narrate format:GenericNPCFormat "Open the menu and click on the items you want." targets:<npc.location.find.players.within[5]>
       - narrate format:GenericNPCFormat "Here you go. Take a look through our menu and choose what you would like."
       }
-    - give i@menu
+    - give 'i@menu[display_name=%restaurant% Menu]'
     - wait 15t
     - random {
       - narrate format:GenericNPCFormat "Place your order and I<&sq>ll come get the menu." targets:<npc.location.find.players.within[5]>

@@ -247,7 +247,7 @@ dRestaurant:
         - if <el@list[%restaurantName%|%menuinventory%].contains[null]||true> {
           - narrate "%restaurantName%"
           - narrate "%menuinventory%"
-          - take i@menu
+          - take 'i@menu[display_name=%restaurantName% Menu]'
           - narrate "I don<&sq>t think you should have this... and even if you were supposed to have it, I have no idea what I<&sq>m doing right now!"
           - flag <player> dRestaurant_Order:!
           - queue clear
@@ -1091,11 +1091,6 @@ dRestaurant:
     - ^if <def[player].location.distance[<npc.location>].is[OR_LESS].than[30]> {
       - ~walkto <def[player].location> speed:0.8
       - ^wait 10t
-# Not sure if this is sane without a table locator or if it's needed at all.
-#      - ^foreach %foodItems% {
-#        - displayitem <def[value].as_item> '<def[player].location.add[1,0,0]>' d:10s
-#        - give player:%player% <def[value].as_item>
-#        }
       - ^give player:%player% %foodItems%
       }
       else give player:%player% %foodItems%
