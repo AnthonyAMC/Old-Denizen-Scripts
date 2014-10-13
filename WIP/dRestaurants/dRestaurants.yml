@@ -260,18 +260,22 @@ dRestaurant:
       - define restaurantName '<player.flag[dRestaurant_Order].split_by[/].get[1]||null>'
       - define order '<player.flag[dRestaurant_Order].split_by[/].get[2].as_list||li@>'
       - define menuinventory '<el@val[in@%restaurantName%].as_inventory||null>'
-#      - narrate "<context.item>"
-#      - narrate "<context.inventory>"
-#      - narrate "%menuinventory%"
-#      - narrate "<context.click>"
-#      - narrate "<context.slot_type>"
-#      - narrate "<context.action>"
       # If the defs are null then it must not be a menu? We should have
       # something to uniquely and instantly identify menu inventories.
       - if <el@list[%restaurantName%|%menuinventory%].contains[null]||true> {
         - queue stop
         }
 
+      # Some debug output comes out after we're sure we're clicking in a valid
+      # inventory
+      - if <player.has_flag[dRestaurant_debug]> {
+        - narrate "<context.item>"
+        - narrate "<context.inventory>"
+        - narrate "%menuinventory%"
+        - narrate "<context.click>"
+        - narrate "<context.slot_type>"
+        - narrate "<context.action>"
+        }
       # Pull out the admin check for right now. We should add an admin button to
       # the menu if the player is the restaurant owner. The admin button will
       # link to an admin interface where the player can hire/fire employees,
@@ -280,7 +284,6 @@ dRestaurant:
         && <c.inventory.is[==].to[%menuinventory%]||false> {
         - if <player.has_flag[dRestaurant_MenuEdit]> queue clear
         }
-
       # The menu of available items this restaurant sells
       - if <c.inventory.is[==].to[%menuinventory%]||false> {
         - determine passively cancelled
@@ -888,26 +891,48 @@ dRestaurant:
     - ^wait 10t
 
   bakeFood_Unattended:
-  # I have to figure out a method for making some cook processes be unattended
+  # Walk to oven and start cooking.
     - ^inject locally findOven instantly
     - ^define destination '<def[locations].random>'
-    - ~walkto '<def[destination].split[/].get[2].as_location>' speed:0.7
     - ^define furnace '<def[destination].split[/].get[1].as_location>'
+    - ^define walkLoc '<def[destination].split[/].get[2].as_location>'
+    - ~walkto %walkLoc% speed:0.7
     - ^look <npc> %furnace%
     - ~equip <npc> hand:<i@air>
     - ^animate <npc> animation:ARM_SWING
     - ^wait 5t
     - ^playsound %furnace% sound:ghast_fireball
-    - ^showfake m@burning_furnace,<def[furnace].material.data> %furnace% to:<def[furnace].find.players.within[10]> d:200t
-    # The script should break away here so the chef can go do other stuff while
-    # the oven continues to animate.
-    - ^repeat 20 {
-      - ^define sound 'li@fuse|fire.random'
+    - ^modifyblock %furnace% m@burning_furnace,<def[stove].material.data>
+    - ^run locally bakeFood_Unattended_Cooking def:%ticketNumber%|%furnace%|%walkLoc%|%cookTime%|%cookedFood%
+
+  bakeFood_Unattended_Cooking:
+  # This is the part of the animation that is done without the NPC
+    - define ticketNumber %1%
+    - define furnace %2%
+    - define walkLoc %3%
+    - define cookTime %4%
+    - define cookedFood %5%
+    # Default (fallback) cook time of 30 seconds
+    - ^define finishTime <def[cookTime].mul[1000].add_int[<server.current_time_millis>]||<server.current_time_millis.add_int[30000]>>
+    # This method provides AT LEAST a 90 second max cook time. The longest
+    # possible cook time is 270 seconds. There's a bit of randomness to this
+    # though since the wait time between iterations is random. Animation will
+    # stop regardless of the actual cook time after 360 iterations.
+    - ^repeat 360 {
+      - if <def[finishTime].is[LESS].than[<server.current_time_millis>]> repeat stop
+      - ^define sound 'li@fuse|fire.random|fire.random'
       - ^playsound %furnace% sound:<def[sound].random>
-      - ^wait 5t
+      - ^wait <util.random.int[5].to[15]>t
       }
+    - ^modifyblock %equipmentLoc% m@furnace,<def[equipmentLoc].material.data>
+    - ^action "cook complete" context:ticket|%ticketNumber%|equipmentLoc|%furnace%|walkLoc|%walkLoc%|displayEntity|null|cookedFood|%cookedFood%
+
+  bakeFood_Unattended_Get:
+  # This is triggered from the cook complete action
+    - ~walkto %walkLoc% speed:0.7
+    - ^look <npc> %equipmentLoc%
     - ^animate <npc> animation:ARM_SWING
-    - ~equip <npc> hand:%foodItem%
+    - ~equip <npc> hand:%cookedFood%
     - ^wait 10t
 
   grillFood_Attended:
