@@ -90,6 +90,34 @@ dRestaurant_stew:
     - ^define foodItems li@mushroom_soup
     - ^inject s@dRestaurant p:deliverFood_chef
 
+dRestaurant_bread:
+  type: item
+  material: i@bread
+  display name: Loaf of Bread
+  lore:
+    - A tasty Loaf of Bread
+    - prepared by a Master Chef
+  comment: Going to use the stew as the test bed for intermediate level recipes
+  price: 15
+  ingredients:
+    - wheat
+    - wheat
+    - wheat
+
+  cook:
+  # This is the recipe the chef will follow.
+    - ^define foodItems li@wheat
+    - ^inject s@dRestaurant p:getFood_FancyFridge
+    - ^inject s@dRestaurant p:prepFood
+    - ^define cookedFood bread
+    - ^define cookTime 45
+    - ^inject s@dRestaurant p:bakeFood_Unattended
+
+  cookComplete:
+    - ^inject s@dRestaurant p:bakeFood_Unattended_Get
+    - ^define foodItems li@bread
+    - ^inject s@dRestaurant p:deliverFood_chef
+
 
 beefstew:
   type: item
