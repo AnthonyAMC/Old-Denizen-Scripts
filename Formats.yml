@@ -3,9 +3,18 @@
 #                             F o r m a t t i n g                              #
 #                                                                              #
 #                                                                              #
-#  Just a container for any format scripts.                                    #
+#  Used throughout the scripts in the Network folder                           #
 #                                                                              #
 ################################################################################
+
+
+GenericNPCFormat:
+#
+# Just a generic narrate format for NPCs
+#
+    type: format
+    format: <&4>[<&6><npc.name><&4>]<&e> <&co> <&f><text>
+
 
 CmdSynFormat:
 #
