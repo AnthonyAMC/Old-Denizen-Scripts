@@ -21,10 +21,10 @@
 #   - VotifierVoteSimulator:  http://scripts.citizensnpcs.co/view/d0dt1b       |
 #                                                                              |
 # ---------------------------------------------------------------------------- #
-# 
-# 
+#
+#
 # ABOUT:
-# 
+#
 #     This is a BETA version of PerkPoints. It has the bare minimum required
 #   functionality. Check the in game commands for usage and help.
 #
@@ -52,15 +52,15 @@
 #   players to vote at voting sites you prefer.
 #
 #      PerkPoints REQUIRES my SQLManager AND ConfigFileGenerator scripts!
-# 
+#
 #     The SQL backend functions are almost /completely/ handled by SQLManager.
 #   Automatically goes into offline caching mode if the sql database goes
 #   offline! You won't have to worry about your players losing PerkPoints if
 #   your sql server goes offline for some reason.
-# 
-# 
+#
+#
 # USAGE:
-# 
+#
 # -- Setup
 #
 #   1. Upload PerkPoints.yml SQLManager.yml and ConfigFileGenerator.yml to your
@@ -80,7 +80,7 @@
 #
 #   5. Create an empty sql db with the database: name you set in the config.yml
 #
-#   6. Restart PerkPoints - Now that you have your config and database setup 
+#   6. Restart PerkPoints - Now that you have your config and database setup
 #      the system will run and create the tables in the sql database.
 #      /perkadmin --restart
 #
@@ -91,12 +91,12 @@
 #
 #    Basic user permission: perkpoints.user
 #    Admin permission: perkpoints.admin
-# 
+#
 #------------------------------------------------
-# 
+#
 #               C h a n g e l o g
-# 
-# 
+#
+#
 # - v0.5  -  9/15/14
 #   - Added --reload - Reread config files to load any manual file changes
 #   - Added some shorthand command args - Totally undocumented eastereggs
@@ -106,10 +106,10 @@
 #     - /perkupdate
 #   - Some formatting
 #   - Some bugfixes
-# 
-# 
+#
+#
 #------------------------------------------------
-# 
+#
 #          TODO - Future Feature Fluff
 #
 #  - Voting history commands
@@ -123,11 +123,11 @@
 #
 #  - Add ability to type list number instead of package name for commands that
 #    require a pack name.
-# 
+#
 #  - Add ellipses to long descriptions for package list display
-# 
+#
 #  - Line wrap all box messages - This is a pita
-# 
+#
 #______________________________________________________________________________#
 
 
@@ -449,7 +449,8 @@ PerkPointSystem:
       - define writeID 'PerkPoints_packages'
       - define transactionTable '<yaml[PerkPoints_config].read[config.MySQL.tables.Transactions]>'
       - define serverName '<yaml[PerkPoints_config].read[config.General.ServerName]||Minecraft Server>'
-      - sql id:%db% "query:SELECT * FROM %transactionTable% WHERE expires='1' AND expired='0' AND activated='1' AND expiredate<='<server.current_time_millis>' AND servers='%serverName%';" save:packList
+      - define now '<server.current_time_millis>'
+      - sql id:%db% "query:SELECT * FROM %transactionTable% WHERE expires='1' AND expired='0' AND activated='1' AND expiredate<='%now%' AND servers='%serverName%';" save:packList
       - define packList '<entry[packList].result||null>'
       - foreach %packList% {
         - define packInfo '<def[value].split[/]>'
@@ -472,7 +473,8 @@ PerkPointSystem:
       - define writeID 'PerkPoints_packages'
       - define transactionTable '<yaml[PerkPoints_config].read[config.MySQL.tables.Transactions]>'
       - define serverName '<yaml[PerkPoints_config].read[config.General.ServerName]||Minecraft Server>'
-      - sql id:%db% "query:SELECT * FROM %transactionTable% WHERE playeruuid='%uuid%' AND expires='1' AND expired='0' AND activated='1' AND servers='%serverName%' AND expiredate<='<server.current_time_millis>';" save:packList
+      - define now '<server.current_time_millis>'
+      - sql id:%db% "query:SELECT * FROM %transactionTable% WHERE playeruuid='%uuid%' AND expires='1' AND expired='0' AND activated='1' AND servers='%serverName%' AND expiredate<='%now%';" save:packList
       - define packList '<entry[packList].result||null>'
       - foreach %packList% {
         - define packInfo '<def[value].split[/]>'
@@ -1375,7 +1377,7 @@ PerkPointSystem:
         }
       - if <def[tell].is[!=].to[null]> {
         - foreach <def[tell].as_list> {
-          - narrate "<&b>PerkPoints<&co> <&b>parse:<def[value].unescaped.replace[-].with[.]>>" player:<def[uuid].as_player>
+          - narrate "<&b>PerkPoints<&co> <&b><parse:<def[value].unescaped.replace[-].with[.]>>" player:<def[uuid].as_player>
           }
         }
       - define statement "UPDATE %transactionTable% SET expired = 1 WHERE id='%id%';"
@@ -1540,7 +1542,7 @@ PerkPointSystem:
         - queue stop
         }
       - if <def[arg2].is[==].to[packages]>
-        || <def[arg2].is[==].to[pack]> 
+        || <def[arg2].is[==].to[pack]>
         || <def[arg2].is[==].to[-pk]> {
         - define page '<c.args.get[3].abs.as_int||null>'
         - inject listPackagesPaged locally
@@ -1770,5 +1772,3 @@ PerkPoints_SQLTables:
         expired: BOOLEAN NOT NULL DEFAULT 0
         servers: varchar(1000)
         global: BOOLEAN NOT NULL DEFAULT 0
-
-
