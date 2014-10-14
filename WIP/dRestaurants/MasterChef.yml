@@ -85,19 +85,19 @@ MasterChefNPC:
     - inject locally spawn instantly
 
   spawn:
-    - narrate format:GenericNPCFormat "Alright, time to start work..." targets:<npc.location.find.players.within[5]>
+    - narrate format:GenericNPCFormat "Alright, time to start work..." targets:<npc.location.find.players.within[5]||null>
     - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
     - inject locally processOrderQueue
 
   despawn:
     - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
-    - narrate format:GenericNPCFormat "Phew... I<&sq>m glad to be done work for the day!" targets:<npc.location.find.players.within[5]>
+    - narrate format:GenericNPCFormat "Phew... I<&sq>m glad to be done work for the day!" targets:<npc.location.find.players.within[5]||null>
 
   damage:
-    - narrate format:GenericNPCFormat "Why would you do that?" targets:<npc.location.find.players.within[5]>
+    - narrate format:GenericNPCFormat "Why would you do that?" targets:<npc.location.find.players.within[5]||null>
 
   click:
-    - narrate format:GenericNPCFormat "I don<&sq>t have anything to say right now." targets:<npc.location.find.players.within[5]>
+    - narrate format:GenericNPCFormat "I don<&sq>t have anything to say right now." targets:<npc.location.find.players.within[5]||null>
 
 
 #
@@ -200,11 +200,11 @@ MasterChefNPC:
     - flag npc status:drunk
     - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
     - random {
-      - narrate format:GenericNPCFormat "I quit!" targets:<npc.location.find.players.within[5]>
-      - narrate format:GenericNPCFormat "I<&sq>m done with this place!" targets:<npc.location.find.players.within[5]>
-      - narrate format:GenericNPCFormat "I should have called out!" targets:<npc.location.find.players.within[5]>
-      - narrate format:GenericNPCFormat "I had way too much to drink last night..." targets:<npc.location.find.players.within[5]>
-      - narrate format:GenericNPCFormat "I<&sq>m not feeling well... I have to go." targets:<npc.location.find.players.within[5]>
+      - narrate format:GenericNPCFormat "I quit!" targets:<npc.location.find.players.within[5]||null>
+      - narrate format:GenericNPCFormat "I<&sq>m done with this place!" targets:<npc.location.find.players.within[5]||null>
+      - narrate format:GenericNPCFormat "I should have called out!" targets:<npc.location.find.players.within[5]||null>
+      - narrate format:GenericNPCFormat "I had way too much to drink last night..." targets:<npc.location.find.players.within[5]||null>
+      - narrate format:GenericNPCFormat "I<&sq>m not feeling well... I have to go." targets:<npc.location.find.players.within[5]||null>
       }
     - wait 2s
     - despawn <npc>
@@ -216,11 +216,11 @@ MasterChefNPC:
     - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
     - if <util.random.int[1].to[10].is[OR_MORE].than[7]> {
       - random {
-        - narrate format:GenericNPCFormat "Ticket %ticketNumber% heard" targets:<npc.location.find.players.within[5]>
-        - narrate format:GenericNPCFormat "I<&sq>ll get right on that!" targets:<npc.location.find.players.within[5]>
-        - narrate format:GenericNPCFormat "Ok, time to work." targets:<npc.location.find.players.within[5]>
-        - narrate format:GenericNPCFormat "Watch out folks, I<&sq>ve got stuff to do!" targets:<npc.location.find.players.within[5]>
-        - narrate format:GenericNPCFormat "Oh... someone<&sq>s hungry!" targets:<npc.location.find.players.within[5]>
+        - narrate format:GenericNPCFormat "Ticket %ticketNumber% heard" targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "I<&sq>ll get right on that!" targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "Ok, time to work." targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "Watch out folks, I<&sq>ve got stuff to do!" targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "Oh... someone<&sq>s hungry!" targets:<npc.location.find.players.within[5]||null>
         }
       }
     - inject locally processOrderQueue
@@ -229,11 +229,11 @@ MasterChefNPC:
   # When the Chef is cooking food
     - if <util.random.int[1].to[10].is[OR_MORE].than[7]> {
       - random {
-        - narrate format:GenericNPCFormat "Ticket %ticketNumber% heard, but I<&sq>m already cooking something." targets:<npc.location.find.players.within[5]>
-        - narrate format:GenericNPCFormat "C<&sq>mon man... I<&sq>m already working here..." targets:<npc.location.find.players.within[5]>
-        - narrate format:GenericNPCFormat "These orders just keep coming!" targets:<npc.location.find.players.within[5]>
-        - narrate format:GenericNPCFormat "Walking in..." targets:<npc.location.find.players.within[5]>
-        - narrate format:GenericNPCFormat "Listen up!" targets:<npc.location.find.players.within[5]>
+        - narrate format:GenericNPCFormat "Ticket %ticketNumber% heard, but I<&sq>m already cooking something." targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "C<&sq>mon man... I<&sq>m already working here..." targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "These orders just keep coming!" targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "Walking in..." targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "Listen up!" targets:<npc.location.find.players.within[5]||null>
         }
       }
 
@@ -241,11 +241,11 @@ MasterChefNPC:
   # When the Chef is delivering food
     - if <util.random.int[1].to[10].is[OR_MORE].than[7]> {
       - random {
-        - narrate format:GenericNPCFormat "Ticket %ticketNumber% heard, but I<&sq>m delivering food right now." targets:<npc.location.find.players.within[5]>
-        - narrate format:GenericNPCFormat "Man my hands are full!" targets:<npc.location.find.players.within[5]>
-        - narrate format:GenericNPCFormat "Peeps be cray." targets:<npc.location.find.players.within[5]>
-        - narrate format:GenericNPCFormat "More orders coming in fellas!" targets:<npc.location.find.players.within[5]>
-        - narrate format:GenericNPCFormat "We<&sq>ve got another one!" targets:<npc.location.find.players.within[5]>
+        - narrate format:GenericNPCFormat "Ticket %ticketNumber% heard, but I<&sq>m delivering food right now." targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "Man my hands are full!" targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "Peeps be cray." targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "More orders coming in fellas!" targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "We<&sq>ve got another one!" targets:<npc.location.find.players.within[5]||null>
         }
       }
 
@@ -258,11 +258,11 @@ MasterChefNPC:
     - flag npc status:drunk
     - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
     - random {
-      - narrate format:GenericNPCFormat "I quit!" targets:<npc.location.find.players.within[5]>
-      - narrate format:GenericNPCFormat "I<&sq>m done with this place!" targets:<npc.location.find.players.within[5]>
-      - narrate format:GenericNPCFormat "I should have called out!" targets:<npc.location.find.players.within[5]>
-      - narrate format:GenericNPCFormat "I had way too much to drink last night..." targets:<npc.location.find.players.within[5]>
-      - narrate format:GenericNPCFormat "I<&sq>m not feeling well... I have to go." targets:<npc.location.find.players.within[5]>
+      - narrate format:GenericNPCFormat "I quit!" targets:<npc.location.find.players.within[5]||null>
+      - narrate format:GenericNPCFormat "I<&sq>m done with this place!" targets:<npc.location.find.players.within[5]||null>
+      - narrate format:GenericNPCFormat "I should have called out!" targets:<npc.location.find.players.within[5]||null>
+      - narrate format:GenericNPCFormat "I had way too much to drink last night..." targets:<npc.location.find.players.within[5]||null>
+      - narrate format:GenericNPCFormat "I<&sq>m not feeling well... I have to go." targets:<npc.location.find.players.within[5]||null>
       }
     - wait 2s
     - despawn <npc>
@@ -273,11 +273,11 @@ MasterChefNPC:
     - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
     - if <util.random.int[1].to[10].is[OR_MORE].than[7]> {
       - random {
-        - narrate format:GenericNPCFormat "I hope nobody don<&sq>t see dat hair!" targets:<npc.location.find.players.within[5]>
-        - narrate format:GenericNPCFormat "Boy, I cooks good!" targets:<npc.location.find.players.within[5]>
-        - narrate format:GenericNPCFormat "Times to gets dem foods." targets:<npc.location.find.players.within[5]>
-        - narrate format:GenericNPCFormat "Now that<&sq>s good eats." targets:<npc.location.find.players.within[5]>
-        - narrate format:GenericNPCFormat "Bam!" targets:<npc.location.find.players.within[5]>
+        - narrate format:GenericNPCFormat "I hope nobody don<&sq>t see dat hair!" targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "Boy, I cooks good!" targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "Times to gets dem foods." targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "Now that<&sq>s good eats." targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "Bam!" targets:<npc.location.find.players.within[5]||null>
         }
       }
     - inject locally processDeliveryQueue
@@ -286,11 +286,11 @@ MasterChefNPC:
   # When the Chef is cooking food
     - if <util.random.int[1].to[10].is[OR_MORE].than[7]> {
       - random {
-        - narrate format:GenericNPCFormat "Oh fizzle bums, I<&sq>m about to burn that food!" targets:<npc.location.find.players.within[5]>
-        - narrate format:GenericNPCFormat "Burnt food is NOT good eats!" targets:<npc.location.find.players.within[5]>
-        - narrate format:GenericNPCFormat "I hope they like it crispy." targets:<npc.location.find.players.within[5]>
-        - narrate format:GenericNPCFormat "We<&sq>ll just tell them it<&sq>s supposed to be blackend." targets:<npc.location.find.players.within[5]>
-        - narrate format:GenericNPCFormat "I<&sq>m in the weeds!" targets:<npc.location.find.players.within[5]>
+        - narrate format:GenericNPCFormat "Oh fizzle bums, I<&sq>m about to burn that food!" targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "Burnt food is NOT good eats!" targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "I hope they like it crispy." targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "We<&sq>ll just tell them it<&sq>s supposed to be blackend." targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "I<&sq>m in the weeds!" targets:<npc.location.find.players.within[5]||null>
         }
       }
 
@@ -298,11 +298,11 @@ MasterChefNPC:
   # When the Chef is delivering food
     - if <util.random.int[1].to[10].is[OR_MORE].than[7]> {
       - random {
-        - narrate format:GenericNPCFormat "I<&sq>m running as fast as I can!" targets:<npc.location.find.players.within[5]>
-        - narrate format:GenericNPCFormat "Gotta run dis food first brah." targets:<npc.location.find.players.within[5]>
-        - narrate format:GenericNPCFormat "Boy... you be trippin." targets:<npc.location.find.players.within[5]>
-        - narrate format:GenericNPCFormat "Hey man, grab dat food." targets:<npc.location.find.players.within[5]>
-        - narrate format:GenericNPCFormat "Yo, that<&sq>s about to burn!" targets:<npc.location.find.players.within[5]>
+        - narrate format:GenericNPCFormat "I<&sq>m running as fast as I can!" targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "Gotta run dis food first brah." targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "Boy... you be trippin." targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "Hey man, grab dat food." targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "Yo, that<&sq>s about to burn!" targets:<npc.location.find.players.within[5]||null>
         }
       }
 

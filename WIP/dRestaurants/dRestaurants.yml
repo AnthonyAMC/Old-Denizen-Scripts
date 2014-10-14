@@ -341,9 +341,7 @@ dRestaurant:
             else {
             - narrate "<red><c.item.material.name.replace[_].with[ ]> removed from your ticket!"
             }
-          - adjust <c.item> quantity:0 save:item2
-          - adjust <entry[item2].result> lore:li@ save:item1
-          - flag player dRestaurant_Order:%restaurantName%/<def[order].exclude[<entry[item1].result>]>
+          - flag player dRestaurant_Order:%restaurantName%/<def[order].exclude[<c.item||>]>
           - take from:in@<player.name>_restaurant <c.item> qty:!
           - inventory update
           }
@@ -902,7 +900,7 @@ dRestaurant:
     - ^animate <npc> animation:ARM_SWING
     - ^wait 5t
     - ^playsound %furnace% sound:ghast_fireball
-    - ^modifyblock %furnace% m@burning_furnace,<def[stove].material.data>
+    - ^modifyblock %furnace% m@burning_furnace,<def[furnace].material.data>
     - ^run locally bakeFood_Unattended_Cooking def:%ticketNumber%|%furnace%|%walkLoc%|%cookTime%|%cookedFood%
 
   bakeFood_Unattended_Cooking:
@@ -924,7 +922,6 @@ dRestaurant:
       - ^playsound %furnace% sound:<def[sound].random>
       - ^wait <util.random.int[5].to[15]>t
       }
-    - ^modifyblock %equipmentLoc% m@furnace,<def[equipmentLoc].material.data>
     - ^action "cook complete" context:ticket|%ticketNumber%|equipmentLoc|%furnace%|walkLoc|%walkLoc%|displayEntity|null|cookedFood|%cookedFood%
 
   bakeFood_Unattended_Get:
@@ -933,6 +930,7 @@ dRestaurant:
     - ^look <npc> %equipmentLoc%
     - ^animate <npc> animation:ARM_SWING
     - ~equip <npc> hand:%cookedFood%
+    - ^modifyblock %equipmentLoc% m@furnace,<def[equipmentLoc].material.data>
     - ^wait 10t
 
   grillFood_Attended:
