@@ -1126,7 +1126,52 @@ dRestaurant:
 
 #
 #  END Animations
-#--------------------------------------
+#-----------------------
+#
+#  Chef Idle Mechanics
+#
+  idleQueue_Chef:
+    - define fidgetValues '<npc.flag[dRestaurant_FidgetValues].as_list||null>'
+    - define wait '<def[fidgetValues].get[1]||10>'
+    - define list 'li@75/Fidget|25/WashDishes'
+    - inject s@WeightedRandomChoice p:asDef instantly
+    - inject locally idleQueue_Chef_%result%
+    - wait <util.random.int[<def[wait].mul[0.5].as_int>].to[<def[wait].mul[1.5].as_int>]>s
+    - inject locally idleQueue_Chef
+
+  idleQueue_Chef_Fidget:
+    - define radius '<def[fidgetValues].get[2]||5>'
+    - define speed '<def[fidgetValues].get[3]||0.7>'
+    - define fidgetLocation '<def[fidgetValues].get[4]||npc.location>'
+    - define fidgetHeight '<def[fidgetValues].get[5]||1>'
+    - define pathMaterial '<def[fidgetValues].get[6].split_by[/]||cobblestone|coal_block|cobblestone_stairs>'
+    - repeat 5 {
+      - define target '<def[fidgetLocation].as_location.find.surface_blocks[<def[pathMaterial]>].within[<def[radius]>].random>'
+      - if <def[target].distance[%fidgetLocation%].vertical.is[OR_LESS].than[%fidgetHeight%]> {
+        - ~walk %target% speed:%speed%
+        - repeat stop
+        }
+      }
+
+  idleQueue_Chef_WashDishes:
+    - define foodItems li@bowl|wood_plate
+    - inject s@dRestaurant p:washFood
+
+
+#
+#  END Chef Idle Mechanics
+#-----------------------
+#
+#  Waitress Idle Mechanics
+#
+#
+
+
+
+
+#
+#  END Waitress Idle Mechanics
+#-----------------------
 #
 #
 #  END DRESTAURANT WORLD SCRIPT
