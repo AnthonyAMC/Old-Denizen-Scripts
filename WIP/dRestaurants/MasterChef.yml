@@ -136,7 +136,7 @@ MasterChefNPC:
     - flag npc Status:available
     - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
     - lookclose <npc> state:true
-    - run s@Fidget id:fidgetQueue_<npc.id>
+    - run s@drestaurant p:idleQueue_Chef id:fidgetQueue_<npc.id>
     - queue clear
 
   processDeliveryQueue:
@@ -174,7 +174,7 @@ MasterChefNPC:
       }
     - flag npc Status:available
     - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
-    - run s@Fidget id:fidgetQueue_<npc.id>
+    - run s@drestaurant p:idleQueue_Chef id:fidgetQueue_<npc.id>
     - lookclose <npc> state:true
     - queue clear
 

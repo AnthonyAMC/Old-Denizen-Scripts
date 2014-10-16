@@ -1133,7 +1133,7 @@ dRestaurant:
   idleQueue_Chef:
     - define fidgetValues '<npc.flag[dRestaurant_FidgetValues].as_list||null>'
     - define wait '<def[fidgetValues].get[1]||10>'
-    - define list 'li@75/Fidget|25/WashDishes'
+    - define list 'li@75/Fidget|25/dishwashing|25/prepcleaning|25/grillcleaning'
     - inject s@WeightedRandomChoice p:asDef instantly
     - inject locally idleQueue_Chef_%result%
     - wait <util.random.int[<def[wait].mul[0.5].as_int>].to[<def[wait].mul[1.5].as_int>]>s
@@ -1157,6 +1157,62 @@ dRestaurant:
     - define foodItems li@bowl|wood_plate
     - inject s@dRestaurant p:washFood
 
+  dishwashing:
+  # washing dishes in prep for customers
+    - ^lookclose <npc> state:false
+    - ^define range 15
+    - ^define fooditems li@bowl|wood_plate
+    - ~inject locally washfood
+    - ~inject locally prepFood
+    - inject locally idleQueue_Chef
+
+  prepcleaning:
+    - inject locally findprep
+    - lookclose state:false
+    - ^define destination '<def[locations].random>'
+    - ~walkto '<def[destination].split[/].get[2].as_location>' speed:0.7
+    - ^look <npc> '<def[destination].split[/].get[1].as_location>'
+    - ~equip npc hand:i@potion,16388
+    - wait 1s
+    - playeffect '<def[destination].split[/].get[1].as_location>' effect:snow_shovel qty:2
+    - playsound <npc.location> sound:fuse pitch:2
+    - playeffect '<def[destination].split[/].get[1].as_location>' effect:snow_shovel qty:2
+    - playsound <npc.location> sound:fuse pitch:2
+    - ~equip npc hand:i@red_carpet
+    - animate <npc> animation:arm_swing
+    - playsound <npc.location> sound:step_wood pitch:-1
+    - animate <npc> animation:arm_swing
+    - playsound <npc.location> sound:step_wood pitch:-1
+    - wait 1s
+    - playeffect '<def[destination].split[/].get[1].as_location>' effect:fireworks_spark qty:5
+    - playsound <npc.location> sound:level_up pitch:-1
+    - ~equip npc hand:i@air
+    - lookclose state:true
+    - inject locally idleQueue_Chef
+  
+  grillcleaning:
+    - inject findgrill locally
+    - lookclose state:false
+    - ^define destination '<def[locations].random>'
+    - ~walkto '<def[destination].split[/].get[2].as_location>' speed:0.7
+    - ^look <npc> '<def[destination].split[/].get[1].as_location>'
+    - ~equip npc hand:i@potion,16388
+    - wait 1s
+    - playeffect '<def[destination].split[/].get[1].as_location>' effect:snow_shovel qty:2
+    - playsound <npc.location> sound:fuse pitch:2
+    - playeffect '<def[destination].split[/].get[1].as_location>' effect:snow_shovel qty:2
+    - playsound <npc.location> sound:fuse pitch:2
+    - ~equip npc hand:i@red_carpet
+    - animate <npc> animation:arm_swing
+    - playsound <npc.location> sound:fizz pitch:2
+    - animate <npc> animation:arm_swing
+    - playsound <npc.location> sound:fizz pitch:2
+    - wait 1s
+    - playeffect '<def[destination].split[/].get[1].as_location>' effect:fireworks_spark qty:5
+    - playsound <npc.location> sound:level_up pitch:-1
+    - ~equip npc hand:i@air
+    - lookclose state:true
+    - inject locally idleQueue_Chef
 
 #
 #  END Chef Idle Mechanics
