@@ -1133,7 +1133,7 @@ dRestaurant:
   idleQueue_Chef:
     - define fidgetValues '<npc.flag[dRestaurant_FidgetValues].as_list||null>'
     - define wait '<def[fidgetValues].get[1]||10>'
-    - define list 'li@75/Fidget|25/WashDishes'
+    - define list 'li@75/Fidget|25/dishwashing|25/prepcleaning|25/grillcleaning'
     - inject s@WeightedRandomChoice p:asDef instantly
     - inject locally idleQueue_Chef_%result%
     - wait <util.random.int[<def[wait].mul[0.5].as_int>].to[<def[wait].mul[1.5].as_int>]>s
