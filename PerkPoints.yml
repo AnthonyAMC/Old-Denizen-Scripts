@@ -180,7 +180,8 @@ PerkPointSystem:
     on packs command:
     - determine passively fulfilled
     - define page '<c.args.get[1].abs.as_int||null>'
-    - inject listPackagesPaged locally
+    - if <s@PerkPointsGUI.is[!=].to[null]||false> run s@PerkPointsGUI 'p:listExe' 'def:%page%'
+      else inject listPackagesPaged locally
 
     on perk command:
     - inject locally commandHandler instantly
@@ -1018,7 +1019,7 @@ PerkPointSystem:
   # are able to get.
     # We need to check if the package exists
     - define writeID 'PerkPoints_packages'
-    - define pack '<c.args.get[3].replace[.].with[-].escaped||null>'
+    - define pack '<c.args.get[3].replace[.].with[-].escaped||<def[1]||null>>'
     - define syntax '/perk pack info \<&lt\>PackageName\<&gt\>'
     - inject locally packageExists
     - define msgsHeaderTitle '%pack% Info'
@@ -1173,7 +1174,7 @@ PerkPointSystem:
   buyPackage:
     # Let's make sure the player typed in a valid package name
     - define writeID 'PerkPoints_packages'
-    - define pack '<c.args.get[3].replace[.].with[-].escaped||null>'
+    - define pack '<c.args.get[3].replace[.].with[-].escaped||<def[1]||null>>'
     - define syntax '/perk pack buy \<&lt\>PackageName\<&gt\>'
     - inject locally packageExists
     # Setup some SQL info, check the connection, and then get the player record
