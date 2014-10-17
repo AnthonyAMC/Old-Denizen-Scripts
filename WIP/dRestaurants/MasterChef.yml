@@ -1,6 +1,6 @@
 ################################################################################
 #
-#  Master Cher Assignment Script
+#  Master Chef Assignment Script
 #
 # The Chef cooks food.
 #
@@ -86,11 +86,11 @@ MasterChefNPC:
 
   spawn:
     - narrate format:GenericNPCFormat "Alright, time to start work..." targets:<npc.location.find.players.within[5]||null>
-    - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
+    - if <queue.exists[idleQueue_Chef_<npc.id>]> queue queue:idleQueue_Chef_<npc.id> stop
     - inject locally processOrderQueue
 
   despawn:
-    - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
+    - if <queue.exists[idleQueue_Chef_<npc.id>]> queue queue:idleQueue_Chef_<npc.id> stop
     - narrate format:GenericNPCFormat "Phew... I<&sq>m glad to be done work for the day!" targets:<npc.location.find.players.within[5]||null>
 
   damage:
@@ -134,9 +134,9 @@ MasterChefNPC:
       - inject processDeliveryQueue locally
       }
     - flag npc Status:available
-    - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
+    - if <queue.exists[idleQueue_Chef_<npc.id>]> queue queue:idleQueue_Chef_<npc.id> stop
     - lookclose <npc> state:true
-    - run s@Fidget id:fidgetQueue_<npc.id>
+    - run s@drestaurant p:idleQueue_Chef id:idleQueue_Chef_<npc.id>
     - queue clear
 
   processDeliveryQueue:
@@ -173,8 +173,8 @@ MasterChefNPC:
       - inject processOrderQueue locally
       }
     - flag npc Status:available
-    - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
-    - run s@Fidget id:fidgetQueue_<npc.id>
+    - if <queue.exists[idleQueue_Chef_<npc.id>]> queue queue:idleQueue_Chef_<npc.id> stop
+    - run s@drestaurant p:idleQueue_Chef id:idleQueue_Chef_<npc.id>
     - lookclose <npc> state:true
     - queue clear
 
