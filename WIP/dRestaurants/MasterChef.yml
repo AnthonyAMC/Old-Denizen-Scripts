@@ -12,6 +12,8 @@ MasterChefNPC:
   actions:
     on assignment:
       - run locally assignment instantly
+    on remove assignment:
+      - run locally unassign instantly
     on spawn:
       - run locally spawn instantly
     on despawn:
@@ -65,7 +67,6 @@ MasterChefNPC:
       - inject locally cookComplete_<def[chef].flag[Status]||drunk>
 
 
-
   assignment:
     - trigger name:chat state:true radius:5 cooldown:5s
     - trigger name:click state:true radius:5 cooldown:5s
@@ -74,20 +75,33 @@ MasterChefNPC:
     - vulnerable state:false
     - lookclose true range:5 realistic
     - flag npc respawn_location:<npc.location>
-    - flag npc Pathfind.FidgetRadius:5
-    - flag npc Pathfind.FidgetSpeed:0.7
-    - flag npc Pathfind.FidgetWait:5
-    - flag npc Pathfind.FidgetLocation:<npc.location>
-    - flag npc Pathfind.FidgetHeight:1
-    - flag npc Pathfind.FidgetPathMaterial:<npc.location.standing_on.material.name>
+    - inject s@MasterWaitressNPC p:findRestaurant instantly
+    - define wait '5'
+    - define radius '15'
+    - define speed '0.8'
+    - define location '<npc.location>'
+    - define height '1'
+    - define materials '<npc.location.standing_on.material.name>'
+    - flag npc Pathfind:!
+    - flag npc dRestaurant_FidgetValues:!
+    - flag npc dRestaurant_FidgetValues:|:%restaurant%|%wait%|%radius%|%speed%|%location%|%height%|%materials%
     - flag npc OrderQueue:!
     - flag npc DeliveryQueue:!
     - inject locally spawn instantly
 
+  unassign:
+    - flag npc respawn_location:!
+    - flag npc Pathfind:!
+    - flag npc dRestaurant_FidgetValues:!
+    - flag npc OrderQueue:!
+    - flag npc DeliveryQueue:!
+    - despawn
+
   spawn:
     - narrate format:GenericNPCFormat "Alright, time to start work..." targets:<npc.location.find.players.within[5]||null>
     - if <queue.exists[idleQueue_Chef_<npc.id>]> queue queue:idleQueue_Chef_<npc.id> stop
-    - inject locally processOrderQueue
+    - if <queue.exists[processOrder_<npc.id>]> queue queue:processOrder_<npc.id> stop
+    - run s@MasterChefNPC p:processOrderQueue id:processOrder_<npc.id>
 
   despawn:
     - if <queue.exists[idleQueue_Chef_<npc.id>]> queue queue:idleQueue_Chef_<npc.id> stop
@@ -109,10 +123,16 @@ MasterChefNPC:
   processOrderQueue:
   # Run through a list of orders waiting to be cooked. Rinse and repeat until
   # the queue is cleared.
-    - lookclose <npc> state:false
-    - define orderQueue <npc.flag[OrderQueue].as_list||null>
-    - if !<def[orderQueue].is_empty||true> {
-      - flag npc Status:cooking
+    - ^flag npc status:cooking
+    - ^lookclose <npc> state:false
+    - ^define fidgetValues '<npc.flag[dRestaurant_FidgetValues].as_list||null>'
+    - ^define restaurant '<def[fidgetValues].get[1]||null>'
+    - ^inject s@MasterWaitressNPC p:findRestaurant instantly
+    - ^define orderQueue <npc.flag[OrderQueue].as_list||null>
+    - ^if !<def[orderQueue].is_empty||true> {
+      - narrate format:GenericNPCFormat "Ok, I have work to do." targets:<npc.location.find.players.within[5]||null>
+      - define range <npc.flag[dRestaurant_SearchRadius]||30>
+      - define speed <npc.flag[dRestaurant_WorkSpeed]||0.8>
       - foreach %orderQueue% {
         - define ticketNumber %value%
         - define tickets '<server.flag[dRestaurantTickets].as_list>'
@@ -130,23 +150,28 @@ MasterChefNPC:
         - inject processOrderQueue locally
         }
       }
-    - if !<npc.flag[DeliveryQueue].as_list.is_empty||true> {
+    - ^if !<npc.flag[DeliveryQueue].as_list.is_empty||true> {
       - inject processDeliveryQueue locally
       }
-    - flag npc Status:available
-    - if <queue.exists[idleQueue_Chef_<npc.id>]> queue queue:idleQueue_Chef_<npc.id> stop
-    - lookclose <npc> state:true
-    - run s@drestaurant p:idleQueue_Chef id:idleQueue_Chef_<npc.id>
-    - queue clear
+    - ^if <queue.exists[idleQueue_Chef_<npc.id>]> queue queue:idleQueue_Chef_<npc.id> stop
+    - ^lookclose <npc> state:true
+    - ^run s@drestaurant p:idleQueue_Chef id:idleQueue_Chef_<npc.id> delay:2t
+    - ^queue clear
 
   processDeliveryQueue:
   # Run through a list of orders waiting to be delivered. Rinse and repeat until
   # the queue is cleared.
   # - flag npc DeliveryQueue:->:%ticketNumber%/%equipmentLoc%/%walkLoc%/%displayEntity%/%cookedFood%
-    - lookclose <npc> state:false
-    - define deliveryQueue <npc.flag[DeliveryQueue].as_list||null>
-    - if !<def[deliveryQueue].is_empty||true> {
-      - flag npc Status:deliver
+    - ^flag npc Status:deliver
+    - ^lookclose <npc> state:false
+    - ^define fidgetValues '<npc.flag[dRestaurant_FidgetValues].as_list||null>'
+    - ^define restaurant '<def[fidgetValues].get[1]||null>'
+    - ^inject s@MasterWaitressNPC p:findRestaurant instantly
+    - ^define deliveryQueue <npc.flag[DeliveryQueue].as_list||null>
+    - ^if !<def[deliveryQueue].is_empty||true> {
+      - narrate format:GenericNPCFormat "Food to deliver." targets:<npc.location.find.players.within[5]||null>
+      - define range <npc.flag[dRestaurant_SearchRadius]||30>
+      - define speed <npc.flag[dRestaurant_WorkSpeed]||0.8>
       - foreach %deliveryQueue% {
         - define deliveryObject %value%
         - define ticketNumber '<def[deliveryObject].split_by[/].get[1]>'
@@ -169,14 +194,13 @@ MasterChefNPC:
         - inject processDeliveryQueue locally
         }
       }
-    - if !<npc.flag[OrderQueue].as_list.is_empty||true> {
+    - ^if !<npc.flag[OrderQueue].as_list.is_empty||true> {
       - inject processOrderQueue locally
       }
-    - flag npc Status:available
-    - if <queue.exists[idleQueue_Chef_<npc.id>]> queue queue:idleQueue_Chef_<npc.id> stop
-    - run s@drestaurant p:idleQueue_Chef id:idleQueue_Chef_<npc.id>
-    - lookclose <npc> state:true
-    - queue clear
+    - ^lookclose <npc> state:true
+    - ^if <queue.exists[idleQueue_Chef_<npc.id>]> queue queue:idleQueue_Chef_<npc.id> stop
+    - ^run s@drestaurant p:idleQueue_Chef id:idleQueue_Chef_<npc.id> delay:2t
+    - ^queue clear
 
 
 #
@@ -198,7 +222,7 @@ MasterChefNPC:
   orderin_drunk:
   # A catchall if something derps
     - flag npc status:drunk
-    - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
+    - if <queue.exists[idleQueue_Chef_<npc.id>]> queue queue:idleQueue_Chef_<npc.id> stop
     - random {
       - narrate format:GenericNPCFormat "I quit!" targets:<npc.location.find.players.within[5]||null>
       - narrate format:GenericNPCFormat "I<&sq>m done with this place!" targets:<npc.location.find.players.within[5]||null>
@@ -209,11 +233,8 @@ MasterChefNPC:
     - wait 2s
     - despawn <npc>
 
-  orderin_available:
-  # When the Chef is available for whatever
-    - flag npc status:cooking
-    - lookclose <npc> state:false
-    - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
+  orderin_idle:
+  # When the Chef is running his idleQueue
     - if <util.random.int[1].to[10].is[OR_MORE].than[7]> {
       - random {
         - narrate format:GenericNPCFormat "Ticket %ticketNumber% heard" targets:<npc.location.find.players.within[5]||null>
@@ -223,7 +244,6 @@ MasterChefNPC:
         - narrate format:GenericNPCFormat "Oh... someone<&sq>s hungry!" targets:<npc.location.find.players.within[5]||null>
         }
       }
-    - inject locally processOrderQueue
 
   orderin_cooking:
   # When the Chef is cooking food
@@ -256,7 +276,7 @@ MasterChefNPC:
   cookComplete_drunk:
   # A catchall if something derps
     - flag npc status:drunk
-    - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
+    - if <queue.exists[idleQueue_Chef_<npc.id>]> queue queue:idleQueue_Chef_<npc.id> stop
     - random {
       - narrate format:GenericNPCFormat "I quit!" targets:<npc.location.find.players.within[5]||null>
       - narrate format:GenericNPCFormat "I<&sq>m done with this place!" targets:<npc.location.find.players.within[5]||null>
@@ -267,10 +287,8 @@ MasterChefNPC:
     - wait 2s
     - despawn <npc>
 
-  cookComplete_available:
-  # When the Chef is available for whatever
-    - flag npc status:deliver
-    - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
+  cookComplete_idle:
+  # When the Chef is running his idleQueue
     - if <util.random.int[1].to[10].is[OR_MORE].than[7]> {
       - random {
         - narrate format:GenericNPCFormat "I hope nobody don<&sq>t see dat hair!" targets:<npc.location.find.players.within[5]||null>
@@ -280,7 +298,6 @@ MasterChefNPC:
         - narrate format:GenericNPCFormat "Bam!" targets:<npc.location.find.players.within[5]||null>
         }
       }
-    - inject locally processDeliveryQueue
 
   cookComplete_cooking:
   # When the Chef is cooking food

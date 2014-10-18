@@ -18,6 +18,8 @@ MasterWaitressNPC:
       - run locally despawn instantly delay:1s
     on click:
       - run locally click_<npc.flag[status]||drunk> instantly
+    on move proximity:
+      - run locally proximity_<npc.flag[status]||drunk> instantly
 
 
   assignment:
@@ -25,7 +27,7 @@ MasterWaitressNPC:
   # outside the on assignment action if needed.
     - trigger name:chat state:true radius:5 cooldown:5s
     - trigger name:click state:true radius:5 cooldown:5s
-    - trigger name:proximity state:false
+    - trigger name:proximity state:true radius:2 cooldown:2s
     - trigger name:damage state:true radius:5 cooldown:5s
     - vulnerable state:false
     - lookclose true range:5 realistic
@@ -68,6 +70,7 @@ MasterWaitressNPC:
   # inventory.
   # Should add nullChecks for this
     - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
+    - inject s@MasterWaitressNPC p:findRestaurant instantly
     - define menuQueue '<npc.flag[dRestaurant_MenuQueue].as_list||null>'
     - if !<def[menuQueue].is_empty||true> {
       - flag npc Status:order
@@ -104,6 +107,7 @@ MasterWaitressNPC:
   # Run through a list of orders waiting to be delivered. Rinse and repeat until
   # the queue is cleared.
   # Should add nullChecks for this
+    - inject s@MasterWaitressNPC p:findRestaurant instantly
     - define ticketQueue '<npc.flag[TicketQueue].as_list||null>'
     - if !<def[ticketQueue].is_empty||true> {
       - flag npc Status:deliver
@@ -350,6 +354,60 @@ MasterWaitressNPC:
 
   orderup_deliver:
   # When the Waitress is delivering food
+    - if <util.random.int[1].to[10].is[OR_MORE].than[7]> {
+      - random {
+        - narrate format:GenericNPCFormat "Heard ticket %ticketNumber%! I<&sq>m running food right now." targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "My goodness, the food just keeps on coming!" targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "I<&sq>m in the weeds!" targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "I<&sq>m going as fast as I can!" targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "This is a rough night!" targets:<npc.location.find.players.within[5]||null>
+        }
+      }
+#
+#--------------------------------------
+#  Proximity Responses
+#
+  proximity_drunk:
+  # A catchall if something derps
+    - flag npc status:drunk
+    - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
+    - random {
+      - narrate format:GenericNPCFormat "I quit!" targets:<npc.location.find.players.within[5]||null>
+      - narrate format:GenericNPCFormat "I<&sq>m done with this place!" targets:<npc.location.find.players.within[5]||null>
+      - narrate format:GenericNPCFormat "I should have called out!" targets:<npc.location.find.players.within[5]||null>
+      - narrate format:GenericNPCFormat "I had way too much to drink last night..." targets:<npc.location.find.players.within[5]||null>
+      - narrate format:GenericNPCFormat "I<&sq>m not feeling well... I have to go." targets:<npc.location.find.players.within[5]||null>
+      }
+    - wait 2s
+    - despawn <npc>
+
+  proximity_available:
+  # When the Waitress is available for whatever
+    - if <util.random.int[1].to[10].is[OR_MORE].than[7]> {
+      - random {
+        - narrate format:GenericNPCFormat "Ticket %ticketNumber% heard!" targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "Oh, another order is ready." targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "Yay! Food to run!" targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "I<&sq>m a happy little worker bee." targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "Time to get working." targets:<npc.location.find.players.within[5]||null>
+        }
+      }
+
+  proximity_order:
+  # When the Waitress is taking an order
+    - if <util.random.int[1].to[10].is[OR_MORE].than[7]> }
+      - random {
+        - narrate format:GenericNPCFormat "Heard ticket %ticketNumber%! I<&sq>m taking an order right now." targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "Buzz buzz." targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "The kitchen sure is busy!" targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "They are working hard back there." targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "The guy on the grill is by bf." targets:<npc.location.find.players.within[5]||null>
+        }
+      }
+
+  proximity_deliver:
+  # When the Waitress is delivering food
+    - define player '<npc.flag[dRestaurant_MenuQueue].as_list.get[1].as_player||null>'
     - if <util.random.int[1].to[10].is[OR_MORE].than[7]> {
       - random {
         - narrate format:GenericNPCFormat "Heard ticket %ticketNumber%! I<&sq>m running food right now." targets:<npc.location.find.players.within[5]||null>
