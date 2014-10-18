@@ -18,7 +18,7 @@
 #                                                                              #
 ################################################################################
 
-'WeightedRandomChoice':
+WeightedRandomChoice:
 #
 # Choose a random number from 1 to 100 and return which category the number is
 # within.
@@ -46,6 +46,7 @@
           }
         }
       }
+    - ^define oldValue:!
     - ^define result <npc.flag[WeightedRandomChoice]>
 
   asDef:
@@ -68,6 +69,7 @@
           }
         }
       }
+    - define oldValue:!
 
 
 #'Example Weighted Random Choice Usage':
