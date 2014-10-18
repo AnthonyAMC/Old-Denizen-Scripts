@@ -6,7 +6,7 @@
 #
 #   Authors: |Anthony| calico-kid
 #   Version: 0.1
-#   dScript Version: 0.9.5-b1522
+#   dScript Version: 0.9.6-DEV_b96
 #
 #
 #
@@ -416,18 +416,28 @@ dRestaurant:
 # displayed to this locations surface. The next value in the location pair is
 # the location that the NPC will walk to.
 #
-#  TODO
+#  Example:
+#    - ^inject locally findYourEquipment instantly
+#    - ^define destination '<def[locations].random.split[/]>'
+#    - ^define equipmentLoc '<def[destination].get[1].as_location>'
+#    - ^define walkLoc '<def[destination].get[2].as_location>'
 #
+#  TODO
 #    - Pantry
 #    - Walkin Freezer
 #    - Various Bar stuffs
 #    - Frying station
 #    - Fancy Grill?
 #
+#  Working on switching to cuboid based searches instead of radius. Need a tag
+# or some sane method to quickly filter out all irrelevant blocks. The current
+# foreach method that's commented out is just way to heavy to be acceptable.
+#
 #
   findBasicFridge:
   # The BasicFridge is 2 ironblocks tall with a stone button on the front of the top block
-    - define ironBlocks <npc.location.find.blocks[iron_block].within[%range%]||null>
+    - define ironBlocks <cu@restaurant_%restaurant%.get_blocks[iron_block]||null>
+#    - define ironBlocks <npc.location.find.blocks[iron_block].within[<def[range]||15>]||null>
     - if <def[ironBlocks].is[!=].to[null]>
       && !<def[ironBlocks].is_empty> {
       - define locations li@
@@ -455,7 +465,8 @@ dRestaurant:
 
   findFancyFridge:
   # The FancyFridge is 2 ironblocks tall with an iron door on the front
-    - define ironBlocks <npc.location.find.blocks[iron_block].within[%range%]||null>
+    - define ironBlocks <cu@restaurant_%restaurant%.get_blocks[iron_block]>
+#    - define ironBlocks <npc.location.find.blocks[iron_block].within[<def[range]||15>]||null>
     - if <def[ironBlocks].is[!=].to[null]>
       && !<def[ironBlocks].is_empty> {
       - define locations li@
@@ -488,7 +499,8 @@ dRestaurant:
   #  functions since they all return the air block in front of the equipment.
   #  I want to keep this just to see if there is a noticeable difference. As in
   #  does the NPC get closer to the target block.
-    - define fireBlocks <npc.location.find.blocks[fire].within[%range%]||null>
+    - define fireBlocks <cu@restaurant_%restaurant%.get_blocks[fire,15]>
+#    - define fireBlocks <npc.location.find.blocks[fire].within[<def[range]||15>]||null>
     - if <def[fireBlocks].is[!=].to[null]>
       && !<def[fireBlocks].is_empty> {
       - define locations li@
@@ -516,7 +528,8 @@ dRestaurant:
 
   findSink:
   # The sink is a Cauldron full of water with a tripwire hook above
-    - define cauldronBlocks <npc.location.find.blocks[cauldron,3].within[%range%]||null>
+    - define cauldronBlocks <cu@restaurant_%restaurant%.get_blocks[cauldron,3]>
+#    - define cauldronBlocks <npc.location.find.blocks[cauldron,3].within[<def[range]||15>]||null>
     - if <def[cauldronBlocks].is[!=].to[null]>
       && !<def[cauldronBlocks].is_empty> {
       - define locations li@
@@ -544,7 +557,8 @@ dRestaurant:
 
   findPrep:
   # The Prep station is the top half stone slab with a wood pressure plate on top
-    - define prepBlocks <npc.location.find.blocks[stone_slab_up].within[%range%]||null>
+    - define prepBlocks <cu@restaurant_%restaurant%.get_blocks[stone_slab_up]>
+#    - define prepBlocks <npc.location.find.blocks[stone_slab_up].within[<def[range]||15>]||null>
     - if <def[prepBlocks].is[!=].to[null]>
       && !<def[prepBlocks].is_empty> {
       - define locations li@
@@ -575,7 +589,9 @@ dRestaurant:
   # We will accept furnaces that are on or off
   # For some reason i'm getting duplicate results, so for now i'm purging the
   #  dupes with:    - define locations '<def[locations].deduplicate>'
-    - define furnaceBlocks <npc.location.find.blocks[furnace|burning_furnace].within[%range%]||null>
+    - define materials 'li@furnace,2|furnace,3|furnace,4|furnace,5|burning_furnace,2|burning_furnace,3|burning_furnace,4|burning_furnace,5'
+    - define furnaceBlocks <cu@restaurant_%restaurant%.get_blocks[%materials%]>
+#    - define furnaceBlocks <npc.location.find.blocks[furnace|burning_furnace].within[<def[range]||15>]||null>
     - if <def[furnaceBlocks].is[!=].to[null]>
       && !<def[furnaceBlocks].is_empty> {
       - define locations li@
@@ -619,7 +635,9 @@ dRestaurant:
 
   findStove:
   # The Stove is a furnace with a stone pressure plate on top
-    - define stoveBlocks <npc.location.find.blocks[furnace|burning_furnace].within[%range%]||null>
+    - define materials 'li@furnace,2|furnace,3|furnace,4|furnace,5|burning_furnace,2|burning_furnace,3|burning_furnace,4|burning_furnace,5'
+    - define stoveBlocks <cu@restaurant_%restaurant%.get_blocks[%materials%]>
+#    - define stoveBlocks <npc.location.find.blocks[furnace|burning_furnace].within[<def[range]||15>]||null>
     - if <def[stoveBlocks].is[!=].to[null]>
       && !<def[stoveBlocks].is_empty> {
       - define locations li@
@@ -647,12 +665,12 @@ dRestaurant:
 
   findtap:
   # The tap is a tripwire hook under a lever
-    - define range 15
-    - define tap <npc.location.find.blocks[tripwire_hook].within[%range%]||null>
-    - if <def[tap].is[!=].to[null]>
-      && !<def[tap].is_empty> {
+    - define tapBlocks <cu@restaurant_%restaurant%.get_blocks[tripwire_hook]>
+#    - define tapBlocks <npc.location.find.blocks[tripwire_hook].within[<def[range]||15>]||null>
+    - if <def[tapBlocks].is[!=].to[null]>
+      && !<def[tapBlocks].is_empty> {
       - define locations li@
-      - foreach %tap% {
+      - foreach %tapBlocks% {
         - define tap '%value%'
         - if <def[tap].above.material.name.is[!=].to[lever]||true> foreach next
 
@@ -682,8 +700,10 @@ dRestaurant:
   # delivers cooked food to the side of the window inside the kitchen. Be sure
   # to have carpet on the floor in front of the window (outside the kitchen) so
   # the chef and waitress are finding the same windows!
-    - define stairs 'li@acacia_stairs,4|birch_wood_stairs,4|brick_stairs,4|cobblestone_stairs,4|dark_oak_stairs,4|jungle_wood_stairs,4|nether_brick_stairs,4|quartz_stairs,4|sandstone_stairs,4|smooth_stairs,4|spruce_wood_stairs,4|wood_stairs,4|acacia_stairs,5|birch_wood_stairs,5|brick_stairs,5|cobblestone_stairs,5|dark_oak_stairs,5|jungle_wood_stairs,5|nether_brick_stairs,5|quartz_stairs,5|sandstone_stairs,5|smooth_stairs,5|spruce_wood_stairs,5|wood_stairs,5|acacia_stairs,6|birch_wood_stairs,6|brick_stairs,6|cobblestone_stairs,6|dark_oak_stairs,6|jungle_wood_stairs,6|nether_brick_stairs,6|quartz_stairs,6|sandstone_stairs,6|smooth_stairs,6|spruce_wood_stairs,6|wood_stairs,6|acacia_stairs,7|birch_wood_stairs,7|brick_stairs,7|cobblestone_stairs,7|dark_oak_stairs,7|jungle_wood_stairs,7|nether_brick_stairs,7|quartz_stairs,7|sandstone_stairs,7|smooth_stairs,7|spruce_wood_stairs,7|wood_stairs,7'
-    - define windowBlocks '<npc.location.find.blocks[%stairs%].within[%range%]||null>'
+#    - define materials 'li@acacia_stairs,4|birch_wood_stairs,4|brick_stairs,4|cobblestone_stairs,4|dark_oak_stairs,4|jungle_wood_stairs,4|nether_brick_stairs,4|quartz_stairs,4|sandstone_stairs,4|smooth_stairs,4|spruce_wood_stairs,4|wood_stairs,4|acacia_stairs,5|birch_wood_stairs,5|brick_stairs,5|cobblestone_stairs,5|dark_oak_stairs,5|jungle_wood_stairs,5|nether_brick_stairs,5|quartz_stairs,5|sandstone_stairs,5|smooth_stairs,5|spruce_wood_stairs,5|wood_stairs,5|acacia_stairs,6|birch_wood_stairs,6|brick_stairs,6|cobblestone_stairs,6|dark_oak_stairs,6|jungle_wood_stairs,6|nether_brick_stairs,6|quartz_stairs,6|sandstone_stairs,6|smooth_stairs,6|spruce_wood_stairs,6|wood_stairs,6|acacia_stairs,7|birch_wood_stairs,7|brick_stairs,7|cobblestone_stairs,7|dark_oak_stairs,7|jungle_wood_stairs,7|nether_brick_stairs,7|quartz_stairs,7|sandstone_stairs,7|smooth_stairs,7|spruce_wood_stairs,7|wood_stairs,7'
+    - define materials 'li@quartz_stairs,4|quartz_stairs,5|quartz_stairs,6|quartz_stairs,7'
+    - define windowBlocks <cu@restaurant_%restaurant%.get_blocks[%materials%]>
+#    - define windowBlocks '<npc.location.find.blocks[%materials%].within[<def[range]||15>]||null>'
     - if <def[windowBlocks].is[!=].to[null]>
       && !<def[windowBlocks].is_empty> {
       - define locations li@
@@ -717,8 +737,10 @@ dRestaurant:
   # the cooked food from outside the kitchen.
   # Be sure to have an air block on the side of the window opposite the carpet
   # (outside the kitchen) so the chef and waitress are finding the same windows!
-    - define stairs 'li@acacia_stairs,4|birch_wood_stairs,4|brick_stairs,4|cobblestone_stairs,4|dark_oak_stairs,4|jungle_wood_stairs,4|nether_brick_stairs,4|quartz_stairs,4|sandstone_stairs,4|smooth_stairs,4|spruce_wood_stairs,4|wood_stairs,4|acacia_stairs,5|birch_wood_stairs,5|brick_stairs,5|cobblestone_stairs,5|dark_oak_stairs,5|jungle_wood_stairs,5|nether_brick_stairs,5|quartz_stairs,5|sandstone_stairs,5|smooth_stairs,5|spruce_wood_stairs,5|wood_stairs,5|acacia_stairs,6|birch_wood_stairs,6|brick_stairs,6|cobblestone_stairs,6|dark_oak_stairs,6|jungle_wood_stairs,6|nether_brick_stairs,6|quartz_stairs,6|sandstone_stairs,6|smooth_stairs,6|spruce_wood_stairs,6|wood_stairs,6|acacia_stairs,7|birch_wood_stairs,7|brick_stairs,7|cobblestone_stairs,7|dark_oak_stairs,7|jungle_wood_stairs,7|nether_brick_stairs,7|quartz_stairs,7|sandstone_stairs,7|smooth_stairs,7|spruce_wood_stairs,7|wood_stairs,7'
-    - define windowBlocks '<npc.location.find.blocks[%stairs%].within[%range%]||null>'
+#    - define materials 'li@acacia_stairs,4|birch_wood_stairs,4|brick_stairs,4|cobblestone_stairs,4|dark_oak_stairs,4|jungle_wood_stairs,4|nether_brick_stairs,4|quartz_stairs,4|sandstone_stairs,4|smooth_stairs,4|spruce_wood_stairs,4|wood_stairs,4|acacia_stairs,5|birch_wood_stairs,5|brick_stairs,5|cobblestone_stairs,5|dark_oak_stairs,5|jungle_wood_stairs,5|nether_brick_stairs,5|quartz_stairs,5|sandstone_stairs,5|smooth_stairs,5|spruce_wood_stairs,5|wood_stairs,5|acacia_stairs,6|birch_wood_stairs,6|brick_stairs,6|cobblestone_stairs,6|dark_oak_stairs,6|jungle_wood_stairs,6|nether_brick_stairs,6|quartz_stairs,6|sandstone_stairs,6|smooth_stairs,6|spruce_wood_stairs,6|wood_stairs,6|acacia_stairs,7|birch_wood_stairs,7|brick_stairs,7|cobblestone_stairs,7|dark_oak_stairs,7|jungle_wood_stairs,7|nether_brick_stairs,7|quartz_stairs,7|sandstone_stairs,7|smooth_stairs,7|spruce_wood_stairs,7|wood_stairs,7'
+    - define materials 'li@quartz_stairs,4|quartz_stairs,5|quartz_stairs,6|quartz_stairs,7'
+    - define windowBlocks <cu@restaurant_%restaurant%.get_blocks[%materials%]>
+#    - define windowBlocks '<npc.location.find.blocks[%materials%].within[<def[range]||15>]||null>'
     - if <def[windowBlocks].is[!=].to[null]>
       && !<def[windowBlocks].is_empty> {
       - define locations li@
@@ -770,7 +792,9 @@ dRestaurant:
     - ^inject locally findFancyFridge instantly
     - ^define destination '<def[locations].random>'
     - ^define door '<def[destination].split[/].get[2].as_location>'
-    - ~walkto %door% speed:0.7
+    - ^lookclose state:true
+    - ~walkto %door% speed:<def[speed].add[0.1].as_money||0.8>
+    - ^lookclose state:false
     - ^look <npc> '<def[destination].split[/].get[1].as_location>'
     - ^playsound %door% sound:door_open
     - ^animate <npc> animation:ARM_SWING
@@ -791,7 +815,9 @@ dRestaurant:
     - ^inject locally findBasicFridge instantly
     - ^define destination '<def[locations].random>'
     - ^define door '<def[destination].split[/].get[2].as_location>'
-    - ~walkto %door% speed:0.7
+    - ^lookclose state:true
+    - ~walkto %door% speed:<def[speed].add[0.1].as_money||0.8>
+    - ^lookclose state:false
     - ^look <npc> '<def[destination].split[/].get[1].as_location>'
     - ^playsound %door% sound:door_open
     - ^animate <npc> animation:ARM_SWING
@@ -812,7 +838,9 @@ dRestaurant:
     - ^inject locally findSink instantly
     - ^define destination '<def[locations].random>'
     - ^define sinkLoc '<def[destination].split[/].get[1].as_location>'
-    - ~walkto '<def[destination].split[/].get[2].as_location>' speed:0.7
+    - ^lookclose state:true
+    - ~walkto '<def[destination].split[/].get[2].as_location>' speed:<def[speed].add[0.1].as_money||0.8>
+    - ^lookclose state:false
     - ^look <npc> %sinkLoc%
     - ^wait 5t
     - ~equip <npc> hand:<i@air>
@@ -845,7 +873,9 @@ dRestaurant:
     - ^inject locally findPrep instantly
     - ^define destination '<def[locations].random>'
     - ^define prepLoc '<def[destination].split[/].get[1].as_location>'
-    - ~walkto '<def[destination].split[/].get[2].as_location>' speed:0.7
+    - ^lookclose state:true
+    - ~walkto '<def[destination].split[/].get[2].as_location>' speed:<def[speed].add[0.1].as_money||0.8>
+    - ^lookclose state:false
     - ^look <npc> %prepLoc%
     - ^animate <npc> animation:SNEAK
     - ^animate <npc> animation:ARM_SWING
@@ -871,7 +901,9 @@ dRestaurant:
   # Items should be baked one at a time in my opinion, but idk.
     - ^inject locally findOven instantly
     - ^define destination '<def[locations].random>'
-    - ~walkto '<def[destination].split[/].get[2].as_location>' speed:0.7
+    - ^lookclose state:true
+    - ~walkto '<def[destination].split[/].get[2].as_location>' speed:<def[speed].add[0.1].as_money||0.8>
+    - ^lookclose state:false
     - ^define furnace '<def[destination].split[/].get[1].as_location>'
     - ^look <npc> %furnace%
     - ~equip <npc> hand:<i@air>
@@ -894,13 +926,15 @@ dRestaurant:
     - ^define destination '<def[locations].random>'
     - ^define furnace '<def[destination].split[/].get[1].as_location>'
     - ^define walkLoc '<def[destination].split[/].get[2].as_location>'
-    - ~walkto %walkLoc% speed:0.7
+    - ^lookclose state:true
+    - ~walkto %walkLoc% speed:<def[speed].add[0.1].as_money||0.8>
+    - ^lookclose state:false
     - ^look <npc> %furnace%
     - ~equip <npc> hand:<i@air>
     - ^animate <npc> animation:ARM_SWING
     - ^wait 5t
     - ^playsound %furnace% sound:ghast_fireball
-    - ^modifyblock %furnace% m@burning_furnace,<def[furnace].material.data>
+    - ^modifyblock %furnace% m@burning_furnace,<def[furnace].material.data> no_physics
     - ^run locally bakeFood_Unattended_Cooking def:%ticketNumber%|%furnace%|%walkLoc%|%cookTime%|%cookedFood%
 
   bakeFood_Unattended_Cooking:
@@ -926,18 +960,22 @@ dRestaurant:
 
   bakeFood_Unattended_Get:
   # This is triggered from the cook complete action
-    - ~walkto %walkLoc% speed:0.7
+    - ^lookclose state:true
+    - ~walkto %walkLoc% speed:<def[speed].add[0.1].as_money||0.8>
+    - ^lookclose state:false
     - ^look <npc> %equipmentLoc%
     - ^animate <npc> animation:ARM_SWING
     - ~equip <npc> hand:%cookedFood%
-    - ^modifyblock %equipmentLoc% m@furnace,<def[equipmentLoc].material.data>
+    - ^modifyblock %equipmentLoc% m@furnace,<def[equipmentLoc].material.data> no_physics
     - ^wait 10t
 
   grillFood_Attended:
   # Walk to grill and cook %rawFood% into %cookedFood%
     - ^inject locally findGrill instantly
     - ^define destination '<def[locations].random>'
-    - ~walkto '<def[destination].split[/].get[2].as_location>' speed:0.7
+    - ^lookclose state:true
+    - ~walkto '<def[destination].split[/].get[2].as_location>' speed:<def[speed].add[0.1].as_money||0.8>
+    - ^lookclose state:false
     - ^define grill '<def[destination].split[/].get[1].as_location>'
     - ^look <npc> %grill%
     - ~equip <npc> hand:<i@air>
@@ -977,14 +1015,16 @@ dRestaurant:
   # Walk to stove and cook %rawFood% into %cookedFood%
     - ^inject locally findStove instantly
     - ^define destination '<def[locations].random>'
-    - ~walkto '<def[destination].split[/].get[2].as_location>' speed:0.7
+    - ^lookclose state:true
+    - ~walkto '<def[destination].split[/].get[2].as_location>' speed:<def[speed].add[0.1].as_money||0.8>
+    - ^lookclose state:false
     - ^define stove '<def[destination].split[/].get[1].as_location>'
     - ^look <npc> %stove%
     - ~equip <npc> hand:<i@air>
     - ^animate <npc> animation:ARM_SWING
     - ^wait 5t
     - ^playsound %stove% sound:ghast_fireball
-    - ^modifyblock %stove% m@burning_furnace,<def[stove].material.data>
+    - ^modifyblock %stove% m@burning_furnace,<def[stove].material.data> no_physics
     - ^displayitem <def[rawFood].as_item> '%stove%' d:300s save:rawFood
     # Default (fallback) cook time of 30 seconds
     - ^define finishTime <def[cookTime].mul[1000].add_int[<server.current_time_millis>]||<server.current_time_millis.add_int[30000]>>
@@ -1012,7 +1052,7 @@ dRestaurant:
     - ^animate <npc> animation:ARM_SWING
     - ^remove <entry[cookedFood].dropped>
     - ~equip <npc> hand:%cookedFood%
-    - ^modifyblock %stove% m@furnace,<def[stove].material.data>
+    - ^modifyblock %stove% m@furnace,<def[stove].material.data> no_physics
     - ^wait 10t
 
   boilFood_Unattended:
@@ -1020,14 +1060,16 @@ dRestaurant:
     - ^inject locally findStove instantly
     - ^define destination '<def[locations].random>'
     - ^define stove '<def[destination].split[/].get[1].as_location>'
+    - ^lookclose state:true
     - ^define walkLoc '<def[destination].split[/].get[2].as_location>'
-    - ~walkto %walkLoc% speed:0.7
+    - ^lookclose state:false
+    - ~walkto %walkLoc% speed:<def[speed].add[0.1].as_money||0.8>
     - ^look <npc> %stove%
     - ~equip <npc> hand:<i@air>
     - ^animate <npc> animation:ARM_SWING
     - ^wait 5t
     - ^playsound %stove% sound:ghast_fireball
-    - ^modifyblock %stove% m@burning_furnace,<def[stove].material.data>
+    - ^modifyblock %stove% m@burning_furnace,<def[stove].material.data> no_physics
     - ^displayitem <def[rawFood].as_item> '%stove%' d:300s save:rawFood
 #    - ^flag <npc> CookingQueue:->:%ticketNumber%
     - ^run locally boilFood_Unattended_Cooking def:%ticketNumber%|%stove%|%walkLoc%|<entry[rawFood].dropped>|%cookTime%|%cookedFood%
@@ -1067,12 +1109,14 @@ dRestaurant:
 
   boilFood_Unattended_Get:
   # This is triggered from the cook complete action
-    - ~walkto %walkLoc% speed:0.7
+    - ^lookclose state:true
+    - ~walkto %walkLoc% speed:<def[speed].add[0.1].as_money||0.8>
+    - ^lookclose state:false
     - ^look <npc> %equipmentLoc%
     - ^animate <npc> animation:ARM_SWING
     - ^remove %displayEntity%
     - ~equip <npc> hand:%cookedFood%
-    - ^modifyblock %equipmentLoc% m@furnace,<def[equipmentLoc].material.data>
+    - ^modifyblock %equipmentLoc% m@furnace,<def[equipmentLoc].material.data> no_physics
     - ^wait 10t
 
   deliverFood_chef:
@@ -1080,7 +1124,9 @@ dRestaurant:
     - ^inject locally findWindow_chef instantly
     - ^define destination '<def[locations].random>'
     - ^define windowLoc '<def[destination].split[/].get[1].as_location>'
-    - ~walkto '<def[destination].split[/].get[2].as_location>' speed:0.7
+    - ^lookclose state:true
+    - ~walkto '<def[destination].split[/].get[2].as_location>' speed:<def[speed].add[0.1].as_money||0.8>
+    - ^lookclose state:false
     - ^look <npc> %windowLoc%
     - ~equip <npc> hand:<i@air>
     - ^define displayItems li@
@@ -1102,7 +1148,9 @@ dRestaurant:
     - ^inject locally findWindow_waitress instantly
     - ^define destination '<def[locations].random>'
     - ^define windowLoc '<def[destination].split[/].get[1].as_location>'
-    - ~walkto '<def[destination].split[/].get[2].as_location>' speed:0.8
+    - ^lookclose state:true
+    - ~walkto '<def[destination].split[/].get[2].as_location>' speed:<def[speed].add[0.1].as_money||0.8>
+    - ^lookclose state:false
     - ^look <npc> %windowLoc%
     - ^wait 10t
     # Pickup the food. This means we need to store the entity id for the display items
@@ -1111,8 +1159,10 @@ dRestaurant:
     - ^wait 10t
     # Really should have a method to ensure that the player is still online and
     # still in the restaurant before we proceed.
+    # Should also be using the follow command along with a proximity move action
+    - ^lookclose state:true
     - ^if <def[player].location.distance[<npc.location>].is[OR_LESS].than[30]> {
-      - ~walkto <def[player].location> speed:0.8
+      - ~walkto <def[player].location> speed:<def[speed].add[0.1].as_money||0.8>
       - ^wait 10t
       - ^give player:%player% %foodItems%
       }
@@ -1131,47 +1181,54 @@ dRestaurant:
 #  Chef Idle Mechanics
 #
   idleQueue_Chef:
-    - define fidgetValues '<npc.flag[dRestaurant_FidgetValues].as_list||null>'
-    - define wait '<def[fidgetValues].get[1]||10>'
-    - define list 'li@70/Fidget|10/dishwashing|10/prepcleaning|10/grillcleaning'
-    - inject s@WeightedRandomChoice p:asDef instantly
-    - inject locally idleQueue_Chef_%result%
-    - wait <util.random.int[<def[wait].mul[0.5].as_int>].to[<def[wait].mul[1.5].as_int>]>s
-    - inject locally idleQueue_Chef
+    - ^flag npc Status:idle
+    - ^lookclose state:true
+    - ^if <queue.exists[processOrder_<npc.id>]> queue queue:processOrder_<npc.id> stop
+    - ^define fidgetValues '<npc.flag[dRestaurant_FidgetValues].as_list||null>'
+    - ^define list li@55/Fidget|15/DishWashing|15/PrepCleaning|15/GrillCleaning
+    - ^inject s@WeightedRandomChoice p:asDef instantly
+    - ^define restaurant '<def[fidgetValues].get[1]||null>'
+    - ^define range '<def[fidgetValues].get[3]||30>'
+    - ^define speed '<def[fidgetValues].get[4]||0.7>'
+    - ^inject locally idleQueue_Chef_%result%
+    - ^define wait '<def[fidgetValues].get[2]||10>'
+    - ^wait <util.random.int[<def[wait].mul[0.5].as_int>].to[<def[wait].mul[1.5].as_int>]>s
+    - ^if <queue.exists[processOrder_<npc.id>]> queue queue:processOrder_<npc.id> stop
+    - ^run s@MasterChefNPC p:processOrderQueue id:processOrder_<npc.id> delay:2t
+    - ^queue clear
 
   idleQueue_Chef_Fidget:
-    - define radius '<def[fidgetValues].get[2]||5>'
-    - define speed '<def[fidgetValues].get[3]||0.7>'
-    - define fidgetLocation '<def[fidgetValues].get[4]||npc.location>'
-    - define fidgetHeight '<def[fidgetValues].get[5]||1>'
-    - define pathMaterial '<def[fidgetValues].get[6].split_by[/]||cobblestone|coal_block|cobblestone_stairs>'
-    - repeat 5 {
-      - define target '<def[fidgetLocation].as_location.find.surface_blocks[<def[pathMaterial]>].within[<def[radius]>].random>'
+    - ^narrate format:GenericNPCFormat "Just walking around..." 'targets:<npc.location.find.players.within[5]>'
+    - ^define fidgetLocation '<def[fidgetValues].get[5]||npc.location>'
+    - ^define fidgetHeight '<def[fidgetValues].get[6]||1>'
+    - ^define pathMaterial '<def[fidgetValues].get[7].split_by[/]||cobblestone|coal_block|cobblestone_stairs>'
+    - ^repeat 5 {
+      - define target '<cu@restaurant_%restaurant%.get_spawnable_blocks[%pathMaterial%].random||null>'
+#      - define target '<def[fidgetLocation].as_location.find.surface_blocks[<def[pathMaterial]>].within[<def[range]>].random>'
       - if <def[target].distance[%fidgetLocation%].vertical.is[OR_LESS].than[%fidgetHeight%]> {
         - ~walk %target% speed:%speed%
         - repeat stop
         }
       }
 
-  idleQueue_Chef_WashDishes:
-    - define foodItems li@bowl|wood_plate
-    - inject s@dRestaurant p:washFood
-
   idleQueue_Chef_DishWashing:
   # washing dishes in prep for customers
-    - ^lookclose <npc> state:false
-    - ^define range 15
+    - ^narrate format:GenericNPCFormat "Time to wash some dishes." 'targets:<npc.location.find.players.within[5]>'
     - ^define fooditems li@bowl|wood_plate
     - ~inject locally washfood
     - ~inject locally prepFood
+    - ^lookclose state:true
+    - ~equip npc hand:i@air
 
-  idleQueue_Chef_prepcleaning:
+  idleQueue_Chef_PrepCleaning:
+    - ^narrate format:GenericNPCFormat "I<&sq>m going to clean the prep station." 'targets:<npc.location.find.players.within[5]>'
     - ^inject locally findprep
-    - ^lookclose state:false
     - ^define destination '<def[locations].random>'
-    - ^define prepstand '<def[destination].split[/].get[2].as_location>' speed:0.7
+    - ^define prepstand '<def[destination].split[/].get[2].as_location>' speed:<def[speed].add[0.1].as_money||0.8>
     - ^define prep '<def[destination].split[/].get[1].as_location>'
+    - ^lookclose state:true
     - ~walkto %prepstand%
+    - ^lookclose state:false
     - ^look <npc> %prep%
     - ~equip npc hand:i@potion,16388
     - wait 1s
@@ -1187,16 +1244,18 @@ dRestaurant:
     - wait 1s
     - ^playeffect %prep% effect:fireworks_spark qty:5
     - ^playsound <npc.location> sound:level_up pitch:-1
+    - ^lookclose state:true
     - ~equip npc hand:i@air
-    - lookclose state:true
-  
-  idleQueue_Chef_grillcleaning:
+
+  idleQueue_Chef_GrillCleaning:
+    - narrate format:GenericNPCFormat "That grill needs a good cleaning!" 'targets:<npc.location.find.players.within[5]>'
     - ^inject findgrill locally
-    - ^lookclose state:false
     - ^define destination '<def[locations].random>'
     - ^define grillpad'<def[destination].split[/].get[2].as_location>'
     - ^define grill '<def[destination].split[/].get[1].as_location>'
-    - ~walkto %grillpad% speed:0.7
+    - ^lookclose state:true
+    - ~walkto %grillpad% speed:<def[speed].add[0.1].as_money||0.8>
+    - ^lookclose state:false
     - ^look <npc> %grill%
     - ~equip npc hand:i@potion,16388
     - wait 1s
@@ -1212,8 +1271,8 @@ dRestaurant:
     - wait 1s
     - ^playeffect %grill% effect:fireworks_spark qty:5
     - ^playsound <npc.location> sound:level_up pitch:-1
+    - ^lookclose state:true
     - ~equip npc hand:i@air
-    - lookclose state:true
 
 #
 #  END Chef Idle Mechanics
