@@ -1181,6 +1181,7 @@ dRestaurant:
 #  Chef Idle Mechanics
 #
   idleQueue_Chef:
+    - ^if !<npc.is_spawned||false> queue clear
     - ^flag npc Status:idle
     - ^lookclose state:true
     - ^if <queue.exists[processOrder_<npc.id>]> queue queue:processOrder_<npc.id> stop

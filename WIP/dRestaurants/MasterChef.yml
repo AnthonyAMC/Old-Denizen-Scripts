@@ -123,6 +123,7 @@ MasterChefNPC:
   processOrderQueue:
   # Run through a list of orders waiting to be cooked. Rinse and repeat until
   # the queue is cleared.
+    - ^if !<npc.is_spawned||false> queue clear
     - ^flag npc status:cooking
     - ^lookclose <npc> state:false
     - ^define fidgetValues '<npc.flag[dRestaurant_FidgetValues].as_list||null>'
@@ -162,6 +163,7 @@ MasterChefNPC:
   # Run through a list of orders waiting to be delivered. Rinse and repeat until
   # the queue is cleared.
   # - flag npc DeliveryQueue:->:%ticketNumber%/%equipmentLoc%/%walkLoc%/%displayEntity%/%cookedFood%
+    - ^if !<npc.is_spawned||false> queue clear
     - ^flag npc Status:deliver
     - ^lookclose <npc> state:false
     - ^define fidgetValues '<npc.flag[dRestaurant_FidgetValues].as_list||null>'
