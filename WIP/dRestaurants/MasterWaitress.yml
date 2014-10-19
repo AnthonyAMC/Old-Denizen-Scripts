@@ -69,6 +69,7 @@ MasterWaitressNPC:
   # is in the restaurant cuboid and possibly if the player still has the menu in
   # inventory.
   # Should add nullChecks for this
+    - ^if !<npc.is_spawned||false> queue clear
     - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
     - inject s@MasterWaitressNPC p:findRestaurant instantly
     - define menuQueue '<npc.flag[dRestaurant_MenuQueue].as_list||null>'
@@ -107,6 +108,7 @@ MasterWaitressNPC:
   # Run through a list of orders waiting to be delivered. Rinse and repeat until
   # the queue is cleared.
   # Should add nullChecks for this
+    - ^if !<npc.is_spawned||false> queue clear
     - inject s@MasterWaitressNPC p:findRestaurant instantly
     - define ticketQueue '<npc.flag[TicketQueue].as_list||null>'
     - if !<def[ticketQueue].is_empty||true> {
