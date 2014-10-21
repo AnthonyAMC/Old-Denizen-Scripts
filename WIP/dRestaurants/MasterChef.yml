@@ -43,7 +43,8 @@ MasterChefNPC:
         - queue clear
         }
       # Let the chef decide what to do based on status
-      - define chef '<def[ticket].split_by[/].get[2].as_npc>'
+      - define chef '<def[ticket].split_by[/].get[3].as_npc>'
+#      - define chef '<def[ticket].split_by[/].get[2].as_npc>'
       - inject locally orderin_<def[chef].flag[Status]||drunk>
 
     on cook complete:
@@ -57,8 +58,8 @@ MasterChefNPC:
         - announce "<&b>dRestaurant<&co> <&3>Ticket <&b>%ticketNumber%<&3> was not found in RestaurantTickets" to_console
         - queue clear
         }
-      # Let the chef decide what to do based on status
-      - define chef '<def[ticket].split_by[/].get[2].as_npc>'
+      - define chef '<def[ticket].split_by[/].get[3].as_npc>'
+#      - define chef '<def[ticket].split_by[/].get[2].as_npc>'
       - define equipmentLoc '<c.equipmentLoc>'
       - define walkLoc '<c.walkLoc>'
       - define displayEntity '<c.displayEntity>'
@@ -105,6 +106,7 @@ MasterChefNPC:
 
   despawn:
     - if <queue.exists[idleQueue_Chef_<npc.id>]> queue queue:idleQueue_Chef_<npc.id> stop
+    - if <queue.exists[processOrder_<npc.id>]> queue queue:processOrder_<npc.id> stop
     - narrate format:GenericNPCFormat "Phew... I<&sq>m glad to be done work for the day!" targets:<npc.location.find.players.within[5]||null>
 
   damage:
@@ -156,7 +158,7 @@ MasterChefNPC:
       }
     - ^if <queue.exists[idleQueue_Chef_<npc.id>]> queue queue:idleQueue_Chef_<npc.id> stop
     - ^lookclose <npc> state:true
-    - ^run s@drestaurant p:idleQueue_Chef id:idleQueue_Chef_<npc.id> delay:2t
+    - ^run s@dRestaurant p:idleQueue_Chef id:idleQueue_Chef_<npc.id> delay:2t
     - ^queue clear
 
   processDeliveryQueue:
@@ -201,7 +203,7 @@ MasterChefNPC:
       }
     - ^lookclose <npc> state:true
     - ^if <queue.exists[idleQueue_Chef_<npc.id>]> queue queue:idleQueue_Chef_<npc.id> stop
-    - ^run s@drestaurant p:idleQueue_Chef id:idleQueue_Chef_<npc.id> delay:2t
+    - ^run s@dRestaurant p:idleQueue_Chef id:idleQueue_Chef_<npc.id> delay:2t
     - ^queue clear
 
 
