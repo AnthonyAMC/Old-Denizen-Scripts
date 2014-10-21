@@ -176,29 +176,31 @@ dRestaurant:
       # Tell the least busy waitress to collect the menu. She'll decide when to
       # actually get the menu based on status.
       - flag %waitress% dRestaurant_MenuQueue:->:<player>
-      - if <def[waitress].flag[Status].is[==].to[Available]> {
-        - flag %waitress% status:order
-        - run s@MasterWaitressNPC as:%waitress% p:collectMenus def:true
-        }
+#      - if <def[waitress].flag[Status].is[==].to[Available]> {
+#        - flag %waitress% status:order
+#        - run s@MasterWaitressNPC as:%waitress% p:collectMenus def:true
+#        }
       # Each of the %foodItems% in an order is a unique %ticketNumber%. This
       # means that all work is evenly distributed amongst the restaurant staff.
       # We do one final null check before creating each ticket.
       - foreach %foodItems% {
         - define food %value%
-        - inject s@MasterWaitressNPC p:assignWaitress
+#        - inject s@MasterWaitressNPC p:assignWaitress
         - inject s@MasterWaitressNPC p:assignChef
         - inject s@MasterWaitressNPC p:assignTicketNumber
-        - if <el@list[%waitress%|%chef%|%ticketNumber%].contains[null]> {
+#        - if <el@list[%waitress%|%chef%|%ticketNumber%].contains[null]> {
+        - if <el@val[%chef%|%ticketNumber%].as_list.contains[null]> {
           - announce "<&b>dRestaurant<&co> <&c>Something went wrong on <&6>order placed<&c>!" to_console
           - announce "<&b>dRestaurant<&co> <&3>player<&co> <&b>%player%" to_console
           - announce "<&b>dRestaurant<&co> <&3>restaurant<&co> <&b>%restaurant%" to_console
           - announce "<&b>dRestaurant<&co> <&3>foodItem<&co> <&b>%food%" to_console
-          - announce "<&b>dRestaurant<&co> <&3>waitress<&co> <&b>%waitress%" to_console
+#          - announce "<&b>dRestaurant<&co> <&3>waitress<&co> <&b>%waitress%" to_console
           - announce "<&b>dRestaurant<&co> <&3>chef<&co> <&b>%chef%" to_console
           - announce "<&b>dRestaurant<&co> <&3>ticketNumber<&co> <&b>%ticketNumber%" to_console
           - foreach next
          }
-        - flag server dRestaurantTickets:->:%ticketNumber%/%chef%/%waitress%/<player>/%food%
+        - flag server dRestaurantTickets:->:%ticketNumber%/%restaurant%/%chef%/<player>/%food%
+#        - flag server dRestaurantTickets:->:%ticketNumber%/%chef%/%waitress%/<player>/%food%
         - action "order in" %chef% context:ticket|%ticketNumber%
         - wait 10t
         }
@@ -210,8 +212,9 @@ dRestaurant:
       - define displayItems '<c.displayItems.split_by[/]||null>'
       - define tickets '<server.flag[dRestaurantTickets].as_list||null>'
       - define ticket '<def[tickets].get[<def[tickets].get_sub_items[1].split_by[/].find[%ticketNumber%]>]||null>'
-      - define waitress '<def[ticket].split_by[/].get[3].as_npc||null>'
-      - flag %waitress% TicketQueue:->:%ticketNumber%/<def[displayItems].as_list.replace[li@].replace[|].with[\]>
+      - define restaurant '<def[ticket].split[/].get[2]||null>'
+      - inject s@MasterWaitressNPC p:assignWaitress
+#      - define waitress '<def[ticket].split_by[/].get[3].as_npc||null>'
       # This nullCheck should probably be written as a foreach to properly
       # handle definitions that contain lists
       - define nullCheck li@%ticketNumber%|%tickets%|%ticket%|%waitress%
@@ -223,15 +226,9 @@ dRestaurant:
         - announce "<&b>dRestaurant<&co> <&3>waitress<&co> <&b>%waitress%" to_console
         - queue clear
         }
+      - flag %waitress% TicketQueue:->:%ticketNumber%/<def[displayItems].as_list.replace[li@].replace[|].with[\]||null>
       # Let the waitress decide what to do based on status
-      - define status '<def[waitress].flag[Status]||drunk>'
-      - define statuses li@drunk|available|order|deliver
-      - if <def[statuses].contains[%status%]> {
-        - inject npc:%waitress% s@MasterWaitressNPC p:orderup_%status%
-        }
-        else {
-        - inject npc:%waitress% s@MasterWaitressNPC p:orderup_drunk
-        }
+      - inject npc:%waitress% s@MasterWaitressNPC p:orderup_<def[waitress].flag[Status]||drunk>
 
 #
 #  END dRestaurant NPC events
@@ -341,7 +338,7 @@ dRestaurant:
             else {
             - narrate "<red><c.item.material.name.replace[_].with[ ]> removed from your ticket!"
             }
-          - flag player dRestaurant_Order:%restaurantName%/<def[order].exclude[<c.item||>]>
+          - flag player dRestaurant_Order:%restaurantName%/<def[order].remove[<def[order].find[<c.item>]>]||%order%>
           - take from:in@<player.name>_restaurant <c.item> qty:!
           - inventory update
           }
@@ -1071,7 +1068,6 @@ dRestaurant:
     - ^playsound %stove% sound:ghast_fireball
     - ^modifyblock %stove% m@burning_furnace,<def[stove].material.data> no_physics
     - ^displayitem <def[rawFood].as_item> '%stove%' d:300s save:rawFood
-#    - ^flag <npc> CookingQueue:->:%ticketNumber%
     - ^run locally boilFood_Unattended_Cooking def:%ticketNumber%|%stove%|%walkLoc%|<entry[rawFood].dropped>|%cookTime%|%cookedFood%
 
 
@@ -1104,7 +1100,6 @@ dRestaurant:
       - ^playeffect %stove% effect:smoke qty:1 data:4
       - ^wait 15t
       }
-#    - ^flag <npc> CookingQueue:<-:%ticketNumber%
     - ^action "cook complete" context:ticket|%ticketNumber%|equipmentLoc|%stove%|walkLoc|%walkLoc%|displayEntity|<entry[cookedFood].dropped>|cookedFood|%cookedFood%
 
   boilFood_Unattended_Get:
@@ -1161,18 +1156,34 @@ dRestaurant:
     # still in the restaurant before we proceed.
     # Should also be using the follow command along with a proximity move action
     - ^lookclose state:true
-    - ^if <def[player].location.distance[<npc.location>].is[OR_LESS].than[30]> {
-      - ~walkto <def[player].location> speed:<def[speed].add[0.1].as_money||0.8>
-      - ^wait 10t
-      - ^give player:%player% %foodItems%
-      }
-      else give player:%player% %foodItems%
+    - ^follow target:%player%
+    - ^inject locally followPlayer_waitress
+    - ^follow stop
+    - ^wait 10t
+    - ^give player:%player% %foodItems%
+#    - ^if <def[player].location.distance[<npc.location>].is[OR_LESS].than[30]> {
+#      - ~walkto <def[player].location> speed:<def[speed].add[0.1].as_money||0.8>
+#      - ^wait 10t
+#      - ^give player:%player% %foodItems%
+#      }
+#      else give player:%player% %foodItems%
     - ~equip <npc> hand:i@air
-    - define foods li@
-    - foreach %fooditems% {
+    - ^define foods li@
+    - ^foreach %fooditems% {
       - define foods <def[foods].include[<def[value].display>]>
       }
-    - narrate format:GenericNPCFormat "Here is your <def[foods].as_list.formatted>" target:%player%
+    - ^narrate format:GenericNPCFormat "Here is your <def[foods].as_list.formatted>" target:%player%
+
+  followPlayer_waitress:
+    - ^wait 2s
+    - ^if <npc.is_spawned||false>
+      && <def[player].is_online||false>
+      && <def[player].location.distance[<npc.location>].is[MORE].than[3]||false>
+      && <def[player].location.is_within[cu@restaurant_%restaurant%]||false>
+      && <npc.location.is_within[cu@restaurant_<def[restaurant]||null>]||false>
+      && <el@val[<npc.flag[Status].is[==].to[order]||false>].or[<npc.flag[Status].is[==].to[deliver]||false>]||false> {
+      - inject locally followPlayer_waitress
+      }
 
 #
 #  END Animations
@@ -1282,6 +1293,38 @@ dRestaurant:
 #  Waitress Idle Mechanics
 #
 #
+  idleQueue_Waitress:
+    - ^if !<npc.is_spawned||false> queue clear
+    - ^flag npc Status:idle
+    - ^lookclose state:true
+    - ^if <queue.exists[processOrder_<npc.id>]> queue queue:processOrder_<npc.id> stop
+    - ^define fidgetValues '<npc.flag[dRestaurant_FidgetValues].as_list||null>'
+    - ^define list li@100/Fidget
+    - ^inject s@WeightedRandomChoice p:asDef instantly
+    - ^define restaurant '<def[fidgetValues].get[1]||null>'
+    - ^define range '<def[fidgetValues].get[3]||30>'
+    - ^define speed '<def[fidgetValues].get[4]||0.7>'
+    - ^inject locally idleQueue_Chef_%result%
+    - ^define wait '<def[fidgetValues].get[2]||10>'
+    - ^wait <util.random.int[<def[wait].mul[0.5].as_int>].to[<def[wait].mul[1.5].as_int>]>s
+    - ^if <queue.exists[processOrder_<npc.id>]> queue queue:processOrder_<npc.id> stop
+    - ^run s@MasterWaitressNPC p:processTicketQueue id:processOrder_<npc.id> delay:2t
+    - ^queue clear
+
+  idleQueue_Waitress_Fidget:
+    - ^narrate format:GenericNPCFormat "Just walking around..." 'targets:<npc.location.find.players.within[5]>'
+    - ^define fidgetLocation '<def[fidgetValues].get[5]||npc.location>'
+    - ^define fidgetHeight '<def[fidgetValues].get[6]||1>'
+    - ^define pathMaterial '<def[fidgetValues].get[7].split_by[/]||cobblestone|coal_block|cobblestone_stairs>'
+    - ^repeat 5 {
+      - define target '<cu@restaurant_%restaurant%.get_spawnable_blocks[%pathMaterial%].random||null>'
+#      - define target '<def[fidgetLocation].as_location.find.surface_blocks[<def[pathMaterial]>].within[<def[range]>].random>'
+      - if <def[target].distance[%fidgetLocation%].vertical.is[OR_LESS].than[%fidgetHeight%]> {
+        - ~walk %target% speed:%speed%
+        - repeat stop
+        }
+      }
+
 
 
 
