@@ -24,7 +24,7 @@ MasterChefNPC:
       - run locally damage instantly
     on chat:
       - wait 10t
-      - run locally chat instantly def:<c.message>
+      - inject locally chat instantly
 
     on order in:
     # Custom action sent from the waitress after a player places an order.
@@ -44,7 +44,6 @@ MasterChefNPC:
         }
       # Let the chef decide what to do based on status
       - define chef '<def[ticket].split_by[/].get[3].as_npc>'
-#      - define chef '<def[ticket].split_by[/].get[2].as_npc>'
       - inject locally orderin_<def[chef].flag[Status]||drunk>
 
     on cook complete:
@@ -59,7 +58,6 @@ MasterChefNPC:
         - queue clear
         }
       - define chef '<def[ticket].split_by[/].get[3].as_npc>'
-#      - define chef '<def[ticket].split_by[/].get[2].as_npc>'
       - define equipmentLoc '<c.equipmentLoc>'
       - define walkLoc '<c.walkLoc>'
       - define displayEntity '<c.displayEntity>'
@@ -115,6 +113,34 @@ MasterChefNPC:
   click:
     - narrate format:GenericNPCFormat "I don<&sq>t have anything to say right now." targets:<npc.location.find.players.within[5]||null>
 
+  chat:
+    - if <npc.owner.is[!=].to[<player>]> {
+      - narrate format:GenericNPCFormat "I don<&sq>t know you like that."
+      - queue stop
+      }
+    - narrate format:GenericNPCFormat "Ok, so you want me to find something... sure."
+    - define options li@smartWindow|window
+    - define equipment '<c.message.split[ ].get[1]>'
+    - define restaurant '<c.message.split[ ].get[2].escaped||<npc.location.cuboids.random||null>>'
+    - if <def[restaurant].is[==].to[null]> {
+      - chat "There are no noted cuboids here."
+      - queue stop
+      }
+    - if '<def[options].contains[%equipment%]>' {
+      - inject s@dRestaurant p:find%equipment%_chef instantly
+      }
+      else {
+      - chat "I don<&sq>t know anything about %equipment%."
+      - chat "<context.message>"
+      - queue stop
+      }
+    - if <def[locations].is_empty> {
+      - chat "I couldn<&sq>t find the %equipment%."
+      - queue stop
+      }
+    - chat "I found <def[locations].size.as_int> %equipment%."
+    - ~walk <npc> <def[locations].random.as_location> 'speed:0.6' 'radius:2.0'
+    - chat "Ok, I made it to the %equipment%."
 
 #
 #--------------------------------------
