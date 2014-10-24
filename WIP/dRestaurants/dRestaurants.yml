@@ -176,31 +176,23 @@ dRestaurant:
       # Tell the least busy waitress to collect the menu. She'll decide when to
       # actually get the menu based on status.
       - flag %waitress% dRestaurant_MenuQueue:->:<player>
-#      - if <def[waitress].flag[Status].is[==].to[Available]> {
-#        - flag %waitress% status:order
-#        - run s@MasterWaitressNPC as:%waitress% p:collectMenus def:true
-#        }
       # Each of the %foodItems% in an order is a unique %ticketNumber%. This
       # means that all work is evenly distributed amongst the restaurant staff.
       # We do one final null check before creating each ticket.
       - foreach %foodItems% {
         - define food %value%
-#        - inject s@MasterWaitressNPC p:assignWaitress
         - inject s@MasterWaitressNPC p:assignChef
         - inject s@MasterWaitressNPC p:assignTicketNumber
-#        - if <el@list[%waitress%|%chef%|%ticketNumber%].contains[null]> {
         - if <el@val[%chef%|%ticketNumber%].as_list.contains[null]> {
           - announce "<&b>dRestaurant<&co> <&c>Something went wrong on <&6>order placed<&c>!" to_console
           - announce "<&b>dRestaurant<&co> <&3>player<&co> <&b>%player%" to_console
           - announce "<&b>dRestaurant<&co> <&3>restaurant<&co> <&b>%restaurant%" to_console
           - announce "<&b>dRestaurant<&co> <&3>foodItem<&co> <&b>%food%" to_console
-#          - announce "<&b>dRestaurant<&co> <&3>waitress<&co> <&b>%waitress%" to_console
           - announce "<&b>dRestaurant<&co> <&3>chef<&co> <&b>%chef%" to_console
           - announce "<&b>dRestaurant<&co> <&3>ticketNumber<&co> <&b>%ticketNumber%" to_console
           - foreach next
          }
         - flag server dRestaurantTickets:->:%ticketNumber%/%restaurant%/%chef%/<player>/%food%
-#        - flag server dRestaurantTickets:->:%ticketNumber%/%chef%/%waitress%/<player>/%food%
         - action "order in" %chef% context:ticket|%ticketNumber%
         - wait 10t
         }
@@ -214,7 +206,6 @@ dRestaurant:
       - define ticket '<def[tickets].get[<def[tickets].get_sub_items[1].split_by[/].find[%ticketNumber%]>]||null>'
       - define restaurant '<def[ticket].split[/].get[2]||null>'
       - inject s@MasterWaitressNPC p:assignWaitress
-#      - define waitress '<def[ticket].split_by[/].get[3].as_npc||null>'
       # This nullCheck should probably be written as a foreach to properly
       # handle definitions that contain lists
       - define nullCheck li@%ticketNumber%|%tickets%|%ticket%|%waitress%
@@ -254,8 +245,8 @@ dRestaurant:
 
     on player clicks in inventory:
       # Setup some data and do a basic null check
-      - define restaurantName '<player.flag[dRestaurant_Order].split_by[/].get[1]||null>'
-      - define order '<player.flag[dRestaurant_Order].split_by[/].get[2].as_list||li@>'
+      - define restaurantName '<player.flag[dRestaurant_Order].split[/].get[1]||null>'
+      - define order '<player.flag[dRestaurant_Order].split[/].get[2].as_list||li@>'
       - define menuinventory '<el@val[in@%restaurantName%].as_inventory||null>'
       # If the defs are null then it must not be a menu? We should have
       # something to uniquely and instantly identify menu inventories.
@@ -338,7 +329,7 @@ dRestaurant:
             else {
             - narrate "<red><c.item.material.name.replace[_].with[ ]> removed from your ticket!"
             }
-          - flag player dRestaurant_Order:%restaurantName%/<def[order].remove[<def[order].find[<c.item>]>]||%order%>
+          - flag player dRestaurant_Order:%restaurantName%/<def[order].remove[<def[order].find[<c.item.simple>]>]||%order%>
           - take from:in@<player.name>_restaurant <c.item> qty:!
           - inventory update
           }
@@ -433,61 +424,35 @@ dRestaurant:
 #
   findBasicFridge:
   # The BasicFridge is 2 ironblocks tall with a stone button on the front of the top block
-    - define ironBlocks <cu@restaurant_%restaurant%.get_blocks[iron_block]||null>
-#    - define ironBlocks <npc.location.find.blocks[iron_block].within[<def[range]||15>]||null>
-    - if <def[ironBlocks].is[!=].to[null]>
-      && !<def[ironBlocks].is_empty> {
+    - define fridgeBlocks <cu@restaurant_%restaurant%.get_blocks[iron_block].filter[below.material.name.is[==].to[iron_block]]||li@>
+    - if !<def[fridgeBlocks].is_empty> {
       - define locations li@
-      - foreach %ironBlocks% {
-        - define iron '%value%'
-        - if <def[iron].below.material.name.is[!=].to[iron_block]||true> foreach next
-
-        - define east '<def[iron].add[1,0,0]>'
-        - define west '<def[iron].add[-1,0,0]>'
-        - define north '<def[iron].add[0,0,1]>'
-        - define south '<def[iron].add[0,0,-1]>'
-        - define cardinals li@east|west|north|south
-
-        - foreach %cardinals% {
-          - define location '<def[%value%]>'
-
-          - if <def[location].material.name.is[==].to[stone_button]>
-            && <def[location].sub[0,1,0].material.name.is[==].to[air]>
-            && <def[location].sub[0,2,0].material.is_solid> {
-            - define locations <def[locations].include[%iron%/<def[location].below>]>
-            }
+      - foreach %fridgeBlocks% {
+        - define fridge '%value%'
+        - define cardinals li@<def[fridge].add[1,0,0]>|<def[fridge].add[-1,0,0]>|<def[fridge].add[0,0,1]>|<def[fridge].add[0,0,-1]>
+        - define walkLocs <def[cardinals].filter[material.name.is[==].to[[stone_button]].filter[below.material.name.is[==].to[air]].filter[sub[0,2,0].material.is_solid]||li@>
+        - foreach %walkLocs% {
+          - define locations <def[locations].include[%fridge%/<def[value].below>]>
           }
         }
       }
+      else announce format:GenericNPCFormat to_console "I found no basic fridges in %restaurant%."
 
   findFancyFridge:
   # The FancyFridge is 2 ironblocks tall with an iron door on the front
-    - define ironBlocks <cu@restaurant_%restaurant%.get_blocks[iron_block]>
-#    - define ironBlocks <npc.location.find.blocks[iron_block].within[<def[range]||15>]||null>
-    - if <def[ironBlocks].is[!=].to[null]>
-      && !<def[ironBlocks].is_empty> {
+    - define fridgeBlocks <cu@restaurant_%restaurant%.get_blocks[iron_block].filter[below.material.name.is[==].to[iron_block]]||li@>
+    - if !<def[fridgeBlocks].is_empty> {
       - define locations li@
-      - foreach %ironBlocks% {
-        - define iron '%value%'
-        - if <def[iron].below.material.name.is[!=].to[iron_block]||true> foreach next
-
-        - define east '<def[iron].add[1,0,0]>'
-        - define west '<def[iron].add[-1,0,0]>'
-        - define north '<def[iron].add[0,0,1]>'
-        - define south '<def[iron].add[0,0,-1]>'
-        - define cardinals li@east|west|north|south
-
-        - foreach %cardinals% {
-          - define location '<def[%value%]>'
-
-          - if <def[location].material.name.is[==].to[iron_door_block]>
-            && <def[location].sub[0,1,0].material.name.is[==].to[iron_door_block]>
-            && <def[location].sub[0,2,0].material.is_solid> {
-            - define locations <def[locations].include[%iron%/<def[location].below>]>
-            }
+      - foreach %fridgeBlocks% {
+        - define fridge '%value%'
+        - define cardinals li@<def[fridge].add[1,0,0]>|<def[fridge].add[-1,0,0]>|<def[fridge].add[0,0,1]>|<def[fridge].add[0,0,-1]>
+        - define walkLocs <def[cardinals].filter[material.name.is[==].to[iron_door_block]].filter[below.material.name.is[==].to[iron_door_block]].filter[sub[0,2,0].material.is_solid]||li@>
+        - foreach %walkLocs% {
+          - define locations <def[locations].include[%fridge%/<def[value].below>]>
           }
         }
       }
+      else announce format:GenericNPCFormat to_console "I found no fancy fridges in %restaurant%."
 
   findGrill:
   # The Grill is a trapdoor over fire
@@ -496,90 +461,51 @@ dRestaurant:
   #  functions since they all return the air block in front of the equipment.
   #  I want to keep this just to see if there is a noticeable difference. As in
   #  does the NPC get closer to the target block.
-    - define fireBlocks <cu@restaurant_%restaurant%.get_blocks[fire,15]>
-#    - define fireBlocks <npc.location.find.blocks[fire].within[<def[range]||15>]||null>
-    - if <def[fireBlocks].is[!=].to[null]>
-      && !<def[fireBlocks].is_empty> {
+    - define grillBlocks <cu@restaurant_%restaurant%.get_blocks[fire,15].filter[above.material.name.is[==].to[trap_door]]||li@>
+    - if !<def[grillBlocks].is_empty> {
       - define locations li@
-      - foreach %fireBlocks% {
-        - define fire '%value%'
-        - if <def[fire].above.material.name.is[!=].to[trap_door]||true> foreach next
-
-        - define east '<def[fire].add[1,0,0]>'
-        - define west '<def[fire].add[-1,0,0]>'
-        - define north '<def[fire].add[0,0,1]>'
-        - define south '<def[fire].add[0,0,-1]>'
-        - define cardinals li@east|west|north|south
-
-        - foreach %cardinals% {
-          - define location '<def[%value%]>'
-
-          - if <def[location].material.is_solid>
-            && <def[location].above.material.name.is[==].to[air]>
-            && <def[location].add[0,2,0].material.name.is[==].to[air]> {
-            - define locations <def[locations].include[<def[fire].above>/%location%]>
-            }
+      - foreach %grillBlocks% {
+        - define grill '%value%'
+        - define cardinals li@<def[grill].add[1,0,0]>|<def[grill].add[-1,0,0]>|<def[grill].add[0,0,1]>|<def[grill].add[0,0,-1]>
+        - define walkLocs <def[cardinals].filter[material.is_solid].filter[above.material.name.is[==].to[air]].filter[add[0,2,0].material.name.is[==].to[air]]||li@>
+        - foreach %walkLocs% {
+          - define locations <def[locations].include[<def[grill].above>/%value%]>
           }
         }
       }
+      else announce format:GenericNPCFormat to_console "I found no grills in %restaurant%."
 
   findSink:
   # The sink is a Cauldron full of water with a tripwire hook above
-    - define cauldronBlocks <cu@restaurant_%restaurant%.get_blocks[cauldron,3]>
-#    - define cauldronBlocks <npc.location.find.blocks[cauldron,3].within[<def[range]||15>]||null>
-    - if <def[cauldronBlocks].is[!=].to[null]>
-      && !<def[cauldronBlocks].is_empty> {
+    - define sinkBlocks <cu@restaurant_%restaurant%.get_blocks[cauldron,3].filter[above.material.name.is[==].to[tripwire_hook]]||li@>
+    - if !<def[sinkBlocks].is_empty> {
       - define locations li@
-      - foreach %cauldronBlocks% {
-        - define cauldron '%value%'
-        - if <def[cauldron].above.material.name.is[!=].to[tripwire_hook]||true> foreach next
-
-        - define east '<def[cauldron].add[1,0,0]>'
-        - define west '<def[cauldron].add[-1,0,0]>'
-        - define north '<def[cauldron].add[0,0,1]>'
-        - define south '<def[cauldron].add[0,0,-1]>'
-        - define cardinals li@east|west|north|south
-
-        - foreach %cardinals% {
-          - define location '<def[%value%]>'
-
-          - if <def[location].material.name.is[==].to[air]>
-            && <def[location].above.material.name.is[==].to[air]>
-            && <def[location].below.material.is_solid> {
-            - define locations <def[locations].include[%cauldron%/%location%]>
-            }
+      - foreach %sinkBlocks% {
+        - define sink '%value%'
+        - define cardinals li@<def[sink].add[1,0,0]>|<def[sink].add[-1,0,0]>|<def[sink].add[0,0,1]>|<def[sink].add[0,0,-1]>
+        - define walkLocs <def[cardinals].filter[material.name.is[==].to[air]].filter[above.material.name.is[==].to[air]].filter[below.material.is_solid]||li@>
+        - foreach %walkLocs% {
+          - define locations <def[locations].include[%sink%/%value%]>
           }
         }
       }
+      else announce format:GenericNPCFormat to_console "I found no sinks in %restaurant%."
 
   findPrep:
   # The Prep station is the top half stone slab with a wood pressure plate on top
-    - define prepBlocks <cu@restaurant_%restaurant%.get_blocks[stone_slab_up]>
-#    - define prepBlocks <npc.location.find.blocks[stone_slab_up].within[<def[range]||15>]||null>
-    - if <def[prepBlocks].is[!=].to[null]>
-      && !<def[prepBlocks].is_empty> {
+    - define prepBlocks <cu@restaurant_%restaurant%.get_blocks[stone_slab_up].filter[above.material.name.is[==].to[wood_plate]]||li@>
+    - if !<def[prepBlocks].is_empty> {
       - define locations li@
       - foreach %prepBlocks% {
         - define prep '%value%'
-        - if <def[prep].above.material.name.is[!=].to[wood_plate]||true> foreach next
-
-        - define east '<def[prep].add[1,0,0]>'
-        - define west '<def[prep].add[-1,0,0]>'
-        - define north '<def[prep].add[0,0,1]>'
-        - define south '<def[prep].add[0,0,-1]>'
-        - define cardinals li@east|west|north|south
-
-        - foreach %cardinals% {
-          - define location '<def[%value%]>'
-
-          - if <def[location].material.name.is[==].to[air]>
-            && <def[location].above.material.name.is[==].to[air]>
-            && <def[location].below.material.is_solid> {
-            - define locations <def[locations].include[%prep%/%location%]>
-            }
+        - define cardinals li@<def[prep].add[1,0,0]>|<def[prep].add[-1,0,0]>|<def[prep].add[0,0,1]>|<def[prep].add[0,0,-1]>
+        - define walkLocs <def[cardinals].filter[material.name.is[==].to[air]].filter[above.material.name.is[==].to[air]].filter[below.material.is_solid]||li@>
+        - foreach %walkLocs% {
+          - define locations <def[locations].include[%prep%/%value%]>
           }
         }
       }
+      else announce format:GenericNPCFormat to_console "I found no prep stations in %restaurant%."
 
   findOven:
   # The oven is a 2 tall by 2 wide set of furnaces.
@@ -587,182 +513,110 @@ dRestaurant:
   # For some reason i'm getting duplicate results, so for now i'm purging the
   #  dupes with:    - define locations '<def[locations].deduplicate>'
     - define materials 'li@furnace,2|furnace,3|furnace,4|furnace,5|burning_furnace,2|burning_furnace,3|burning_furnace,4|burning_furnace,5'
-    - define furnaceBlocks <cu@restaurant_%restaurant%.get_blocks[%materials%]>
-#    - define furnaceBlocks <npc.location.find.blocks[furnace|burning_furnace].within[<def[range]||15>]||null>
-    - if <def[furnaceBlocks].is[!=].to[null]>
-      && !<def[furnaceBlocks].is_empty> {
+    - define ovenBlocks <cu@restaurant_%restaurant%.get_blocks[%materials%].filter[below.material.contains[furnace]]||li@>
+    - if !<def[ovenBlocks].is_empty> {
       - define locations li@
-      - foreach %furnaceBlocks% {
-        - define furnace1 '%value%'
-        - if <def[furnace1].below.material.name.is[!=].to[furnace]||true>
-          && <def[furnace1].below.material.name.is[!=].to[burning_furnace]||true> foreach next
-
-        - define east '<def[furnace1].add[1,0,0]>'
-        - define west '<def[furnace1].add[-1,0,0]>'
-        - define north '<def[furnace1].add[0,0,1]>'
-        - define south '<def[furnace1].add[0,0,-1]>'
-        - define cardinals li@east|west|north|south
-
-        - foreach %cardinals% {
-          - define furnace2 '<def[%value%]>'
-
-          - if <el@val[<def[furnace2].material.name.is[!=].to[furnace]>].and[<def[furnace2].material.name.is[!=].to[burning_furnace]>]>
-            && <el@val[<def[furnace2].below.material.name.is[!=].to[furnace]>].and[<def[furnace2].below.material.name.is[!=].to[burning_furnace]>]> foreach next
-
-          - define east '<def[furnace2].add[1,0,0]>'
-          - define west '<def[furnace2].add[-1,0,0]>'
-          - define north '<def[furnace2].add[0,0,1]>'
-          - define south '<def[furnace2].add[0,0,-1]>'
-          - define cardinals li@east|west|north|south
-
-          - foreach %cardinals% {
-            - define location '<def[%value%]>'
-
-            - if <def[location].material.name.is[==].to[air]>
-              && <def[location].sub[0,1,0].material.name.is[==].to[air]>
-              && <def[location].sub[0,2,0].material.is_solid> {
-              - define locations <def[locations].include[%furnace2%/<def[location].sub[0,1,0]>]>
-              - define locations <def[locations].include[<def[furnace2].sub[0,1,0]>/<def[location].sub[0,1,0]>]>
-              }
+      - foreach %ovenBlocks% {
+        - define oven1 '%value%'
+        - define cardinals li@<def[oven1].add[1,0,0]>|<def[oven1].add[-1,0,0]>|<def[oven1].add[0,0,1]>|<def[oven1].add[0,0,-1]>
+        - define oven2list <def[cardinals].filter[material.contains[furnace]].filter[below.material.contains[furnace]]||li@>
+        - foreach %oven2list% {
+          - define oven2 '%value%'
+          - define cardinals li@<def[oven2].add[1,0,0]>|<def[oven2].add[-1,0,0]>|<def[oven2].add[0,0,1]>|<def[oven2].add[0,0,-1]>
+          - define walkLocs <def[cardinals].filter[material.name.is[==].to[air]].filter[below.material.name.is[==].to[air]].filter[sub[0,2,0].material.is_solid]||li@>
+          - foreach %walkLocs% {
+            - define locations <def[locations].include[%oven2%/<def[value].sub[0,1,0]>]>
+            - define locations <def[locations].include[<def[oven2].sub[0,1,0]>/<def[value].sub[0,1,0]>]>
             }
           }
         }
       }
-    - define locations '<def[locations].deduplicate>'
+      else announce format:GenericNPCFormat to_console "I found no stoves in %restaurant%."
+    - define locations '<def[locations].deduplicate||li@>'
 
   findStove:
   # The Stove is a furnace with a stone pressure plate on top
     - define materials 'li@furnace,2|furnace,3|furnace,4|furnace,5|burning_furnace,2|burning_furnace,3|burning_furnace,4|burning_furnace,5'
-    - define stoveBlocks <cu@restaurant_%restaurant%.get_blocks[%materials%]>
-#    - define stoveBlocks <npc.location.find.blocks[furnace|burning_furnace].within[<def[range]||15>]||null>
-    - if <def[stoveBlocks].is[!=].to[null]>
-      && !<def[stoveBlocks].is_empty> {
+    - define stoveBlocks <cu@restaurant_%restaurant%.get_blocks[%materials%].filter[above.material.name.is[==].to[stone_plate]]>
+    - if !<def[stoveBlocks].is_empty> {
       - define locations li@
       - foreach %stoveBlocks% {
         - define stove '%value%'
-        - if <def[stove].above.material.name.is[!=].to[stone_plate]||true> foreach next
-
-        - define east '<def[stove].add[1,0,0]>'
-        - define west '<def[stove].add[-1,0,0]>'
-        - define north '<def[stove].add[0,0,1]>'
-        - define south '<def[stove].add[0,0,-1]>'
-        - define cardinals li@east|west|north|south
-
-        - foreach %cardinals% {
-          - define location '<def[%value%]>'
-
-          - if <def[location].material.name.is[==].to[air]>
-            && <def[location].above.material.name.is[==].to[air]>
-            && <def[location].below.material.is_solid> {
-            - define locations <def[locations].include[%stove%/%location%]>
-            }
+        - define cardinals li@<def[stove].add[1,0,0]>|<def[stove].add[-1,0,0]>|<def[stove].add[0,0,1]>|<def[stove].add[0,0,-1]>
+        - define walkLocs <def[cardinals].filter[material.name.is[==].to[air]].filter[above.material.name.is[==].to[air]].filter[below.material.is_solid]||li@>
+        - foreach %walkLocs% {
+          - define locations <def[locations].include[%stove%/%value%]>
           }
         }
       }
+      else announce format:GenericNPCFormat to_console "I found no stoves in %restaurant%."
 
-  findtap:
+  findTap:
   # The tap is a tripwire hook under a lever
-    - define tapBlocks <cu@restaurant_%restaurant%.get_blocks[tripwire_hook]>
-#    - define tapBlocks <npc.location.find.blocks[tripwire_hook].within[<def[range]||15>]||null>
-    - if <def[tapBlocks].is[!=].to[null]>
-      && !<def[tapBlocks].is_empty> {
+    - define tapBlocks <cu@restaurant_%restaurant%.get_blocks[tripwire_hook].filter[above.material.name.is[==].to[lever]]||li@>
+    - if !<def[tapBlocks].is_empty> {
       - define locations li@
       - foreach %tapBlocks% {
         - define tap '%value%'
-        - if <def[tap].above.material.name.is[!=].to[lever]||true> foreach next
-
-        - define east '<def[tap].add[1,0,0]>'
-        - define west '<def[tap].add[-1,0,0]>'
-        - define north '<def[tap].add[0,0,1]>'
-        - define south '<def[tap].add[0,0,-1]>'
-        - define cardinals li@east|west|north|south
-
+        - define cardinals li@<def[tap].add[1,0,0]>|<def[tap].add[-1,0,0]>|<def[tap].add[0,0,1]>|<def[tap].add[0,0,-1]>
+        - define walkLocs <def[cardinals].filter[material.name.is[==].to[air]].filter[above.material.name.is[==].to[air]].filter[below.material.name.is[==].to[air]].filter[sub[0,2,0].material.is_solid]||li@>
         - foreach %cardinals% {
-          - define location '<def[%value%]>'
-
-          - if <def[location].material.name.is[==].to[air]>
-            && <def[location].above.material.name.is[==].to[air]>
-            && <def[location].sub[0,1,0].material.name.is[==].to[air]>
-            && <def[location].sub[0,2,0].material.is_solid> {
-            - define locations <def[locations].include[%tap%/<def[location].below>]>
-            }
+          - define locations <def[locations].include[%tap%/<def[value].below>]>
           }
         }
       }
+      else announce format:GenericNPCFormat to_console "I found no taps in %restaurant%."
 
   findWindow_chef:
+  #  The Window is an upside down stair block with a carpet on top and a
+  # redstone_lamp_on above that. It must have an air block in front of it.
+  # This is the same window that the Waitress picks up food from. The chef
+  # delivers cooked food to the side of the window inside the kitchen. Be sure
+  # to have carpet on the floor in front of the window (outside the kitchen) so
+  # the chef and waitress are finding the same windows!
+  #  The commented materials list is for every upsidedown stair block. It is
+  # still too large a material list and causes momentary lag.
+#    - define materials 'li@acacia_stairs,4|birch_wood_stairs,4|brick_stairs,4|cobblestone_stairs,4|dark_oak_stairs,4|jungle_wood_stairs,4|nether_brick_stairs,4|quartz_stairs,4|sandstone_stairs,4|smooth_stairs,4|spruce_wood_stairs,4|wood_stairs,4|acacia_stairs,5|birch_wood_stairs,5|brick_stairs,5|cobblestone_stairs,5|dark_oak_stairs,5|jungle_wood_stairs,5|nether_brick_stairs,5|quartz_stairs,5|sandstone_stairs,5|smooth_stairs,5|spruce_wood_stairs,5|wood_stairs,5|acacia_stairs,6|birch_wood_stairs,6|brick_stairs,6|cobblestone_stairs,6|dark_oak_stairs,6|jungle_wood_stairs,6|nether_brick_stairs,6|quartz_stairs,6|sandstone_stairs,6|smooth_stairs,6|spruce_wood_stairs,6|wood_stairs,6|acacia_stairs,7|birch_wood_stairs,7|brick_stairs,7|cobblestone_stairs,7|dark_oak_stairs,7|jungle_wood_stairs,7|nether_brick_stairs,7|quartz_stairs,7|sandstone_stairs,7|smooth_stairs,7|spruce_wood_stairs,7|wood_stairs,7'
+    - define materials 'li@quartz_stairs,4|quartz_stairs,5|quartz_stairs,6|quartz_stairs,7'
+    - define windowBlocks '<cu@restaurant_%restaurant%.get_blocks[%materials%].filter[above.material.bukkit_enum.is[==].to[CARPET]].filter[add[0,2,0].material.name.is[==].to[redstone_lamp_on]]||li@>'
+    - if !<def[windowBlocks].is_empty> {
+      - define locations li@
+      - foreach %windowBlocks% {
+        - define window '%value%'
+        - define cardinals li@<def[window].add[1,0,0]>|<def[window].add[-1,0,0]>|<def[window].add[0,0,1]>|<def[window].add[0,0,-1]>
+        - define walkLocs <def[cardinals].filter[material.name.is[==].to[air]].filter[above.material.name.is[==].to[air]].filter[below.material.is_solid]||li@>
+        - foreach %walkLocs% {
+          - define locations <def[locations].include[%window%/%value%]>
+          }
+        }
+      }
+      else announce format:GenericNPCFormat to_console "I found no windows in %restaurant%."
+
+  findWindow_waitress:
   # The Window is an upside down stair block with a carpet on top and a
   # redstone_lamp_on above that. It must have an air block in front of it.
   # This is the same window that the Waitress picks up food from. The chef
   # delivers cooked food to the side of the window inside the kitchen. Be sure
   # to have carpet on the floor in front of the window (outside the kitchen) so
   # the chef and waitress are finding the same windows!
+  #  The commented materials list is for every upsidedown stair block. It is
+  # still too large a material list and causes momentary lag.
 #    - define materials 'li@acacia_stairs,4|birch_wood_stairs,4|brick_stairs,4|cobblestone_stairs,4|dark_oak_stairs,4|jungle_wood_stairs,4|nether_brick_stairs,4|quartz_stairs,4|sandstone_stairs,4|smooth_stairs,4|spruce_wood_stairs,4|wood_stairs,4|acacia_stairs,5|birch_wood_stairs,5|brick_stairs,5|cobblestone_stairs,5|dark_oak_stairs,5|jungle_wood_stairs,5|nether_brick_stairs,5|quartz_stairs,5|sandstone_stairs,5|smooth_stairs,5|spruce_wood_stairs,5|wood_stairs,5|acacia_stairs,6|birch_wood_stairs,6|brick_stairs,6|cobblestone_stairs,6|dark_oak_stairs,6|jungle_wood_stairs,6|nether_brick_stairs,6|quartz_stairs,6|sandstone_stairs,6|smooth_stairs,6|spruce_wood_stairs,6|wood_stairs,6|acacia_stairs,7|birch_wood_stairs,7|brick_stairs,7|cobblestone_stairs,7|dark_oak_stairs,7|jungle_wood_stairs,7|nether_brick_stairs,7|quartz_stairs,7|sandstone_stairs,7|smooth_stairs,7|spruce_wood_stairs,7|wood_stairs,7'
     - define materials 'li@quartz_stairs,4|quartz_stairs,5|quartz_stairs,6|quartz_stairs,7'
-    - define windowBlocks <cu@restaurant_%restaurant%.get_blocks[%materials%]>
-#    - define windowBlocks '<npc.location.find.blocks[%materials%].within[<def[range]||15>]||null>'
-    - if <def[windowBlocks].is[!=].to[null]>
-      && !<def[windowBlocks].is_empty> {
+    - define windowBlocks '<cu@restaurant_%restaurant%.get_blocks[%materials%].filter[above.material.bukkit_enum.is[==].to[CARPET]].filter[add[0,2,0].material.name.is[==].to[redstone_lamp_on]]||li@>'
+    - if !<def[windowBlocks].is_empty> {
       - define locations li@
       - foreach %windowBlocks% {
         - define window '%value%'
-        - if <def[window].above.material.bukkit_enum.is[!=].to[CARPET]||true> foreach next
-        - if <def[window].add[0,2,0].material.name.is[!=].to[redstone_lamp_on]||true> foreach next
-
-        - define east '<def[window].add[1,0,0]>'
-        - define west '<def[window].add[-1,0,0]>'
-        - define north '<def[window].add[0,0,1]>'
-        - define south '<def[window].add[0,0,-1]>'
-        - define cardinals li@east|west|north|south
-
-        - foreach %cardinals% {
-          - define location '<def[%value%]>'
-
-          - if <def[location].material.name.is[==].to[air]>
-            && <def[location].above.material.name.is[==].to[air]>
-            && <def[location].below.material.is_solid> {
-            - define locations <def[locations].include[%window%/%location%]>
-            }
+        - define cardinals li@<def[window].add[1,0,0]>|<def[window].add[-1,0,0]>|<def[window].add[0,0,1]>|<def[window].add[0,0,-1]>
+        - define walkLocs <def[cardinals].filter[material.bukkit_enum.is[==].to[CARPET]].filter[above.material.name.is[==].to[air]].filter[below.material.is_solid]||li@>
+        - foreach %walkLocs% {
+          - define locations <def[locations].include[%window%/%value%]>
           }
         }
       }
+      else announce format:GenericNPCFormat to_console "I found no windows in %restaurant%."
 
-  findWindow_waitress:
-  # The Window is an upside down stair block with a carpet on top and a
-  # redstone_lamp_on above that. It must have a carpet block in front of it.
-  # This is the same window that the Chef places food on. The Waitress picks up
-  # the cooked food from outside the kitchen.
-  # Be sure to have an air block on the side of the window opposite the carpet
-  # (outside the kitchen) so the chef and waitress are finding the same windows!
-#    - define materials 'li@acacia_stairs,4|birch_wood_stairs,4|brick_stairs,4|cobblestone_stairs,4|dark_oak_stairs,4|jungle_wood_stairs,4|nether_brick_stairs,4|quartz_stairs,4|sandstone_stairs,4|smooth_stairs,4|spruce_wood_stairs,4|wood_stairs,4|acacia_stairs,5|birch_wood_stairs,5|brick_stairs,5|cobblestone_stairs,5|dark_oak_stairs,5|jungle_wood_stairs,5|nether_brick_stairs,5|quartz_stairs,5|sandstone_stairs,5|smooth_stairs,5|spruce_wood_stairs,5|wood_stairs,5|acacia_stairs,6|birch_wood_stairs,6|brick_stairs,6|cobblestone_stairs,6|dark_oak_stairs,6|jungle_wood_stairs,6|nether_brick_stairs,6|quartz_stairs,6|sandstone_stairs,6|smooth_stairs,6|spruce_wood_stairs,6|wood_stairs,6|acacia_stairs,7|birch_wood_stairs,7|brick_stairs,7|cobblestone_stairs,7|dark_oak_stairs,7|jungle_wood_stairs,7|nether_brick_stairs,7|quartz_stairs,7|sandstone_stairs,7|smooth_stairs,7|spruce_wood_stairs,7|wood_stairs,7'
-    - define materials 'li@quartz_stairs,4|quartz_stairs,5|quartz_stairs,6|quartz_stairs,7'
-    - define windowBlocks <cu@restaurant_%restaurant%.get_blocks[%materials%]>
-#    - define windowBlocks '<npc.location.find.blocks[%materials%].within[<def[range]||15>]||null>'
-    - if <def[windowBlocks].is[!=].to[null]>
-      && !<def[windowBlocks].is_empty> {
-      - define locations li@
-      - foreach %windowBlocks% {
-        - define window '%value%'
-        - if <def[window].above.material.bukkit_enum.is[!=].to[CARPET]||true> foreach next
-        - if <def[window].add[0,2,0].material.name.is[!=].to[redstone_lamp_on]||true> foreach next
-
-        - define east '<def[window].add[1,0,0]>'
-        - define west '<def[window].add[-1,0,0]>'
-        - define north '<def[window].add[0,0,1]>'
-        - define south '<def[window].add[0,0,-1]>'
-        - define cardinals li@east|west|north|south
-
-        - foreach %cardinals% {
-          - define location '<def[%value%]>'
-
-          - if <def[location].material.bukkit_enum.is[==].to[CARPET]>
-            && <def[location].above.material.name.is[==].to[air]>
-            && <def[location].below.material.is_solid> {
-            - define locations <def[locations].include[%window%/%location%]>
-            }
-          }
-        }
-      }
 
 #
 #  END Kitchen Equipment Locators
@@ -1144,7 +998,7 @@ dRestaurant:
     - ^define destination '<def[locations].random>'
     - ^define windowLoc '<def[destination].split[/].get[1].as_location>'
     - ^lookclose state:true
-    - ~walkto '<def[destination].split[/].get[2].as_location>' speed:<def[speed].add[0.1].as_money||0.8>
+    - ~walk '<def[destination].split[/].get[2].as_location>' 'speed:<def[speed].add[0.1].as_money||0.8>'
     - ^lookclose state:false
     - ^look <npc> %windowLoc%
     - ^wait 10t
@@ -1176,8 +1030,10 @@ dRestaurant:
 
   followPlayer_waitress:
     - ^wait 2s
+    - ^define counter <def[counter].add[1]||0>
     - ^if <npc.is_spawned||false>
       && <def[player].is_online||false>
+      && <def[counter].is[OR_LESS].than[9]||false>
       && <def[player].location.distance[<npc.location>].is[MORE].than[3]||false>
       && <def[player].location.is_within[cu@restaurant_%restaurant%]||false>
       && <npc.location.is_within[cu@restaurant_<def[restaurant]||null>]||false>
@@ -1210,7 +1066,7 @@ dRestaurant:
     - ^queue clear
 
   idleQueue_Chef_Fidget:
-    - ^narrate format:GenericNPCFormat "Just walking around..." 'targets:<npc.location.find.players.within[5]>'
+#    - ^narrate format:GenericNPCFormat "Just walking around..." 'targets:<npc.location.find.players.within[5]>'
     - ^define fidgetLocation '<def[fidgetValues].get[5]||npc.location>'
     - ^define fidgetHeight '<def[fidgetValues].get[6]||1>'
     - ^define pathMaterial '<def[fidgetValues].get[7].split_by[/]||cobblestone|coal_block|cobblestone_stairs>'
@@ -1312,7 +1168,15 @@ dRestaurant:
     - ^queue clear
 
   idleQueue_Waitress_Fidget:
-    - ^narrate format:GenericNPCFormat "Just walking around..." 'targets:<npc.location.find.players.within[5]>'
+    - ^if <util.random.int[1].to[100].is[OR_MORE].than[96]> {
+      - random {
+        - narrate format:GenericNPCFormat "We<&sq>ve got the best food!" targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "Our chefs were trained by the finest programmers!" targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "I hope you enjoy your meal." targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "You can watch the Chefs do what they do best!" targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "Enjoy your stay!" targets:<npc.location.find.players.within[5]||null>
+        }
+      }
     - ^define fidgetLocation '<def[fidgetValues].get[5]||npc.location>'
     - ^define fidgetHeight '<def[fidgetValues].get[6]||1>'
     - ^define pathMaterial '<def[fidgetValues].get[7].split_by[/]||cobblestone|coal_block|cobblestone_stairs>'
