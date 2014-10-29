@@ -15,9 +15,9 @@ MasterWaitressNPC:
     on remove assignment:
       - run locally unassign instantly
     on spawn:
-      - run locally spawn instantly delay:2s
+      - run locally spawn instantly
     on despawn:
-      - run locally despawn instantly delay:1s
+      - run locally despawn instantly
     on click:
       - run locally click_<npc.flag[status]||drunk> instantly
     on move proximity:
@@ -60,11 +60,15 @@ MasterWaitressNPC:
     - narrate format:GenericNPCFormat "Alright, time to start work..." targets:<npc.location.find.players.within[5]||null>
     - if <queue.exists[idleQueue_Waitress_<npc.id>]> queue queue:idleQueue_Waitress_<npc.id> stop
     - if <queue.exists[processTicket_<npc.id>]> queue queue:processTicket_<npc.id> stop
-    - run s@MasterWaitressNPC p:processTicketQueue as:processTicket_<npc.id>
+    - if <queue.exists[collectMenu_<npc.id>]> queue queue:collectMenu_<npc.id> stop
+    - follow stop target:<npc.navigator.target_entity>
+    - run s@MasterWaitressNPC p:processTicketQueue id:processTicket_<npc.id> delay:2s
 
   despawn:
     - if <queue.exists[idleQueue_Waitress_<npc.id>]> queue queue:idleQueue_Waitress_<npc.id> stop
     - if <queue.exists[processTicket_<npc.id>]> queue queue:processTicket_<npc.id> stop
+    - if <queue.exists[collectMenu_<npc.id>]> queue queue:collectMenu_<npc.id> stop
+    - follow stop target:<npc.navigator.target_entity>
     - narrate format:GenericNPCFormat "Phew... I<&sq>m glad to be done work for the day!" targets:<npc.location.find.players.within[5]||null>
 
   damage:
@@ -78,45 +82,45 @@ MasterWaitressNPC:
 #
 #
   collectMenus:
-  # Run through a list of players that are waiting to have their menus collected
-  # Then go and get them. We aren't going to walk to players that are offline or
-  # 30 blocks or more away from the npc. This REALLY should check if the player
-  # is in the restaurant cuboid and possibly if the player still has the menu in
-  # inventory.
+  # Get the menu from the first player in the menu queue.
   # Should add nullChecks for this
     - ^if !<npc.is_spawned||false> queue clear
     - ^flag npc Status:order
     - ^define fidgetValues '<npc.flag[dRestaurant_FidgetValues].as_list||null>'
     - ^define restaurant '<def[fidgetValues].get[1]||null>'
-    - ^inject s@MasterWaitressNPC p:findRestaurant instantly
-    - ^define menuQueue '<npc.flag[dRestaurant_MenuQueue].as_list||null>'
-    - ^if !<def[menuQueue].is_empty||true> {
-      - foreach %menuQueue% {
-        - define player '<def[value].as_player>'
+    - ^define player '<npc.flag[dRestaurant_MenuQueue].as_list.get[1].as_player||null>'
+    - ^if <def[player].is[!=].to[null]||false> {
+      - if <def[player].is_online>
+        && <def[player].location.is_within[cu@restaurant_%restaurant%]||false> {
         - follow target:%player%
         - inject s@dRestaurant p:followPlayer_waitress
         - follow stop target:%player%
         - look <def[player].eye_location> d:2s
         - wait 10t
         - narrate format:GenericNPCFormat "Your order should be out in just a moment." targets:%player%
-        - take '<def[player].inventory.slot[<def[player].inventory.find[menu]>].full>' player:%player%
-        - flag %player% dRestaurant_Order_Placed:!
-        - flag <npc> dRestaurant_MenuQueue:<-:%player%
-        - wait 10t
-        - if !<npc.flag[TicketQueue].as_list.is_empty||true> {
-          - inject processTicketQueue locally
-          }
+        - animate <npc> animation:arm_swing
+        - playsound <def[player].location> sound:silverfish_walk pitch:0.3
+        - playsound <def[player].location> sound:step_grass pitch:0.7
+        }
+      - take '<def[player].inventory.slot[<def[player].inventory.find[menu]>].full>' player:%player%
+      - flag %player% dRestaurant_Order_Placed:!
+      - flag <npc> dRestaurant_MenuQueue:<-:%player%
+      - wait 10t
+      - if !<npc.flag[TicketQueue].as_list.is_empty||true> {
+        - run s@MasterWaitressNPC p:processTicketQueue id:processTicket_<npc.id> delay:2t
+        - queue clear
         }
       - if !<npc.flag[dRestaurant_MenuQueue].as_list.is_empty||true> {
-        - inject collectMenus locally
+        - inject s@MasterWaitressNPC p:collectMenus
         }
       }
     - ^if !<npc.flag[TicketQueue].as_list.is_empty||true> {
-      - inject processTicketQueue locally
+      - run s@MasterWaitressNPC p:processTicketQueue id:processTicket_<npc.id> delay:2t
+      - queue clear
       }
     - ^if <queue.exists[idleQueue_Waitress_<npc.id>]> queue queue:idleQueue_Waitress_<npc.id> stop
-    - ^run s@dRestaurant p:idleQueue_Waitress id:idleQueue_Waitress_<npc.id> delay:2t
-    - ^queue stop
+    - ^run s@MasterWaitressNPC p:idleQueue_Waitress id:idleQueue_Waitress_<npc.id> delay:2t
+    - ^queue clear
 
   processTicketQueue:
   # Run through a list of orders waiting to be delivered. Rinse and repeat until
@@ -126,37 +130,53 @@ MasterWaitressNPC:
     - ^flag npc Status:deliver
     - ^define fidgetValues '<npc.flag[dRestaurant_FidgetValues].as_list||null>'
     - ^define restaurant '<def[fidgetValues].get[1]||null>'
-    - ^define speed '<def[fidgetValues].get[4]||0.9>'
-    - ^inject s@MasterWaitressNPC p:findRestaurant instantly
-    - ^define ticketQueue '<npc.flag[TicketQueue].as_list||null>'
-    - ^if !<def[ticketQueue].is_empty||true> {
-      - foreach <def[ticketQueue]> {
-        - define TicketQueueEntry %value%
-        - define ticketNumber '<def[TicketQueueEntry].split_by[/].get[1]>'
-        - define displayItems '<def[TicketQueueEntry].split_by[/].get[2].split_by[\].as_list>'
-        - define tickets '<server.flag[dRestaurantTickets].as_list>'
-        - define ticket '<def[tickets].get[<def[tickets].get_sub_items[1].split_by[/].find[%ticketNumber%]>]>'
-        - define player '<def[ticket].split_by[/].get[4].as_player>'
-        - define foodItems '<def[ticket].split_by[/].get[5].as_list>'
-        - inject s@dRestaurant p:deliverFood_waitress
-        - flag npc TicketQueue:<-:%TicketQueueEntry%
-        - flag server dRestaurantTickets:<-:%ticket%
-        - wait 5t
-        - if <npc.has_flag[dRestaurant_MenuQueue]> {
-          - inject locally collectMenus
-          }
+    - ^define TicketQueueEntry '<npc.flag[TicketQueue].as_list.get[1]||null>'
+    - ^if <def[TicketQueueEntry].is[!=].to[null]||false> {
+      - define ticketNumber '<def[TicketQueueEntry].split_by[/].get[1]>'
+      - define displayItems '<def[TicketQueueEntry].split_by[/].get[2].split_by[\].as_list>'
+      - define tickets '<server.flag[dRestaurantTickets].as_list>'
+      - define ticket '<def[tickets].get[<def[tickets].get_sub_items[1].split_by[/].find[%ticketNumber%]>]>'
+      - define player '<def[ticket].split_by[/].get[4].as_player>'
+      - define foodItems '<def[ticket].split_by[/].get[5].as_list>'
+      - define speed '<def[fidgetValues].get[4]||0.9>'
+      - inject s@dRestaurant p:deliverFood_waitress
+      - flag npc TicketQueue:<-:%TicketQueueEntry%
+      - flag server dRestaurantTickets:<-:%ticket%
+      - wait 5t
+      - if !<npc.flag[dRestaurant_MenuQueue].as_list.is_empty||true> {
+        - run s@MasterWaitressNPC p:collectMenus id:collectMenu_<npc.id> delay:2t
+        - queue clear
         }
       - if !<npc.flag[TicketQueue].as_list.is_empty||true> {
-        - inject processTicketQueue locally
+        - inject s@MasterWaitressNPC p:processTicketQueue
         }
       }
-    # Finish up by collecting any menus in queue
-    - ^if <npc.has_flag[dRestaurant_MenuQueue]> {
-      - inject locally collectMenus
+    - ^if !<npc.flag[dRestaurant_MenuQueue].as_list.is_empty||true> {
+      - run s@MasterWaitressNPC p:collectMenus id:collectMenu_<npc.id> delay:2t
+      - queue clear
       }
     - ^if <queue.exists[idleQueue_Waitress_<npc.id>]> queue queue:idleQueue_Waitress_<npc.id> stop
-    - ^run s@dRestaurant p:idleQueue_Waitress id:idleQueue_Waitress_<npc.id> delay:2t
-    - queue stop
+    - ^run s@MasterWaitressNPC p:idleQueue_Waitress id:idleQueue_Waitress_<npc.id> delay:2t
+    - ^queue clear
+
+  idleQueue_Waitress:
+    - ^if !<npc.is_spawned||false> queue clear
+    - ^if <queue.exists[processTicket_<npc.id>]> queue queue:processTicket_<npc.id> stop
+    - ^if <queue.exists[collectMenu_<npc.id>]> queue queue:collectMenu_<npc.id> stop
+    - ^flag npc Status:idle
+    - ^lookclose state:true
+    - ^define fidgetValues '<npc.flag[dRestaurant_FidgetValues].as_list||null>'
+    - ^define list li@100/Fidget
+    - ^inject s@WeightedRandomChoice p:asDef instantly
+    - ^define restaurant '<def[fidgetValues].get[1]||null>'
+    - ^define range '<def[fidgetValues].get[3]||30>'
+    - ^define speed '<def[fidgetValues].get[4]||0.7>'
+    - ^inject s@dRestaurant idleQueue_Waitress_%result%
+    - ^define wait '<def[fidgetValues].get[2]||10>'
+    - ^wait <util.random.int[<def[wait].mul[0.5].as_int>].to[<def[wait].mul[1.5].as_int>]>s
+    - ^run s@MasterWaitressNPC p:processTicketQueue id:processOrder_<npc.id> delay:2t
+    - ^queue clear
+
 
   findRestaurant:
   # This requires an NPC object and should only be run when the player is
@@ -176,7 +196,7 @@ MasterWaitressNPC:
     - if <def[restaurant].is[==].to[null]> {
       - narrate format:GenericNPCFormat "Oh dear, I seem to be quite lost..." targets:<npc.location.find.players.within[5]||null>
       - flag npc status:drunk
-      - queue stop
+      - queue clear
       }
 
   assignWaitress:
@@ -251,9 +271,7 @@ MasterWaitressNPC:
 #
   click_drunk:
   # A catchall if something derps
-    - flag npc status:drunk
-    - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
-    - if random {
+    - random {
       - narrate format:GenericNPCFormat "I quit!" targets:<npc.location.find.players.within[5]||null>
       - narrate format:GenericNPCFormat "I<&sq>m done with this place!" targets:<npc.location.find.players.within[5]||null>
       - narrate format:GenericNPCFormat "I should have called out!" targets:<npc.location.find.players.within[5]||null>
@@ -265,66 +283,69 @@ MasterWaitressNPC:
 
   click_idle:
   # When the Waitress is available for whatever
-    - flag npc status:order
     - if <player.has_flag[dRestaurant_Order_Placed]> {
       - narrate format:GenericNPCFormat "Someone will collect your menu soon."
-      - flag npc status:idle
-      - queue stop
+      - queue clear
       }
     - if <player.has_flag[dRestaurant_Order]> {
       - narrate format:GenericNPCFormat "Open up your menu and complete your order."
-      - flag npc status:idle
-      - queue stop
+      - queue clear
       }
+    - flag npc status:order
     - if <queue.exists[idleQueue_Waitress_<npc.id>]> queue queue:idleQueue_Waitress_<npc.id> stop
     - inject locally findRestaurant instantly
     - define restaurant '<npc.flag[dRestaurant_FidgetValues].get[1]||%restaurant%>'
+    - if <def[restaurant].is[==].to[null]> {
+      - flag npc Status:drunk
+      - queue clear
+      }
     - flag <player> dRestaurant_Order:%restaurant%
     - define loc <player.location.find.surface_blocks[<npc.flag[Pathfind.FidgetPathMaterial].as_list>].within[2].get[1]||<npc.location>>
-    - ~walk %loc% 'speed:<npc.flag[Pathfind.FidgetSpeed].add[0.1].as_money>'
+    - ~walk %loc% 'speed:<npc.flag[dRestaurant_FidgetValues].get[4].add[0.1].as_money||0.8>'
     - look <player.eye_location> d:2s
     - wait 5t
     - random {
-      - narrate format:GenericNPCFormat "Click on the items in the menu." targets:<npc.location.find.players.within[5]||null>
-      - narrate format:GenericNPCFormat "Browse through the menu. I<&sq>m sure you<&sq>ll find something you like." targets:<npc.location.find.players.within[5]||null>
-      - narrate format:GenericNPCFormat "We serve only the best food prepared by Master Chefs." targets:<npc.location.find.players.within[5]||null>
-      - narrate format:GenericNPCFormat "Open the menu and click on the items you want." targets:<npc.location.find.players.within[5]||null>
-      - narrate format:GenericNPCFormat "Here you go. Take a look through our menu and choose what you would like."
+      - narrate format:GenericNPCFormat "Click on the items in the menu." targets:<player>
+      - narrate format:GenericNPCFormat "Browse through the menu. I<&sq>m sure you<&sq>ll find something you like." targets:<player>
+      - narrate format:GenericNPCFormat "We serve only the best food prepared by Master Chefs." targets:<player>
+      - narrate format:GenericNPCFormat "Open the menu and click on the items you want." targets:<player>
+      - narrate format:GenericNPCFormat "Here you go. Take a look through our menu and choose what you would like." targets:<player>
       }
-    - give 'i@menu[display_name=%restaurant% Menu]'
+    - animate <npc> animation:arm_swing
+    - give 'i@dRestaurant_Menu[display_name=%restaurant% Menu]'
     - wait 15t
     - random {
-      - narrate format:GenericNPCFormat "Place your order and I<&sq>ll come get the menu." targets:<npc.location.find.players.within[5]||null>
-      - narrate format:GenericNPCFormat "Click the Order Accept button to place your order." targets:<npc.location.find.players.within[5]||null>
-      - narrate format:GenericNPCFormat "A waitress will take the menu when you<&sq>re done." targets:<npc.location.find.players.within[5]||null>
-      - narrate format:GenericNPCFormat "Click the Order Accept button when you<&sq>re finished." targets:<npc.location.find.players.within[5]||null>
-      - narrate format:GenericNPCFormat "Someone will come grab the menu when you are ready."
+      - narrate format:GenericNPCFormat "Place your order and I<&sq>ll come get the menu." targets:<player>
+      - narrate format:GenericNPCFormat "Click the Order Accept button to place your order." targets:<player>
+      - narrate format:GenericNPCFormat "A waitress will take the menu when you<&sq>re done." targets:<player>
+      - narrate format:GenericNPCFormat "Click the Order Accept button when you<&sq>re finished." targets:<player>
+      - narrate format:GenericNPCFormat "Someone will come grab the menu when you are ready." targets:<player>
       }
     - wait 30t
     - if <queue.exists[processTicket_<npc.id>]> queue queue:processTicket_<npc.id> stop
-    - run s@MasterWaitressNPC p:processTicketQueue as:processTicket_<npc.id>
+    - run s@MasterWaitressNPC p:processTicketQueue id:processTicket_<npc.id>
 
   click_order:
   # When the Waitress is taking an order
     - wait 15t
     - random {
-      - narrate format:GenericNPCFormat "I<&sq>ll be right with you <player.name>."
-      - narrate format:GenericNPCFormat "I<&sq>m with another customer right now." targets:<npc.location.find.players.within[5]||null>
-      - narrate format:GenericNPCFormat "One moment please, I<&sq>m taking an order." targets:<npc.location.find.players.within[5]||null>
-      - narrate format:GenericNPCFormat "Someone will be with you soon." targets:<npc.location.find.players.within[5]||null>
-      - narrate format:GenericNPCFormat "Hold on a sec there dear, I<&sq>m taking another order right now." targets:<npc.location.find.players.within[5]||null>
+      - narrate format:GenericNPCFormat "I<&sq>ll be right with you <player.name>." targets:<player>
+      - narrate format:GenericNPCFormat "I<&sq>m with another customer right now." targets:<player>
+      - narrate format:GenericNPCFormat "One moment please, I<&sq>m taking an order." targets:<player>
+      - narrate format:GenericNPCFormat "Someone will be with you soon." targets:<player>
+      - narrate format:GenericNPCFormat "Hold on a sec there dear, I<&sq>m taking another order right now." targets:<player>
       }
 
   click_deliver:
   # When the Waitress is delivering food
     - wait 15t
     - random {
-      - narrate format:GenericNPCFormat "We<&sq>re a little busy right now <player.name>."
-      - narrate format:GenericNPCFormat "I<&sq>m running food right now <player.name>." targets:<npc.location.find.players.within[5]||null>
-      - narrate format:GenericNPCFormat "My hands are a little full <player.name>" targets:<npc.location.find.players.within[5]||null>
-      - narrate format:GenericNPCFormat "<player.name> they really don<&sq>t pay me enough for this..." targets:<npc.location.find.players.within[5]||null>
-      - narrate format:GenericNPCFormat "I<&sq>m pretty tired <player.name>." targets:<npc.location.find.players.within[5]||null>
-      - narrate format:GenericNPCFormat "Please have a seat and a Waitress will be right with you." targets:<npc.location.find.players.within[5]||null>
+      - narrate format:GenericNPCFormat "We<&sq>re a little busy right now <player.name>." targets:<player>
+      - narrate format:GenericNPCFormat "I<&sq>m running food right now <player.name>." targets:<player>
+      - narrate format:GenericNPCFormat "My hands are a little full <player.name>" targets:<player>
+      - narrate format:GenericNPCFormat "<player.name> they really don<&sq>t pay me enough for this..." targets:<player>
+      - narrate format:GenericNPCFormat "I<&sq>m pretty tired <player.name>." targets:<player>
+      - narrate format:GenericNPCFormat "Please have a seat and a Waitress will be right with you." targets:<player>
       }
 
 #
@@ -333,8 +354,6 @@ MasterWaitressNPC:
 #
   orderup_drunk:
   # A catchall if something derps
-    - flag npc status:drunk
-    - if <queue.exists[idleQueue_Waitress_<npc.id>]> queue queue:idleQueue_Waitress_<npc.id> stop
     - random {
       - narrate format:GenericNPCFormat "I quit!" targets:<npc.location.find.players.within[5]||null>
       - narrate format:GenericNPCFormat "I<&sq>m done with this place!" targets:<npc.location.find.players.within[5]||null>
@@ -347,7 +366,7 @@ MasterWaitressNPC:
 
   orderup_idle:
   # When the Waitress is available for whatever
-    - if <util.random.int[1].to[100].is[OR_MORE].than[96]> {
+    - if <util.random.int[1].to[100].is[OR_MORE].than[98]> {
       - random {
         - narrate format:GenericNPCFormat "Ticket %ticketNumber% heard!" targets:<npc.location.find.players.within[5]||null>
         - narrate format:GenericNPCFormat "Oh, another order is ready." targets:<npc.location.find.players.within[5]||null>
@@ -359,7 +378,7 @@ MasterWaitressNPC:
 
   orderup_order:
   # When the Waitress is taking an order
-    - if <util.random.int[1].to[100].is[OR_MORE].than[96]> {
+    - if <util.random.int[1].to[100].is[OR_MORE].than[98]> {
       - random {
         - narrate format:GenericNPCFormat "Heard ticket %ticketNumber%! I<&sq>m taking an order right now." targets:<npc.location.find.players.within[5]||null>
         - narrate format:GenericNPCFormat "Buzz buzz." targets:<npc.location.find.players.within[5]||null>
@@ -371,7 +390,7 @@ MasterWaitressNPC:
 
   orderup_deliver:
   # When the Waitress is delivering food
-    - if <util.random.int[1].to[100].is[OR_MORE].than[96]> {
+    - if <util.random.int[1].to[100].is[OR_MORE].than[98]> {
       - random {
         - narrate format:GenericNPCFormat "Heard ticket %ticketNumber%! I<&sq>m running food right now." targets:<npc.location.find.players.within[5]||null>
         - narrate format:GenericNPCFormat "My goodness, the food just keeps on coming!" targets:<npc.location.find.players.within[5]||null>
@@ -386,8 +405,6 @@ MasterWaitressNPC:
 #
   proximity_drunk:
   # A catchall if something derps
-    - flag npc status:drunk
-    - if <queue.exists[fidgetQueue_<npc.id>]> queue queue:fidgetQueue_<npc.id> stop
     - random {
       - narrate format:GenericNPCFormat "I quit!" targets:<npc.location.find.players.within[5]||null>
       - narrate format:GenericNPCFormat "I<&sq>m done with this place!" targets:<npc.location.find.players.within[5]||null>
@@ -400,38 +417,41 @@ MasterWaitressNPC:
 
   proximity_idle:
   # When the Waitress is available for whatever
-    - if <util.random.int[1].to[100].is[OR_MORE].than[98]> {
+    - if <util.random.int[1].to[100].is[OR_MORE].than[99]> {
       - random {
-        - narrate format:GenericNPCFormat "We<&sq>ve got the best food!" targets:<npc.location.find.players.within[5]||null>
-        - narrate format:GenericNPCFormat "Our chefs were trained by the finest programmers!" targets:<npc.location.find.players.within[5]||null>
-        - narrate format:GenericNPCFormat "I hope you enjoy your meal." targets:<npc.location.find.players.within[5]||null>
-        - narrate format:GenericNPCFormat "You can watch the Chefs do what they do best!" targets:<npc.location.find.players.within[5]||null>
-        - narrate format:GenericNPCFormat "Enjoy your stay!" targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "We<&sq>ve got the best food!" targets:<player>
+        - narrate format:GenericNPCFormat "Our chefs were trained by the finest programmers!" targets:<player>
+        - narrate format:GenericNPCFormat "I hope you enjoy your meal." targets:<player>
+        - narrate format:GenericNPCFormat "You can watch the Chefs do what they do best!" targets:<player>
+        - narrate format:GenericNPCFormat "Enjoy your stay!" targets:<player>
         }
       }
 
   proximity_order:
   # When the Waitress is taking an order
-    - if <util.random.int[1].to[100].is[OR_MORE].than[98]> {
+    - if <util.random.int[1].to[100].is[OR_MORE].than[99]> {
       - random {
-        - narrate format:GenericNPCFormat "More tickets coming in!" targets:<npc.location.find.players.within[5]||null>
-        - narrate format:GenericNPCFormat "Buzz buzz." targets:<npc.location.find.players.within[5]||null>
-        - narrate format:GenericNPCFormat "The kitchen sure is busy!" targets:<npc.location.find.players.within[5]||null>
-        - narrate format:GenericNPCFormat "They are working hard back there." targets:<npc.location.find.players.within[5]||null>
-        - narrate format:GenericNPCFormat "The guy on the grill is by bf." targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "More tickets coming in!" targets:<player>
+        - narrate format:GenericNPCFormat "Buzz buzz." targets:<player>
+        - narrate format:GenericNPCFormat "The kitchen sure is busy!" targets:<player>
+        - narrate format:GenericNPCFormat "They are working hard back there." targets:<player>
+        - narrate format:GenericNPCFormat "The guy on the grill is by bf." targets:<player>
         }
       }
 
   proximity_deliver:
   # When the Waitress is delivering food
-    - define player '<npc.flag[dRestaurant_MenuQueue].as_list.get[1].as_player||null>'
-    - if <util.random.int[1].to[100].is[OR_MORE].than[98]> {
+    - if <util.random.int[1].to[100].is[OR_MORE].than[99]> {
+      - define ticketNumber '<npc.flag[TicketQueue].as_list.get[1].split_by[/].get[1]||null>'
+      - if <def[ticketNumber].is[==].to[null]> queue clear
+      - define player '<server.flag[dRestaurantTickets].as_list.map_get[%ticketNumber%].split[/].get[3].name>'
+      - define food '<server.flag[dRestaurantTickets].as_list.map_get[%ticketNumber%].split[/].get[4].display>'
       - random {
-        - narrate format:GenericNPCFormat "Busy busy busy!" targets:<npc.location.find.players.within[5]||null>
-        - narrate format:GenericNPCFormat "My goodness, the food just keeps on coming!" targets:<npc.location.find.players.within[5]||null>
-        - narrate format:GenericNPCFormat "I<&sq>m in the weeds!" targets:<npc.location.find.players.within[5]||null>
-        - narrate format:GenericNPCFormat "I<&sq>m going as fast as I can!" targets:<npc.location.find.players.within[5]||null>
-        - narrate format:GenericNPCFormat "This is a rough night!" targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "Where is %player%?" targets:<player>
+        - narrate format:GenericNPCFormat "Have you seen %player%?" targets:<player>
+        - narrate format:GenericNPCFormat "I<&sq>m looking for %player%." targets:<player>
+        - narrate format:GenericNPCFormat "Hot %food% for %player%!" targets:<player>
+        - narrate format:GenericNPCFormat "This %food% is for %player%!" targets:<player>
         }
       }
 
