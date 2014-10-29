@@ -102,7 +102,8 @@ MasterWaitressNPC:
         - playsound <def[player].location> sound:silverfish_walk pitch:0.3
         - playsound <def[player].location> sound:step_grass pitch:0.7
         }
-      - take '<def[player].inventory.slot[<def[player].inventory.find[menu]>].full>' player:%player%
+      - inventory set 'd:<def[player].inventory>' 'o:i@dRestaurant_Menu' 'slot:<def[player].inventory.find[drestaurant_menu]>'
+      - take 'i@dRestaurant_Menu' player:%player%
       - flag %player% dRestaurant_Order_Placed:!
       - flag <npc> dRestaurant_MenuQueue:<-:%player%
       - wait 10t

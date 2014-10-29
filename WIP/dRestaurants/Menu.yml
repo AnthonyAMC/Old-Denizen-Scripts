@@ -20,7 +20,7 @@ dRestaurantMenu:
           - queue clear
           }
         }
-      - run s@dRestaurantMenu p:takeMenu 'def:<context.item>' instantly delay:2t
+      - run s@dRestaurantMenu p:takeMenu instantly
       - narrate format:TBFormat "I don<&sq>t think I should have this... and even if I am supposed to have it, I have no idea what I<&sq>m doing right now!"
       - queue clear
 
@@ -31,15 +31,17 @@ dRestaurantMenu:
 
   takeMenu:
 #    - narrate "Attempting to remove the <player.item_in_hand> from player hand..."
-    - inventory remove 'd:<player.inventory>' 'o:<player.item_in_hand>'
-    - inventory update 'd:<player.inventory>'
+#    - inventory remove 'd:<player.inventory>' 'o:<player.item_in_hand>'
+#    - inventory update 'd:<player.inventory>'
 #    - narrate "Attempting to remove the %1% known in the click event..."
-    - inventory remove 'd:<player.inventory>' 'o:%1%'
-    - inventory update 'd:<player.inventory>'
+#    - inventory remove 'd:<player.inventory>' 'o:%1%'
+#    - inventory update 'd:<player.inventory>'
 #    - narrate "Attempting to take i@dRestaurant_Menu from player..."
-    - take i@dRestaurant_Menu
+#    - take i@dRestaurant_Menu
 #    - narrate "Attempting to take <player.inventory.slot[<player.inventory.find[drestaurant_menu]>].full> from player..."
-    - take '<player.inventory.slot[<player.inventory.find[drestaurant_menu]>].full>'
+#    - take '<player.inventory.slot[<player.inventory.find[drestaurant_menu]>].full>'
+    - inventory set 'd:<player.inventory>' 'o:i@dRestaurant_Menu' 'slot:<player.inventory.find[drestaurant_menu]>'
+    - take i@dRestaurant_Menu
 
 #
 #
@@ -107,8 +109,8 @@ dRestaurantMenu:
         - queue clear
         }
       - narrate "<&b>dRestaurant<&co> <&a>Added <&f><c.item.display> <&a>to the menu."
-      - inventory remove 'd:<player.inventory>' 'o:<c.item.simple>'
-      - inventory add 'd:in@%GUI%' 'o:<c.item.simple>'
+      - inventory remove 'd:<player.inventory>' 'o:<c.item.scriptname.as_item>'
+      - inventory add 'd:in@%GUI%' 'o:<c.item.scriptname.as_item>'
       - inventory update 'd:<player.inventory>'
       - flag server dRestaurant.%restaurant%.Menu:->:<c.item.scriptname>/<c.item.scriptname.as_script.yaml_key[price]>
       - queue clear
@@ -119,9 +121,10 @@ dRestaurantMenu:
         - queue clear
         }
       - narrate "<&b>dRestaurant<&co> <&c>Removed <&f><c.item.display> <&c>from the menu."
-      - inventory remove 'd:in@%GUI%' 'o:<c.item.full>'
-      - inventory add 'd:<player.inventory>' 'o:<c.item.simple>'
+      - inventory remove 'd:in@%GUI%' 'o:<c.item.scriptname.as_item>'
       - inventory update 'd:in@%GUI%'
+      - inventory add 'd:<player.inventory>' 'o:<c.item.scriptname.as_item>'
+      - inventory update 'd:<player.inventory>'
       - flag server dRestaurant.%restaurant%.Menu:<-:<c.item.scriptname>/<def[menuList].map_get[<c.item.scriptname>]>
       - queue clear
       }
