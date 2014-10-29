@@ -221,6 +221,12 @@ dRestaurant:
       # Let the waitress decide what to do based on status
       - inject npc:%waitress% s@MasterWaitressNPC p:orderup_<def[waitress].flag[Status]||drunk>
 
+    # There has to be a way to cancel an order /after/ it has been entered into
+    # the ticket system if the chef detects missing equipment or ingredients,
+    # or if a player action cancels the order (logout, exit restaurant, dies)
+    on order canceled:
+      - announce to_console "<&b>dRestaurant<&co> <&c><c.ticket> cancelled!"
+
 #
 #  END dRestaurant NPC events
 #--------------------------------------
@@ -232,7 +238,7 @@ dRestaurant:
         && <player.flag[dRestaurant_Order_Placed].is[!=].to[true]||true> {
         - define restaurantName '<player.flag[dRestaurant_Order].split[/].get[1]||null>'
         - define menuinventory '<el@val[in@%restaurantName%].as_inventory||null>'
-        - if <el@list[%restaurantName%|%menuinventory%].contains[null]||true> {
+        - if <li@%restaurantName%|%menuinventory%.contains[null]||true> {
           - narrate "%restaurantName%"
           - narrate "%menuinventory%"
           - take 'i@menu[display_name=%restaurantName% Menu]'
@@ -250,7 +256,7 @@ dRestaurant:
       - define menuinventory '<el@val[in@%restaurantName%].as_inventory||null>'
       # If the defs are null then it must not be a menu? We should have
       # something to uniquely and instantly identify menu inventories.
-      - if <el@list[%restaurantName%|%menuinventory%].contains[null]||true> {
+      - if <li@%restaurantName%|%menuinventory%.contains[null]||true> {
         - queue stop
         }
 
@@ -531,7 +537,7 @@ dRestaurant:
           }
         }
       }
-      else announce format:GenericNPCFormat to_console "I found no stoves in %restaurant%."
+      else announce format:GenericNPCFormat to_console "I found no ovens in %restaurant%."
     - define locations '<def[locations].deduplicate||li@>'
 
   findStove:
@@ -1010,26 +1016,27 @@ dRestaurant:
     # still in the restaurant before we proceed.
     # Should also be using the follow command along with a proximity move action
     - ^lookclose state:true
-    - ^follow target:%player%
-    - ^inject locally followPlayer_waitress
-    - ^follow stop
-    - ^wait 10t
-    - ^give player:%player% %foodItems%
-#    - ^if <def[player].location.distance[<npc.location>].is[OR_LESS].than[30]> {
-#      - ~walkto <def[player].location> speed:<def[speed].add[0.1].as_money||0.8>
-#      - ^wait 10t
-#      - ^give player:%player% %foodItems%
-#      }
-#      else give player:%player% %foodItems%
-    - ~equip <npc> hand:i@air
-    - ^define foods li@
-    - ^foreach %fooditems% {
-      - define foods <def[foods].include[<def[value].display>]>
+    - ^if <def[player].is_online>
+      && <def[player].location.is_within[cu@restaurant_%restaurant%]||false> {
+      - follow target:%player%
+      - inject locally followPlayer_waitress
+      - follow stop target:%player%
+      - wait 10t
+      - animate <npc> animation:arm_swing
+      - playsound <def[player].location> sound:silverfish_walk pitch:0.3
+      - playsound <def[player].location> sound:step_grass pitch:0.7
       }
-    - ^narrate format:GenericNPCFormat "Here is your <def[foods].as_list.formatted>" target:%player%
+    - ^give player:%player% %foodItems%
+    - ~equip <npc> hand:i@air
+    - ^narrate format:GenericNPCFormat "Here is your <def[foodItems].parse[display].as_list.formatted>" target:%player%
+#    - ^define foods li@
+#    - ^foreach %fooditems% {
+#      - define foods <def[foods].include[<def[value].display>]>
+#      }
+#    - ^narrate format:GenericNPCFormat "Here is your <def[foods].as_list.formatted>" target:%player%
 
   followPlayer_waitress:
-    - ^wait 2s
+    - ^wait 1s
     - ^define counter <def[counter].add[1]||0>
     - ^if <npc.is_spawned||false>
       && <def[player].is_online||false>
@@ -1040,6 +1047,32 @@ dRestaurant:
       && <el@val[<npc.flag[Status].is[==].to[order]||false>].or[<npc.flag[Status].is[==].to[deliver]||false>]||false> {
       - inject locally followPlayer_waitress
       }
+      else follow stop target:%player%
+
+  idleQueue_Waitress_Fidget:
+    - ^if <util.random.int[1].to[100].is[OR_MORE].than[99]> {
+      - random {
+        - narrate format:GenericNPCFormat "We<&sq>ve got the best food!" targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "Our chefs were trained by the finest programmers!" targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "I hope you enjoy your meal." targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "You can watch the Chefs do what they do best!" targets:<npc.location.find.players.within[5]||null>
+        - narrate format:GenericNPCFormat "Enjoy your stay!" targets:<npc.location.find.players.within[5]||null>
+        }
+      }
+    - ^define fidgetLocation '<def[fidgetValues].get[5]||npc.location>'
+    - ^define fidgetHeight '<def[fidgetValues].get[6]||1>'
+    - ^define pathMaterial '<def[fidgetValues].get[7].split_by[/]||cobblestone|coal_block|cobblestone_stairs>'
+    - ^define target '<cu@restaurant_%restaurant%.get_spawnable_blocks[%pathMaterial%].filter[distance[<npc.location>].is[OR_LESS].than[%range%]].filter[distance[%fidgetLocation%].vertical.is[OR_LESS].than[%fidgetHeight%]].random||<npc.location>>'
+    - ~walk %target% speed:%speed%
+#    - ^repeat 5 {
+#      - define target '<cu@restaurant_%restaurant%.get_spawnable_blocks[%pathMaterial%].random||null>'
+#      - if <def[target].distance[%fidgetLocation%].vertical.is[OR_LESS].than[%fidgetHeight%]>
+#        && <def[target].distance[<npc.location>].is[OR_LESS].than[%fidgetRadius%]> {
+#        - ~walk %target% speed:%speed%
+#        - repeat stop
+#        }
+#      }
+
 
 #
 #  END Animations
@@ -1146,56 +1179,6 @@ dRestaurant:
 #  END Chef Idle Mechanics
 #-----------------------
 #
-#  Waitress Idle Mechanics
-#
-#
-  idleQueue_Waitress:
-    - ^if !<npc.is_spawned||false> queue clear
-    - ^flag npc Status:idle
-    - ^lookclose state:true
-    - ^if <queue.exists[processOrder_<npc.id>]> queue queue:processOrder_<npc.id> stop
-    - ^define fidgetValues '<npc.flag[dRestaurant_FidgetValues].as_list||null>'
-    - ^define list li@100/Fidget
-    - ^inject s@WeightedRandomChoice p:asDef instantly
-    - ^define restaurant '<def[fidgetValues].get[1]||null>'
-    - ^define range '<def[fidgetValues].get[3]||30>'
-    - ^define speed '<def[fidgetValues].get[4]||0.7>'
-    - ^inject locally idleQueue_Chef_%result%
-    - ^define wait '<def[fidgetValues].get[2]||10>'
-    - ^wait <util.random.int[<def[wait].mul[0.5].as_int>].to[<def[wait].mul[1.5].as_int>]>s
-    - ^if <queue.exists[processOrder_<npc.id>]> queue queue:processOrder_<npc.id> stop
-    - ^run s@MasterWaitressNPC p:processTicketQueue id:processOrder_<npc.id> delay:2t
-    - ^queue clear
-
-  idleQueue_Waitress_Fidget:
-    - ^if <util.random.int[1].to[100].is[OR_MORE].than[96]> {
-      - random {
-        - narrate format:GenericNPCFormat "We<&sq>ve got the best food!" targets:<npc.location.find.players.within[5]||null>
-        - narrate format:GenericNPCFormat "Our chefs were trained by the finest programmers!" targets:<npc.location.find.players.within[5]||null>
-        - narrate format:GenericNPCFormat "I hope you enjoy your meal." targets:<npc.location.find.players.within[5]||null>
-        - narrate format:GenericNPCFormat "You can watch the Chefs do what they do best!" targets:<npc.location.find.players.within[5]||null>
-        - narrate format:GenericNPCFormat "Enjoy your stay!" targets:<npc.location.find.players.within[5]||null>
-        }
-      }
-    - ^define fidgetLocation '<def[fidgetValues].get[5]||npc.location>'
-    - ^define fidgetHeight '<def[fidgetValues].get[6]||1>'
-    - ^define pathMaterial '<def[fidgetValues].get[7].split_by[/]||cobblestone|coal_block|cobblestone_stairs>'
-    - ^repeat 5 {
-      - define target '<cu@restaurant_%restaurant%.get_spawnable_blocks[%pathMaterial%].random||null>'
-#      - define target '<def[fidgetLocation].as_location.find.surface_blocks[<def[pathMaterial]>].within[<def[range]>].random>'
-      - if <def[target].distance[%fidgetLocation%].vertical.is[OR_LESS].than[%fidgetHeight%]> {
-        - ~walk %target% speed:%speed%
-        - repeat stop
-        }
-      }
-
-
-
-
-
-#
-#  END Waitress Idle Mechanics
-#-----------------------
 #
 #
 #  END DRESTAURANT WORLD SCRIPT
