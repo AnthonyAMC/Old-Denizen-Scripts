@@ -157,7 +157,6 @@ dRestaurant:
       # Define requisite data and do null check
       - define player '<c.player||null>'
       - define orderDetails <def[player].flag[dRestaurant_Order]||null>
-      - flag player dRestaurant_Order:!
       - define restaurant <def[orderDetails].split[/].get[1]||null>
       - define foodItems <def[orderDetails].split[/].get[2].as_list||null>
       - inject s@MasterWaitressNPC p:assignWaitress
@@ -180,14 +179,15 @@ dRestaurant:
       # means that all work is evenly distributed amongst the restaurant staff.
       # We do one final null check before creating each ticket.
       - foreach %foodItems% {
-        - define food %value%
+        - define food '<def[value].split[,].get[1].as_item>'
         - inject s@MasterWaitressNPC p:assignChef
         - inject s@MasterWaitressNPC p:assignTicketNumber
-        - if <el@val[%chef%|%ticketNumber%].as_list.contains[null]> {
+        - if <el@val[%chef%|%ticketNumber%|%food%|%foodItems%].as_list.contains[null]> {
           - announce "<&b>dRestaurant<&co> <&c>Something went wrong on <&6>order placed<&c>!" to_console
           - announce "<&b>dRestaurant<&co> <&3>player<&co> <&b>%player%" to_console
           - announce "<&b>dRestaurant<&co> <&3>restaurant<&co> <&b>%restaurant%" to_console
           - announce "<&b>dRestaurant<&co> <&3>foodItem<&co> <&b>%food%" to_console
+          - announce "<&b>dRestaurant<&co> <&3>foodItems<&co> <&b>%foodItems%" to_console
           - announce "<&b>dRestaurant<&co> <&3>chef<&co> <&b>%chef%" to_console
           - announce "<&b>dRestaurant<&co> <&3>ticketNumber<&co> <&b>%ticketNumber%" to_console
           - foreach next
@@ -196,6 +196,7 @@ dRestaurant:
         - action "order in" %chef% context:ticket|%ticketNumber%
         - wait 10t
         }
+#      - flag player dRestaurant_Order:!
 
     # Custom event fired by the chef when an order is ready for delivery
     on order up:
@@ -1062,7 +1063,7 @@ dRestaurant:
     - ^define fidgetLocation '<def[fidgetValues].get[5]||npc.location>'
     - ^define fidgetHeight '<def[fidgetValues].get[6]||1>'
     - ^define pathMaterial '<def[fidgetValues].get[7].split_by[/]||cobblestone|coal_block|cobblestone_stairs>'
-    - ^define target '<cu@restaurant_%restaurant%.get_spawnable_blocks[%pathMaterial%].filter[distance[<npc.location>].is[OR_LESS].than[%range%]].filter[distance[%fidgetLocation%].vertical.is[OR_LESS].than[%fidgetHeight%]].random||<npc.location>>'
+    - ^define target '<cu@restaurant_%restaurant%.get_spawnable_blocks[%pathMaterial%].filter[distance[<npc.location>].is[OR_LESS].than[%range%]].filter[distance[%fidgetLocation%].vertical.is[OR_LESS].than[%fidgetHeight%]].random||%fidgetLocation%>'
     - ~walk %target% speed:%speed%
 #    - ^repeat 5 {
 #      - define target '<cu@restaurant_%restaurant%.get_spawnable_blocks[%pathMaterial%].random||null>'

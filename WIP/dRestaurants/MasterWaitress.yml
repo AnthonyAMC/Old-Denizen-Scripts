@@ -104,7 +104,7 @@ MasterWaitressNPC:
         }
       - inventory set 'd:<def[player].inventory>' 'o:i@dRestaurant_Menu' 'slot:<def[player].inventory.find[drestaurant_menu]>'
       - take 'i@dRestaurant_Menu' player:%player%
-      - flag %player% dRestaurant_Order_Placed:!
+      - flag %player% dRestaurant_Order:!
       - flag <npc> dRestaurant_MenuQueue:<-:%player%
       - wait 10t
       - if !<npc.flag[TicketQueue].as_list.is_empty||true> {
@@ -284,7 +284,7 @@ MasterWaitressNPC:
 
   click_idle:
   # When the Waitress is available for whatever
-    - if <player.has_flag[dRestaurant_Order_Placed]> {
+    - if <player.flag[dRestaurant_Order].split[/].get[3].is[==].to[true]||false> {
       - narrate format:GenericNPCFormat "Someone will collect your menu soon."
       - queue clear
       }
