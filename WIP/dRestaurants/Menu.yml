@@ -20,6 +20,7 @@ dRestaurantMenu:
           - queue clear
           }
         }
+      - flag player dRestaurant_Order:!
       - run s@dRestaurantMenu p:takeMenu instantly
       - narrate format:TBFormat "I don<&sq>t think I should have this... and even if I am supposed to have it, I have no idea what I<&sq>m doing right now!"
       - queue clear
@@ -62,7 +63,8 @@ dRestaurantMenu:
         - queue clear
         }
       - narrate "<&b>dRestaurant<&co> <&f><c.item.display> <&3>added to your order."
-      - flag player dRestaurant_Order:%restaurant%/<def[order].include[<c.item.simple||>]>
+      - define price '<server.flag[dRestaurant.%restaurant%.Menu].as_list.map_get[<c.item.scriptname>]||<c.item.scriptname.as_script.yaml_key[price]>>'
+      - flag player dRestaurant_Order:%restaurant%/<def[order].include[<c.item.simple>\%price%]>
       }
     - if <c.item.scriptname.split[_].get[2].is[==].to[button]||false> {
       - define GUI 'dRestaurant_Menu_<player.name>'
@@ -80,7 +82,7 @@ dRestaurantMenu:
       - narrate "<&b>dRestaurant<&co> <&f><c.item.display> <&3>removed from your order."
       - inventory remove 'd:in@%GUI%' 'o:<c.item.simple>' 'slot:<context.raw_slot>'
       - inventory update 'd:in@%GUI%'
-      - flag player dRestaurant_Order:%restaurant%/<def[order].remove[<def[order].find[<c.item.simple>]>]||%order%>
+      - flag player dRestaurant_Order:%restaurant%/<def[order].remove[<def[order].find_partial[<c.item.simple>]>]||%order%>
       - queue clear
       }
     - if <c.item.scriptname.split[_].get[2].is[==].to[button]||false> {
@@ -97,7 +99,7 @@ dRestaurantMenu:
 #      }
     - if <c.raw_slot.is[MORE].than[36]> {
       - if <c.item.scriptname.split[_].get[2].is[!=].to[food]||true> {
-        - narrate "<&b>dRestaurant<&co> <&c><c.item> is not a dRestaurant Food item!"
+        - narrate "<&b>dRestaurant<&co> <&c>This is not a dRestaurant Food item!"
         - queue clear
         }
       - if <def[menuList].size.is[OR_MORE].than[27]> {
@@ -109,8 +111,8 @@ dRestaurantMenu:
         - queue clear
         }
       - narrate "<&b>dRestaurant<&co> <&a>Added <&f><c.item.display> <&a>to the menu."
-      - inventory remove 'd:<player.inventory>' 'o:<c.item.scriptname.as_item>'
-      - inventory add 'd:in@%GUI%' 'o:<c.item.scriptname.as_item>'
+      - inventory remove 'd:<player.inventory>' 'o:<c.item>'
+      - inventory add 'd:in@%GUI%' 'o:<c.item.simple>'
       - inventory update 'd:<player.inventory>'
       - flag server dRestaurant.%restaurant%.Menu:->:<c.item.scriptname>/<c.item.scriptname.as_script.yaml_key[price]>
       - queue clear
@@ -121,9 +123,11 @@ dRestaurantMenu:
         - queue clear
         }
       - narrate "<&b>dRestaurant<&co> <&c>Removed <&f><c.item.display> <&c>from the menu."
-      - inventory remove 'd:in@%GUI%' 'o:<c.item.scriptname.as_item>'
+
+      - inventory set 'd:in@%GUI%' 'o:<c.item.simple>' 'slot:<el@val[in@%GUI%].as_inventory.find[<c.item.scriptname>]>'
+      - inventory remove 'd:in@%GUI%' 'o:<c.item.simple>'
       - inventory update 'd:in@%GUI%'
-      - inventory add 'd:<player.inventory>' 'o:<c.item.scriptname.as_item>'
+      - inventory add 'd:<player.inventory>' 'o:<c.item.simple>'
       - inventory update 'd:<player.inventory>'
       - flag server dRestaurant.%restaurant%.Menu:<-:<c.item.scriptname>/<def[menuList].map_get[<c.item.scriptname>]>
       - queue clear
@@ -172,7 +176,7 @@ dRestaurantMenu:
   display_Menu:
     - define GUI 'dRestaurant_Menu_<player.name>'
     - define restaurant '<player.flag[dRestaurant_Order].split[/].get[1]||null>'
-    - note 'in@generic[title=<&3><def[restaurant].substring[1,11]> Menu;size=36]' 'as:%GUI%'
+    - note 'in@generic[title=<&1><def[restaurant].substring[1,11]> Menu;size=36]' 'as:%GUI%'
     - foreach <server.flag[dRestaurant.%restaurant%.Menu].as_list||li@> {
       - define hr '<&5>--------------------'
       - define food '<def[value].split[/].get[1].as_item>'
@@ -200,11 +204,11 @@ dRestaurantMenu:
   display_OrderReview:
     - define GUI 'dRestaurant_OrderReview_<player.name>'
     - define restaurant '<player.flag[dRestaurant_Order].split[/].get[1]||null>'
-    - note 'in@generic[title=<&3>Order Review;size=36]' 'as:%GUI%'
+    - note 'in@generic[title=<&1>Order Review;size=36]' 'as:%GUI%'
     - foreach <player.flag[dRestaurant_Order].split[/].get[2].as_list||li@> {
       - define hr '<&5>--------------------'
-      - define food '<def[value].split[/].get[1].as_item>'
-      - define price '<def[value].split[/].get[2]||<def[food].scriptname.as_script.yaml_key[price]>>'
+      - define food '<def[value].split[\].get[1].as_item>'
+      - define price '<def[value].split[\].get[2]||<def[food].scriptname.as_script.yaml_key[price]>>'
       - define totalPrice '<def[totalPrice].add[%price%]||%price%>'
       - define name '<def[food].display>'
       - define foodLevel '<def[food].scriptname.as_script.yaml_key[foodLevel]>'
@@ -223,7 +227,7 @@ dRestaurantMenu:
   display_MenuEdit:
     - define GUI 'dRestaurant_MenuEdit_<player.name>'
     - define restaurant '<player.flag[dRestaurant_Order].split[/].get[1]||null>'
-    - note 'in@generic[title=<&3>Admin Menu Edit;size=36]' 'as:%GUI%'
+    - note 'in@generic[title=<&1>Admin Menu Edit;size=36]' 'as:%GUI%'
     - foreach <server.flag[dRestaurant.%restaurant%.Menu].as_list||li@> {
       - define hr '<&5>-------------------------'
       - define food '<def[value].split[/].get[1].as_item>'
@@ -240,7 +244,7 @@ dRestaurantMenu:
   display_ManageStaff:
     - define GUI 'dRestaurant_ManageStaff_<player.name>'
     - define restaurant '<player.flag[dRestaurant_Order].split[/].get[1]||null>'
-    - note 'in@generic[title=<&3>Staff Management;size=36]' 'as:%GUI%'
+    - note 'in@generic[title=<&1>Staff Management;size=36]' 'as:%GUI%'
     - foreach <server.flag[dRestaurant.%restaurant%.Staff.Waitresses].as_list||li@> {
       - define hr '<&5>-------------------------'
       - define waitress '%value%'
@@ -280,25 +284,25 @@ dRestaurantMenu:
   display_ManageStaff_EditWaitress:
     - define GUI 'dRestaurant_ManageStaff_EditWaitress_<player.name>'
     - define restaurant '<player.flag[dRestaurant_Order].split[/].get[1]||null>'
-    - note 'in@generic[title=<&3>Staff Management;size=36]' 'as:%GUI%'
+    - note 'in@generic[title=<&1>Staff Management;size=36]' 'as:%GUI%'
 
 
   display_ManageStaff_EditChef:
     - define GUI 'dRestaurant_ManageStaff_EditChef_<player.name>'
     - define restaurant '<player.flag[dRestaurant_Order].split[/].get[1]||null>'
-    - note 'in@generic[title=<&3>Staff Management;size=36]' 'as:%GUI%'
+    - note 'in@generic[title=<&1>Staff Management;size=36]' 'as:%GUI%'
 
 
   display_ManageInventory:
     - define GUI 'dRestaurant_ManageInventory_<player.name>'
     - define restaurant '<player.flag[dRestaurant_Order].split[/].get[1]||null>'
-    - note 'in@generic[title=<&3>Staff Management;size=36]' 'as:%GUI%'
+    - note 'in@generic[title=<&1>Staff Management;size=36]' 'as:%GUI%'
 
 
   display_EquipmentChecks:
     - define GUI 'dRestaurant_EquipmentChecks_<player.name>'
     - define restaurant '<player.flag[dRestaurant_Order].split[/].get[1]||null>'
-    - note 'in@generic[title=<&3>Staff Management;size=36]' 'as:%GUI%'
+    - note 'in@generic[title=<&1>Staff Management;size=36]' 'as:%GUI%'
 
 
 
@@ -377,23 +381,27 @@ dRestaurant_Button_OrderAccept:
       - narrate "<&b>dRestaurant<&co> <&c>Your order is empty!"
       - queue clear
       }
-#    - define price '<def[value].split[/].get[2]||<def[food].scriptname.as_script.yaml_key[price]>>'
-#    - define totalPrice '<def[totalPrice].add[%price%]||%price%>'
-    - define priceList '<def[order].get_sub_items[2]||>'
-    - narrate %priceList%
-    - foreach %priceList% {
-      - define price <def[value]||0>
+    - foreach <def[order]||li@> {
+      - define food '<def[value].split[\].get[1].as_item>'
+      - define price '<def[value].split[\].get[2]||<def[food].scriptname.as_script.yaml_key[price]||0>>'
       - define totalPrice '<def[totalPrice].add[%price%]||%price%>'
       }
+#    - foreach <player.flag[dRestaurant_Order].split[/].get[2].as_list||li@> {
+#      - define food '<def[value].split[\].get[1].as_item>'
+#      - define price '<def[value].split[\].get[2]||<def[food].scriptname.as_script.yaml_key[price]>>'
+#      - define totalPrice '<def[totalPrice].add[%price%]||%price%>'
+#      }
     - if <player.money.is[LESS].than[%totalPrice%]||false> {
       - narrate "<&b>dRestaurant<&co> <&c>You do not have <&6>$<&a>%totalPrice%<&c> for these items!"
       - queue clear
       }
+    - take money qty:%totalPrice%
     - inventory close
     - note remove 'as:in@%GUI%'
     - flag player dRestaurant_Order:%restaurant%/%order%/true
     - event "order placed" context:player|<player>
-    - narrate "<&b>dRestaurant<&co> <&f>Order Accepted! A waitress will collect your menu soon."
+    - narrate "<&b>dRestaurant<&co> <&6>$<&a>%totalPrice% <&f>has been deducted from you account."
+    - narrate "<&b>dRestaurant<&co> <&f>A waitress will collect your menu soon."
 #
 #
 #--------------------------------------
