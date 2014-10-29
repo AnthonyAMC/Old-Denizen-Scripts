@@ -115,7 +115,16 @@ MasterChefNPC:
 
   chat:
     - if <npc.owner.is[!=].to[<player>]> {
-      - narrate format:GenericNPCFormat "I don<&sq>t know you like that."
+      - if <util.random.int[1].to[100].is[OR_MORE].than[99]> {
+        - random {
+          - narrate format:GenericNPCFormat "I don<&sq>t know you like that." targets:<player>
+          - narrate format:GenericNPCFormat "Busy busy busy!" targets:<player>
+          - narrate format:GenericNPCFormat "My goodness, the food just keeps on coming!" targets:<player>
+          - narrate format:GenericNPCFormat "I<&sq>m in the weeds!" targets:<player>
+          - narrate format:GenericNPCFormat "I<&sq>m going as fast as I can!" targets:<player>
+          - narrate format:GenericNPCFormat "This is a rough night!" targets:<player>
+          }
+        }
       - queue stop
       }
     - narrate format:GenericNPCFormat "Ok, so you want me to find something... sure."
@@ -354,7 +363,7 @@ MasterChefNPC:
       }
 
 #
-#  END MasterWaitress Status Actions
+#  END Complete Responses
 #--------------------------------------
 #
 #
