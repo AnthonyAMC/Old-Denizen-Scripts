@@ -1,0 +1,610 @@
+
+dRestaurantMenu:
+  type: world
+  debug: false
+  events:
+#  dRestaurant Menu events
+#
+    on player closes inventory:
+      - if <c.inventory.replace[in@].split[_].get[1].is[!=].to[dRestaurant]||true> queue clear
+      - note remove 'as:<context.inventory>'
+
+    on player right clicks with i@dRestaurant_Menu:
+      - if <player.has_flag[dRestaurant_Order]||false> {
+        - define restaurant <player.flag[dRestaurant_Order].split[/].get[1]||null>
+        - define inRestaurant <player.location.cuboids.filter[notable_name.is[==].to[restaurant_%restaurant%]]||li@>
+        - if !<def[inRestaurant].is_empty> {
+          - define orderPlaced '<player.flag[dRestaurant_Order].split[/].get[3]||false>'
+          - if %orderPlaced% queue clear
+          - run locally display_Menu instantly
+          - queue clear
+          }
+        }
+      - run s@dRestaurantMenu p:takeMenu 'def:<context.item>' instantly delay:2t
+      - narrate format:TBFormat "I don<&sq>t think I should have this... and even if I am supposed to have it, I have no idea what I<&sq>m doing right now!"
+      - queue clear
+
+    on player clicks in inventory:
+      - if <c.inventory.replace[in@].split[_].get[1].is[!=].to[dRestaurant]||true> queue clear
+      - determine passively cancelled
+      - inject locally 'p:inventoryClick_<c.inventory.replace[in@].split[_].get[2]>'
+
+  takeMenu:
+#    - narrate "Attempting to remove the <player.item_in_hand> from player hand..."
+    - inventory remove 'd:<player.inventory>' 'o:<player.item_in_hand>'
+    - inventory update 'd:<player.inventory>'
+#    - narrate "Attempting to remove the %1% known in the click event..."
+    - inventory remove 'd:<player.inventory>' 'o:%1%'
+    - inventory update 'd:<player.inventory>'
+#    - narrate "Attempting to take i@dRestaurant_Menu from player..."
+    - take i@dRestaurant_Menu
+#    - narrate "Attempting to take <player.inventory.slot[<player.inventory.find[drestaurant_menu]>].full> from player..."
+    - take '<player.inventory.slot[<player.inventory.find[drestaurant_menu]>].full>'
+
+#
+#
+#--------------------------------------
+#
+#  Inventory Click Handlers
+#
+  inventoryClick_Menu:
+    - if <c.raw_slot.is[MORE].than[36]> queue clear
+    - define orderObj '<player.flag[dRestaurant_Order]>'
+    - define restaurant '<def[orderObj].split[/].get[1]||null>'
+    - define order '<def[orderObj].split[/].get[2].as_list||li@>'
+    - define hasOrdered '<def[orderObj].split[/].get[3]||false>'
+    - if <c.item.scriptname.split[_].get[2].is[==].to[food]||false> {
+      - if <def[order].size.is[OR_MORE].than[9]> {
+        - narrate "<&b>dRestaurant<&co> <&c>You may only order 9 items at one time."
+        - narrate "<&b>dRestaurant<&co> <&f>Click the Order Review button to continue."
+        - queue clear
+        }
+      - narrate "<&b>dRestaurant<&co> <&f><c.item.display> <&3>added to your order."
+      - flag player dRestaurant_Order:%restaurant%/<def[order].include[<c.item.simple||>]>
+      }
+    - if <c.item.scriptname.split[_].get[2].is[==].to[button]||false> {
+      - define GUI 'dRestaurant_Menu_<player.name>'
+      - inject <context.item.scriptname.as_script>
+      }
+
+  inventoryClick_OrderReview:
+    - if <c.raw_slot.is[MORE].than[36]> queue clear
+    - define orderObj '<player.flag[dRestaurant_Order]>'
+    - define restaurant '<def[orderObj].split[/].get[1]||null>'
+    - define order '<def[orderObj].split[/].get[2].as_list||li@>'
+    - define hasOrdered '<def[orderObj].split[/].get[3]||false>'
+    - define GUI 'dRestaurant_OrderReview_<player.name>'
+    - if <c.item.scriptname.split[_].get[2].is[==].to[food]||false> {
+      - narrate "<&b>dRestaurant<&co> <&f><c.item.display> <&3>removed from your order."
+      - inventory remove 'd:in@%GUI%' 'o:<c.item.simple>' 'slot:<context.raw_slot>'
+      - inventory update 'd:in@%GUI%'
+      - flag player dRestaurant_Order:%restaurant%/<def[order].remove[<def[order].find[<c.item.simple>]>]||%order%>
+      - queue clear
+      }
+    - if <c.item.scriptname.split[_].get[2].is[==].to[button]||false> {
+      - inject <context.item.scriptname.as_script>
+      }
+
+  inventoryClick_MenuEdit:
+    - define restaurant '<player.flag[dRestaurant_Order].split[/].get[1]>'
+    - define menuList '<server.flag[dRestaurant.%restaurant%.Menu].as_list||li@>'
+    - define GUI 'dRestaurant_MenuEdit_<player.name>'
+#    - if <c.raw_slot.is[OR_LESS].than[0]> {
+#      - narrate "<&b>dRestaurant<&co> <&c> This is not a dRestaurant Food item!"
+#      - queue clear
+#      }
+    - if <c.raw_slot.is[MORE].than[36]> {
+      - if <c.item.scriptname.split[_].get[2].is[!=].to[food]||true> {
+        - narrate "<&b>dRestaurant<&co> <&c><c.item> is not a dRestaurant Food item!"
+        - queue clear
+        }
+      - if <def[menuList].size.is[OR_MORE].than[27]> {
+        - narrate "<&b>dRestaurant<&co> <&c>You may only have 27 items in your menu!"
+        - queue clear
+        }
+      - if <def[menuList].get_sub_items[1].contains[<c.item.scriptname>]> {
+        - narrate "<&b>dRestaurant<&co> <&c>This item is already on your menu!"
+        - queue clear
+        }
+      - narrate "<&b>dRestaurant<&co> <&a>Added <&f><c.item.display> <&a>to the menu."
+      - inventory remove 'd:<player.inventory>' 'o:<c.item.simple>'
+      - inventory add 'd:in@%GUI%' 'o:<c.item.simple>'
+      - inventory update 'd:<player.inventory>'
+      - flag server dRestaurant.%restaurant%.Menu:->:<c.item.scriptname>/<c.item.scriptname.as_script.yaml_key[price]>
+      - queue clear
+      }
+    - if <c.raw_slot.is[OR_LESS].than[27]> {
+      - if <c.item.scriptname.split[_].get[2].is[!=].to[food]||true> {
+        - narrate "<&b>dRestaurant<&co> <&c> This is not a dRestaurant Food item!"
+        - queue clear
+        }
+      - narrate "<&b>dRestaurant<&co> <&c>Removed <&f><c.item.display> <&c>from the menu."
+      - inventory remove 'd:in@%GUI%' 'o:<c.item.full>'
+      - inventory add 'd:<player.inventory>' 'o:<c.item.simple>'
+      - inventory update 'd:in@%GUI%'
+      - flag server dRestaurant.%restaurant%.Menu:<-:<c.item.scriptname>/<def[menuList].map_get[<c.item.scriptname>]>
+      - queue clear
+      }
+    - if <c.item.scriptname.split[_].get[2].is[==].to[button]||false> {
+      - define GUI 'dRestaurant_Menu_<player.name>'
+      - inject <context.item.scriptname.as_script>
+      }
+
+  inventoryClick_ManageStaff:
+    - if <c.raw_slot.is[MORE].than[36]> queue clear
+    - define type '<c.item.simple.split[_].get[4]||false>'
+    - if <def[type].is[!=].to[false]||false> define npc <c.item.display.as_npc||null>
+    - if <c.item.scriptname.split[_].get[2].is[==].to[button]||false> {
+      - define GUI 'dRestaurant_ManageStaff_<player.name>'
+      - inject <context.item.scriptname.as_script>
+      }
+
+  inventoryClick_ManageInventory:
+    - if <c.raw_slot.is[MORE].than[36]> queue clear
+    - if <c.item.scriptname.split[_].get[1].is[!=].to[dRestaurant]||true> queue clear
+    - if <c.item.scriptname.split[_].get[2].is[==].to[food]||false> {
+      - narrate "FOOD!"
+      }
+    - if <c.item.scriptname.split[_].get[2].is[==].to[button]||false> {
+      - define GUI 'dRestaurant_ManageInventory_<player.name>'
+      - inject <context.item.scriptname.as_script>
+      }
+
+  inventoryClick_EquipmentChecks:
+    - if <c.raw_slot.is[MORE].than[36]> queue clear
+    - if <c.item.scriptname.split[_].get[1].is[!=].to[dRestaurant]||true> queue clear
+    - if <c.item.scriptname.split[_].get[2].is[==].to[equipment]||false> {
+      - narrate "Equipment!"
+      }
+    - if <c.item.scriptname.split[_].get[2].is[==].to[button]||false> {
+      - define GUI 'dRestaurant_EquipmentChecks_<player.name>'
+      - inject <context.item.scriptname.as_script>
+      }
+#
+#
+#--------------------------------------
+#
+#  Inventory Display Generators
+#
+  display_Menu:
+    - define GUI 'dRestaurant_Menu_<player.name>'
+    - define restaurant '<player.flag[dRestaurant_Order].split[/].get[1]||null>'
+    - note 'in@generic[title=<&3><def[restaurant].substring[1,11]> Menu;size=36]' 'as:%GUI%'
+    - foreach <server.flag[dRestaurant.%restaurant%.Menu].as_list||li@> {
+      - define hr '<&5>--------------------'
+      - define food '<def[value].split[/].get[1].as_item>'
+      - define price '<def[value].split[/].get[2]||<def[food].scriptname.as_script.yaml_key[price]||0>>'
+      - define name '<def[food].display>'
+      - define foodLevel '<def[food].scriptname.as_script.yaml_key[foodLevel]>'
+      - define saturation '<def[food].scriptname.as_script.yaml_key[saturation]>'
+      - define health '<def[food].scriptname.as_script.yaml_key[health]>'
+      - define effects '<&7> - <def[food].scriptname.as_script.yaml_key[effects].replace[li@].replace[|].with[| - ]>'
+      - define lore '<&b><&f>Price<&co> <&6>$<&a>%price%|%hr%|<&f>|<&f>Food Points<&co> <&7>%foodLevel%|<&f>Saturation<&co> <&7>%saturation%|<&f>Health Points<&co> <&7>%health%|<&f>Effects<&co>|%effects%'
+      - inventory add 'd:in@%GUI%' 'o:<def[food]>[lore=%lore%]' 'slot:%loop_index%'
+      }
+    - if <server.flag[dRestaurant.%restaurant%.Owner].is[==].to[<player>]||false>
+      || <player.has_permission[dRestaurant.admin]> {
+      - inventory add 'd:in@%GUI%' 'o:i@dRestaurant_Button_MenuEdit' 'slot:28'
+      - inventory add 'd:in@%GUI%' 'o:i@dRestaurant_Button_ManageStaff' 'slot:29'
+      - inventory add 'd:in@%GUI%' 'o:i@dRestaurant_Button_ManageInventory' 'slot:30'
+      - inventory add 'd:in@%GUI%' 'o:i@dRestaurant_Button_EquipmentChecks' 'slot:31'
+      }
+    - inventory add 'd:in@%GUI%' 'o:i@dRestaurant_Button_OrderCancel' 'slot:35'
+    - inventory add 'd:in@%GUI%' 'o:i@dRestaurant_Button_OrderReview' 'slot:36'
+    - inventory open 'd:in@%GUI%'
+
+
+  display_OrderReview:
+    - define GUI 'dRestaurant_OrderReview_<player.name>'
+    - define restaurant '<player.flag[dRestaurant_Order].split[/].get[1]||null>'
+    - note 'in@generic[title=<&3>Order Review;size=36]' 'as:%GUI%'
+    - foreach <player.flag[dRestaurant_Order].split[/].get[2].as_list||li@> {
+      - define hr '<&5>--------------------'
+      - define food '<def[value].split[/].get[1].as_item>'
+      - define price '<def[value].split[/].get[2]||<def[food].scriptname.as_script.yaml_key[price]>>'
+      - define totalPrice '<def[totalPrice].add[%price%]||%price%>'
+      - define name '<def[food].display>'
+      - define foodLevel '<def[food].scriptname.as_script.yaml_key[foodLevel]>'
+      - define saturation '<def[food].scriptname.as_script.yaml_key[saturation]>'
+      - define health '<def[food].scriptname.as_script.yaml_key[health]>'
+      - define effects '<&7> - <def[food].scriptname.as_script.yaml_key[effects].replace[li@].replace[|].with[|<&7> - ]>'
+      - define lore '<&b><&f>Price<&co> <&6>$<&a>%price%|%hr%|<&f>|<&f>Food Points<&co> <&7>%foodLevel%|<&f>Saturation<&co> <&7>%saturation%|<&f>Health Points<&co> <&7>%health%|<&f>Effects<&co>|%effects%'
+      - inventory add 'd:in@%GUI%' 'o:<def[food]>[lore=%lore%]' 'slot:%loop_index%'
+      }
+    - inventory add 'd:in@%GUI%' 'o:i@dRestaurant_Button_OrderCancel' 'slot:34'
+    - inventory add 'd:in@%GUI%' 'o:i@dRestaurant_Button_Menu' 'slot:35'
+    - inventory add 'd:in@%GUI%' 'o:i@dRestaurant_Button_OrderAccept[lore=<&f>Total<&co> <&6>$<&a>%totalPrice%|<&f>|<&b>Click to accept]' 'slot:36'
+    - inventory open 'd:in@%GUI%'
+
+
+  display_MenuEdit:
+    - define GUI 'dRestaurant_MenuEdit_<player.name>'
+    - define restaurant '<player.flag[dRestaurant_Order].split[/].get[1]||null>'
+    - note 'in@generic[title=<&3>Admin Menu Edit;size=36]' 'as:%GUI%'
+    - foreach <server.flag[dRestaurant.%restaurant%.Menu].as_list||li@> {
+      - define hr '<&5>-------------------------'
+      - define food '<def[value].split[/].get[1].as_item>'
+      - define price '<def[value].split[/].get[2]||<def[food].scriptname.as_script.yaml_key[price]>>'
+      - define ingredients '<def[food].scriptname.as_script.yaml_key[ingredients]>'
+      - define name '<def[food].display>'
+      - define lore '%hr%|%name%|<&f>|Price<&co> %price%'
+      - inventory add 'd:in@%GUI%' 'o:<def[food]>[lore=%lore%]' 'slot:%loop_index%'
+      }
+    - inventory add 'd:in@%GUI%' 'o:i@dRestaurant_Button_Menu' 'slot:36'
+    - inventory open 'd:in@%GUI%'
+
+
+  display_ManageStaff:
+    - define GUI 'dRestaurant_ManageStaff_<player.name>'
+    - define restaurant '<player.flag[dRestaurant_Order].split[/].get[1]||null>'
+    - note 'in@generic[title=<&3>Staff Management;size=36]' 'as:%GUI%'
+    - foreach <server.flag[dRestaurant.%restaurant%.Staff.Waitresses].as_list||li@> {
+      - define hr '<&5>-------------------------'
+      - define waitress '%value%'
+      - define name '<def[waitress].name>'
+      - define skin '<def[waitress].skin>'
+      - define stats '<def[waitress].flag[dRestaurant_FidgetValues].as_list>'
+      - define salary ''
+      - define idleWait '<def[stats].get[2]>'
+      - define speed '<def[stats].get[3]>'
+      - define spawnLoc '<def[stats].get[4]>'
+      - define height '<def[stats].get[5]>'
+      - define mats '  - <def[stats].get[6].split[/].replace[li@].replace[|].with[|  - ]>'
+      - define lore 'Name<&co> %name%|Salary<&co> %salary%|Skin<&co> %skin%|%hr%|<&f>|Idle Wait<&co> %wait%|Pathfinding| - Speed<&co> %speed%| - Height<&co> %height%| - Materials|%mats%'
+      - inventory add 'd:in@%GUI%' 'o:i@dRestaurant_Button_ManageStaff_EditWaitress[display_name=%name%;lore=%lore%]' 'slot:%loop_index%'
+      }
+    - foreach <server.flag[dRestaurant.%restaurant%.Staff.Chef].as_list||li@> {
+      - define hr '<&5>-------------------------'
+      - define chef '%value%'
+      - define name '<def[chef].name>'
+      - define skin '<def[chef].skin>'
+      - define stats '<def[chef].flag[dRestaurant_FidgetValues].as_list>'
+      - define salary ''
+      - define idleWait '<def[stats].get[2]>'
+      - define speed '<def[stats].get[3]>'
+      - define spawnLoc '<def[stats].get[4]>'
+      - define height '<def[stats].get[5]>'
+      - define mats '  - <def[stats].get[6].split[/].replace[li@].replace[|].with[|  - ]>'
+      - define lore 'Name<&co> %name%|Salary<&co> %salary%|Skin<&co> %skin%|%hr%|<&f>|Idle Wait<&co> %wait%|Pathfinding| - Speed<&co> %speed%| - Height<&co> %height%| - Materials|%mats%'
+      - inventory add 'd:in@%GUI%' 'o:i@dRestaurant_Button_ManageStaff_EditChef[display_name=%name%;lore=%lore%]' 'slot:<def[loop_index].add[9].as_int>'
+      }
+    - inventory add 'd:in@%GUI%' 'o:i@dRestaurant_Button_ManageStaff_HireWaitress' 'slot:28'
+    - inventory add 'd:in@%GUI%' 'o:i@dRestaurant_Button_ManageStaff_HireChef' 'slot:29'
+    - inventory add 'd:in@%GUI%' 'o:i@dRestaurant_Button_Menu' 'slot:36'
+    - inventory open 'd:in@%GUI%'
+
+
+  display_ManageStaff_EditWaitress:
+    - define GUI 'dRestaurant_ManageStaff_EditWaitress_<player.name>'
+    - define restaurant '<player.flag[dRestaurant_Order].split[/].get[1]||null>'
+    - note 'in@generic[title=<&3>Staff Management;size=36]' 'as:%GUI%'
+
+
+  display_ManageStaff_EditChef:
+    - define GUI 'dRestaurant_ManageStaff_EditChef_<player.name>'
+    - define restaurant '<player.flag[dRestaurant_Order].split[/].get[1]||null>'
+    - note 'in@generic[title=<&3>Staff Management;size=36]' 'as:%GUI%'
+
+
+  display_ManageInventory:
+    - define GUI 'dRestaurant_ManageInventory_<player.name>'
+    - define restaurant '<player.flag[dRestaurant_Order].split[/].get[1]||null>'
+    - note 'in@generic[title=<&3>Staff Management;size=36]' 'as:%GUI%'
+
+
+  display_EquipmentChecks:
+    - define GUI 'dRestaurant_EquipmentChecks_<player.name>'
+    - define restaurant '<player.flag[dRestaurant_Order].split[/].get[1]||null>'
+    - note 'in@generic[title=<&3>Staff Management;size=36]' 'as:%GUI%'
+
+
+
+
+
+################################################################################
+#
+#  dRestaurant Custom Items
+#
+# dRestaurant uses a lot of custom items to do different things.
+#
+#
+#--------------------------------------
+#
+#  Menu Item
+#
+dRestaurant_Menu:
+  type: item
+  material: i@book
+  display name: menu
+  lore:
+    - "<&b>Hold in your hand and"
+    - "<&b>Right Click to open"
+#
+#
+#--------------------------------------
+#
+#  Menu Buttons
+#
+dRestaurant_Button_Menu:
+  type: item
+  material: i@book
+  display name: <&f>Back to Menu
+  lore:
+    - "<&b>Click to view the menu"
+    - ""
+  script:
+    - note remove 'as:in@%GUI%'
+    - inject s@dRestaurantMenu p:display_Menu
+
+dRestaurant_Button_OrderCancel:
+  type: item
+  material: i@tnt
+  display name: <&f>Cancel Order
+  lore:
+    - "<&b>Click to cancel your order"
+    - ""
+  script:
+    - inventory close
+    - flag player dRestaurant_Order:!
+    - note remove 'as:in@%GUI%'
+    - run s@dRestaurantMenu p:takeMenu
+    - narrate "<&b>dRestaurant<&co> <&f>Order Canceled!"
+    - wait 1t
+
+dRestaurant_Button_OrderReview:
+  type: item
+  material: i@book_and_quill
+  display name: <&f>Review Order
+  lore:
+    - "<&b>Click to review your order"
+    - ""
+  script:
+    - note remove 'as:in@%GUI%'
+    - inject s@dRestaurantMenu p:display_OrderReview
+
+dRestaurant_Button_OrderAccept:
+  type: item
+  material: i@nether_star
+  display name: <&f>Accept Order
+  lore:
+    - "<&b>Click to accept your order"
+    - ""
+  script:
+    - if <def[order].is_empty> {
+      - narrate "<&b>dRestaurant<&co> <&c>Your order is empty!"
+      - queue clear
+      }
+#    - define price '<def[value].split[/].get[2]||<def[food].scriptname.as_script.yaml_key[price]>>'
+#    - define totalPrice '<def[totalPrice].add[%price%]||%price%>'
+    - define priceList '<def[order].get_sub_items[2]||>'
+    - narrate %priceList%
+    - foreach %priceList% {
+      - define price <def[value]||0>
+      - define totalPrice '<def[totalPrice].add[%price%]||%price%>'
+      }
+    - if <player.money.is[LESS].than[%totalPrice%]||false> {
+      - narrate "<&b>dRestaurant<&co> <&c>You do not have <&6>$<&a>%totalPrice%<&c> for these items!"
+      - queue clear
+      }
+    - inventory close
+    - note remove 'as:in@%GUI%'
+    - flag player dRestaurant_Order:%restaurant%/%order%/true
+    - event "order placed" context:player|<player>
+    - narrate "<&b>dRestaurant<&co> <&f>Order Accepted! A waitress will collect your menu soon."
+#
+#
+#--------------------------------------
+#
+#  Management Buttons
+#
+dRestaurant_Button_MenuEdit:
+  type: item
+  material: i@book_and_quill
+  display name: <&f>Edit Menu
+  lore:
+    - "<&b>Click to edit your menu"
+    - ""
+  script:
+    - note remove 'as:in@%GUI%'
+    - inject s@dRestaurantMenu p:display_MenuEdit
+
+dRestaurant_Button_ManageStaff:
+  type: item
+  material: i@human_skull
+  display name: <&f>Manage Staff
+  lore:
+    - "<&b>Click to manage your staff"
+    - ""
+  script:
+    - narrate "<&b>dRestaurant<&co> <&f>This button hasn<&sq>t been made yet."
+    - note remove 'as:in@%GUI%'
+    - inject s@dRestaurantMenu p:display_ManageStaff
+
+dRestaurant_Button_ManageStaff_EditWaitress:
+  type: item
+  material: i@book
+  display name: <&f>menu
+  lore:
+    - "<&b>Click to edit this Waitress"
+    - ""
+  script:
+    - narrate "<&b>dRestaurant<&co> <&f>This button hasn<&sq>t been made yet."
+
+dRestaurant_Button_ManageStaff_EditChef:
+  type: item
+  material: i@book
+  display name: <&f>menu
+  lore:
+    - "<&b>Click to edit this Chef"
+    - ""
+  script:
+    - narrate "<&b>dRestaurant<&co> <&f>This button hasn<&sq>t been made yet."
+
+dRestaurant_Button_ManageStaff_HireWaitress:
+  type: item
+  material: i@book
+  display name: <&f>Hire a Waitress
+  lore:
+    - "<&b>Click to hire a new Waitress"
+    - ""
+  script:
+    - narrate "<&b>dRestaurant<&co> <&f>This button hasn<&sq>t been made yet."
+
+dRestaurant_Button_ManageStaff_HireChef:
+  type: item
+  material: i@book
+  display name: <&f>Hire a Chef
+  lore:
+    - "<&b>Click to hire a new Chef"
+    - ""
+  script:
+    - narrate "<&b>dRestaurant<&co> <&f>This button hasn<&sq>t been made yet."
+
+dRestaurant_Button_ManageInventory:
+  type: item
+  material: i@chest
+  display name: <&f>Manage Inventory
+  lore:
+    - "<&b>Click to manage your inventory"
+    - ""
+  script:
+    - narrate "<&b>dRestaurant<&co> <&f>This button hasn<&sq>t been made yet."
+
+dRestaurant_Button_EquipmentChecks:
+  type: item
+  material: i@furnace
+  display name: <&f>Equipment Check
+  lore:
+    - "<&b>Click to check your restaurant"
+    - "<&b>for valid kitchen equipment"
+  script:
+    - narrate "<&b>dRestaurant<&co> <&f>This button hasn<&sq>t been made yet."
+
+#
+#  END Menu Buttons
+#--------------------------------------
+#
+#  Food items
+#
+dRestaurant_food_potato:
+  type: item
+  material: i@baked_potato
+  display name: <&b>Baked Potato
+  lore:
+    - A tasty Baked Potato
+    - prepared by a Master Chef
+  price: 5
+  ingredients:
+    - potato_item
+  foodLevel: 2
+  saturation: 4
+  health: 0
+  effects: []
+
+  cook:
+    - ^lookclose <npc> state:false
+    - ^define foodItems li@potato_item
+    - ^inject s@dRestaurant p:getFood_FancyFridge
+    - ^inject s@dRestaurant p:washFood
+    - ^inject s@dRestaurant p:prepFood
+    - ^define foodItem baked_potato
+    - ^inject s@dRestaurant p:bakeFood_Attended
+    - ^lookclose <npc> state:true
+    - ^define foodItems li@baked_potato
+    - ^inject s@dRestaurant p:deliverFood_chef
+
+
+dRestaurant_food_steak:
+  type: item
+  material: i@cooked_beef
+  display name: <&b>Steak
+  lore:
+    - A tasty Steak prepared
+    - by a Master Chef
+  price: 15
+  ingredients:
+    - raw_beef
+  foodLevel: 2
+  saturation: 4
+  health: 0
+  effects: []
+
+  cook:
+    - ^lookclose <npc> state:false
+    - ^define foodItems li@raw_beef
+    - ^inject s@dRestaurant p:getFood_FancyFridge
+    - ^inject s@dRestaurant p:prepFood
+    - ^define rawFood raw_beef
+    - ^define cookedFood cooked_beef
+    - ^define cookTime 30
+    - ^inject s@dRestaurant p:grillFood_Attended
+    - ^lookclose <npc> state:true
+    - ^define foodItems li@cooked_beef
+    - ^inject s@dRestaurant p:deliverFood_chef
+
+dRestaurant_food_stew:
+  type: item
+  material: i@mushroom_soup
+  display name: <&b>Mushroom Stew
+  lore:
+    - A tasty Mushroom Stew
+    - prepared by a Master Chef
+  comment: Going to use the stew as the test bed for intermediate level recipes
+  price: 15
+  ingredients:
+    - brown_mushroom
+    - red_mushroom
+  foodLevel: 2
+  saturation: 4
+  health: 0
+  effects: []
+
+  cook:
+    - ^define foodItems li@brown_mushroom|red_mushroom
+    - ^inject s@dRestaurant p:getFood_FancyFridge
+    - ^inject s@dRestaurant p:washFood
+    - ^inject s@dRestaurant p:prepFood
+    - ^define rawFood bowl
+    - ^define cookedFood mushroom_soup
+    - ^define cookTime 30
+    - ^inject s@dRestaurant p:boilFood_Unattended
+
+  cookComplete:
+    - ^inject s@dRestaurant p:boilFood_Unattended_Get
+    - ^define foodItems li@mushroom_soup
+    - ^inject s@dRestaurant p:deliverFood_chef
+
+dRestaurant_food_bread:
+  type: item
+  material: i@bread
+  display name: <&b>Loaf of Bread
+  lore:
+    - A tasty Loaf of Bread
+    - prepared by a Master Chef
+  comment: Going to use the stew as the test bed for intermediate level recipes
+  price: 15
+  ingredients:
+    - wheat
+    - wheat
+    - wheat
+  foodLevel: 2
+  saturation: 4
+  health: 0
+  effects: []
+
+  cook:
+    - ^define foodItems li@wheat
+    - ^inject s@dRestaurant p:getFood_FancyFridge
+    - ^inject s@dRestaurant p:prepFood
+    - ^define cookedFood bread
+    - ^define cookTime 45
+    - ^inject s@dRestaurant p:bakeFood_Unattended
+
+  cookComplete:
+    - ^inject s@dRestaurant p:bakeFood_Unattended_Get
+    - ^define foodItems li@bread
+    - ^inject s@dRestaurant p:deliverFood_chef
+
+
+
+#
