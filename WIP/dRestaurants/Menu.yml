@@ -30,6 +30,20 @@ dRestaurantMenu:
       - determine passively cancelled
       - inject locally 'p:inventoryClick_<c.inventory.replace[in@].split[_].get[2]>'
 
+  narrateClickContext:
+  # Throw in for debugging when needed
+    - if <player.has_flag[dRestaurant_debug]> {
+      - narrate "context.item <context.item>"
+      - narrate "context.inventory <context.inventory>"
+      - narrate "context.cursor_item <context.cursor_item>"
+      - narrate "context.click <context.click>"
+      - narrate "context.slot_type <context.slot_type>"
+      - narrate "context.slot <context.slot>"
+      - narrate "context.raw_slot <context.raw_slot>"
+      - narrate "context.is_shift_click <context.is_shift_click>"
+      - narrate "context.action <context.action>"
+      }
+
   takeMenu:
 #    - narrate "Attempting to remove the <player.item_in_hand> from player hand..."
 #    - inventory remove 'd:<player.inventory>' 'o:<player.item_in_hand>'
@@ -84,7 +98,12 @@ dRestaurantMenu:
       - inventory remove 'd:in@%GUI%' 'o:<c.item.simple>'
       - inventory update 'd:in@%GUI%'
       - flag player dRestaurant_Order:%restaurant%/<def[order].remove[<def[order].find_partial[<c.item.simple>]>]||%order%>
-      - inject s@dRestaurantMenu p:display_OrderReview
+      - define priceList '<player.flag[dRestaurant_Order].split[/].get[2].as_list.get_sub_items[2].split_by[,]||li@>'
+      - foreach %priceList% {
+        - define totalPrice '<def[totalPrice].add[%value%]||%value%>'
+        }
+#      - inject s@dRestaurantMenu p:display_OrderReview
+      - inventory set 'd:in@%GUI%' 'o:i@dRestaurant_Button_OrderAccept[lore=<&f>Total<&co> <&6>$<&a><def[totalPrice]||0>|<&f>|<&b>Click to accept]' 'slot:36'
       - queue clear
       }
     - if <c.item.scriptname.split[_].get[2].is[==].to[button]||false> {
@@ -95,10 +114,12 @@ dRestaurantMenu:
     - define restaurant '<player.flag[dRestaurant_Order].split[/].get[1]>'
     - define menuList '<server.flag[dRestaurant.%restaurant%.Menu].as_list||li@>'
     - define GUI 'dRestaurant_MenuEdit_<player.name>'
-#    - if <c.raw_slot.is[OR_LESS].than[0]> {
+    - if <c.raw_slot.is[OR_LESS].than[0]> {
 #      - narrate "<&b>dRestaurant<&co> <&c> This is not a dRestaurant Food item!"
-#      - queue clear
-#      }
+      - queue clear
+      }
+
+    # Adding an item to the menu
     - if <c.raw_slot.is[MORE].than[36]> {
       - if <c.item.scriptname.split[_].get[2].is[!=].to[food]||true> {
         - narrate "<&b>dRestaurant<&co> <&c>This is not a dRestaurant Food item!"
@@ -114,26 +135,83 @@ dRestaurantMenu:
         }
       - narrate "<&b>dRestaurant<&co> <&a>Added <&f><c.item.display> <&a>to the menu."
       - inventory remove 'd:<player.inventory>' 'o:<c.item>'
-      - inventory add 'd:in@%GUI%' 'o:<c.item.simple>'
       - inventory update 'd:<player.inventory>'
-      - flag server dRestaurant.%restaurant%.Menu:->:<c.item.scriptname>/<c.item.scriptname.as_script.yaml_key[price]>
+      - define hr '<&5>--------------------'
+      - define msg0 '<&e>       <&n>Click Actions'
+      - define msg1 '<&4> Remove<&f><&co> <&7>Middle'
+      - define msg2 '<&c> - <&6>$<&c>0.50<&f><&co> <&7>Left'
+      - define msg3 '<&c> - <&6>$<&c>1.00<&f><&co> <&7><&o>Shift<&7> Left'
+      - define msg4 '<&a> + <&6>$<&a>0.50<&f><&co> <&7>Right<&7>'
+      - define msg5 '<&a> + <&6>$<&a>1.00<&f><&co> <&7><&o>Shift<&7> Right'
+      - define price '<c.item.scriptname.as_script.yaml_key[price]||0>'
+      - define ingredients '<&7> - <c.item.scriptname.as_script.yaml_key[ingredients].replace[li@].replace[|].with[|<&7> - ]>'
+      - define lore '<&b><&f>Price<&co> <&6>$<&a><def[price]||0>|<&f>Ingredients<&co>|<def[ingredients]||<&7> - none>|%hr%|%msg0%|<&f>|%msg1%|%msg2%|%msg3%|%msg4%|%msg5%'
+      - inventory add 'd:in@%GUI%' 'o:<c.item>[lore=%lore%]'
+      - flag server dRestaurant.%restaurant%.Menu:->:<c.item.scriptname>/%price%
       - queue clear
       }
+
+    # Editing an existing item
     - if <c.raw_slot.is[OR_LESS].than[27]> {
       - if <c.item.scriptname.split[_].get[2].is[!=].to[food]||true> {
-        - narrate "<&b>dRestaurant<&co> <&c> This is not a dRestaurant Food item!"
+        - narrate "<&b>dRestaurant<&co> <&c>This is not a dRestaurant Food item!"
+        - inventory set 'd:in@%GUI%' 'o:<c.item.simple>' 'slot:<el@val[in@%GUI%].as_inventory.find[<c.item>]>'
+        - inventory remove 'd:in@%GUI%' 'o:<c.item.simple>'
+        - inventory update 'd:in@%GUI%'
         - queue clear
         }
-      - narrate "<&b>dRestaurant<&co> <&c>Removed <&f><c.item.display> <&c>from the menu."
 
-      - inventory set 'd:in@%GUI%' 'o:<c.item.simple>' 'slot:<el@val[in@%GUI%].as_inventory.find[<c.item.scriptname>]>'
-      - inventory remove 'd:in@%GUI%' 'o:<c.item.simple>'
-      - inventory update 'd:in@%GUI%'
-      - inventory add 'd:<player.inventory>' 'o:<c.item.simple>'
-      - inventory update 'd:<player.inventory>'
+      # Middle click removes
+      - if <context.click.is[==].to[MIDDLE]> {
+        - narrate "<&b>dRestaurant<&co> <&c>Removed <&f><c.item.display> <&c>from the menu."
+        - inventory set 'd:in@%GUI%' 'o:<c.item.simple>' 'slot:<el@val[in@%GUI%].as_inventory.find[<c.item.scriptname>]>'
+        - inventory remove 'd:in@%GUI%' 'o:<c.item.simple>'
+        - inventory update 'd:in@%GUI%'
+        - inventory add 'd:<player.inventory>' 'o:<c.item.simple>'
+        - inventory update 'd:<player.inventory>'
+        - flag server dRestaurant.%restaurant%.Menu:<-:<c.item.scriptname>/<def[menuList].map_get[<c.item.scriptname>]>
+        - queue clear
+        }
+
+      # Left click decreases price by $0.50
+      # A double left click causes an error and the fallback kicks in. It's the
+      # only click type that seems to do this.
+      - if <context.click.is[==].to[LEFT]> {
+        - define price '<def[menuList].map_get[<c.item.scriptname>].sub[0.5].as_money||0>'
+        }
+      # Shift Left click decreases price by $1
+        else if <context.click.is[==].to[SHIFT_LEFT]> {
+        - define price '<def[menuList].map_get[<c.item.scriptname>].sub[1].as_money||0>'
+        }
+      # Right click increases price by $0.50
+        else if <context.click.is[==].to[RIGHT]> {
+        - define price '<def[menuList].map_get[<c.item.scriptname>].add[0.5].as_money||0>'
+        }
+      # Shift Right click increases price by $1
+        else if <context.click.is[==].to[SHIFT_RIGHT]> {
+        - define price '<def[menuList].map_get[<c.item.scriptname>].add[1].as_money||0>'
+        }
+      - if <def[price].is[LESS].than[0]> {
+        - narrate "<&b>dRestaurant<&co> <&c>That price is too low fool!"
+        - queue clear
+        }
+      # Adjust the inventory item
+      - define hr '<&5>--------------------'
+      - define msg0 '<&e>       <&n>Click Actions'
+      - define msg1 '<&4> Remove<&f><&co> <&7>Middle'
+      - define msg2 '<&c> - <&6>$<&c>0.50<&f><&co> <&7>Left'
+      - define msg3 '<&c> - <&6>$<&c>1.00<&f><&co> <&7><&o>Shift<&7> Left'
+      - define msg4 '<&a> + <&6>$<&a>0.50<&f><&co> <&7>Right<&7>'
+      - define msg5 '<&a> + <&6>$<&a>1.00<&f><&co> <&7><&o>Shift<&7> Right'
+      - define ingredients '<&7> - <c.item.scriptname.as_script.yaml_key[ingredients].replace[li@].replace[|].with[|<&7> - ]>'
+      - define lore '<&b><&f>Price<&co> <&6>$<&a><def[price]||0>|<&f>Ingredients<&co>|<def[ingredients]||<&7> - none>|%hr%|%msg0%|<&f>|%msg1%|%msg2%|%msg3%|%msg4%|%msg5%'
+      - inventory set 'd:in@%GUI%' 'o:<c.item>[lore=%lore%]' 'slot:<el@val[in@%GUI%].as_inventory.find[<c.item.scriptname>]>'
       - flag server dRestaurant.%restaurant%.Menu:<-:<c.item.scriptname>/<def[menuList].map_get[<c.item.scriptname>]>
+      - flag server dRestaurant.%restaurant%.Menu:->:<c.item.scriptname>/%price%
       - queue clear
       }
+
+    # Clicks on a dRestaurant Button can only happen in slots 28 - 36
     - if <c.item.scriptname.split[_].get[2].is[==].to[button]||false> {
       - define GUI 'dRestaurant_Menu_<player.name>'
       - inject <context.item.scriptname.as_script>
@@ -232,12 +310,17 @@ dRestaurantMenu:
     - define restaurant '<player.flag[dRestaurant_Order].split[/].get[1]||null>'
     - note 'in@generic[title=<&1>Admin Menu Edit;size=36]' 'as:%GUI%'
     - foreach <server.flag[dRestaurant.%restaurant%.Menu].as_list||li@> {
-      - define hr '<&5>-------------------------'
+      - define hr '<&5>--------------------'
+      - define msg0 '<&e>       <&n>Click Actions'
+      - define msg1 '<&4> Remove<&f><&co> <&7>Middle'
+      - define msg2 '<&c> - <&6>$<&c>0.50<&f><&co> <&7>Left'
+      - define msg3 '<&c> - <&6>$<&c>1.00<&f><&co> <&7><&o>Shift<&7> Left'
+      - define msg4 '<&a> + <&6>$<&a>0.50<&f><&co> <&7>Right<&7>'
+      - define msg5 '<&a> + <&6>$<&a>1.00<&f><&co> <&7><&o>Shift<&7> Right'
       - define food '<def[value].split[/].get[1].as_item>'
-      - define price '<def[value].split[/].get[2]||<def[food].scriptname.as_script.yaml_key[price]>>'
-      - define ingredients '<def[food].scriptname.as_script.yaml_key[ingredients]>'
-      - define name '<def[food].display>'
-      - define lore '%hr%|%name%|<&f>|Price<&co> %price%'
+      - define price '<def[value].split[/].get[2]||<def[food].scriptname.as_script.yaml_key[price]||0>>'
+      - define ingredients '<&7> - <def[food].scriptname.as_script.yaml_key[ingredients].replace[li@].replace[|].with[|<&7> - ]>'
+      - define lore '<&b><&f>Price<&co> <&6>$<&a><def[price]||unknown>|<&f>Ingredients<&co>|<def[ingredients]||<&7> - none>|%hr%|%msg0%|<&f>|%msg1%|%msg2%|%msg3%|%msg4%|%msg5%'
       - inventory add 'd:in@%GUI%' 'o:<def[food]>[lore=%lore%]' 'slot:%loop_index%'
       }
     - inventory add 'd:in@%GUI%' 'o:i@dRestaurant_Button_Menu' 'slot:36'
