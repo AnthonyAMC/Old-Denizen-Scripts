@@ -28,11 +28,13 @@ dRestaurantMenu:
     on player clicks in inventory:
       - if <c.inventory.replace[in@].split[_].get[1].is[!=].to[dRestaurant]||true> queue clear
       - determine passively cancelled
+      - inject locally 'p:narrateClickContext'
       - inject locally 'p:inventoryClick_<c.inventory.replace[in@].split[_].get[2]>'
 
   narrateClickContext:
   # Throw in for debugging when needed
     - if <player.has_flag[dRestaurant_debug]> {
+      - narrate "context.item.scriptname <context.item.scriptname>"
       - narrate "context.item <context.item>"
       - narrate "context.inventory <context.inventory>"
       - narrate "context.cursor_item <context.cursor_item>"
@@ -138,14 +140,15 @@ dRestaurantMenu:
       - inventory update 'd:<player.inventory>'
       - define hr '<&5>--------------------'
       - define msg0 '<&e>       <&n>Click Actions'
-      - define msg1 '<&4> Remove<&f><&co> <&7>Middle'
-      - define msg2 '<&c> - <&6>$<&c>0.50<&f><&co> <&7>Left'
-      - define msg3 '<&c> - <&6>$<&c>1.00<&f><&co> <&7><&o>Shift<&7> Left'
-      - define msg4 '<&a> + <&6>$<&a>0.50<&f><&co> <&7>Right<&7>'
-      - define msg5 '<&a> + <&6>$<&a>1.00<&f><&co> <&7><&o>Shift<&7> Right'
+      - define msg1 '<&3> Reset  <&f><&co> <&7><&o>Double<&7> Left'
+      - define msg2 '<&4> Remove<&f><&co> <&7>Middle'
+      - define msg3 '<&c> - <&6>$<&c>0.50<&f><&co> <&7>Left'
+      - define msg4 '<&c> - <&6>$<&c>1.00<&f><&co> <&7><&o>Shift<&7> Left'
+      - define msg5 '<&a> + <&6>$<&a>0.50<&f><&co> <&7>Right<&7>'
+      - define msg6 '<&a> + <&6>$<&a>1.00<&f><&co> <&7><&o>Shift<&7> Right'
       - define price '<c.item.scriptname.as_script.yaml_key[price]||0>'
       - define ingredients '<&7> - <c.item.scriptname.as_script.yaml_key[ingredients].replace[li@].replace[|].with[|<&7> - ]>'
-      - define lore '<&b><&f>Price<&co> <&6>$<&a><def[price]||0>|<&f>Ingredients<&co>|<def[ingredients]||<&7> - none>|%hr%|%msg0%|<&f>|%msg1%|%msg2%|%msg3%|%msg4%|%msg5%'
+      - define lore '<&b><&f>Price<&co> <&6>$<&a><def[price]||0>|<&f>Ingredients<&co>|<def[ingredients]||<&7> - none>|%hr%|%msg0%|<&f>|%msg1%|%msg2%|%msg3%|%msg4%|%msg5%|%msg6%'
       - inventory add 'd:in@%GUI%' 'o:<c.item>[lore=%lore%]'
       - flag server dRestaurant.%restaurant%.Menu:->:<c.item.scriptname>/%price%
       - queue clear
@@ -176,20 +179,21 @@ dRestaurantMenu:
       # Left click decreases price by $0.50
       # A double left click causes an error and the fallback kicks in. It's the
       # only click type that seems to do this.
+      - define price '<c.item.scriptname.as_script.yaml_key[price]||0.00>'
       - if <context.click.is[==].to[LEFT]> {
-        - define price '<def[menuList].map_get[<c.item.scriptname>].sub[0.5].as_money||0>'
+        - define price '<def[menuList].map_get[<c.item.scriptname>].sub[0.5].as_money||%price%>'
         }
       # Shift Left click decreases price by $1
         else if <context.click.is[==].to[SHIFT_LEFT]> {
-        - define price '<def[menuList].map_get[<c.item.scriptname>].sub[1].as_money||0>'
+        - define price '<def[menuList].map_get[<c.item.scriptname>].sub[1].as_money||%price%>'
         }
       # Right click increases price by $0.50
         else if <context.click.is[==].to[RIGHT]> {
-        - define price '<def[menuList].map_get[<c.item.scriptname>].add[0.5].as_money||0>'
+        - define price '<def[menuList].map_get[<c.item.scriptname>].add[0.5].as_money||%price%>'
         }
       # Shift Right click increases price by $1
         else if <context.click.is[==].to[SHIFT_RIGHT]> {
-        - define price '<def[menuList].map_get[<c.item.scriptname>].add[1].as_money||0>'
+        - define price '<def[menuList].map_get[<c.item.scriptname>].add[1].as_money||%price%>'
         }
       - if <def[price].is[LESS].than[0]> {
         - narrate "<&b>dRestaurant<&co> <&c>That price is too low fool!"
@@ -198,13 +202,14 @@ dRestaurantMenu:
       # Adjust the inventory item
       - define hr '<&5>--------------------'
       - define msg0 '<&e>       <&n>Click Actions'
-      - define msg1 '<&4> Remove<&f><&co> <&7>Middle'
-      - define msg2 '<&c> - <&6>$<&c>0.50<&f><&co> <&7>Left'
-      - define msg3 '<&c> - <&6>$<&c>1.00<&f><&co> <&7><&o>Shift<&7> Left'
-      - define msg4 '<&a> + <&6>$<&a>0.50<&f><&co> <&7>Right<&7>'
-      - define msg5 '<&a> + <&6>$<&a>1.00<&f><&co> <&7><&o>Shift<&7> Right'
+      - define msg1 '<&3> Reset  <&f><&co> <&7><&o>Double<&7> Left'
+      - define msg2 '<&4> Remove<&f><&co> <&7>Middle'
+      - define msg3 '<&c> - <&6>$<&c>0.50<&f><&co> <&7>Left'
+      - define msg4 '<&c> - <&6>$<&c>1.00<&f><&co> <&7><&o>Shift<&7> Left'
+      - define msg5 '<&a> + <&6>$<&a>0.50<&f><&co> <&7>Right<&7>'
+      - define msg6 '<&a> + <&6>$<&a>1.00<&f><&co> <&7><&o>Shift<&7> Right'
       - define ingredients '<&7> - <c.item.scriptname.as_script.yaml_key[ingredients].replace[li@].replace[|].with[|<&7> - ]>'
-      - define lore '<&b><&f>Price<&co> <&6>$<&a><def[price]||0>|<&f>Ingredients<&co>|<def[ingredients]||<&7> - none>|%hr%|%msg0%|<&f>|%msg1%|%msg2%|%msg3%|%msg4%|%msg5%'
+      - define lore '<&b><&f>Price<&co> <&6>$<&a><def[price]||0>|<&f>Ingredients<&co>|<def[ingredients]||<&7> - none>|%hr%|%msg0%|<&f>|%msg1%|%msg2%|%msg3%|%msg4%|%msg5%|%msg6%'
       - inventory set 'd:in@%GUI%' 'o:<c.item>[lore=%lore%]' 'slot:<el@val[in@%GUI%].as_inventory.find[<c.item.scriptname>]>'
       - flag server dRestaurant.%restaurant%.Menu:<-:<c.item.scriptname>/<def[menuList].map_get[<c.item.scriptname>]>
       - flag server dRestaurant.%restaurant%.Menu:->:<c.item.scriptname>/%price%
@@ -238,14 +243,44 @@ dRestaurantMenu:
       }
 
   inventoryClick_EquipmentChecks:
+    - if <c.raw_slot.is[OR_LESS].than[0]> queue clear
     - if <c.raw_slot.is[MORE].than[36]> queue clear
     - if <c.item.scriptname.split[_].get[1].is[!=].to[dRestaurant]||true> queue clear
+    - define restaurant '<player.flag[dRestaurant_Order].split[/].get[1]>'
+    - define GUI 'dRestaurant_EquipmentChecks_<player.name>'
     - if <c.item.scriptname.split[_].get[2].is[==].to[equipment]||false> {
-      - narrate "Equipment!"
+      - define hr '<&5>--------------------'
+      - define msg0 '<&e>       <&n>Click Actions'
+      - define msg3 '<&b> Count All <&f><&co> <&7>Left'
+      - define msg5 '<&b> Visit All <&f><&co> <&7>Right<&7>'
+      - define equipment '<c.item.scriptname.split[_].get[3]>'
+      - inject <context.item.scriptname.as_script>
+      - if <context.click.is[==].to[LEFT]> {
+        - if <def[locations].is_empty||true> {
+          - define msg '<&c>No %equipment% found'
+          }
+          else {
+          - define msg '<&a>Found <&f><def[locations].size> <&a>%equipment%'
+          }
+        - define lore '%msg%|%hr%|%msg0%|<&f>|%msg3%|%msg5%'
+        - inventory set 'd:in@%GUI%' 'o:<c.item>[lore=%lore%]' 'slot:<el@val[in@%GUI%].as_inventory.find[<c.item.scriptname>]>'
+        - inventory update 'd:in@%GUI%'
+        - queue stop
+        }
+        else if <context.click.is[==].to[RIGHT]> {
+        - inventory close
+        - if <def[locations].is_empty||true> {
+          - narrate "<&b>dRestaurant<&co> <&c>There are no %equipment% in %restaurant%!"
+          }
+          else {
+          - teleport <player> <def[locations].random.split[/].get[2]||<player.location>>
+          }
+        }
+      - queue clear
       }
     - if <c.item.scriptname.split[_].get[2].is[==].to[button]||false> {
-      - define GUI 'dRestaurant_EquipmentChecks_<player.name>'
       - inject <context.item.scriptname.as_script>
+      - queue clear
       }
 #
 #
@@ -257,8 +292,8 @@ dRestaurantMenu:
     - define GUI 'dRestaurant_Menu_<player.name>'
     - define restaurant '<player.flag[dRestaurant_Order].split[/].get[1]||null>'
     - note 'in@generic[title=<&1><def[restaurant].substring[1,11]> Menu;size=36]' 'as:%GUI%'
+    - define hr '<&5>--------------------'
     - foreach <server.flag[dRestaurant.%restaurant%.Menu].as_list||li@> {
-      - define hr '<&5>--------------------'
       - define food '<def[value].split[/].get[1].as_item>'
       - define price '<def[value].split[/].get[2]||<def[food].scriptname.as_script.yaml_key[price]||0>>'
       - define name '<def[food].display>'
@@ -285,9 +320,9 @@ dRestaurantMenu:
     - define GUI 'dRestaurant_OrderReview_<player.name>'
     - define restaurant '<player.flag[dRestaurant_Order].split[/].get[1]||null>'
     - note 'in@generic[title=<&1>Order Review;size=36]' 'as:%GUI%'
+    - define hr '<&5>--------------------'
+    - define msg '<&c>      Click to Remove'
     - foreach <player.flag[dRestaurant_Order].split[/].get[2].as_list||li@> {
-      - define hr '<&5>--------------------'
-      - define msg '<&c>      Click to Remove'
       - define food '<def[value].split[,].get[1].as_item>'
       - define price '<def[value].split[,].get[2]||<def[food].scriptname.as_script.yaml_key[price]||0>>'
       - define totalPrice '<def[totalPrice].add[%price%]||%price%>'
@@ -309,18 +344,19 @@ dRestaurantMenu:
     - define GUI 'dRestaurant_MenuEdit_<player.name>'
     - define restaurant '<player.flag[dRestaurant_Order].split[/].get[1]||null>'
     - note 'in@generic[title=<&1>Admin Menu Edit;size=36]' 'as:%GUI%'
+    - define hr '<&5>--------------------'
+    - define msg0 '<&e>       <&n>Click Actions'
+    - define msg1 '<&3> Reset  <&f><&co> <&7><&o>Double<&7> Left'
+    - define msg2 '<&4> Remove<&f><&co> <&7>Middle'
+    - define msg3 '<&c> - <&6>$<&c>0.50<&f><&co> <&7>Left'
+    - define msg4 '<&c> - <&6>$<&c>1.00<&f><&co> <&7><&o>Shift<&7> Left'
+    - define msg5 '<&a> + <&6>$<&a>0.50<&f><&co> <&7>Right<&7>'
+    - define msg6 '<&a> + <&6>$<&a>1.00<&f><&co> <&7><&o>Shift<&7> Right'
     - foreach <server.flag[dRestaurant.%restaurant%.Menu].as_list||li@> {
-      - define hr '<&5>--------------------'
-      - define msg0 '<&e>       <&n>Click Actions'
-      - define msg1 '<&4> Remove<&f><&co> <&7>Middle'
-      - define msg2 '<&c> - <&6>$<&c>0.50<&f><&co> <&7>Left'
-      - define msg3 '<&c> - <&6>$<&c>1.00<&f><&co> <&7><&o>Shift<&7> Left'
-      - define msg4 '<&a> + <&6>$<&a>0.50<&f><&co> <&7>Right<&7>'
-      - define msg5 '<&a> + <&6>$<&a>1.00<&f><&co> <&7><&o>Shift<&7> Right'
       - define food '<def[value].split[/].get[1].as_item>'
       - define price '<def[value].split[/].get[2]||<def[food].scriptname.as_script.yaml_key[price]||0>>'
       - define ingredients '<&7> - <def[food].scriptname.as_script.yaml_key[ingredients].replace[li@].replace[|].with[|<&7> - ]>'
-      - define lore '<&b><&f>Price<&co> <&6>$<&a><def[price]||unknown>|<&f>Ingredients<&co>|<def[ingredients]||<&7> - none>|%hr%|%msg0%|<&f>|%msg1%|%msg2%|%msg3%|%msg4%|%msg5%'
+      - define lore '<&b><&f>Price<&co> <&6>$<&a><def[price]||unknown>|<&f>Ingredients<&co>|<def[ingredients]||<&7> - none>|%hr%|%msg0%|<&f>|%msg1%|%msg2%|%msg3%|%msg4%|%msg5%|%msg6%'
       - inventory add 'd:in@%GUI%' 'o:<def[food]>[lore=%lore%]' 'slot:%loop_index%'
       }
     - inventory add 'd:in@%GUI%' 'o:i@dRestaurant_Button_Menu' 'slot:36'
@@ -331,38 +367,29 @@ dRestaurantMenu:
     - define GUI 'dRestaurant_ManageStaff_<player.name>'
     - define restaurant '<player.flag[dRestaurant_Order].split[/].get[1]||null>'
     - note 'in@generic[title=<&1>Staff Management;size=36]' 'as:%GUI%'
-    - foreach <server.flag[dRestaurant.%restaurant%.Staff.Waitresses].as_list||li@> {
-      - define hr '<&5>-------------------------'
-      - define waitress '%value%'
-      - define name '<def[waitress].name>'
-      - define skin '<def[waitress].skin>'
-      - define stats '<def[waitress].flag[dRestaurant_FidgetValues].as_list>'
-      - define salary ''
-      - define idleWait '<def[stats].get[2]>'
-      - define speed '<def[stats].get[3]>'
-      - define spawnLoc '<def[stats].get[4]>'
-      - define height '<def[stats].get[5]>'
-      - define mats '  - <def[stats].get[6].split[/].replace[li@].replace[|].with[|  - ]>'
-      - define lore 'Name<&co> %name%|Salary<&co> %salary%|Skin<&co> %skin%|%hr%|<&f>|Idle Wait<&co> %wait%|Pathfinding| - Speed<&co> %speed%| - Height<&co> %height%| - Materials|%mats%'
-      - inventory add 'd:in@%GUI%' 'o:i@dRestaurant_Button_ManageStaff_EditWaitress[display_name=%name%;lore=%lore%]' 'slot:%loop_index%'
-      }
-    - foreach <server.flag[dRestaurant.%restaurant%.Staff.Chef].as_list||li@> {
-      - define hr '<&5>-------------------------'
-      - define chef '%value%'
-      - define name '<def[chef].name>'
-      - define skin '<def[chef].skin>'
-      - define stats '<def[chef].flag[dRestaurant_FidgetValues].as_list>'
-      - define salary ''
-      - define idleWait '<def[stats].get[2]>'
-      - define speed '<def[stats].get[3]>'
-      - define spawnLoc '<def[stats].get[4]>'
-      - define height '<def[stats].get[5]>'
-      - define mats '  - <def[stats].get[6].split[/].replace[li@].replace[|].with[|  - ]>'
-      - define lore 'Name<&co> %name%|Salary<&co> %salary%|Skin<&co> %skin%|%hr%|<&f>|Idle Wait<&co> %wait%|Pathfinding| - Speed<&co> %speed%| - Height<&co> %height%| - Materials|%mats%'
-      - inventory add 'd:in@%GUI%' 'o:i@dRestaurant_Button_ManageStaff_EditChef[display_name=%name%;lore=%lore%]' 'slot:<def[loop_index].add[9].as_int>'
+    - define hr '<&5>-------------------------'
+    - define msg0 '<&e>           <&n>Click to Edit'
+    - foreach li@Waitress|Chef {
+      - define type %value%
+      - foreach <server.flag[dRestaurant.%restaurant%.Staff.%type%].as_list||li@> {
+        - define npc '%value%'
+        - define name '<&b><def[npc].name>'
+        - define skin '<def[npc].skin>'
+        - define stats '<def[npc].flag[dRestaurant_FidgetValues].as_list>'
+        - define salary ''
+        - define idleWait '<def[stats].get[2]>s'
+        - define radius '<def[stats].get[3]>'
+        - define speed '<def[stats].get[4]>'
+        - define spawnLoc '<def[stats].get[5].simple>'
+        - define height '<def[stats].get[6]>'
+        - define mats '<&b>   ⁘ <&7><def[stats].get[7].split[/].replace[li@].replace[|].with[|<&b>   ⁘ <&7>]>'
+        - define lore '<&f>Salary<&co> %salary%|%hr%|%msg0%|<&f>|<&f>Skin<&co> <&7>%skin%|<&f>Spawn<&co> <&7>%spawnLoc%|<&f>Idle Wait<&co> <&7>%idleWait%|<&f>Pathfinding|<&b> ⁛ <&f><&o>Speed<&co> <&7>%speed%|<&b> ⁛ <&f><&o>Radius<&co> <&7>%radius%|<&b> ⁛ <&f><&o>Height<&co> <&7>%height%|<&b> ⁛ <&f><&o>Materials|%mats%'
+        - define slot '<tern[<def[type].is[==].to[Waitress]>]:%loop_index%||<def[loop_index].add[9].as_int>>'
+        - inventory add 'd:in@%GUI%' 'o:i@dRestaurant_Button_ManageStaff_Edit%type%[display_name=%name%;skull_skin=%skin%;lore=%lore%]' 'slot:%slot%'
+        }
       }
     - inventory add 'd:in@%GUI%' 'o:i@dRestaurant_Button_ManageStaff_HireWaitress' 'slot:28'
-    - inventory add 'd:in@%GUI%' 'o:i@dRestaurant_Button_ManageStaff_HireChef' 'slot:29'
+    - inventory add 'd:in@%GUI%' 'o:i@dRestaurant_Button_ManageStaff_HireChef[skull_skin=chef712]' 'slot:29'
     - inventory add 'd:in@%GUI%' 'o:i@dRestaurant_Button_Menu' 'slot:36'
     - inventory open 'd:in@%GUI%'
 
@@ -370,13 +397,13 @@ dRestaurantMenu:
   display_ManageStaff_EditWaitress:
     - define GUI 'dRestaurant_ManageStaff_EditWaitress_<player.name>'
     - define restaurant '<player.flag[dRestaurant_Order].split[/].get[1]||null>'
-    - note 'in@generic[title=<&1>Staff Management;size=36]' 'as:%GUI%'
+    - note 'in@generic[title=<&1>Edit Waitress;size=36]' 'as:%GUI%'
 
 
   display_ManageStaff_EditChef:
     - define GUI 'dRestaurant_ManageStaff_EditChef_<player.name>'
     - define restaurant '<player.flag[dRestaurant_Order].split[/].get[1]||null>'
-    - note 'in@generic[title=<&1>Staff Management;size=36]' 'as:%GUI%'
+    - note 'in@generic[title=<&1>Edit Chef;size=36]' 'as:%GUI%'
 
 
   display_ManageInventory:
@@ -388,7 +415,22 @@ dRestaurantMenu:
   display_EquipmentChecks:
     - define GUI 'dRestaurant_EquipmentChecks_<player.name>'
     - define restaurant '<player.flag[dRestaurant_Order].split[/].get[1]||null>'
-    - note 'in@generic[title=<&1>Staff Management;size=36]' 'as:%GUI%'
+    - note 'in@generic[title=<&1>Equipment Checks;size=36]' 'as:%GUI%'
+    - define hr '<&5>--------------------'
+    - define msg0 '<&e>       <&n>Click Actions'
+#    - define msg1 '<&3>  <&f><&co> <&7><&o>Double<&7> Left'
+#    - define msg2 '<&4>  <&f><&co> <&7>Middle'
+    - define msg3 '<&b> Count All <&f><&co> <&7>Left'
+#    - define msg4 '<&c>  <&f><&co> <&7><&o>Shift<&7> Left'
+    - define msg5 '<&b> Visit All <&f><&co> <&7>Right<&7>'
+#    - define msg6 '<&a>  <&f><&co> <&7><&o>Shift<&7> Right'
+    - define lore '<&f>|%hr%|%msg0%|<&f>|%msg3%|%msg5%'
+    - define buttons '<server.list_scripts.filter[name.contains[drestaurant_equipment]].parse[name.as_item]>'
+    - foreach %buttons% {
+      - inventory add 'd:in@%GUI%' 'o:%value%[lore=%lore%]' 'slot:%loop_index%'
+      }
+    - inventory add 'd:in@%GUI%' 'o:i@dRestaurant_Button_Menu' 'slot:36'
+    - inventory open 'd:in@%GUI%'
 
 
 
@@ -420,7 +462,7 @@ dRestaurant_Menu:
 #
 dRestaurant_Button_Menu:
   type: item
-  material: i@book
+  material: i@book_and_quill
   display name: <&f>Back to Menu
 #  lore:
 #    - "<&b>Click to view the menu"
@@ -446,7 +488,7 @@ dRestaurant_Button_OrderCancel:
 
 dRestaurant_Button_OrderReview:
   type: item
-  material: i@book_and_quill
+  material: i@book
   display name: <&f>Review Order
 #  lore:
 #    - "<&b>Click to review your order"
@@ -515,7 +557,7 @@ dRestaurant_Button_ManageStaff:
 
 dRestaurant_Button_ManageStaff_EditWaitress:
   type: item
-  material: i@book
+  material: i@human_skull
   display name: <&f>menu
 #  lore:
 #    - "<&b>Click to edit this Waitress"
@@ -525,7 +567,7 @@ dRestaurant_Button_ManageStaff_EditWaitress:
 
 dRestaurant_Button_ManageStaff_EditChef:
   type: item
-  material: i@book
+  material: i@human_skull
   display name: <&f>menu
 #  lore:
 #    - "<&b>Click to edit this Chef"
@@ -535,7 +577,7 @@ dRestaurant_Button_ManageStaff_EditChef:
 
 dRestaurant_Button_ManageStaff_HireWaitress:
   type: item
-  material: i@book
+  material: i@human_skull
   display name: <&f>Hire a Waitress
 #  lore:
 #    - "<&b>Click to hire a new Waitress"
@@ -545,11 +587,21 @@ dRestaurant_Button_ManageStaff_HireWaitress:
 
 dRestaurant_Button_ManageStaff_HireChef:
   type: item
-  material: i@book
+  material: i@human_skull
   display name: <&f>Hire a Chef
 #  lore:
 #    - "<&b>Click to hire a new Chef"
 #    - ""
+  script:
+    - narrate "<&b>dRestaurant<&co> <&f>This button hasn<&sq>t been made yet."
+
+dRestaurant_Button_ManageStaff_SetSpawn:
+  type: item
+  material: i@map
+  display name: <&f>Set Spawn
+#  lore:
+#    - "<&b>Click to set your current"
+#    - "<&b>location as the NPC spawn"
   script:
     - narrate "<&b>dRestaurant<&co> <&f>This button hasn<&sq>t been made yet."
 
@@ -572,6 +624,8 @@ dRestaurant_Button_EquipmentChecks:
 #    - "<&b>for valid kitchen equipment"
   script:
     - narrate "<&b>dRestaurant<&co> <&f>This button hasn<&sq>t been made yet."
+    - note remove 'as:in@%GUI%'
+    - inject s@dRestaurantMenu p:display_EquipmentChecks
 
 #
 #  END Menu Buttons
@@ -589,8 +643,8 @@ dRestaurant_food_potato:
   price: 5
   ingredients:
     - potato_item
-  foodLevel: 2
-  saturation: 4
+  foodLevel: 5
+  saturation: 7.2
   health: 0
   effects: []
 
@@ -617,8 +671,8 @@ dRestaurant_food_steak:
   price: 15
   ingredients:
     - raw_beef
-  foodLevel: 2
-  saturation: 4
+  foodLevel: 8
+  saturation: 12.8
   health: 0
   effects: []
 
@@ -647,10 +701,21 @@ dRestaurant_food_stew:
   ingredients:
     - brown_mushroom
     - red_mushroom
-  foodLevel: 2
-  saturation: 4
+  foodLevel: 10
+  saturation: 12
   health: 0
-  effects: []
+  effects:
+    - SPEED/30/3
+
+  consume:
+    - narrate format:TBFormat "That was a tasty <c.item.display>"
+    - adjust <player> 'saturation:<player.saturation.add[<c.item.scriptname.as_script.yaml_key[saturation]>]||0>'
+    - adjust <player> 'food_level:<player.food_level.add[<c.item.scriptname.as_script.yaml_key[foodLevel]>]||0>'
+    - adjust <player> 'health:<player.health.add[<c.item.scriptname.as_script.yaml_key[health]>]||0>'
+    - foreach '<c.item.scriptname.as_script.yaml_key[effects]>]>' {
+      - define potion '<def[value].split[/].as_list>'
+      - cast '<def[potion].get[1]>' 'd:<def[potion].get[2]||20>s' 'p:<def[potion].get[3]||1>' <player>
+      }
 
   cook:
     - ^define foodItems li@brown_mushroom|red_mushroom
@@ -680,8 +745,8 @@ dRestaurant_food_bread:
     - wheat
     - wheat
     - wheat
-  foodLevel: 2
-  saturation: 4
+  foodLevel: 5
+  saturation: 6
   health: 0
   effects: []
 
@@ -701,3 +766,8 @@ dRestaurant_food_bread:
 
 
 #
+#--------------------------------------
+#
+#
+#  END DRESTAURANT FOOD ITEMS
+#______________________________________

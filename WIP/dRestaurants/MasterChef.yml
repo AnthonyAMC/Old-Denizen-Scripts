@@ -148,7 +148,7 @@ MasterChefNPC:
       - queue stop
       }
     - chat "I found <def[locations].size.as_int> %equipment%."
-    - ~walk <npc> <def[locations].random.as_location> 'speed:0.6' 'radius:2.0'
+    - ~walk auto_range <npc> <def[locations].random.as_location> 'speed:0.6' 'radius:2.0'
     - chat "Ok, I made it to the %equipment%."
 
 #

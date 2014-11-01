@@ -99,7 +99,7 @@ MasterWaitressNPC:
         - wait 10t
         - narrate format:GenericNPCFormat "Your order should be out in just a moment." targets:%player%
         - animate <npc> animation:arm_swing
-        - playsound <def[player].location> sound:silverfish_walk pitch:0.3
+        - playsound <def[player].location> sound:silverfish_walk auto_range pitch:0.3
         - playsound <def[player].location> sound:step_grass pitch:0.7
         }
       - inventory set 'd:<def[player].inventory>' 'o:i@dRestaurant_Menu' 'slot:<def[player].inventory.find[drestaurant_menu]>'
@@ -302,7 +302,7 @@ MasterWaitressNPC:
       }
     - flag <player> dRestaurant_Order:%restaurant%
     - define loc <player.location.find.surface_blocks[<npc.flag[Pathfind.FidgetPathMaterial].as_list>].within[2].get[1]||<npc.location>>
-    - ~walk %loc% 'speed:<npc.flag[dRestaurant_FidgetValues].get[4].add[0.1].as_money||0.8>'
+    - ~walk auto_range %loc% 'speed:<npc.flag[dRestaurant_FidgetValues].get[4].add[0.1].as_money||0.8>'
     - look <player.eye_location> d:2s
     - wait 5t
     - random {
