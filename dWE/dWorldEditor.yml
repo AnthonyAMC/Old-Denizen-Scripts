@@ -3,18 +3,21 @@
 #                            d W o r l d E d i t o r
 #
 #
-#   Authors: |Anthony|
-#   Version: 0.2
+#   Authors: |Anthony|, mcmonkey
+#   Version: 0.21
 #   dScript Version: 0.9.6-DEV_b148
 #
 #
 #
 #--- About this script
 #
-#  This is the beginnings of recreating WorldEdit in denizen
+#  This is a basic recreation of WorldEdit in denizen
 #
-#
-#
+#--- Permission nodes
+# dwe.basic: use the /dwe command
+# TODO: Rest of the nodes
+
+
 ################################################################################
 #
 #  dWE World Events Script
