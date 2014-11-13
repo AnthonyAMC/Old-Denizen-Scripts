@@ -110,12 +110,7 @@ dWE_Tool:
       }
     - flag player dWETool:!
     - flag player dWETool:|:<def[cuboid].min>|<def[cuboid].max>
-    - if %pos% == 1 {
-      - inject s@dWE_Msg p:set_pos1
-      }
-      else {
-      - inject s@dWE_Msg p:set_pos2
-      }
+    - inject s@dWE_Msg p:set_pos%pos%
 
 ################################################################################
 #
