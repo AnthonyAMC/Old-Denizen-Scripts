@@ -5,7 +5,7 @@
 #
 #   Authors: |Anthony|, mcmonkey
 #   Version: 0.21
-#   dScript Version: 0.9.6-DEV_b148
+#   dScript Version: 0.9.6-DEV_b149
 #
 #
 #
@@ -466,7 +466,7 @@ dWE_Commands:
       else {
       - define blocks <cu@%pos1%|%pos2%.get_blocks>
       - define undoMaterials <def[blocks].parse[material.full]>
-      - modifyblock %blocks% %material%
+      - modifyblock %blocks% %material% delayed
       - flag player 'dWE_UndoHistory:->:set_blocks;<cu@%pos1%|%pos2%>;%undoMaterials%'
       }
 
@@ -495,7 +495,7 @@ dWE_Commands:
   undo_set_blocks:
     - define cuboid '<def[last_action].split[;].get[2].as_cuboid.get_blocks||null>'
     - define materials '<def[last_action].split[;].get[3]||li@>'
-    - modifyblock %cuboid% %materials%
+    - modifyblock %cuboid% %materials% delayed
     - run s@dWE_Msg 'def:<&a>Undo complete!'
 
   selection_Size:
