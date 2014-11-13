@@ -78,16 +78,35 @@ dWE_Tool:
       - run s@dWE_Msg 'def:<&4><&l>ERROR<&co> <&a>You should not have this!' instantly
       - queue clear
       }
+    - if <context.click_type> == LEFT_CLICK {
+      - define pos 1
+      }
+      else if <context.click_type> == RIGHT_CLICK {
+      - define pos 2
+      }
+      else {
+      - queue clear
+      }
     - define pos '<tern[<c.click_type.split[_].get[1].is[==].to[LEFT]||false>]:1||2>'
     - define pos1 '<player.flag[dWETool].as_list.get[1]||null>'
     - define pos2 '<player.flag[dWETool].as_list.get[2]||null>'
+    - defien cuboid cu@%pos1%|%pos2%
+    - if %pos% == 1 {
+      - define cuboid cu@<context.location.simple>|<context.location.simple>
+      }
+      else {
+      - define cuboid_old %cuboid%
+      - define cuboid <def[cuboid].include[<context.location.simple>]>
+      - if %cuboid_old% == %cuboid% {
+        - run s@dWE_Msg 'def:<&c>That position is already included.'
+        }
+      }
     - if <context.location.simple.is[==].to[<def[pos%pos%]>]||false> {
       - run s@dWE_Msg 'def:<&c>pos%pos% is already set'
       - queue clear
       }
-    - define pos%pos% '<context.location.simple>'
     - flag player dWETool:!
-    - flag player dWETool:|:%pos1%|%pos2%
+    - flag player dWETool:|:<def[cuboid].min>|<def[cuboid].max>
     - inject s@dWE_Msg p:set_Pos
 
 ################################################################################
@@ -490,11 +509,12 @@ dWE_Commands:
     - narrate "<&5>|<&f>"
 
   msgsFooter:
-    - define anthony "text:'<&7>|Anthony|',clickEvent:{action:open_url,value:'http://mineconomy.org'},hoverEvent:{action:show_item,value:'{<i@AnthonyBanner.json>}'}"
-    - define morphan "text:'<&7>Morphan1',clickEvent:{action:open_url,value:'http://google.com'},hoverEvent:{action:show_item,value:'{<i@Morphan1Banner.json>}'}"
+    - define anthony "text:'<&7>|Anthony|',clickEvent:{action:open_url,value:'http://mineconomy.org'},hoverEvent:{action:show_item,value:'{<i@dwe_AnthonyBanner.json>}'}"
+    - define morphan "text:'<&7>Morphan1',clickEvent:{action:open_url,value:'http://google.com'},hoverEvent:{action:show_item,value:'{<i@dwe_Morphan1Banner.json>}'}"
+    - define mcmonkey "text:'<&7>mcmonkey',clickEvent:{action:open_url,value:'http://mcmonkey.org'},hoverEvent:{action:show_item,value:'{<i@dwe_mcmonkeyBanner.json>}'}"
     - define spacer "text:'  '"
     - define prefix "text:'<&5>|  <&f>Authors:  '"
-    - execute as_server "tellraw <player.name> {text:'',extra:[{%prefix%},{%anthony%},{%spacer%},{%morphan%}]}"
+    - execute as_server "tellraw <player.name> {text:'',extra:[{%prefix%},{%anthony%},{%spacer%},{%morphan%},{%spacer%},{%mcmonkey%}]}"
     - narrate "<&d>|-----------S-c-r-o-l-l---U-p-------------|"
 
   msgsHelpAdmin:
@@ -519,6 +539,11 @@ dWE_Commands:
 #
 #  END dWE Command Messages
 #--------------------------------------
+#
+#  other utilities
+#
+# These are not complete! They are mostly just stubs till the rest is fleshed out!
+#
 
 
 
@@ -554,7 +579,21 @@ getFacing:
       else if <def[yaw].is[OR_MORE].than[22.5]||false> determine sw
       else determine 0
 
-
-
+#
+#  END other utilities
+#--------------------------------------
+#
+#  dWE author banner items
+#
+# Banner items representing the authors
+#
+dwe_mcmonkeyBanner:
+    type: item
+    material: creeper_skull
+    display name: <&2><&l>MCMONKEY
+    lore:
+    - <&a>Click to visit http://mcmonkey.org
 
 #
+#  END dWE author banner items
+#--------------------------------------
