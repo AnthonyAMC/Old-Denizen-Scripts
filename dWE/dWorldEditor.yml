@@ -76,7 +76,7 @@ dWE_Tool:
     - if !<player.has_permission[dWE.tool]||<player.is_op>> {
       - take i@dWE_Tool
       - run s@dWE_Msg 'def:<&4><&l>ERROR<&co> <&a>You should not have this!' instantly
-      - queue stop
+      - queue clear
       }
     - define pos '<tern[<c.click_type.split[_].get[1].is[==].to[LEFT]||false>]:1||2>'
     - define pos1 '<player.flag[dWETool].as_list.get[1]||null>'
@@ -135,7 +135,7 @@ dWE_Commands:
     - if <player.has_permission[dWE.admin]||<player.is_op>> inject locally msgsHelpAdmin instantly
       else inject locally msgsHelpUser instantly
     - inject locally msgsFooter instantly
-    - queue stop
+    - queue clear
 
   tool:
     - if !<player.has_permission[dWE.tool]||<player.is_op>> {
@@ -145,7 +145,7 @@ dWE_Commands:
     - give i@dWE_Tool
     - run s@dWE_Msg 'def:<&a>Left click to select pos1'
     - run s@dWE_Msg 'def:<&a>Right click to select pos2'
-    - queue stop
+    - queue clear
 
   show:
     - if !<player.has_permission[dWE.show]||<player.is_op>> {
