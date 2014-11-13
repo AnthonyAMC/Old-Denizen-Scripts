@@ -90,7 +90,6 @@ dWE_Tool:
       else {
       - queue clear
       }
-    - define pos '<tern[<c.click_type.split[_].get[1].is[==].to[LEFT]||false>]:1||2>'
     - define pos1 '<player.flag[dWETool].as_list.get[1]||null>'
     - define pos2 '<player.flag[dWETool].as_list.get[2]||null>'
     - define cuboid cu@%pos1%|%pos2%
