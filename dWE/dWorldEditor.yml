@@ -70,7 +70,7 @@ dWE_Tool:
   - <&7><&o>Right<&7> click to set pos2
 
   script:
-    - if !<player.has_permission[dWE.tool]> {
+    - if !<player.has_permission[dWE.tool]||<player.is_op>> {
       - take i@dWE_Tool
       - run s@dWE_Msg 'def:<&4><&l>ERROR<&co> <&a>You should not have this!' instantly
       - queue stop
@@ -109,8 +109,12 @@ dWE_Commands:
   usage: /dwe
   aliases: ''
   allowed help:
-  - determine true
+  - determine <player.has_permission[dWE.basic]||<player.is_op>>
   script:
+    - if !<player.has_permission[dWE.basic]||<player.is_op>> {
+      - narrate "<red>You do not have permission to use this command."
+      - queue clear
+      }
     - define arg1 '<c.args.get[1].escaped||help>'
     - define args 'li@help|tool|expand|contract|inset|outset|shift|pos1|pos2|hpos1|hpos2|chunk|show|set|undo'
     - if !<def[args].contains[%arg1%]> inject locally help instantly
@@ -125,20 +129,26 @@ dWE_Commands:
 # Each of these subscripts is an argument for the root command.
 #
   help:
-    - if <player.has_permission[dWE.admin]> inject locally msgsHelpAdmin instantly
+    - if <player.has_permission[dWE.admin]||<player.is_op>> inject locally msgsHelpAdmin instantly
       else inject locally msgsHelpUser instantly
     - inject locally msgsFooter instantly
     - queue stop
 
   tool:
-    - if <player.has_permission[dWE.tool]> {
-      - give i@dWE_Tool
-      - run s@dWE_Msg 'def:<&a>Left click to select pos1'
-      - run s@dWE_Msg 'def:<&a>Right click to select pos2'
-      - queue stop
+    - if !<player.has_permission[dWE.tool]||<player.is_op>> {
+      - inject locally help
+      - queue clear
       }
+    - give i@dWE_Tool
+    - run s@dWE_Msg 'def:<&a>Left click to select pos1'
+    - run s@dWE_Msg 'def:<&a>Right click to select pos2'
+    - queue stop
 
   show:
+    - if !<player.has_permission[dWE.show]||<player.is_op>> {
+      - inject locally help
+      - queue clear
+      }
     - define pos1 '<player.flag[dWETool].get[1].as_location||null>'
     - define pos2 '<player.flag[dWETool].get[2].as_location||null>'
     - if <def[pos1].is[==].to[null]> run s@dWE_Msg 'def:<&c>Must select corner 1 with left-click.'
@@ -146,6 +156,10 @@ dWE_Commands:
       else showfake m@blue_stained_glass <cu@%pos1%|%pos2%.get_outline> to:<player> d:10s
 
   pos1:
+    - if !<player.has_permission[dWE.pos]||<player.is_op>> {
+      - inject locally help
+      - queue clear
+      }
     - define pos1 '<player.flag[dWETool].as_list.get[1]||null>'
     - if <player.location.simple.is[==].to[%pos1%]> {
       - run s@dWE_Msg 'def:<&c>pos1 is already set'
@@ -159,6 +173,10 @@ dWE_Commands:
     - inject s@dWE_Msg p:set_Pos
 
   pos2:
+    - if !<player.has_permission[dWE.pos]||<player.is_op>> {
+      - inject locally help
+      - queue clear
+      }
     - define pos2 '<player.flag[dWETool].as_list.get[2]||null>'
     - if <player.location.simple.is[==].to[%pos2%]> {
       - run s@dWE_Msg 'def:<&c>pos2 is already set'
@@ -172,6 +190,10 @@ dWE_Commands:
     - inject s@dWE_Msg p:set_Pos
 
   hpos1:
+    - if !<player.has_permission[dWE.pos]||<player.is_op>> {
+      - inject locally help
+      - queue clear
+      }
     - define pos1 '<player.flag[dWETool].as_list.get[1]||null>'
     - if <player.location.cursor_on[160].simple.is[==].to[%pos1%]> {
       - run s@dWE_Msg 'def:<&c>pos1 is already set'
@@ -185,6 +207,10 @@ dWE_Commands:
     - inject s@dWE_Msg p:set_Pos
 
   hpos2:
+    - if !<player.has_permission[dWE.pos]||<player.is_op>> {
+      - inject locally help
+      - queue clear
+      }
     - define pos2 '<player.flag[dWETool].as_list.get[2]||null>'
     - if <player.location.cursor_on[160].simple.is[==].to[%pos2%]> {
       - run s@dWE_Msg 'def:<&c>pos2 is already set'
@@ -198,6 +224,10 @@ dWE_Commands:
     - inject s@dWE_Msg p:set_Pos
 
   chunk:
+    - if !<player.has_permission[dWE.chunk]||<player.is_op>> {
+      - inject locally help
+      - queue clear
+      }
     - define pos1 '<player.location.get_chunk.cuboid.min>'
     - define pos2 '<player.location.get_chunk.cuboid.max>'
     - flag player dWETool:!
@@ -205,6 +235,10 @@ dWE_Commands:
     - run s@dWE_Msg 'def:<&f>Chunk selected<&co> <player.location.get_chunk.replace[ch@].split[,].get[1|2].comma_separated>'
 
   expand:
+    - if !<player.has_permission[dWE.expand]||<player.is_op>> {
+      - inject locally help
+      - queue clear
+      }
   # /dwe expand <amount/v> (n/s/e/w/u/d)
     - define pos1 '<player.flag[dWETool].get[1].as_location||null>'
     - define pos2 '<player.flag[dWETool].get[2].as_location||null>'
@@ -283,6 +317,10 @@ dWE_Commands:
 
 
   contract:
+    - if !<player.has_permission[dWE.contract]||<player.is_op>> {
+      - inject locally help
+      - queue clear
+      }
   # /dwe contract <amount> (n/s/e/w/u/d)
     - define pos1 '<player.flag[dWETool].get[1].as_location||null>'
     - define pos2 '<player.flag[dWETool].get[2].as_location||null>'
@@ -352,16 +390,28 @@ dWE_Commands:
 
 
   inset:
+    - if !<player.has_permission[dWE.inset]||<player.is_op>> {
+      - inject locally help
+      - queue clear
+      }
   # /dwe inset <number> -h
     - narrate "stub"
 
 
   outset:
+    - if !<player.has_permission[dWE.outset]||<player.is_op>> {
+      - inject locally help
+      - queue clear
+      }
   # /dwe outset <number> -h
     - narrate "stub"
 
 
   shift:
+    - if !<player.has_permission[dWE.shift]||<player.is_op>> {
+      - inject locally help
+      - queue clear
+      }
   # /dwe outset <number> -h
     - narrate "stub"
 
@@ -370,6 +420,10 @@ dWE_Commands:
 
 
   set:
+    - if !<player.has_permission[dWE.set]||<player.is_op>> {
+      - inject locally help
+      - queue clear
+      }
   # Need config options for maxblocks to change
   # Need config option for undo history size
     - define material '<c.args.get[2]||null>'
@@ -387,18 +441,16 @@ dWE_Commands:
 
 
   undo:
+    - if !<player.has_permission[dWE.undo]||<player.is_op>> {
+      - inject locally help
+      - queue clear
+      }
     - define last_action '<player.flag[dWE_UndoHistory].as_list.last||null>'
     - if <def[last_action].is[==].to[null]> run s@dWE_Msg 'def:<&6>Nothing to undo!'
       else {
       - inject locally 'p:undo_<def[last_action].split[;].get[1]>'
       - flag player 'dWE_UndoHistory:<-:%last_action%'
       }
-
-  undo_set_blocks:
-    - define cuboid '<def[last_action].split[;].get[2].as_cuboid.get_blocks||null>'
-    - define materials '<def[last_action].split[;].get[3]||li@>'
-    - modifyblock %cuboid% %materials%
-    - run s@dWE_Msg 'def:<&a>Undo complete!'
 
 #
 #  END dWE Command Arguments
@@ -408,6 +460,13 @@ dWE_Commands:
 #
 # Just some commonly used code blocks
 #
+
+  undo_set_blocks:
+    - define cuboid '<def[last_action].split[;].get[2].as_cuboid.get_blocks||null>'
+    - define materials '<def[last_action].split[;].get[3]||li@>'
+    - modifyblock %cuboid% %materials%
+    - run s@dWE_Msg 'def:<&a>Undo complete!'
+
   selection_Size:
     - define x '<def[pos1].as_location.x.sub[<def[pos2].as_location.x||<c.location.x>>].abs.add[1]||1>'
     - define y '<def[pos1].as_location.y.sub[<def[pos2].as_location.y||<c.location.y>>].abs.add[1]||1>'
