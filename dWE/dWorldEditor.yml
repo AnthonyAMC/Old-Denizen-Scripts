@@ -49,19 +49,22 @@ dWE_Msg:
     - ^define msg "text:'%1%'"
     - ^execute as_server "tellraw <player.name> {text:'',extra:[{%button%},{%spacer%},{%msg%}]}"
 
-  set_Pos:
+  set_pos1:
+    - run s@dWE_Msg 'def:<&f>Selection started at <&3><&o><def[cuboid].min.simple.replace[,].with[<&7>,<&3><&o>]>'
+
+  set_pos2:
     - inject s@dWE_Commands p:selection_Size instantly
-    - run s@dWE_Msg 'def:<&f>POS%pos%<&co>  <&3><&o><def[pos%pos%].replace[,].with[<&7>, <&3><&o>]>  <&7>(<&o>%size%<&7>)'
+    - run s@dWE_Msg 'def:<&f>Selection expanded to include<&co> <&3><&o><context.location.simple.replace[,].with[<&7>,<&3><&o>]> <&7>(<&o>%size%<&7>)'
 
   expand:
     - inject s@dWE_Commands p:selection_Size instantly
     - define expandBy '<def[size].sub[%oldSize%].as_int>'
-    - run s@dWE_Msg 'def:<&f>Expanded<&f>  <&7><&o>%direction% <&7>by <&o>%expandBy% <&7>blocks (<&o>%size% total<&7>)'
+    - run s@dWE_Msg 'def:<&f>Expanded<&f>  <&7><&o>%direction% <&7>by <&o>%expandBy% <&7>blocks (<&o>%size%<&7>)'
 
   contract:
     - inject s@dWE_Commands p:selection_Size instantly
     - define contractBy '<def[oldsize].sub[%Size%].as_int>'
-    - run s@dWE_Msg 'def:<&f>Contracted<&f>  <&7><&o>%direction% <&7>by <&o>%contractBy% <&7>blocks (<&o>%size% total<&7>)'
+    - run s@dWE_Msg 'def:<&f>Contracted<&f>  <&7><&o>%direction% <&7>by <&o>%contractBy% <&7>blocks (<&o>%size%<&7>)'
 
 dWE_Tool:
   type: item
@@ -69,8 +72,8 @@ dWE_Tool:
   material: m@wood_axe
   display name: dWE Region Selector
   lore:
-  - <&7><&o>Left<&7> click to set pos1
-  - <&7><&o>Right<&7> click to set pos2
+  - <&7><&o>Left<&7> click to start a selection
+  - <&7><&o>Right<&7> click to expand the selection
 
   script:
     - if !<player.has_permission[dWE.tool]||<player.is_op>> {
@@ -78,10 +81,10 @@ dWE_Tool:
       - run s@dWE_Msg 'def:<&4><&l>ERROR<&co> <&a>You should not have this!' instantly
       - queue clear
       }
-    - if <context.click_type> == LEFT_CLICK {
+    - if <context.click_type> == LEFT_CLICK_BLOCK {
       - define pos 1
       }
-      else if <context.click_type> == RIGHT_CLICK {
+      else if <context.click_type> == RIGHT_CLICK_BLOCK {
       - define pos 2
       }
       else {
@@ -90,24 +93,30 @@ dWE_Tool:
     - define pos '<tern[<c.click_type.split[_].get[1].is[==].to[LEFT]||false>]:1||2>'
     - define pos1 '<player.flag[dWETool].as_list.get[1]||null>'
     - define pos2 '<player.flag[dWETool].as_list.get[2]||null>'
-    - defien cuboid cu@%pos1%|%pos2%
+    - define cuboid cu@%pos1%|%pos2%
     - if %pos% == 1 {
       - define cuboid cu@<context.location.simple>|<context.location.simple>
       }
       else {
+      - if %pos1% == null {
+        - run s@DWE_Msg 'Def:<&c>You must begin a selection before you can expand it.'
+        - queue clear
+        }
       - define cuboid_old %cuboid%
       - define cuboid <def[cuboid].include[<context.location.simple>]>
-      - if %cuboid_old% == %cuboid% {
+      - if <def[cuboid_old]> == <def[cuboid]> {
         - run s@dWE_Msg 'def:<&c>That position is already included.'
+        - queue clear
         }
-      }
-    - if <context.location.simple.is[==].to[<def[pos%pos%]>]||false> {
-      - run s@dWE_Msg 'def:<&c>pos%pos% is already set'
-      - queue clear
       }
     - flag player dWETool:!
     - flag player dWETool:|:<def[cuboid].min>|<def[cuboid].max>
-    - inject s@dWE_Msg p:set_Pos
+    - if %pos% == 1 {
+      - inject s@dWE_Msg p:set_pos1
+      }
+      else {
+      - inject s@dWE_Msg p:set_pos2
+      }
 
 ################################################################################
 #
@@ -162,8 +171,8 @@ dWE_Commands:
       - queue clear
       }
     - give i@dWE_Tool
-    - run s@dWE_Msg 'def:<&a>Left click to select pos1'
-    - run s@dWE_Msg 'def:<&a>Right click to select pos2'
+    - run s@dWE_Msg 'def:<&a>Left click to start a selection,'
+    - run s@dWE_Msg 'def:<&a>Right click to expand the selection.'
     - queue clear
 
   show:
