@@ -43,7 +43,7 @@
 #    - Permissions for each individual command
 #    - Parent permissions for categories (selection,tool,navigation)
 #  - Config File
-#    - Maxblocks to change per opperation
+#    - Maxblocks to change per operation
 #    - Undo history size
 #    - async-blockedit
 #
@@ -79,6 +79,10 @@ dWE_Msg:
     - ^define msg "text:'%1%'"
     - ^execute as_server "tellraw <player.name> {text:'',extra:[{%button%},{%spacer%},{%msg%}]}"
 
+  set_Pos:
+    - inject s@dWE_Commands p:selection_Size instantly
+    - run s@dWE_Msg 'def:<&f>POS%pos%<&co>  <&3><&o><def[pos%pos%].replace[,].with[<&7>, <&3><&o>]>  <&7>(<&o>%size%<&7>)'
+
   set_pos1:
     - run s@dWE_Msg 'def:<&f>Selection started at <&3><&o><def[cuboid].min.simple.replace[,].with[<&7>,<&3><&o>]>'
 
@@ -111,17 +115,26 @@ dWE_Tool:
       - run s@dWE_Msg 'def:<&4><&l>ERROR<&co> <&a>You should not have this!' instantly
       - queue clear
       }
-    - if <context.click_type> == LEFT_CLICK_BLOCK {
-      - define pos 1
-      }
-      else if <context.click_type> == RIGHT_CLICK_BLOCK {
-      - define pos 2
-      }
-      else {
-      - queue clear
-      }
+    - if <c.click_type.is[==].to[LEFT_CLICK_BLOCK]> define pos 1
+      else if <c.click_type.is[==].to[RIGHT_CLICK_BLOCK]> define pos 2
+      else queue clear
     - define pos1 '<player.flag[dWETool].as_list.get[1]||null>'
     - define pos2 '<player.flag[dWETool].as_list.get[2]||null>'
+    - define type '<player.flag[dWETool_Type]||standard>'
+    - if <li@standard|extender.contains[%type%]||false> inject locally %type%
+      else inject locally standard
+
+  standard:
+    - if <context.location.simple.is[==].to[<def[pos%pos%]>]||false> {
+      - run s@dWE_Msg 'def:<&c>pos%pos% is already set'
+      - queue clear
+      }
+    - define pos%pos% '<context.location.simple>'
+    - flag player dWETool:!
+    - flag player dWETool:|:%pos1%|%pos2%
+    - inject s@dWE_Msg p:set_Pos
+
+  extender:
     - define cuboid cu@%pos1%|%pos2%
     - if %pos% == 1 {
       - define cuboid cu@<context.location.simple>|<context.location.simple>
@@ -138,9 +151,12 @@ dWE_Tool:
         - queue clear
         }
       }
+    - define pos1 '<def[cuboid].min>'
+    - define pos2 '<def[cuboid].max>'
     - flag player dWETool:!
-    - flag player dWETool:|:<def[cuboid].min>|<def[cuboid].max>
+    - flag player dWETool:|:%pos1%|%pos2%
     - inject s@dWE_Msg p:set_pos%pos%
+
 
 ################################################################################
 #
@@ -184,23 +200,37 @@ dWE_Commands:
 # Each of these subscripts is an argument for the root command.
 #
   help:
-    - if <player.has_permission[dWE.admin]||<player.is_op>> inject locally msgsHelpAdmin instantly
+    - if <player.has_permission[dWE.admin]||<player.is_op||<context.server>>> inject locally msgsHelpAdmin instantly
       else inject locally msgsHelpUser instantly
     - inject locally msgsFooter instantly
     - queue clear
 
   tool:
-    - if !<player.has_permission[dWE.tool]||<player.is_op>> {
+    - if !<player.has_permission[dWE.tool]||<player.is_op||false>> {
       - inject locally help
       - queue clear
       }
+    - if <c.args.find[-type].is[OR_MORE].than[0]||false> {
+      - define type <c.args.get[<c.args.find[-type].add[1].as_int>]||null>
+      - if <li@standard|extender.contains[%type%]||false> {
+        - run s@dWE_Msg 'def:<&7><&o>Now using the <&f><&o>%type% <&7><&o>selection tool'
+        - flag player 'dWETool_Type:%type%'
+        }
+        else {
+        - run s@dWE_Msg 'def:<&4><&l>ERROR<&co> <&c>Unknown type!'
+        - run s@dWE_Msg 'def:<&c>SYNTAX<&co> <&e>/dwe -type <&6><&lb><&7>standard/extender<&6><&rb>'
+        }
+      - queue clear
+      }
     - give i@dWE_Tool
+    - define type '<player.flag[dWETool_Type]||standard>'
+    - if <li@standard|extender.contains[%type%]> inject locally %type%
     - run s@dWE_Msg 'def:<&a>Left click to start a selection,'
     - run s@dWE_Msg 'def:<&a>Right click to expand the selection.'
     - queue clear
 
   show:
-    - if !<player.has_permission[dWE.show]||<player.is_op>> {
+    - if !<player.has_permission[dWE.show]||<player.is_op||false>> {
       - inject locally help
       - queue clear
       }
@@ -211,7 +241,7 @@ dWE_Commands:
       else showfake m@blue_stained_glass <cu@%pos1%|%pos2%.get_outline> to:<player> d:10s
 
   pos1:
-    - if !<player.has_permission[dWE.pos]||<player.is_op>> {
+    - if !<player.has_permission[dWE.pos]||<player.is_op||false>> {
       - inject locally help
       - queue clear
       }
@@ -228,7 +258,7 @@ dWE_Commands:
     - inject s@dWE_Msg p:set_Pos
 
   pos2:
-    - if !<player.has_permission[dWE.pos]||<player.is_op>> {
+    - if !<player.has_permission[dWE.pos]||<player.is_op||false>> {
       - inject locally help
       - queue clear
       }
@@ -245,7 +275,7 @@ dWE_Commands:
     - inject s@dWE_Msg p:set_Pos
 
   hpos1:
-    - if !<player.has_permission[dWE.pos]||<player.is_op>> {
+    - if !<player.has_permission[dWE.pos]||<player.is_op||false>> {
       - inject locally help
       - queue clear
       }
@@ -262,7 +292,7 @@ dWE_Commands:
     - inject s@dWE_Msg p:set_Pos
 
   hpos2:
-    - if !<player.has_permission[dWE.pos]||<player.is_op>> {
+    - if !<player.has_permission[dWE.pos]||<player.is_op||false>> {
       - inject locally help
       - queue clear
       }
@@ -279,7 +309,7 @@ dWE_Commands:
     - inject s@dWE_Msg p:set_Pos
 
   chunk:
-    - if !<player.has_permission[dWE.chunk]||<player.is_op>> {
+    - if !<player.has_permission[dWE.chunk]||<player.is_op||false>> {
       - inject locally help
       - queue clear
       }
@@ -291,7 +321,7 @@ dWE_Commands:
 
   expand:
   # /dwe expand <amount/v> (n/s/e/w/u/d)
-    - if !<player.has_permission[dWE.expand]||<player.is_op>> {
+    - if !<player.has_permission[dWE.expand]||<player.is_op||false>> {
       - inject locally help
       - queue clear
       }
@@ -373,7 +403,7 @@ dWE_Commands:
 
   contract:
   # /dwe contract <amount> (n/s/e/w/u/d)
-    - if !<player.has_permission[dWE.contract]||<player.is_op>> {
+    - if !<player.has_permission[dWE.contract]||<player.is_op||false>> {
       - inject locally help
       - queue clear
       }
@@ -445,29 +475,29 @@ dWE_Commands:
 
 
   inset:
-    - if !<player.has_permission[dWE.inset]||<player.is_op>> {
+  # /dwe inset <number> -h
+    - if !<player.has_permission[dWE.inset]||<player.is_op||false>> {
       - inject locally help
       - queue clear
       }
-  # /dwe inset <number> -h
     - narrate "stub"
 
 
   outset:
-    - if !<player.has_permission[dWE.outset]||<player.is_op>> {
+  # /dwe outset <number> -h
+    - if !<player.has_permission[dWE.outset]||<player.is_op||false>> {
       - inject locally help
       - queue clear
       }
-  # /dwe outset <number> -h
     - narrate "stub"
 
 
   shift:
-    - if !<player.has_permission[dWE.shift]||<player.is_op>> {
+  # /dwe shift <number>
+    - if !<player.has_permission[dWE.shift]||<player.is_op||false>> {
       - inject locally help
       - queue clear
       }
-  # /dwe outset <number> -h
     - narrate "stub"
 
 
@@ -475,7 +505,7 @@ dWE_Commands:
 
 
   set:
-    - if !<player.has_permission[dWE.set]||<player.is_op>> {
+    - if !<player.has_permission[dWE.set]||<player.is_op||false>> {
       - inject locally help
       - queue clear
       }
@@ -495,7 +525,7 @@ dWE_Commands:
 
 
   undo:
-    - if !<player.has_permission[dWE.undo]||<player.is_op>> {
+    - if !<player.has_permission[dWE.undo]||<player.is_op||false>> {
       - inject locally help
       - queue clear
       }
