@@ -14,10 +14,40 @@
 #  This is a basic recreation of WorldEdit in denizen
 #
 #--- Permission nodes
-# dwe.basic: use the /dwe command
-# TODO: Rest of the nodes
-
-
+#  dwe.basic: use the /dwe command
+#  dwe.admin:  Admin commands
+#  dwe.chunk:  Set the chunk you are standing in as your selection
+#  dwe.contract:  Contract your region selection
+#  dwe.expand:  Expand your region selection
+#  dwe.inset:  Inset your region selection
+#  dwe.outset:  Outset your region selection
+#  dwe.pos:  Use commands to set selection positions
+#  dwe.set:  Set the blocks in a selection
+#  dwe.shift:  Shift your selection
+#  dwe.show:  Show your current region selection
+#  dwe.tool:  Get the region selection tool
+#  dwe.undo:  Undo previous edits
+#
+#
+# TODO:
+#  - Selection
+#    - Inset
+#    - Outset
+#    - Shift
+#  - Editing & Clipboard
+#    - Copy
+#    - Paste
+#    - Stack
+#    - Rotate
+#  - Permissions
+#    - Permissions for each individual command
+#    - Parent permissions for categories (selection,tool,navigation)
+#  - Config File
+#    - Maxblocks to change per opperation
+#    - Undo history size
+#    - async-blockedit
+#
+#
 ################################################################################
 #
 #  dWE World Events Script
@@ -260,11 +290,11 @@ dWE_Commands:
     - run s@dWE_Msg 'def:<&f>Chunk selected<&co> <player.location.get_chunk.replace[ch@].split[,].get[1|2].comma_separated>'
 
   expand:
+  # /dwe expand <amount/v> (n/s/e/w/u/d)
     - if !<player.has_permission[dWE.expand]||<player.is_op>> {
       - inject locally help
       - queue clear
       }
-  # /dwe expand <amount/v> (n/s/e/w/u/d)
     - define pos1 '<player.flag[dWETool].get[1].as_location||null>'
     - define pos2 '<player.flag[dWETool].get[2].as_location||null>'
     - if <def[pos1].is[==].to[null]> {
@@ -342,11 +372,11 @@ dWE_Commands:
 
 
   contract:
+  # /dwe contract <amount> (n/s/e/w/u/d)
     - if !<player.has_permission[dWE.contract]||<player.is_op>> {
       - inject locally help
       - queue clear
       }
-  # /dwe contract <amount> (n/s/e/w/u/d)
     - define pos1 '<player.flag[dWETool].get[1].as_location||null>'
     - define pos2 '<player.flag[dWETool].get[2].as_location||null>'
     - if <def[pos1].is[==].to[null]> {
@@ -449,8 +479,6 @@ dWE_Commands:
       - inject locally help
       - queue clear
       }
-  # Need config options for maxblocks to change
-  # Need config option for undo history size
     - define material '<c.args.get[2]||null>'
     - define pos1 '<player.flag[dWETool].as_list.get[1]||null>'
     - define pos2 '<player.flag[dWETool].as_list.get[2]||null>'
@@ -513,9 +541,9 @@ dWE_Commands:
     - narrate "<&5>|<&f>"
 
   msgsFooter:
-    - define anthony "text:'<&7>|Anthony|',clickEvent:{action:open_url,value:'http://mineconomy.org'},hoverEvent:{action:show_item,value:'{<i@dwe_AnthonyBanner.json>}'}"
-    - define morphan "text:'<&7>Morphan1',clickEvent:{action:open_url,value:'http://google.com'},hoverEvent:{action:show_item,value:'{<i@dwe_Morphan1Banner.json>}'}"
-    - define mcmonkey "text:'<&7>mcmonkey',clickEvent:{action:open_url,value:'http://mcmonkey.org'},hoverEvent:{action:show_item,value:'{<i@dwe_mcmonkeyBanner.json>}'}"
+    - define anthony "text:'<&7>|Anthony|',clickEvent:{action:open_url,value:'http://mineconomy.org'},hoverEvent:{action:show_item,value:'{<i@dwe_Author_Anthony.json>}'}"
+    - define morphan "text:'<&7>Morphan1',clickEvent:{action:open_url,value:'http://en.wikipedia.org/wiki/Candy'},hoverEvent:{action:show_item,value:'{<i@dwe_Author_Morphan1.json>}'}"
+    - define mcmonkey "text:'<&7>mcmonkey',clickEvent:{action:open_url,value:'http://mcmonkey.org'},hoverEvent:{action:show_item,value:'{<i@dwe_Author_mcmonkey.json>}'}"
     - define spacer "text:'  '"
     - define prefix "text:'<&5>|  <&f>Authors:  '"
     - execute as_server "tellraw <player.name> {text:'',extra:[{%prefix%},{%anthony%},{%spacer%},{%morphan%},{%spacer%},{%mcmonkey%}]}"
@@ -550,22 +578,6 @@ dWE_Commands:
 #
 
 
-
-# Usage: <proc[getFacing].context[%x%|%y%|%z%]>
-getFacing_Defunct:
-  type: procedure
-  definitions: x|y|z
-  script:
-    - if <def[y].is[OR_MORE].than[0.75]||false> determine u
-      else if <def[y].is[OR_LESS].than[-0.75]||false> determine d
-      else if <def[x].is[OR_MORE].than[0.70]||false> determine e
-      else if <def[x].is[OR_LESS].than[-0.70]||false> determine w
-      else if <def[z].is[OR_MORE].than[0.70]||false> determine s
-      else if <def[z].is[OR_LESS].than[-0.70]||false> determine n
-      else determine 0
-
-#
-
 # Usage: <proc[getFacing].context[%pitch%|%yaw%]>
 getFacing:
   type: procedure
@@ -591,13 +603,34 @@ getFacing:
 #
 # Banner items representing the authors
 #
-dwe_mcmonkeyBanner:
-    type: item
-    material: creeper_skull
-    display name: <&2><&l>MCMONKEY
-    lore:
-    - <&a>Click to visit http://mcmonkey.org
+dwe_Author_mcmonkey:
+  type: item
+  material: creeper_skull
+  display name: <&2><&l>MCMONKEY
+  lore:
+  - <&a>Click to visit http://mcmonkey.org
 
+dwe_Author_Morphan1:
+  type: item
+  material: creeper_skull
+  display name: <&2><&l>Morphan1
+  lore:
+  - <&a>pls2buymesome
+
+dwe_Author_Anthony:
+  type: item
+  material: i@human_skull
+  display name: "<&f>             |Anthony|"
+  lore:
+  - <&7>  Owner<&co> <&e>M<&6>ine<&e>C<&6>onomy <&e>N<&6>etwork
+  - <&5>-------------------------
+  - <&7>
+  - <&7>  I`ve been playing minecraft
+  - <&7> and running a server since
+  - <&7> 2010. I have fun and share
+  - <&7> what I do.
+  - <&7>
+  - <&9>           Click To Visit
 #
 #  END dWE author banner items
 #--------------------------------------
