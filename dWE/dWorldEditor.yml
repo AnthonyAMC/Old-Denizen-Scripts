@@ -120,11 +120,11 @@ dWE_Wand:
       else queue clear
     - define pos1 '<player.flag[dWEWand].as_list.get[1]||null>'
     - define pos2 '<player.flag[dWEWand].as_list.get[2]||null>'
-    - define type '<player.flag[dWEWand_Type]||standard>'
-    - if <li@standard|extender.contains[%type%]||false> inject locally %type%
-      else inject locally standard
+    - define type '<player.flag[dWEWand_Type]||cuboid>'
+    - if <li@cuboid|extender.contains[%type%]||false> inject locally %type%
+      else inject locally cuboid
 
-  standard:
+  cuboid:
     - if <context.location.simple.is[==].to[<def[pos%pos%]>]||false> {
       - run s@dWE_Msg 'def:<&c>pos%pos% is already set'
       - queue clear
@@ -206,26 +206,26 @@ dWE_Commands:
     - queue clear
 
   wand:
-  # /dwe wand (-type [standard/extender])
+  # /dwe wand (-type [cuboid/extender])
     - if !<player.has_permission[dwe.wand]||<player.is_op||false>> {
       - inject locally help
       - queue clear
       }
     - if <c.args.find[-type].is[OR_MORE].than[0]||false> {
       - define type <c.args.get[<c.args.find[-type].add[1].as_int>]||null>
-      - if <li@standard|extender.contains[%type%]||false> {
+      - if <li@cuboid|extender.contains[%type%]||false> {
         - run s@dWE_Msg 'def:<&7><&o>Now using the <&f><&o>%type% <&7><&o>selection wand'
         - flag player 'dWEWand_Type:%type%'
         }
         else {
         - run s@dWE_Msg 'def:<&4><&l>ERROR<&co> <&c>Unknown type!'
-        - run s@dWE_Msg 'def:<&c>SYNTAX<&co> <&e>/dwe -type <&6><&lb><&7>standard/extender<&6><&rb>'
+        - run s@dWE_Msg 'def:<&c>SYNTAX<&co> <&e>/dwe -type <&6><&lb><&7>cuboid/extender<&6><&rb>'
         }
       - queue clear
       }
     - give i@dWE_Wand
-    - define type '<player.flag[dWEWand_Type]||standard>'
-    - if <def[type].is[==].to[standard]> {
+    - define type '<player.flag[dWEWand_Type]||cuboid>'
+    - if <def[type].is[==].to[cuboid]> {
       - run s@dWE_Msg 'def:<&a>Left click to select pos1'
       - run s@dWE_Msg 'def:<&a>Right click to select pos2'
       }
