@@ -224,9 +224,14 @@ dWE_Commands:
       }
     - give i@dWE_Tool
     - define type '<player.flag[dWETool_Type]||standard>'
-    - if <li@standard|extender.contains[%type%]> inject locally %type%
-    - run s@dWE_Msg 'def:<&a>Left click to start a selection,'
-    - run s@dWE_Msg 'def:<&a>Right click to expand the selection.'
+    - if <def[type].is[==].to[standard]> {
+      - run s@dWE_Msg 'def:<&a>Left click to select pos1'
+      - run s@dWE_Msg 'def:<&a>Right click to select pos2'
+      }
+      else {
+      - run s@dWE_Msg 'def:<&a>Left click to start a selection,'
+      - run s@dWE_Msg 'def:<&a>Right click to expand the selection.'
+      }
     - queue clear
 
   show:
