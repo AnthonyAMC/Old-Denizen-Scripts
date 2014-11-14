@@ -97,8 +97,18 @@ dWE_Msg:
 
   contract:
     - inject s@dWE_Commands p:selection_Size instantly
-    - define contractBy '<def[oldsize].sub[%Size%].as_int>'
+    - define contractBy '<def[oldSize].sub[%size%].as_int>'
     - run s@dWE_Msg 'def:<&f>Contracted<&f>  <&7><&o>%direction% <&7>by <&o>%contractBy% <&7>blocks (<&o>%size%<&7>)'
+
+  inset:
+    - inject s@dWE_Commands p:selection_Size instantly
+    - define insetBy '<def[oldSize].sub[%size%].as_int>'
+    - run s@dWE_Msg 'def:<&f>Inset<&f>  <&7>by <&o>%insetBy% <&7>blocks (<&o>%size%<&7>)'
+
+  outset:
+    - inject s@dWE_Commands p:selection_Size instantly
+    - define outsetBy '<def[size].sub[%oldSize%].as_int>'
+    - run s@dWE_Msg 'def:<&f>Outset<&f>  <&7>by <&o>%outsetBy% <&7>blocks (<&o>%size%<&7>)'
 
 dWE_Wand:
   type: item
@@ -488,7 +498,32 @@ dWE_Commands:
       - inject locally help
       - queue clear
       }
-    - narrate "stub"
+    - define pos1 '<player.flag[dWEWand].get[1].as_location||null>'
+    - define pos2 '<player.flag[dWEWand].get[2].as_location||null>'
+    - if <def[pos1].is[==].to[null]> {
+      - run s@dWE_Msg 'def:<&c>Left Click to select pos1'
+      - queue clear
+      }
+    - if <def[pos2].is[==].to[null]> {
+      - run s@dWE_Msg 'def:<&c>Right Click to select pos2'
+      - queue clear
+      }
+    - define n '<c.args.filter[is[matches].to[number]].get[1]||0>'
+    - if <def[n].is[OR_LESS].than[0]||true> {
+      - run s@dWE_Msg 'def:<&c>SYNTAX<&co> <&e>/dwe inset <&6><&lb><&7>amount<&6><&rb> <&6>(<&7>-h<&6>)'
+      - queue clear
+      }
+    - inject s@dWE_Commands p:selection_Size instantly
+    - define oldSize '%size%'
+
+    - define cuboid cu@%pos1%|%pos2%
+    - if '<c.args.contains[-h].not||false>' define cuboid 'cu@<def[cuboid].min.add[0,%n%,0]>|<def[cuboid].max.sub[0,%n%,0]>'
+    - define cuboid 'cu@<def[cuboid].min.add[%n%,0,%n%]>|<def[cuboid].max.sub[%n%,0,%n%]>'
+    - define pos1 '<def[cuboid].min>'
+    - define pos2 '<def[cuboid].max>'
+    - flag player dWEWand:!
+    - flag player dWEWand:|:%pos1%|%pos2%
+    - inject s@dWE_Msg p:inset
 
   outset:
   # /dwe outset <number> -h
@@ -496,10 +531,36 @@ dWE_Commands:
       - inject locally help
       - queue clear
       }
-    - narrate "stub"
+    - define pos1 '<player.flag[dWEWand].get[1].as_location||null>'
+    - define pos2 '<player.flag[dWEWand].get[2].as_location||null>'
+    - if <def[pos1].is[==].to[null]> {
+      - run s@dWE_Msg 'def:<&c>Left Click to select pos1'
+      - queue clear
+      }
+    - if <def[pos2].is[==].to[null]> {
+      - run s@dWE_Msg 'def:<&c>Right Click to select pos2'
+      - queue clear
+      }
+    - define n '<c.args.filter[is[matches].to[number]].get[1]||0>'
+    - if <def[n].is[OR_LESS].than[0]||true> {
+      - run s@dWE_Msg 'def:<&c>SYNTAX<&co> <&e>/dwe outset <&6><&lb><&7>amount<&6><&rb> <&6>(<&7>-h<&6>)'
+      - queue clear
+      }
+    - inject s@dWE_Commands p:selection_Size instantly
+    - define oldSize '%size%'
+
+    - define cuboid cu@%pos1%|%pos2%
+    - if '<c.args.contains[-h].not||false>' define cuboid 'cu@<def[cuboid].min.sub[0,%n%,0]>|<def[cuboid].max.add[0,%n%,0]>'
+    - define cuboid 'cu@<def[cuboid].min.sub[%n%,0,%n%]>|<def[cuboid].max.add[%n%,0,%n%]>'
+    - define pos1 '<def[cuboid].min>'
+    - define pos2 '<def[cuboid].max>'
+    - flag player dWEWand:!
+    - flag player dWEWand:|:%pos1%|%pos2%
+    - inject s@dWE_Msg p:outset
+
 
   shift:
-  # /dwe shift <number>
+  # /dwe shift <amount> (n/s/e/w/u/d)
     - if !<player.has_permission[dwe.shift]||<player.is_op||false>> {
       - inject locally help
       - queue clear
@@ -539,11 +600,24 @@ dWE_Commands:
       - inject locally help
       - queue clear
       }
-    - narrate "stub"
+    - define pos1 '<player.flag[dWEWand].as_list.get[1]||null>'
+    - define pos2 '<player.flag[dWEWand].as_list.get[2]||null>'
+    - define blocks '<cu@%pos1%|%pos2%.get_blocks>'
+    - flag player dWE_Clipboard:!
+    - flag player 'dWE_Clipboard:|:<def[blocks].parse[material.full]>'
+    - run s@dWE_Msg 'def:<&7><&o>Selection saved to clipboard'
 
   paste:
   # /dwe paste
     - if !<player.has_permission[dwe.paste]||<player.is_op||false>> {
+      - inject locally help
+      - queue clear
+      }
+    - narrate "stub"
+
+  rotate:
+  # /dwe rotate <90/180/270/360>
+    - if !<player.has_permission[dwe.rotate]||<player.is_op||false>> {
       - inject locally help
       - queue clear
       }
