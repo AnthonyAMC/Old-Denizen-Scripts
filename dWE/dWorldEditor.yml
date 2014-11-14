@@ -1,0 +1,603 @@
+################################################################################
+#
+#                            d W o r l d E d i t o r
+#
+#
+#   Authors: |Anthony|, mcmonkey
+#   Version: 0.21
+#   dScript Version: 0.9.6-DEV_b149
+#
+#
+#
+#--- About this script
+#
+#  This is a basic recreation of WorldEdit in denizen
+#
+#--- Permission nodes
+# dwe.basic: use the /dwe command
+# TODO: Rest of the nodes
+
+
+################################################################################
+#
+#  dWE World Events Script
+#
+#  This should cover all dWE related world events.
+#
+dWE_Events:
+  type: world
+  debug: false
+  events:
+    on player clicks block:
+      - if <c.item.scriptname.split[_].get[1].is[!=].to[dWE]||true> queue clear
+      - determine passively CANCELLED
+      - inject <c.item.scriptname.as_script> instantly
+
+dWE_Msg:
+  type: item
+  debug: false
+  material: i@human_skull
+  display name: "<&4>     [<&6>dWE<&4>]"
+  lore:
+  - <&5>Click for Help
+  script:
+    - ^define text '<&4>[<&6>dWE<&4>]'
+    - ^define hover '{<i@dWE_Msg.json>}'
+    - ^define click '/dwe help'
+    - ^define button "text:'%text%',clickEvent:{action:run_command,value:'%click%'},hoverEvent:{action:show_item,value:'%hover%'}"
+    - ^define spacer "text:'  '"
+    - ^define msg "text:'%1%'"
+    - ^execute as_server "tellraw <player.name> {text:'',extra:[{%button%},{%spacer%},{%msg%}]}"
+
+  set_pos1:
+    - run s@dWE_Msg 'def:<&f>Selection started at <&3><&o><def[cuboid].min.simple.replace[,].with[<&7>,<&3><&o>]>'
+
+  set_pos2:
+    - inject s@dWE_Commands p:selection_Size instantly
+    - run s@dWE_Msg 'def:<&f>Selection expanded to include<&co> <&3><&o><context.location.simple.replace[,].with[<&7>,<&3><&o>]> <&7>(<&o>%size%<&7>)'
+
+  expand:
+    - inject s@dWE_Commands p:selection_Size instantly
+    - define expandBy '<def[size].sub[%oldSize%].as_int>'
+    - run s@dWE_Msg 'def:<&f>Expanded<&f>  <&7><&o>%direction% <&7>by <&o>%expandBy% <&7>blocks (<&o>%size%<&7>)'
+
+  contract:
+    - inject s@dWE_Commands p:selection_Size instantly
+    - define contractBy '<def[oldsize].sub[%Size%].as_int>'
+    - run s@dWE_Msg 'def:<&f>Contracted<&f>  <&7><&o>%direction% <&7>by <&o>%contractBy% <&7>blocks (<&o>%size%<&7>)'
+
+dWE_Tool:
+  type: item
+  debug: false
+  material: m@wood_axe
+  display name: dWE Region Selector
+  lore:
+  - <&7><&o>Left<&7> click to start a selection
+  - <&7><&o>Right<&7> click to expand the selection
+
+  script:
+    - if !<player.has_permission[dWE.tool]||<player.is_op>> {
+      - take i@dWE_Tool
+      - run s@dWE_Msg 'def:<&4><&l>ERROR<&co> <&a>You should not have this!' instantly
+      - queue clear
+      }
+    - if <context.click_type> == LEFT_CLICK_BLOCK {
+      - define pos 1
+      }
+      else if <context.click_type> == RIGHT_CLICK_BLOCK {
+      - define pos 2
+      }
+      else {
+      - queue clear
+      }
+    - define pos1 '<player.flag[dWETool].as_list.get[1]||null>'
+    - define pos2 '<player.flag[dWETool].as_list.get[2]||null>'
+    - define cuboid cu@%pos1%|%pos2%
+    - if %pos% == 1 {
+      - define cuboid cu@<context.location.simple>|<context.location.simple>
+      }
+      else {
+      - if %pos1% == null {
+        - run s@DWE_Msg 'Def:<&c>You must begin a selection before you can expand it.'
+        - queue clear
+        }
+      - define cuboid_old %cuboid%
+      - define cuboid <def[cuboid].include[<context.location.simple>]>
+      - if <def[cuboid_old]> == <def[cuboid]> {
+        - run s@dWE_Msg 'def:<&c>That position is already included.'
+        - queue clear
+        }
+      }
+    - flag player dWETool:!
+    - flag player dWETool:|:<def[cuboid].min>|<def[cuboid].max>
+    - inject s@dWE_Msg p:set_pos%pos%
+
+################################################################################
+#
+#  Denizen World Editor Command Script Container
+#
+# This script covers all dWE commands
+#
+#
+#
+#--------------------------------------
+#
+#  dWE Command Script Basics
+#
+# The basic stuff required in a command script container
+#
+dWE_Commands:
+  type: command
+  debug: false
+  name: dwe
+  description: Denizen World Editor
+  usage: /dwe
+  aliases: ''
+  allowed help:
+  - determine <player.has_permission[dWE.basic]||<player.is_op>>
+  script:
+    - if !<player.has_permission[dWE.basic]||<player.is_op>> {
+      - narrate "<red>You do not have permission to use this command."
+      - queue clear
+      }
+    - define arg1 '<c.args.get[1].escaped||help>'
+    - define args 'li@help|tool|expand|contract|inset|outset|shift|pos1|pos2|hpos1|hpos2|chunk|show|set|undo'
+    - if !<def[args].contains[%arg1%]> inject locally help instantly
+      else inject locally %arg1% instantly
+
+#
+#  END dWE Command Script Basics
+#--------------------------------------
+#
+#  dWE Command Arguments
+#
+# Each of these subscripts is an argument for the root command.
+#
+  help:
+    - if <player.has_permission[dWE.admin]||<player.is_op>> inject locally msgsHelpAdmin instantly
+      else inject locally msgsHelpUser instantly
+    - inject locally msgsFooter instantly
+    - queue clear
+
+  tool:
+    - if !<player.has_permission[dWE.tool]||<player.is_op>> {
+      - inject locally help
+      - queue clear
+      }
+    - give i@dWE_Tool
+    - run s@dWE_Msg 'def:<&a>Left click to start a selection,'
+    - run s@dWE_Msg 'def:<&a>Right click to expand the selection.'
+    - queue clear
+
+  show:
+    - if !<player.has_permission[dWE.show]||<player.is_op>> {
+      - inject locally help
+      - queue clear
+      }
+    - define pos1 '<player.flag[dWETool].get[1].as_location||null>'
+    - define pos2 '<player.flag[dWETool].get[2].as_location||null>'
+    - if <def[pos1].is[==].to[null]> run s@dWE_Msg 'def:<&c>Must select corner 1 with left-click.'
+      else if <def[pos2].is[==].to[null]> run s@dWE_Msg 'def:<red>Must select corner 2 with right-click.'
+      else showfake m@blue_stained_glass <cu@%pos1%|%pos2%.get_outline> to:<player> d:10s
+
+  pos1:
+    - if !<player.has_permission[dWE.pos]||<player.is_op>> {
+      - inject locally help
+      - queue clear
+      }
+    - define pos1 '<player.flag[dWETool].as_list.get[1]||null>'
+    - if <player.location.simple.is[==].to[%pos1%]> {
+      - run s@dWE_Msg 'def:<&c>pos1 is already set'
+      - queue clear
+      }
+    - define pos1 '<player.location.simple>'
+    - define pos2 '<player.flag[dWETool].as_list.get[2]||null>'
+    - flag player dWETool:!
+    - flag player dWETool:|:%pos1%|%pos2%
+    - define pos 1
+    - inject s@dWE_Msg p:set_Pos
+
+  pos2:
+    - if !<player.has_permission[dWE.pos]||<player.is_op>> {
+      - inject locally help
+      - queue clear
+      }
+    - define pos2 '<player.flag[dWETool].as_list.get[2]||null>'
+    - if <player.location.simple.is[==].to[%pos2%]> {
+      - run s@dWE_Msg 'def:<&c>pos2 is already set'
+      - queue clear
+      }
+    - define pos1 '<player.flag[dWETool].as_list.get[1]||null>'
+    - define pos2 '<player.location.simple>'
+    - flag player dWETool:!
+    - flag player dWETool:|:%pos1%|%pos2%
+    - define pos 2
+    - inject s@dWE_Msg p:set_Pos
+
+  hpos1:
+    - if !<player.has_permission[dWE.pos]||<player.is_op>> {
+      - inject locally help
+      - queue clear
+      }
+    - define pos1 '<player.flag[dWETool].as_list.get[1]||null>'
+    - if <player.location.cursor_on[160].simple.is[==].to[%pos1%]> {
+      - run s@dWE_Msg 'def:<&c>pos1 is already set'
+      - queue clear
+      }
+    - define pos1 '<player.location.cursor_on[160].simple>'
+    - define pos2 '<player.flag[dWETool].as_list.get[2]||null>'
+    - flag player dWETool:!
+    - flag player dWETool:|:%pos1%|%pos2%
+    - define pos 1
+    - inject s@dWE_Msg p:set_Pos
+
+  hpos2:
+    - if !<player.has_permission[dWE.pos]||<player.is_op>> {
+      - inject locally help
+      - queue clear
+      }
+    - define pos2 '<player.flag[dWETool].as_list.get[2]||null>'
+    - if <player.location.cursor_on[160].simple.is[==].to[%pos2%]> {
+      - run s@dWE_Msg 'def:<&c>pos2 is already set'
+      - queue clear
+      }
+    - define pos1 '<player.flag[dWETool].as_list.get[1]||null>'
+    - define pos2 '<player.location.cursor_on[160].simple>'
+    - flag player dWETool:!
+    - flag player dWETool:|:%pos1%|%pos2%
+    - define pos 2
+    - inject s@dWE_Msg p:set_Pos
+
+  chunk:
+    - if !<player.has_permission[dWE.chunk]||<player.is_op>> {
+      - inject locally help
+      - queue clear
+      }
+    - define pos1 '<player.location.get_chunk.cuboid.min>'
+    - define pos2 '<player.location.get_chunk.cuboid.max>'
+    - flag player dWETool:!
+    - flag player dWETool:|:%pos1%|%pos2%
+    - run s@dWE_Msg 'def:<&f>Chunk selected<&co> <player.location.get_chunk.replace[ch@].split[,].get[1|2].comma_separated>'
+
+  expand:
+    - if !<player.has_permission[dWE.expand]||<player.is_op>> {
+      - inject locally help
+      - queue clear
+      }
+  # /dwe expand <amount/v> (n/s/e/w/u/d)
+    - define pos1 '<player.flag[dWETool].get[1].as_location||null>'
+    - define pos2 '<player.flag[dWETool].get[2].as_location||null>'
+    - if <def[pos1].is[==].to[null]> {
+      - run s@dWE_Msg 'def:<&c>Left Click to select pos1'
+      - queue clear
+      }
+    - if <def[pos2].is[==].to[null]> {
+      - run s@dWE_Msg 'def:<&c>Right Click to select pos2'
+      - queue clear
+      }
+    - define n '<c.args.get[2].escaped.round_up||0>'
+    - define d '<c.args.get[3].escaped||0>'
+    - inject s@dWE_Commands p:selection_Size instantly
+    - define oldSize '%size%'
+    - if <c.args.get[2].escaped.is[==].to[v]||false> {
+      - define pos1 '<def[pos1].sub[0,<def[pos1].y>,0].replace[l@]>'
+      - define pos2 '<def[pos2].add[0,<el@val[255].sub[<def[pos2].y>]>,0].replace[l@]>'
+      - flag player dWETool:!
+      - flag player dWETool:|:%pos1%|%pos2%
+      - define direction 'Vertically'
+      - inject s@dWE_Msg p:expand
+      - queue clear
+      }
+    - if <def[n].is[OR_LESS].than[0]||true> {
+      - run s@dWE_Msg 'def:<&c>SYNTAX<&co> <&e>/dwe expand <&6><&lb><&7>amount/v<&6><&rb> <&6>(<&7>direction<&6>)'
+      - queue clear
+      }
+    - if <el@[li@n|e|s|w|u|d].contains[%d%].not||true> define d '<proc[getFacing].context[<player.location.pitch.as_money>|<player.location.yaw.as_money>]>'
+    - if <el@[li@n|e|s|w|u|d].contains[%d%].not||true> {
+      - run s@dWE_Msg 'def:<&4><&l>ERROR<&co> <&c>Unknown direction!'
+      - queue clear
+      }
+    - if <def[d].is[==].to[n]||false> {
+      - if <def[pos1].z.is[OR_LESS].than[<def[pos2].z>]> define pos1 '<def[pos1].sub[0,0,%n%]>'
+        else define pos2 '<def[pos2].sub[0,0,%n%]>'
+      - define direction 'North'
+      - inject s@dWE_Msg p:expand
+      }
+      else if <def[d].is[==].to[e]||false> {
+      - if <def[pos1].x.is[OR_MORE].than[<def[pos2].x>]> define pos1 '<def[pos1].add[%n%,0,0]>'
+        else define pos2 '<def[pos2].add[%n%,0,0]>'
+      - define direction 'East'
+      - inject s@dWE_Msg p:expand
+      }
+      else if <def[d].is[==].to[s]||false> {
+      - if <def[pos1].z.is[OR_MORE].than[<def[pos2].z>]> define pos1 '<def[pos1].add[0,0,%n%]>'
+        else define pos2 '<def[pos2].add[0,0,%n%]>'
+      - define direction 'South'
+      - inject s@dWE_Msg p:expand
+      }
+      else if <def[d].is[==].to[w]||false> {
+      - if <def[pos1].x.is[OR_LESS].than[<def[pos2].x>]> define pos1 '<def[pos1].sub[%n%,0,0]>'
+        else define pos2 '<def[pos2].sub[%n%,0,0]>'
+      - define direction 'West'
+      - inject s@dWE_Msg p:expand
+      }
+      else if <def[d].is[==].to[u]||false> {
+      - if <def[pos1].y.is[OR_MORE].than[<def[pos2].y>]> define pos1 '<def[pos1].add[0,%n%,0]>'
+        else define pos2 '<def[pos2].add[0,%n%,0]>'
+      - define direction 'Up'
+      - inject s@dWE_Msg p:expand
+      }
+      else if <def[d].is[==].to[d]||false> {
+      - if <def[pos1].y.is[OR_LESS].than[<def[pos2].y>]> define pos1 '<def[pos1].sub[0,%n%,0]>'
+        else define pos2 '<def[pos2].sub[0,%n%,0]>'
+      - define direction 'Down'
+      - inject s@dWE_Msg p:expand
+      }
+      else {
+      - run s@dWE_Msg 'def:<&4><&l>ERROR<&co> <&c>An impossible error occurred while expanding your selection!'
+      - queue clear
+      }
+    - flag player dWETool:!
+    - flag player dWETool:|:%pos1%|%pos2%
+
+
+  contract:
+    - if !<player.has_permission[dWE.contract]||<player.is_op>> {
+      - inject locally help
+      - queue clear
+      }
+  # /dwe contract <amount> (n/s/e/w/u/d)
+    - define pos1 '<player.flag[dWETool].get[1].as_location||null>'
+    - define pos2 '<player.flag[dWETool].get[2].as_location||null>'
+    - if <def[pos1].is[==].to[null]> {
+      - run s@dWE_Msg 'def:<&c>Left Click to select pos1'
+      - queue clear
+      }
+    - if <def[pos2].is[==].to[null]> {
+      - run s@dWE_Msg 'def:<&c>Right Click to select pos2'
+      - queue clear
+      }
+    - define n '<c.args.get[2].escaped.round_up||0>'
+    - define d '<c.args.get[3].escaped||0>'
+    - inject s@dWE_Commands p:selection_Size instantly
+    - define oldSize '%size%'
+    - if <def[n].is[OR_LESS].than[0]||true> {
+      - run s@dWE_Msg 'def:<&c>SYNTAX<&co> <&e>/dwe contract <&6><&lb><&7>amount<&6><&rb> <&6>(<&7>direction<&6>)'
+      - queue clear
+      }
+    - if <el@[li@n|e|s|w|u|d].contains[%d%].not||true> define d '<proc[getFacing].context[<player.location.pitch.as_money>|<player.location.yaw.as_money>]>'
+    - if <el@[li@n|e|s|w|u|d].contains[%d%].not||true> {
+      - run s@dWE_Msg 'def:<&4><&l>ERROR<&co> <&c>Unknown direction!'
+      - queue clear
+      }
+    - if <def[d].is[==].to[n]||false> {
+      - if <def[pos1].z.is[OR_LESS].than[<def[pos2].z>]> define pos2 '<def[pos2].sub[0,0,%n%]>'
+        else define pos1 '<def[pos1].sub[0,0,%n%]>'
+      - define direction 'North'
+      - inject s@dWE_Msg p:contract
+      }
+      else if <def[d].is[==].to[e]||false> {
+      - if <def[pos1].x.is[OR_MORE].than[<def[pos2].x>]> define pos2 '<def[pos2].add[%n%,0,0]>'
+        else define pos1 '<def[pos1].add[%n%,0,0]>'
+      - define direction 'East'
+      - inject s@dWE_Msg p:contract
+      }
+      else if <def[d].is[==].to[s]||false> {
+      - if <def[pos1].z.is[OR_MORE].than[<def[pos2].z>]> define pos2 '<def[pos2].add[0,0,%n%]>'
+        else define pos1 '<def[pos1].add[0,0,%n%]>'
+      - define direction 'South'
+      - inject s@dWE_Msg p:contract
+      }
+      else if <def[d].is[==].to[w]||false> {
+      - if <def[pos1].x.is[OR_LESS].than[<def[pos2].x>]> define pos2 '<def[pos2].sub[%n%,0,0]>'
+        else define pos1 '<def[pos1].sub[%n%,0,0]>'
+      - define direction 'West'
+      - inject s@dWE_Msg p:contract
+      }
+      else if <def[d].is[==].to[u]||false> {
+      - if <def[pos1].y.is[OR_MORE].than[<def[pos2].y>]> define pos2 '<def[pos2].add[0,%n%,0]>'
+        else define pos1 '<def[pos1].add[0,%n%,0]>'
+      - define direction 'Up'
+      - inject s@dWE_Msg p:contract
+      }
+      else if <def[d].is[==].to[d]||false> {
+      - if <def[pos1].y.is[OR_LESS].than[<def[pos2].y>]> define pos2 '<def[pos2].sub[0,%n%,0]>'
+        else define pos1 '<def[pos1].sub[0,%n%,0]>'
+      - define direction 'Down'
+      - inject s@dWE_Msg p:contract
+      }
+      else {
+      - run s@dWE_Msg 'def:<&4><&l>ERROR<&co> <&c>An impossible error occurred while contracting your selection!'
+      - queue clear
+      }
+    - flag player dWETool:!
+    - flag player dWETool:|:%pos1%|%pos2%
+
+
+  inset:
+    - if !<player.has_permission[dWE.inset]||<player.is_op>> {
+      - inject locally help
+      - queue clear
+      }
+  # /dwe inset <number> -h
+    - narrate "stub"
+
+
+  outset:
+    - if !<player.has_permission[dWE.outset]||<player.is_op>> {
+      - inject locally help
+      - queue clear
+      }
+  # /dwe outset <number> -h
+    - narrate "stub"
+
+
+  shift:
+    - if !<player.has_permission[dWE.shift]||<player.is_op>> {
+      - inject locally help
+      - queue clear
+      }
+  # /dwe outset <number> -h
+    - narrate "stub"
+
+
+
+
+
+  set:
+    - if !<player.has_permission[dWE.set]||<player.is_op>> {
+      - inject locally help
+      - queue clear
+      }
+  # Need config options for maxblocks to change
+  # Need config option for undo history size
+    - define material '<c.args.get[2]||null>'
+    - define pos1 '<player.flag[dWETool].as_list.get[1]||null>'
+    - define pos2 '<player.flag[dWETool].as_list.get[2]||null>'
+    - if %material% == null || %material% !matches material run s@dWE_Msg 'def:<&c>Must specify a valid material.'
+      else if <def[pos1].is[==].to[null]> run s@dWE_Msg 'def:<&c>Must select corner 1 with left-click.'
+      else if <def[pos1].is[==].to[null]> run s@dWE_Msg 'def:<red>Must select corner 2 with right-click.'
+      else {
+      - define blocks <cu@%pos1%|%pos2%.get_blocks>
+      - define undoMaterials <def[blocks].parse[material.full]>
+      - ~modifyblock %blocks% %material% delayed
+      - flag player 'dWE_UndoHistory:->:set_blocks;<cu@%pos1%|%pos2%>;%undoMaterials%'
+      - run s@dWE_Msg 'def:Set complete!'
+      }
+
+
+  undo:
+    - if !<player.has_permission[dWE.undo]||<player.is_op>> {
+      - inject locally help
+      - queue clear
+      }
+    - define last_action '<player.flag[dWE_UndoHistory].as_list.last||null>'
+    - if <def[last_action].is[==].to[null]> run s@dWE_Msg 'def:<&6>Nothing to undo!'
+      else {
+      - inject locally 'p:undo_<def[last_action].split[;].get[1]>'
+      - flag player 'dWE_UndoHistory:<-:%last_action%'
+      }
+
+#
+#  END dWE Command Arguments
+#--------------------------------------
+#
+#  dWE Command Utilities
+#
+# Just some commonly used code blocks
+#
+
+  undo_set_blocks:
+    - define cuboid '<def[last_action].split[;].get[2].as_cuboid.get_blocks||null>'
+    - define materials '<def[last_action].split[;].get[3]||li@>'
+    - ~modifyblock %cuboid% %materials% delayed
+    - run s@dWE_Msg 'def:<&a>Undo complete!'
+
+  selection_Size:
+    - define x '<def[pos1].as_location.x.sub[<def[pos2].as_location.x||<c.location.x>>].abs.add[1]||1>'
+    - define y '<def[pos1].as_location.y.sub[<def[pos2].as_location.y||<c.location.y>>].abs.add[1]||1>'
+    - define z '<def[pos1].as_location.z.sub[<def[pos2].as_location.z||<c.location.z>>].abs.add[1]||1>'
+    - define size '<def[x].mul[%y%].mul[%z%].as_int||0>'
+
+#
+#  END dWE Command Utilities
+#--------------------------------------
+#
+#  dWE Command Messages
+#
+# These are not complete! They are mostly just stubs till the rest is fleshed out!
+#
+  msgsHeader:
+    - narrate "<&5>|----------------------------------------|"
+    - narrate "<&5>|<&sp><&sp><&sp><&6>dWorldEditor   <&7>%msgsHeaderTitle%"
+    - narrate "<&5>|<&f>"
+
+  msgsFooter:
+    - define anthony "text:'<&7>|Anthony|',clickEvent:{action:open_url,value:'http://mineconomy.org'},hoverEvent:{action:show_item,value:'{<i@dwe_AnthonyBanner.json>}'}"
+    - define morphan "text:'<&7>Morphan1',clickEvent:{action:open_url,value:'http://google.com'},hoverEvent:{action:show_item,value:'{<i@dwe_Morphan1Banner.json>}'}"
+    - define mcmonkey "text:'<&7>mcmonkey',clickEvent:{action:open_url,value:'http://mcmonkey.org'},hoverEvent:{action:show_item,value:'{<i@dwe_mcmonkeyBanner.json>}'}"
+    - define spacer "text:'  '"
+    - define prefix "text:'<&5>|  <&f>Authors:  '"
+    - execute as_server "tellraw <player.name> {text:'',extra:[{%prefix%},{%anthony%},{%spacer%},{%morphan%},{%spacer%},{%mcmonkey%}]}"
+    - narrate "<&d>|-----------S-c-r-o-l-l---U-p-------------|"
+
+  msgsHelpAdmin:
+    - define msgsHeaderTitle 'Admin Help'
+    - inject locally msgsHeader instantly
+    - narrate "<&5>|<&sp><&sp><&sp><&f>"
+    - narrate "<&5>|<&sp><&sp><&f>"
+    - narrate "<&5>|<&sp><&sp><&f>"
+    - narrate "<&5>|<&sp><&sp><&f>"
+    - narrate "<&5>|<&sp><&sp><&f>"
+    - narrate "<&5>|<&sp><&sp><&f>"
+    - narrate "<&5>|<&sp><&f>"
+
+  msgsHelpUser:
+    - define msgsHeaderTitle 'User Help'
+    - inject locally msgsHeader instantly
+    - narrate "<&5>|<&sp><&sp><&sp><&sp><&f>"
+    - narrate "<&5>|<&sp><&sp><&f>"
+    - narrate "<&5>|<&sp><&sp><&f>"
+    - narrate "<&5>|<&sp><&f>"
+
+#
+#  END dWE Command Messages
+#--------------------------------------
+#
+#  other utilities
+#
+# These are not complete! They are mostly just stubs till the rest is fleshed out!
+#
+
+
+
+# Usage: <proc[getFacing].context[%x%|%y%|%z%]>
+getFacing_Defunct:
+  type: procedure
+  definitions: x|y|z
+  script:
+    - if <def[y].is[OR_MORE].than[0.75]||false> determine u
+      else if <def[y].is[OR_LESS].than[-0.75]||false> determine d
+      else if <def[x].is[OR_MORE].than[0.70]||false> determine e
+      else if <def[x].is[OR_LESS].than[-0.70]||false> determine w
+      else if <def[z].is[OR_MORE].than[0.70]||false> determine s
+      else if <def[z].is[OR_LESS].than[-0.70]||false> determine n
+      else determine 0
+
+#
+
+# Usage: <proc[getFacing].context[%pitch%|%yaw%]>
+getFacing:
+  type: procedure
+  definitions: pitch|yaw
+  script:
+    - if <def[pitch].is[OR_MORE].than[45]||false> determine d
+      else if <def[pitch].is[OR_LESS].than[-45]||false> determine u
+      else if <def[yaw].is[OR_MORE].than[337.5]||false> || <def[yaw].is[LESS].than[22.5]||false> determine s
+      else if <def[yaw].is[OR_MORE].than[292.5]||false> determine se
+      else if <def[yaw].is[OR_MORE].than[247.5]||false> determine e
+      else if <def[yaw].is[OR_MORE].than[202.5]||false> determine ne
+      else if <def[yaw].is[OR_MORE].than[157.5]||false> determine n
+      else if <def[yaw].is[OR_MORE].than[112.5]||false> determine nw
+      else if <def[yaw].is[OR_MORE].than[67.5]||false> determine w
+      else if <def[yaw].is[OR_MORE].than[22.5]||false> determine sw
+      else determine 0
+
+#
+#  END other utilities
+#--------------------------------------
+#
+#  dWE author banner items
+#
+# Banner items representing the authors
+#
+dwe_mcmonkeyBanner:
+    type: item
+    material: creeper_skull
+    display name: <&2><&l>MCMONKEY
+    lore:
+    - <&a>Click to visit http://mcmonkey.org
+
+#
+#  END dWE author banner items
+#--------------------------------------
