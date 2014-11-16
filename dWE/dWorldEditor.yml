@@ -23,6 +23,7 @@
 #  dwe.outset:  Outset your region selection
 #  dwe.pos:  Use commands to set selection positions
 #  dwe.set:  Set the blocks in a selection
+#  dwe.spere:  Create a sphere
 #  dwe.shift:  Shift your selection
 #  dwe.show:  Show your current region selection
 #  dwe.wand:  Get the region selection wand
@@ -197,7 +198,7 @@ dWE_Commands:
       - queue clear
       }
     - define arg1 '<c.args.get[1].escaped||help>'
-    - define args 'li@help|wand|expand|contract|inset|outset|shift|pos1|pos2|hpos1|hpos2|chunk|show|set|undo'
+    - define args 'li@help|wand|expand|contract|inset|outset|shift|pos1|pos2|hpos1|hpos2|chunk|show|set|sphere|undo'
     - if !<def[args].contains[%arg1%]> inject locally help instantly
       else inject locally %arg1% instantly
 
@@ -593,6 +594,61 @@ dWE_Commands:
       - flag player 'dWE_UndoHistory:->:set_blocks;<cu@%pos1%|%pos2%>;%undoMaterials%'
       - run s@dWE_Msg 'def:Set complete!'
       }
+
+  sphere:
+  # /dwe sphere <radius> <material> (raised)
+    - if !<player.has_permission[dwe.sphere]||<player.is_op||false>> {
+      - inject locally help
+      - queue clear
+      }
+    - define radius <c.args.get[2]>
+    - define material <c.args.get[3].as_material>
+    - define raised <c.args.get[4]>
+    # Make sure args were specified
+    - if <def[radius].is[==].to[null]> {
+      - run s@dWE_Msg 'def:<&c>Specify arguments<&co> <&a>/dwe sphere <radius> <material> <&2><&O>(raised)'
+      - queue clear
+      }
+    # Make sure the radius is a number
+    - if !<def[radius].is[matches].to[number]> {
+      - run s@dWE_Msg 'def:<&c>That is not a valid radius'
+      - queue clear
+      }
+    # Make sure the radios isn't 0 or negative
+    - if <def[radius].is[OR_LESS].than[0]> {
+      - run s@dWE_Msg 'def:<&c>That is not a valid radius'
+      - queue clear
+      }
+    # Make sure there is a material listed
+    - if <def[material].is[==].to[null]> {
+      - run s@dWE_Msg 'def:<&c>Specify a material<&co> <&a>/dwe sphere <radius> <material> <&2><&O>(raised)'
+      - queue clear
+      }
+    # Make sure the material is a block
+    - if !<def[material].is_block> {
+      - run s@dWE_Msg 'def:<&c>Specify a valid material<&co> <&a>/dwe sphere <radius> <material> <&2><&O>(raised)'
+      - queue clear
+      }
+    # Make sure the raised value is not null
+    - if <def[raised].is[!=].to[null]> {
+      - if !<def[raised].is[matches].to[number]> {
+        - run s@dWE_Msg 'def:<&c>That is not a valid raise height'
+        - queue clear
+        }
+      # Make sure the raised value isn't 0 or negative
+      - if <def[raised].is[OR_LESS].than[0]> {
+        - run s@dWE_Msg 'def:<&c>That is not a valid raise height'
+        - queue clear
+        }
+      # Make the sphere
+      - modifyblock <player.location.add[0,%raised%,0].find.blocks.within[%radius%]> %material%
+      - run s@dWE_Msg 'def:Sphere completed'
+      - queue clear
+      }
+    # Make the sphere
+    - modifyblock <player.location.find.blocks.within[%radius%]> %material%
+    - run s@dWE_Msg 'def:Sphere completed'
+    - queue clear
 
   copy:
   # /dwe copy
