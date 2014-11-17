@@ -341,33 +341,22 @@ dWE_Commands:
 
   expand:
   # /dwe expand <amount/v> (n/s/e/w/u/d)
-    - if !<player.has_permission[dwe.expand]||<player.is_op||false>> {
-      - inject locally help
-      - queue clear
-      }
-    - define pos1 '<player.flag[dWEWand].get[1].as_location||null>'
-    - define pos2 '<player.flag[dWEWand].get[2].as_location||null>'
-    - if <def[pos1].is[==].to[null]> {
-      - run s@dWE_Msg 'def:<&c>Left Click to select pos1'
-      - queue clear
-      }
-    - if <def[pos2].is[==].to[null]> {
-      - run s@dWE_Msg 'def:<&c>Right Click to select pos2'
-      - queue clear
-      }
-    - define n '<c.args.get[2].escaped.round_up||0>'
-    - define d '<c.args.get[3].escaped||0>'
-    - inject s@dWE_Commands p:selection_Size instantly
-    - define oldSize '%size%'
+    - define command 'expand'
+    - inject locally prerun instantly
     - if <c.args.get[2].escaped.is[==].to[v]||false> {
       - define pos1 '<def[pos1].sub[0,<def[pos1].y>,0].replace[l@]>'
       - define pos2 '<def[pos2].add[0,<el@val[255].sub[<def[pos2].y>]>,0].replace[l@]>'
+#      - define pos1 '<def[pos1].x>,0,<def[pos1].z>'
+#      - define pos2 '<def[pos2].x>,255,<def[pos2].z>'
       - flag player dWEWand:!
       - flag player dWEWand:|:%pos1%|%pos2%
       - define direction 'Vertically'
       - inject s@dWE_Msg p:expand
       - queue clear
       }
+
+    - define n '<c.args.get[2].escaped.round_up||0>'
+    - define d '<c.args.get[3].escaped||0>'
     - if <def[n].is[OR_LESS].than[0]||true> {
       - run s@dWE_Msg 'def:<&c>SYNTAX<&co> <&e>/dwe expand <&6><&lb><&7>amount/v<&6><&rb> <&6>(<&7>direction<&6>)'
       - queue clear
@@ -422,24 +411,10 @@ dWE_Commands:
 
   contract:
   # /dwe contract <amount> (n/s/e/w/u/d)
-    - if !<player.has_permission[dwe.contract]||<player.is_op||false>> {
-      - inject locally help
-      - queue clear
-      }
-    - define pos1 '<player.flag[dWEWand].get[1].as_location||null>'
-    - define pos2 '<player.flag[dWEWand].get[2].as_location||null>'
-    - if <def[pos1].is[==].to[null]> {
-      - run s@dWE_Msg 'def:<&c>Left Click to select pos1'
-      - queue clear
-      }
-    - if <def[pos2].is[==].to[null]> {
-      - run s@dWE_Msg 'def:<&c>Right Click to select pos2'
-      - queue clear
-      }
+    - define command 'contract'
+    - inject locally prerun instantly
     - define n '<c.args.get[2].escaped.round_up||0>'
     - define d '<c.args.get[3].escaped||0>'
-    - inject s@dWE_Commands p:selection_Size instantly
-    - define oldSize '%size%'
     - if <def[n].is[OR_LESS].than[0]||true> {
       - run s@dWE_Msg 'def:<&c>SYNTAX<&co> <&e>/dwe contract <&6><&lb><&7>amount<&6><&rb> <&6>(<&7>direction<&6>)'
       - queue clear
@@ -494,28 +469,13 @@ dWE_Commands:
 
   inset:
   # /dwe inset <number> -h
-    - if !<player.has_permission[dwe.inset]||<player.is_op||false>> {
-      - inject locally help
-      - queue clear
-      }
-    - define pos1 '<player.flag[dWEWand].get[1].as_location||null>'
-    - define pos2 '<player.flag[dWEWand].get[2].as_location||null>'
-    - if <def[pos1].is[==].to[null]> {
-      - run s@dWE_Msg 'def:<&c>Left Click to select pos1'
-      - queue clear
-      }
-    - if <def[pos2].is[==].to[null]> {
-      - run s@dWE_Msg 'def:<&c>Right Click to select pos2'
-      - queue clear
-      }
+    - define command 'inset'
+    - inject locally prerun instantly
     - define n '<c.args.filter[is[matches].to[number]].get[1]||0>'
     - if <def[n].is[OR_LESS].than[0]||true> {
       - run s@dWE_Msg 'def:<&c>SYNTAX<&co> <&e>/dwe inset <&6><&lb><&7>amount<&6><&rb> <&6>(<&7>-h<&6>)'
       - queue clear
       }
-    - inject s@dWE_Commands p:selection_Size instantly
-    - define oldSize '%size%'
-
     - define cuboid cu@%pos1%|%pos2%
     - if '<c.args.contains[-h].not||false>' define cuboid 'cu@<def[cuboid].min.add[0,%n%,0]>|<def[cuboid].max.sub[0,%n%,0]>'
     - define cuboid 'cu@<def[cuboid].min.add[%n%,0,%n%]>|<def[cuboid].max.sub[%n%,0,%n%]>'
@@ -527,28 +487,13 @@ dWE_Commands:
 
   outset:
   # /dwe outset <number> -h
-    - if !<player.has_permission[dwe.outset]||<player.is_op||false>> {
-      - inject locally help
-      - queue clear
-      }
-    - define pos1 '<player.flag[dWEWand].get[1].as_location||null>'
-    - define pos2 '<player.flag[dWEWand].get[2].as_location||null>'
-    - if <def[pos1].is[==].to[null]> {
-      - run s@dWE_Msg 'def:<&c>Left Click to select pos1'
-      - queue clear
-      }
-    - if <def[pos2].is[==].to[null]> {
-      - run s@dWE_Msg 'def:<&c>Right Click to select pos2'
-      - queue clear
-      }
+    - define command 'outset'
+    - inject locally prerun instantly
     - define n '<c.args.filter[is[matches].to[number]].get[1]||0>'
     - if <def[n].is[OR_LESS].than[0]||true> {
       - run s@dWE_Msg 'def:<&c>SYNTAX<&co> <&e>/dwe outset <&6><&lb><&7>amount<&6><&rb> <&6>(<&7>-h<&6>)'
       - queue clear
       }
-    - inject s@dWE_Commands p:selection_Size instantly
-    - define oldSize '%size%'
-
     - define cuboid cu@%pos1%|%pos2%
     - if '<c.args.contains[-h].not||false>' define cuboid 'cu@<def[cuboid].min.sub[0,%n%,0]>|<def[cuboid].max.add[0,%n%,0]>'
     - define cuboid 'cu@<def[cuboid].min.sub[%n%,0,%n%]>|<def[cuboid].max.add[%n%,0,%n%]>'
@@ -561,11 +506,8 @@ dWE_Commands:
 
   shift:
   # /dwe shift <amount> (n/s/e/w/u/d)
-    - if !<player.has_permission[dwe.shift]||<player.is_op||false>> {
-      - inject locally help
-      - queue clear
-      }
-    - narrate "stub"
+    - define command 'shift'
+    - inject locally prerun instantly
 
 
 
@@ -576,35 +518,26 @@ dWE_Commands:
 
   set:
   # /dwe set <material>
-    - if !<player.has_permission[dwe.set]||<player.is_op||false>> {
-      - inject locally help
+    - define command 'set'
+    - inject locally prerun instantly
+    - define material '<c.args.get[2]||null>'
+    - if %material% == null || %material% !matches material {
+      - run s@dWE_Msg 'def:<&c>Must specify a valid material.'
       - queue clear
       }
-    - define material '<c.args.get[2]||null>'
-    - define pos1 '<player.flag[dWEWand].as_list.get[1]||null>'
-    - define pos2 '<player.flag[dWEWand].as_list.get[2]||null>'
-    - if %material% == null || %material% !matches material run s@dWE_Msg 'def:<&c>Must specify a valid material.'
-      else if <def[pos1].is[==].to[null]> run s@dWE_Msg 'def:<&c>Must select corner 1 with left-click.'
-      else if <def[pos1].is[==].to[null]> run s@dWE_Msg 'def:<red>Must select corner 2 with right-click.'
-      else {
-      - define blocks <cu@%pos1%|%pos2%.get_blocks>
-      - define undoMaterials <def[blocks].parse[material.full]>
-      - ~modifyblock %blocks% %material% delayed
-      - flag player 'dWE_UndoHistory:->:set_blocks;<cu@%pos1%|%pos2%>;%undoMaterials%'
-      - run s@dWE_Msg 'def:Set complete!'
-      }
+    - define blocks <cu@%pos1%|%pos2%.get_blocks>
+    - define undoMaterials <def[blocks].parse[material.full]>
+    - ~modifyblock %blocks% %material% delayed
+    - flag player 'dWE_UndoHistory:->:set_blocks;<cu@%pos1%|%pos2%>;%undoMaterials%'
+    - run s@dWE_Msg 'def:Set complete!'
 
   copy:
   # /dwe copy
-    - if !<player.has_permission[dwe.copy]||<player.is_op||false>> {
-      - inject locally help
-      - queue clear
-      }
-    - define pos1 '<player.flag[dWEWand].as_list.get[1]||null>'
-    - define pos2 '<player.flag[dWEWand].as_list.get[2]||null>'
+    - define command 'set'
+    - inject locally prerun instantly
     - define blocks '<cu@%pos1%|%pos2%.get_blocks>'
     - flag player dWE_Clipboard:!
-    - flag player 'dWE_Clipboard:|:<def[blocks].parse[material.full]>'
+    - flag player 'dWE_Clipboard:|:<def[blocks].parse[material]>'
     - run s@dWE_Msg 'def:<&7><&o>Selection saved to clipboard'
 
   paste:
@@ -643,6 +576,21 @@ dWE_Commands:
 #
 # Just some commonly used code blocks
 #
+  prerun:
+  # Maybe it's useful to have a prerun block?
+    - if !<player.has_permission[dwe.%command%]||<player.is_op||false>> {
+      - inject locally help
+      - queue clear
+      }
+    - define pos1 '<player.flag[dWEWand].get[1].as_location||null>'
+    - define pos2 '<player.flag[dWEWand].get[2].as_location||null>'
+    - if <def[pos1].is[==].to[null]>
+      || <def[pos2].is[==].to[null]> {
+      - run s@dWE_Msg 'def:<&c>No region selected!'
+      - queue clear
+      }
+    - inject s@dWE_Commands p:selection_Size instantly
+    - define oldSize '%size%'
 
   undo_set_blocks:
     - define cuboid '<def[last_action].split[;].get[2].as_cuboid.get_blocks||null>'
