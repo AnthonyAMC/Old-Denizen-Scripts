@@ -90,6 +90,10 @@ dWE_Msg:
     - inject s@dWE_Commands p:selection_Size instantly
     - run s@dWE_Msg 'def:<&f>Selection expanded to include<&co> <&3><&o><context.location.simple.replace[,].with[<&7>,<&3><&o>]> <&7>(<&o>%size%<&7>)'
 
+  shift:
+    - inject s@dWE_Commands p:selection_Size instantly
+    - run s@dWE_Msg 'def:<&f>Shifted<&f>  <&7><&o>%direction% <&7>by <&o>%n% <&7>blocks (<&o>%size%<&7>)'
+
   expand:
     - inject s@dWE_Commands p:selection_Size instantly
     - define expandBy '<def[size].sub[%oldSize%].as_int>'
@@ -508,6 +512,96 @@ dWE_Commands:
   # /dwe shift <amount> (n/s/e/w/u/d)
     - define command 'shift'
     - inject locally prerun instantly
+
+    - define n '<c.args.get[2].escaped.round_up||0>'
+    - define d '<c.args.get[3].escaped||0>'
+    - if <def[n].is[OR_LESS].than[0]||true> {
+      - run s@dWE_Msg 'def:<&c>SYNTAX<&co> <&e>/dwe expand <&6><&lb><&7>amount/v<&6><&rb> <&6>(<&7>direction<&6>)'
+      - queue clear
+      }
+    - if <el@[li@n|e|s|w|u|d].contains[%d%].not||true> define d '<proc[getFacing].context[<player.location.pitch.as_money>|<player.location.yaw.as_money>]>'
+    - if <el@[li@n|e|s|w|u|d].contains[%d%].not||true> {
+      - run s@dWE_Msg 'def:<&4><&l>ERROR<&co> <&c>Unknown direction!'
+      - queue clear
+      }
+    - if <def[d].is[==].to[n]||false> {
+      - if <def[pos1].z.is[OR_MORE].than[<def[pos2].z>]> {
+        - define pos1 '<def[pos1].add[0,0,%n%]>'
+        - define pos2 '<def[pos2].add[0,0,%n%]>'
+        }
+        else {
+        - define pos1 '<def[pos1].sub[0,0,%n%]>'
+        - define pos2 '<def[pos2].sub[0,0,%n%]>'
+        }
+      - define direction 'North'
+      - inject s@dWE_Msg p:shift
+      }
+      else if <def[d].is[==].to[e]||false> {
+      - if <def[pos1].x.is[OR_MORE].than[<def[pos2].x>]> {
+        - define pos1 '<def[pos1].sub[%n%,0,0]>'
+        - define pos2 '<def[pos2].sub[%n%,0,0]>'
+        }
+        else {
+        - define pos1 '<def[pos1].add[%n%,0,0]>'
+        - define pos2 '<def[pos2].add[%n%,0,0]>'
+        }
+      - define direction 'East'
+      - inject s@dWE_Msg p:shift
+      }
+      else if <def[d].is[==].to[s]||false> {
+      - if <def[pos1].z.is[OR_MORE].than[<def[pos2].z>]> {
+        - define pos1 '<def[pos1].sub[0,0,%n%]>'
+        - define pos2 '<def[pos2].sub[0,0,%n%]>'
+        }
+        else {
+        - define pos1 '<def[pos1].add[0,0,%n%]>'
+        - define pos2 '<def[pos2].add[0,0,%n%]>'
+        }
+      - define direction 'South'
+      - inject s@dWE_Msg p:shift
+      }
+      else if <def[d].is[==].to[w]||false> {
+      - if <def[pos1].x.is[OR_MORE].than[<def[pos2].x>]> {
+        - define pos1 '<def[pos1].add[%n%,0,0]>'
+        - define pos2 '<def[pos2].add[%n%,0,0]>'
+        }
+        else {
+        - define pos1 '<def[pos1].sub[%n%,0,0]>'
+        - define pos2 '<def[pos2].sub[%n%,0,0]>'
+        }
+      - define direction 'West'
+      - inject s@dWE_Msg p:shift
+      }
+      else if <def[d].is[==].to[u]||false> {
+      - if <def[pos1].y.is[OR_MORE].than[<def[pos2].y>]> {
+        - define pos1 '<def[pos1].sub[0,%n%,0]>'
+        - define pos2 '<def[pos2].sub[0,%n%,0]>'
+        }
+        else {
+        - define pos1 '<def[pos1].add[0,%n%,0]>'
+        - define pos2 '<def[pos2].add[0,%n%,0]>'
+        }
+      - define direction 'Up'
+      - inject s@dWE_Msg p:shift
+      }
+      else if <def[d].is[==].to[d]||false> {
+      - if <def[pos1].y.is[OR_MORE].than[<def[pos2].y>]> {
+        - define pos1 '<def[pos1].add[0,%n%,0]>'
+        - define pos2 '<def[pos2].add[0,%n%,0]>'
+        }
+        else {
+        - define pos1 '<def[pos1].sub[0,%n%,0]>'
+        - define pos2 '<def[pos2].sub[0,%n%,0]>'
+        }
+      - define direction 'Down'
+      - inject s@dWE_Msg p:shift
+      }
+      else {
+      - run s@dWE_Msg 'def:<&4><&l>ERROR<&co> <&c>An impossible error occurred while shifting your selection!'
+      - queue clear
+      }
+    - flag player dWEWand:!
+    - flag player dWEWand:|:%pos1%|%pos2%
 
 
 
