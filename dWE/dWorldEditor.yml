@@ -5,7 +5,7 @@
 #
 #   Authors: |Anthony|, mcmonkey
 #   Version: 0.21
-#   dScript Version: 0.9.6-DEV_b149
+#   dScript Version: 0.9.6-1543
 #
 #
 #
@@ -646,7 +646,7 @@ dWE_Commands:
     - define blocks <def[ellipsoid].get_blocks>
     - define undoMaterials <def[blocks].parse[material.full]>
     - ~modifyblock %blocks% %material% delayed
-    - flag player 'dWE_UndoHistory:->:set_sphere;<def[ellipsoid]>;%undoMaterials%'
+    - flag player 'dWE_UndoHistory:->:set_blocks;<def[ellipsoid]>;%undoMaterials%'
     - run s@dWE_Msg 'def:Set complete!'
 
   copy:
