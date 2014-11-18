@@ -201,7 +201,7 @@ dWE_Commands:
       - queue clear
       }
     - define arg1 '<c.args.get[1].escaped||help>'
-    - define args 'li@help|wand|expand|contract|inset|outset|shift|pos1|pos2|hpos1|hpos2|chunk|show|set|undo'
+    - define args 'li@help|wand|expand|contract|inset|outset|shift|pos1|pos2|hpos1|hpos2|sphere|chunk|show|set|undo'
     - if !<def[args].contains[%arg1%]> inject locally help instantly
       else inject locally %arg1% instantly
 
@@ -614,8 +614,8 @@ dWE_Commands:
   # /dwe set <material>
     - define command 'set'
     - inject locally prerun instantly
-    - define material '<c.args.get[2]||null>'
-    - if %material% == null || %material% !matches material {
+    - define material <c.args.get[2]||null>
+    - if %material% !matches material {
       - run s@dWE_Msg 'def:<&c>Must specify a valid material.'
       - queue clear
       }
@@ -623,6 +623,30 @@ dWE_Commands:
     - define undoMaterials <def[blocks].parse[material.full]>
     - ~modifyblock %blocks% %material% delayed
     - flag player 'dWE_UndoHistory:->:set_blocks;<cu@%pos1%|%pos2%>;%undoMaterials%'
+    - run s@dWE_Msg 'def:Set complete!'
+
+  sphere:
+  # /dwe sphere <x>,[<y>,<z>] <material>
+    - define command 'sphere'
+    - inject locally utility_prerun instantly
+    - define size <c.args.get[2]||null>
+    - define material <c.args.get[3]||null>
+    - define commas <def[size].to_list.count[,]> 
+    - if %commas% != 2 && %commas% != 0 {
+      - run s@dWE_Msg 'def:<&c>/dwe sphere <x>,[<y>,<z>] <material>'
+      }
+    - if %material% !matches material {
+      - run s@dWE_Msg 'def:<&c>/dwe sphere <x>,[<y>,<z>] <material>'
+      - queue clear
+      }
+    - if %commas% == 0 {
+      - define size %size%,%size%,%size%
+      }
+    - define ellipsoid ellipsoid@<player.location.simple>,%size%
+    - define blocks <def[ellipsoid].get_blocks>
+    - define undoMaterials <def[blocks].parse[material.full]>
+    - ~modifyblock %blocks% %material% delayed
+    - flag player 'dWE_UndoHistory:->:set_sphere;<def[ellipsoid]>;%undoMaterials%'
     - run s@dWE_Msg 'def:Set complete!'
 
   copy:
@@ -671,7 +695,6 @@ dWE_Commands:
 # Just some commonly used code blocks
 #
   prerun:
-  # Maybe it's useful to have a prerun block?
     - if !<player.has_permission[dwe.%command%]||<player.is_op||false>> {
       - inject locally help
       - queue clear
@@ -685,6 +708,12 @@ dWE_Commands:
       }
     - inject s@dWE_Commands p:selection_Size instantly
     - define oldSize '%size%'
+  
+  utility_prerun:
+    - if !<player.has_permission[dwe.%command%]||<player.is_op||false>> {
+      - inject locally help
+      - queue clear
+      }
 
   undo_set_blocks:
     - define cuboid '<def[last_action].split[;].get[2].as_cuboid.get_blocks||null>'
