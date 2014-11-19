@@ -642,7 +642,7 @@ dWE_Commands:
     - if %commas% == 0 {
       - define size %size%,%size%,%size%
       }
-    - if <def[commas].contains[@]> || <def[commas].is[matches].to[location]> {
+    - if <def[size].contains[@]> || <def[size].is[matches].to[location]> {
       - run s@dWE_Msg 'def:<&c>/dwe sphere <x>,[<y>,<z>] <material>'
       - queue clear
       }
