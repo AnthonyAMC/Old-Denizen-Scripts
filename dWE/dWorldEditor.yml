@@ -642,6 +642,10 @@ dWE_Commands:
     - if %commas% == 0 {
       - define size %size%,%size%,%size%
       }
+    - if <def[commas].contains[@]> || <def[commas].is[matches].to[location]> {
+      - run s@dWE_Msg 'def:<&c>/dwe sphere <x>,[<y>,<z>] <material>'
+      - queue clear
+      }
     - define ellipsoid ellipsoid@<player.location.simple>,%size%
     - define blocks <def[ellipsoid].get_blocks>
     - define undoMaterials <def[blocks].parse[material.full]>
