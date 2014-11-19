@@ -39,9 +39,9 @@
 #     - run s@ConfigFileGeneratorHelper def:%readID%|%readPath%                |
 #                                                                              |
 #   - Use the ConfigFileGenerator directly to extract data from any yaml file  |
-#     to any other yaml file.                                                  
+#     to any other yaml file.
 #     - run s@ConfigFileGenerator def:%readID%|%writeID%|%readPath%|%writePath%|%dryrun%|%verbose%|%forcewrite% instantly
-#                                                                              
+#
 #                                                                              |
 #                                                                              |
 #--- Example:                                                                  |
@@ -75,8 +75,8 @@
 # on this info!
 #
 #   Check the usage below for how to reference your script container.
-# 
-# 
+#
+#
 # Bare minimum usage:
 #
 #  - Running the script
@@ -224,7 +224,7 @@ ConfigFileGeneratorHelper:
 # and writePath seperately! This allows you to extract ALL data from %readPath%
 # in your already loaded %readID% yaml file and insert it at any %writePath% in
 # the already loaded %writeID% yaml file.
-# 
+#
 #  example:
 #    - define readID 'YourScript'
 #    - define writeID 'YourYamlFile'
@@ -237,15 +237,22 @@ ConfigFileGeneratorHelper:
 #    - yaml 'savefile:Output/FilePath.yml' 'id:%writeID%'
 #
 #__________
-# 
+#
 ConfigFileGenerator:
   type: task
   debug: false
   definitions: readID|writeID|readPath|writePath|dryrun|verbose|forcewrite
   script:
-    - ^define keylist '<yaml[<def[readID]>].list_keys[<def[readPath]>]>'
+    - ^define keylist '<yaml[<def[readID]>].list_keys[<def[readPath]>]||null>'
     - ^if <def[keylist]> != null {
-      - inject s@ConfigFileGenerator p:foreachKeylist instantly
+      - if <def[keylist].is[==].to[li@]> {
+        - if <def[dryrun]> || <def[verbose]> {
+          - announce "<&b>ConfigFileGenerator<&co> <&a>Writing Empty Key<&co> <&b><def[writePath]>" to_console
+          - announce "<&b>ConfigFileGenerator<&co> <&a>Writing Empty Key<&co> <&b><def[writePath]>" to_flagged:ConfigFileGeneratorNotify
+          }
+        - yaml set '%writePath%:|:' 'id:%writeID%'
+        }
+        else inject s@ConfigFileGenerator p:foreachKeylist instantly
       }
       else {
       - define entry '<yaml[<def[readID]>].read[<def[readPath]>]>'
@@ -271,10 +278,10 @@ ConfigFileGenerator:
 
   foreachEntrylist:
     # This first yaml command clears the node of any values
-    - yaml 'write:%writePath%' 'id:%writeID%'
+    - yaml set '%writePath%:|:' 'id:%writeID%'
     - foreach <def[entry]> {
       - if !<def[dryrun]> {
-        - yaml set <def[writePath]>:->:<def[value]> 'id:<def[writeID]>'
+        - yaml set '%writePath%:->:%value%' 'id:<def[writeID]>'
         }
       - if <def[dryrun]> || <def[verbose]> {
         - announce "<&b>ConfigFileGenerator<&co> <&a>Writing<&co> <&9>%writePath%<&co> <&2>%value%" to_console
@@ -364,7 +371,7 @@ ConfigFileGenerator:
 #                                                                              #
 #-- Naming the Container                                                       #
 #   * This is important!                                                       #
-#                                                                              # 
+#                                                                              #
 #   This script container should follow the naming convention:                 #
 #       YourScript_Configurations                                              #
 #         %readID%_%readPath%                                                  #
@@ -457,10 +464,9 @@ ConfigFileGeneratorTest_Configurations:
         list2C1:
           - 1
           - 2
-
+    list3:
+      emptyKey: {}
+      empytList: []
+      emptyValue: ''
 
 ################################################################################
-
-
-
-
