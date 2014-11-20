@@ -634,6 +634,7 @@ dWE_Commands:
     - define commas <def[size].to_list.count[,]> 
     - if %commas% != 2 && %commas% != 0 {
       - run s@dWE_Msg 'def:<&c>/dwe sphere <x>,[<y>,<z>] <material>'
+      - queue clear
       }
     - if %material% !matches material {
       - run s@dWE_Msg 'def:<&c>/dwe sphere <x>,[<y>,<z>] <material>'
