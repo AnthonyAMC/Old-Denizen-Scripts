@@ -23,6 +23,7 @@
 #  dwe.outset:  Outset your region selection
 #  dwe.pos:  Use commands to set selection positions
 #  dwe.set:  Set the blocks in a selection
+#  dwe.ellipse  Create an ellipse where you are standing
 #  dwe.shift:  Shift your selection
 #  dwe.show:  Show your current region selection
 #  dwe.wand:  Get the region selection wand
@@ -201,7 +202,7 @@ dWE_Commands:
       - queue clear
       }
     - define arg1 '<c.args.get[1].escaped||help>'
-    - define args 'li@help|wand|expand|contract|inset|outset|shift|pos1|pos2|hpos1|hpos2|chunk|show|set|undo'
+    - define args 'li@help|wand|expand|contract|inset|outset|shift|pos1|pos2|hpos1|hpos2|chunk|show|set|ellipse|undo'
     - if !<def[args].contains[%arg1%]> inject locally help instantly
       else inject locally %arg1% instantly
 
@@ -624,6 +625,56 @@ dWE_Commands:
     - ~modifyblock %blocks% %material% delayed
     - flag player 'dWE_UndoHistory:->:set_blocks;<cu@%pos1%|%pos2%>;%undoMaterials%'
     - run s@dWE_Msg 'def:Set complete!'
+  ellipse:
+  # /dwe ellipse <xrad> <zrad> <yrad> <material>
+    - if !<player.has_permission[dwe.ellipse]||<player.is_op||false>> {
+      - inject locally help
+      - queue clear
+      }
+    - define radiusx <c.args.get[2]>
+    - define radiusz <c.args.get[3]>
+    - define radiusy <c.args.get[4]>
+    - define material <c.args.get[5].as_material>
+    - if %radiusx% == null {
+      - run s@dWE_Msg 'def:That is not a valid xradius, /dwe ellipse xradius zradius yradius material'
+      - queue clear
+      }
+    - if %radiusz% == null {
+      - run s@dWE_Msg 'def:That is not a valid zradius, /dwe ellipse xradius zradius yradius material'
+      - queue clear
+      }
+    - if %radiusy% == null {
+      - run s@dWE_Msg 'def:That is not a valid yradius, /dwe ellipse xradius zradius yradius material'
+      - queue clear
+      }
+    - if !<def[material].is_block> {
+      - run s@dWE_Msg 'def:That is not a valid material, /dwe ellipse xradius zradius yradius material'
+      - queue clear
+      }
+    - if %radiusx% <= 0 {
+      - run s@dWE_Msg 'def:That is not a valid xradius, /dwe ellipse xradius zradius yradius material'
+      - queue clear
+      }
+    - if %radiusz% <= 0 {
+      - run s@dWE_Msg 'def:That is not a valid zradius, /dwe ellipse xradius zradius yradius material'
+      - queue clear
+      }
+    - if %radiusy% <= 0 {
+      - run s@dWE_Msg 'def:That is not a valid yradius, /dwe ellipse xradius zradius yradius material'
+      - queue clear
+      }
+    - define radiusxsqr <def[radiusx].mul[%radiusx%]>
+    - define radiuszsqr <def[radiusz].mul[%radiusz%]>
+    - define radiusysqr <def[radiusy].mul[%radiusy%]>
+    - define ploc <player.location.simple.as_location>
+    - define corner1 <def[ploc].add[%radiusx%,%radiusy%,%radiusz%]>
+    - define corner2 <def[ploc].sub[%radiusx%,%radiusy%,%radiusz%]>
+    - foreach <cu@%corner1%|%corner2%.get_blocks> {
+      - if <def[value].x.sub[<def[ploc].x>].mul[<def[value].x.sub[<def[ploc].x>]>].div[%radiusxsqr%].add[<def[value].z.sub[<def[ploc].z>].mul[<def[value].z.sub[<def[ploc].z>]>].div[%radiuszsqr%]>].add[<def[value].y.sub[<def[ploc].y>].mul[<def[value].y.sub[<def[ploc].y>]>].div[%radiusysqr%]>]> < 1 {
+        - modifyblock %value% <def[material]>
+        }
+      }
+    - run s@dWE_Msg 'def:Ellipse completed'
 
   copy:
   # /dwe copy
