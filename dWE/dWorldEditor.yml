@@ -721,7 +721,7 @@ dWE_Commands:
       }
 
   undo_set_blocks:
-    - define cuboid '<def[last_action].split[;].get[2].as_cuboid.get_blocks||null>'
+    - define cuboid '<def[last_action].split[;].get[2].get_blocks||null>'
     - define materials '<def[last_action].split[;].get[3]||li@>'
     - ~modifyblock %cuboid% %materials% delayed
     - run s@dWE_Msg 'def:<&a>Undo complete!'
