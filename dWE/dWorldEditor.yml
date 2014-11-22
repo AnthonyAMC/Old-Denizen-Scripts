@@ -526,72 +526,72 @@ dWE_Commands:
       }
     - if <def[d].is[==].to[n]||false> {
       - if <def[pos1].z.is[OR_MORE].than[<def[pos2].z>]> {
-        - define pos1 '<def[pos1].add[0,0,%n%]>'
-        - define pos2 '<def[pos2].add[0,0,%n%]>'
-        }
-        else {
         - define pos1 '<def[pos1].sub[0,0,%n%]>'
         - define pos2 '<def[pos2].sub[0,0,%n%]>'
+        }
+        else {
+        - define pos1 '<def[pos1].add[0,0,%n%]>'
+        - define pos2 '<def[pos2].add[0,0,%n%]>'
         }
       - define direction 'North'
       - inject s@dWE_Msg p:shift
       }
       else if <def[d].is[==].to[e]||false> {
       - if <def[pos1].x.is[OR_MORE].than[<def[pos2].x>]> {
-        - define pos1 '<def[pos1].sub[%n%,0,0]>'
-        - define pos2 '<def[pos2].sub[%n%,0,0]>'
-        }
-        else {
         - define pos1 '<def[pos1].add[%n%,0,0]>'
         - define pos2 '<def[pos2].add[%n%,0,0]>'
+        }
+        else {
+        - define pos1 '<def[pos1].sub[%n%,0,0]>'
+        - define pos2 '<def[pos2].sub[%n%,0,0]>'
         }
       - define direction 'East'
       - inject s@dWE_Msg p:shift
       }
       else if <def[d].is[==].to[s]||false> {
       - if <def[pos1].z.is[OR_MORE].than[<def[pos2].z>]> {
-        - define pos1 '<def[pos1].sub[0,0,%n%]>'
-        - define pos2 '<def[pos2].sub[0,0,%n%]>'
-        }
-        else {
         - define pos1 '<def[pos1].add[0,0,%n%]>'
         - define pos2 '<def[pos2].add[0,0,%n%]>'
+        }
+        else {
+        - define pos1 '<def[pos1].sub[0,0,%n%]>'
+        - define pos2 '<def[pos2].sub[0,0,%n%]>'
         }
       - define direction 'South'
       - inject s@dWE_Msg p:shift
       }
       else if <def[d].is[==].to[w]||false> {
       - if <def[pos1].x.is[OR_MORE].than[<def[pos2].x>]> {
-        - define pos1 '<def[pos1].add[%n%,0,0]>'
-        - define pos2 '<def[pos2].add[%n%,0,0]>'
-        }
-        else {
         - define pos1 '<def[pos1].sub[%n%,0,0]>'
         - define pos2 '<def[pos2].sub[%n%,0,0]>'
+        }
+        else {
+        - define pos1 '<def[pos1].add[%n%,0,0]>'
+        - define pos2 '<def[pos2].add[%n%,0,0]>'
         }
       - define direction 'West'
       - inject s@dWE_Msg p:shift
       }
       else if <def[d].is[==].to[u]||false> {
       - if <def[pos1].y.is[OR_MORE].than[<def[pos2].y>]> {
-        - define pos1 '<def[pos1].sub[0,%n%,0]>'
-        - define pos2 '<def[pos2].sub[0,%n%,0]>'
-        }
-        else {
         - define pos1 '<def[pos1].add[0,%n%,0]>'
         - define pos2 '<def[pos2].add[0,%n%,0]>'
+        }
+        else {
+        - define pos1 '<def[pos1].sub[0,%n%,0]>'
+        - define pos2 '<def[pos2].sub[0,%n%,0]>'
         }
       - define direction 'Up'
       - inject s@dWE_Msg p:shift
       }
       else if <def[d].is[==].to[d]||false> {
       - if <def[pos1].y.is[OR_MORE].than[<def[pos2].y>]> {
-        - define pos1 '<def[pos1].add[0,%n%,0]>'
-        - define pos2 '<def[pos2].add[0,%n%,0]>'
-        }
-        else {
         - define pos1 '<def[pos1].sub[0,%n%,0]>'
         - define pos2 '<def[pos2].sub[0,%n%,0]>'
+        }
+        else {
+        - define pos1 '<def[pos1].add[0,%n%,0]>'
+        - define pos2 '<def[pos2].add[0,%n%,0]>'
         }
       - define direction 'Down'
       - inject s@dWE_Msg p:shift
@@ -631,7 +631,7 @@ dWE_Commands:
     - inject locally utility_prerun instantly
     - define size <c.args.get[2]||null>
     - define material <c.args.get[3]||null>
-    - define commas <def[size].to_list.count[,]> 
+    - define commas <def[size].to_list.count[,]>
     - if %commas% != 2 && %commas% != 0 {
       - run s@dWE_Msg 'def:<&c>/dwe sphere <x>,[<y>,<z>] <material>'
       - queue clear
@@ -713,7 +713,7 @@ dWE_Commands:
       }
     - inject s@dWE_Commands p:selection_Size instantly
     - define oldSize '%size%'
-  
+
   utility_prerun:
     - if !<player.has_permission[dwe.%command%]||<player.is_op||false>> {
       - inject locally help
