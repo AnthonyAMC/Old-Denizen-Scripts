@@ -34,7 +34,7 @@ dRestaurantCommand:
 # argument doesn't exist, or is not specified, it runs the help subscript.
   script:
     - define arg1 '<c.args.get[1].escaped||help>'
-    - define args 'li@help|tool|create|edit|delete|buy|sell|hire|fire'
+    - define args 'li@help|tool|create|edit|delete|chunkLoad'
     - if !<def[args].contains[%arg1%]> inject locally help
       else inject locally %arg1%
 
@@ -131,8 +131,16 @@ dRestaurantCommand:
       - narrate "dRestaurant<&co> %name% removed!"
       }
 
-  hire:
-    - stub
+  chunkLoad:
+    - if !<player.has_permission[dRestaurant.admin]> queue clear
+    - define dRestaurants <server.list_flags[dRestaurant.].parse[split[.].get[1|2].replace[dRestaurant].with[cu@restaurant].replace[|].with[_].replace[li@].to_lowercase].deduplicate>
+    - if <def[dRestaurants].is_empty||true> queue clear
+    - define chunks <def[dRestaurants].parse[list_partial_chunks.replace[li@]]||li@>
+    - define chunksWorld <def[chunks].filter[world.is[==].to[<player.world>]]||li@>
+    - foreach %chunksWorld% {
+      - chunkload add %value%
+      - run s@dRestaurantMsg 'def:<&5>Loading chunk <&f><def[value]>' instantly
+      }
 
   fire:
     - stub
@@ -158,17 +166,22 @@ dRestaurantCommand:
     - ^narrate "<&5>|<&f>"
 
   msgsFooter:
-    - ^narrate "<&5>|<def[footerText]||>"
+    - ^define anthony "text:'<&7>|Anthony|',clickEvent:{action:open_url,value:'http://mineconomy.org'},hoverEvent:{action:show_item,value:'{<i@AnthonyBanner.json>}'}"
+    - ^define calico "text:'<&7>calico-kid',clickEvent:{action:open_url,value:'http://google.com'},hoverEvent:{action:show_item,value:'{<i@CalicoBanner.json>}'}"
+    - ^define spacer "text:'  '"
+    - ^define prefix "text:'<&5>|  <&f>Authors:  '"
+    - ^execute as_server "tellraw <player.name> {text:'',extra:[{%prefix%},{%anthony%},{%spacer%},{%calico%}]}"
     - ^narrate "<&d>|-----------S-c-r-o-l-l---U-p-------------|"
 
   msgsHelpAdmin:
     - define msgsHeaderTitle 'Admin Help'
     - inject locally msgsHeader instantly
-    - ^narrate "<&5>|<&sp><&sp><&sp><&sp><&f>You can create restaurants and staff them"
-    - ^narrate "<&5>|<&sp><&sp><&f>with chefs and waitresses that will automagically"
-    - ^narrate "<&5>|<&sp><&sp><&f>tend to your guests. Just keep your restaurant"
-    - ^narrate "<&5>|<&sp><&sp><&f>stocked with the materials for your menu and have"
-    - ^narrate "<&5>|<&sp><&sp><&f>the proper kitchen equipment."
+    - ^narrate "<&5>|<&sp><&sp><&sp><&f>You can create restaurants and staff"
+    - ^narrate "<&5>|<&sp><&sp><&f>them with chefs and waitresses that will"
+    - ^narrate "<&5>|<&sp><&sp><&f>automagically tend to your guests. Just"
+    - ^narrate "<&5>|<&sp><&sp><&f>keep your restaurant stocked with the"
+    - ^narrate "<&5>|<&sp><&sp><&f>materials for your menu and have the"
+    - ^narrate "<&5>|<&sp><&sp><&f>proper kitchen equipment."
     - ^narrate "<&5>|<&sp><&f>"
 
   msgsHelpUser:

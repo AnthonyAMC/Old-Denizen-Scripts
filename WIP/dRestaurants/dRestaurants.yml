@@ -150,8 +150,38 @@ dRestaurant:
 #
 #--------------------------------------
 #
-#  dRestaurant NPC events
+#  dRestaurant Events
 #
+#    on server start:
+#      - wait 2t
+#      - define dRestaurants <server.list_flags[dRestaurant.].parse[split[.].get[1|2].replace[dRestaurant].with[cu@restaurant].replace[|].with[_].replace[li@].to_lowercase].deduplicate>
+#      - if <def[dRestaurants].is_empty||true> queue clear
+#      - define locs <def[dRestaurants].parse[list_partial_chunks.parse[cuboid.center].replace[li@]]||li@>
+#      - foreach %locs% {
+#        - chunkload add %value%
+#        }
+    on world loads:
+      - wait 10s
+      - define dRestaurants <server.list_flags[dRestaurant.].parse[split[.].get[1|2].replace[dRestaurant].with[cu@restaurant].replace[|].with[_].replace[li@].to_lowercase].deduplicate>
+      - if <def[dRestaurants].is_empty||true> queue clear
+      - define chunks <def[dRestaurants].parse[list_partial_chunks.replace[li@]]||li@>
+      - define chunksWorld <def[chunks].filter[world.is[==].to[<c.world>]]||li@>
+      - foreach %chunksWorld% {
+        - chunkload add %value%
+        - announce to_console "<&b>dRestaurant<&co> <&3>Loading chunk <&f><def[value]>"
+        }
+
+    on i@dRestaurant_Menu spawns:
+      - determine CANCELLED
+
+    on player drops i@dRestaurant_Menu:
+      - determine CANCELLED
+
+    on player exits notable cuboid:
+      - if <c.cuboids.filter[notable_name.split[_].get[1].is[==].to[restaurant]].is_empty||true> queue clear
+      - if !<player.has_flag[dRestaurant_Order]||false> queue clear
+      - run s@dRestaurant p:exitCuboid
+
     on player consumes item:
       - if !<c.item.scriptname.split[_].get[1|2].contains[dRestaurant|Food]||false> queue clear
       - determine passively cancelled
@@ -161,7 +191,7 @@ dRestaurant:
       - adjust <player> 'saturation:<player.saturation.add[<def[script].yaml_key[saturation]>]||<player.saturation>>'
       - adjust <player> 'food_level:<player.food_level.add[<def[script].yaml_key[foodLevel]>]||<player.food_level>>'
       - adjust <player> 'health:<player.health.add[<def[script].yaml_key[health]>]||<player.health>>'
-      - foreach '<def[script].yaml_key[effects]>]>' {
+      - foreach '<def[script].yaml_key[effects]||li@>' {
         - define potion '<def[value].split[/].as_list>'
         - cast '<def[potion].get[1]>' 'd:<def[potion].get[2]||20>s' 'p:<def[potion].get[3]||1>' <player>
         }
@@ -251,20 +281,20 @@ dRestaurant:
     - determine passively CANCELLED
     - if !<player.has_permission[dRestaurant.create]> {
       - take i@dRestaurantTool
-      - narrate "<&4><&l>ERROR<&co><&r> <&a>You should not have this!"
+      - run s@dRestaurantMsg 'def:<&4><&l>ERROR<&co><&r> <&a>You should not have this!' instantly
       - queue stop
       }
-    - narrate "<&b><&l>dRestaurant<&co><&r> <&a>Set POS1 to <context.location.simple>"
+    - run s@dRestaurantMsg 'def:<&a>Set POS1 to <context.location.simple>'
     - flag player dRestaurantToolPOS1:<context.location>
 
     on player left clicks block with dRestaurantTool:
     - determine passively CANCELLED
     - if !<player.has_permission[dRestaurant.create]> {
       - take i@dRestaurantTool
-      - narrate "<&4><&l>ERROR<&co><&r> <&a>You should not have this!"
+      - run s@dRestaurantMsg 'def:<&4><&l>ERROR<&co><&r> <&a>You should not have this!' instantly
       - queue stop
       }
-    - narrate "<&b><&l>dRestaurant<&co><&r> <&a>Set POS2 to <context.location.simple>"
+    - run s@dRestaurantMsg 'def:<&a>Set POS2 to <context.location.simple>' instantly
     - flag player dRestaurantToolPOS2:<context.location>
 
 #
@@ -291,6 +321,55 @@ dRestaurant:
 #
 #  END NPC Spawn Eggs
 #--------------------------------------
+#
+#  Logic
+#
+# A place for some logic stuff
+#
+#
+  exitCuboid:
+    - ^define restaurant <player.flag[dRestaurant_Order].split[/].get[1]||null>
+    - ^run s@dRestaurantMsg 'def:<&b>Get back to <&f>%restaurant%<&b> before the time runs out!' instantly
+    - ^wait 1t
+    - ^repeat 5 {
+      - define inRestaurant '<player.location.cuboids.filter[notable_name.is[==].to[restaurant_%restaurant%]]||li@>'
+      - if !<def[inRestaurant].is_empty||true> {
+        - define msg '<&f>You made it back in time!'
+        - adjust <player> 'show_boss_bar:200|%msg%'
+        - playsound <player> 'sound:note_pling' 'pitch:1.3'
+        - wait 1s
+        - adjust <player> 'show_boss_bar'
+        - queue stop
+        }
+      - define counter '<el@val[6].sub[%value%].as_int||0>'
+      - define bar '<def[counter].mul[40].as_int||0>'
+      - define msg '<&c>Order Canceling in<&co> <&6>%counter%'
+      - adjust <player> 'show_boss_bar:%bar%|%msg%'
+      - playsound <player> 'sound:note_pling' 'pitch:1.3'
+      - wait 1s
+      }
+
+    - ^define inRestaurant <player.location.cuboids.filter[notable_name.is[==].to[restaurant_%restaurant%]]||li@>
+    - ^if !<def[inRestaurant].is_empty||true> {
+        - define msg '<&f>You barely made it back in time!'
+        - adjust <player> 'show_boss_bar:200|%msg%'
+        - playsound <player> 'sound:note_pling' 'pitch:1.3'
+        - wait 1t
+        - adjust <player> 'show_boss_bar'
+        - queue stop
+      }
+      else {
+      - define msg '<&c>Your Order is Canceled!'
+      - adjust <player> 'show_boss_bar:0|%msg%'
+      - playsound <player> 'sound:note_pling' 'pitch:0.3'
+      - flag player dRestaurant_Order:!
+      - run s@dRestaurantMenu p:takeMenu instantly
+      - narrate format:TBFormat "I didn<&sq>t need that anyway..."
+      - wait 1t
+      - adjust <player> 'show_boss_bar'
+      - queue clear
+      }
+    }
 #
 #
 #  END DRESTAURANT EVENT HANDLERS
@@ -327,7 +406,7 @@ dRestaurant:
     - ^wait 15t
     - foreach %foodItems% {
       - animate <npc> animation:ARM_SWING
-      - ~equip <npc> hand:<def[value].as_item>
+      - equip <npc> hand:<def[value].as_item>
       - wait 15t
       }
     - ^animate <npc> animation:ARM_SWING
@@ -350,7 +429,7 @@ dRestaurant:
     - ^wait 15t
     - foreach %foodItems% {
       - animate <npc> animation:ARM_SWING
-      - ~equip <npc> hand:<def[value].as_item>
+      - equip <npc> hand:<def[value].as_item>
       - wait 15t
       }
     - ^animate <npc> animation:ARM_SWING
@@ -368,7 +447,7 @@ dRestaurant:
     - ^lookclose state:false
     - ^look <npc> %sinkLoc%
     - ^wait 5t
-    - ~equip <npc> hand:<i@air>
+    - equip <npc> hand:<i@air>
     - ^animate <npc> animation:SNEAK
     - ^animate <npc> animation:ARM_SWING
     - ^playsound %sinkLoc% sound:splash2
@@ -380,7 +459,7 @@ dRestaurant:
     - ^foreach %foodItems% {
       - define food <def[value].as_item>
       - ^repeat 5 {
-        - ~equip <npc> hand:%food%
+        - equip <npc> hand:%food%
         - animate <npc> animation:ARM_SWING
         - playsound %sinkLoc% sound:swim
         - wait <util.random.int[5].to[15]>t
@@ -390,7 +469,7 @@ dRestaurant:
     - ^animate <npc> animation:STOP_SNEAKING
     - ^remove %displayItems%
     - ^animate <npc> animation:ARM_SWING
-    - ~equip <npc> hand:<def[foodItems].random.as_item>
+    - equip <npc> hand:<def[foodItems].random.as_item>
     - ^wait 10t
 
   prepFood:
@@ -404,7 +483,7 @@ dRestaurant:
     - ^look <npc> %prepLoc%
     - ^animate <npc> animation:SNEAK
     - ^animate <npc> animation:ARM_SWING
-    - ~equip <npc> hand:<i@air>
+    - equip <npc> hand:<i@air>
     - ^define displayItems li@
     - ^foreach %foodItems% {
       - displayitem <def[value].as_item> '%prepLoc%' save:displayItem_%loop_index%
@@ -418,7 +497,7 @@ dRestaurant:
       }
     - ^remove %displayItems%
     - ^animate <npc> animation:STOP_SNEAKING
-    - ~equip <npc> hand:<def[foodItems].random.as_item>
+    - equip <npc> hand:<def[foodItems].random.as_item>
     - ^wait 10t
 
   bakeFood_Attended:
@@ -431,7 +510,7 @@ dRestaurant:
     - ^lookclose state:false
     - ^define furnace '<def[destination].split[/].get[1].as_location>'
     - ^look <npc> %furnace%
-    - ~equip <npc> hand:<i@air>
+    - equip <npc> hand:<i@air>
     - ^animate <npc> animation:ARM_SWING
     - ^wait 5t
     - ^playsound %furnace% sound:ghast_fireball
@@ -442,7 +521,7 @@ dRestaurant:
       - ^wait 5t
       }
     - ^animate <npc> animation:ARM_SWING
-    - ~equip <npc> hand:%foodItem%
+    - equip <npc> hand:%foodItem%
     - ^wait 10t
 
   bakeFood_Unattended:
@@ -455,7 +534,7 @@ dRestaurant:
     - ~walk auto_range %walkLoc% speed:<def[speed].add[0.1].as_money||0.8>
     - ^lookclose state:false
     - ^look <npc> %furnace%
-    - ~equip <npc> hand:<i@air>
+    - equip <npc> hand:<i@air>
     - ^animate <npc> animation:ARM_SWING
     - ^wait 5t
     - ^playsound %furnace% sound:ghast_fireball
@@ -490,7 +569,7 @@ dRestaurant:
     - ^lookclose state:false
     - ^look <npc> %equipmentLoc%
     - ^animate <npc> animation:ARM_SWING
-    - ~equip <npc> hand:%cookedFood%
+    - equip <npc> hand:%cookedFood%
     - ^modifyblock %equipmentLoc% m@furnace,<def[equipmentLoc].material.data> no_physics
     - ^wait 10t
 
@@ -503,7 +582,7 @@ dRestaurant:
     - ^lookclose state:false
     - ^define grill '<def[destination].split[/].get[1].as_location>'
     - ^look <npc> %grill%
-    - ~equip <npc> hand:<i@air>
+    - equip <npc> hand:<i@air>
     - ^animate <npc> animation:ARM_SWING
     - ^wait 5t
     - ^playsound %grill% sound:ghast_fireball
@@ -533,7 +612,7 @@ dRestaurant:
       }
     - ^animate <npc> animation:ARM_SWING
     - ^remove <entry[cookedFood].dropped>
-    - ~equip <npc> hand:%cookedFood%
+    - equip <npc> hand:%cookedFood%
     - ^wait 10t
 
   boilFood_Attended:
@@ -545,7 +624,7 @@ dRestaurant:
     - ^lookclose state:false
     - ^define stove '<def[destination].split[/].get[1].as_location>'
     - ^look <npc> %stove%
-    - ~equip <npc> hand:<i@air>
+    - equip <npc> hand:<i@air>
     - ^animate <npc> animation:ARM_SWING
     - ^wait 5t
     - ^playsound %stove% sound:ghast_fireball
@@ -576,7 +655,7 @@ dRestaurant:
       }
     - ^animate <npc> animation:ARM_SWING
     - ^remove <entry[cookedFood].dropped>
-    - ~equip <npc> hand:%cookedFood%
+    - equip <npc> hand:%cookedFood%
     - ^modifyblock %stove% m@furnace,<def[stove].material.data> no_physics
     - ^wait 10t
 
@@ -590,7 +669,7 @@ dRestaurant:
     - ^lookclose state:false
     - ~walk auto_range %walkLoc% speed:<def[speed].add[0.1].as_money||0.8>
     - ^look <npc> %stove%
-    - ~equip <npc> hand:<i@air>
+    - equip <npc> hand:<i@air>
     - ^animate <npc> animation:ARM_SWING
     - ^wait 5t
     - ^playsound %stove% sound:ghast_fireball
@@ -637,7 +716,7 @@ dRestaurant:
     - ^look <npc> %equipmentLoc%
     - ^animate <npc> animation:ARM_SWING
     - ^remove %displayEntity%
-    - ~equip <npc> hand:%cookedFood%
+    - equip <npc> hand:%cookedFood%
     - ^modifyblock %equipmentLoc% m@furnace,<def[equipmentLoc].material.data> no_physics
     - ^wait 10t
 
@@ -650,7 +729,7 @@ dRestaurant:
     - ~walk auto_range '<def[destination].split[/].get[2].as_location>' speed:<def[speed].add[0.1].as_money||0.8>
     - ^lookclose state:false
     - ^look <npc> %windowLoc%
-    - ~equip <npc> hand:<i@air>
+    - equip <npc> hand:<i@air>
     - ^define displayItems li@
     - ^foreach %foodItems% {
       - displayitem <def[value].as_item> '%windowLoc%' d:30s save:displayItem_%loop_index%
@@ -677,7 +756,7 @@ dRestaurant:
     - ^wait 10t
     # Pickup the food. This means we need to store the entity id for the display items
     - ^remove %displayItems%
-    - ~equip <npc> hand:<def[foodItems].random.as_item>
+    - equip <npc> hand:<def[foodItems].random.as_item>
     - ^wait 10t
     - ^lookclose state:true
     - ^if <def[player].is_online>
@@ -691,7 +770,7 @@ dRestaurant:
       - playsound <def[player].location> sound:step_grass pitch:0.7
       }
     - ^give player:%player% %foodItems%
-    - ~equip <npc> hand:i@air
+    - equip <npc> hand:i@air
     - ^narrate format:GenericNPCFormat "Here is your <def[foodItems].parse[display].as_list.formatted>" target:%player%
 
   followPlayer_waitress:
@@ -718,7 +797,7 @@ dRestaurant:
         - narrate format:GenericNPCFormat "Enjoy your stay!" targets:<npc.location.find.players.within[5]||null>
         }
       }
-    - ^define fidgetLocation '<def[fidgetValues].get[5]||npc.location>'
+    - ^define fidgetLocation '<def[fidgetValues].get[5]||<npc.location>>'
     - ^define fidgetHeight '<def[fidgetValues].get[6]||1>'
     - ^define pathMaterial '<def[fidgetValues].get[7].split_by[/]||cobblestone|coal_block|cobblestone_stairs>'
     - ^define target '<cu@restaurant_%restaurant%.get_spawnable_blocks[%pathMaterial%].filter[distance[<npc.location>].is[OR_LESS].than[%range%]].filter[distance[%fidgetLocation%].vertical.is[OR_LESS].than[%fidgetHeight%]].random||%fidgetLocation%>'
@@ -743,7 +822,7 @@ dRestaurant:
     - ^if !<npc.is_spawned||false> queue clear
     - ^flag npc Status:idle
     - ^lookclose state:true
-    - ^if <queue.exists[processOrder_<npc.id>]> queue queue:processOrder_<npc.id> stop
+    - ^if <queue.exists[processOrder_<npc.id>]||false> queue queue:processOrder_<npc.id> stop
     - ^define fidgetValues '<npc.flag[dRestaurant_FidgetValues].as_list||null>'
     - ^define list li@55/Fidget|15/DishWashing|15/PrepCleaning|15/GrillCleaning
     - ^inject s@WeightedRandomChoice p:asDef instantly
@@ -753,7 +832,7 @@ dRestaurant:
     - ^inject locally idleQueue_Chef_%result%
     - ^define wait '<def[fidgetValues].get[2]||10>'
     - ^wait <util.random.int[<def[wait].mul[0.5].as_int>].to[<def[wait].mul[1.5].as_int>]>s
-    - ^if <queue.exists[processOrder_<npc.id>]> queue queue:processOrder_<npc.id> stop
+    - ^if <queue.exists[processOrder_<npc.id>]||false> queue queue:processOrder_<npc.id> stop
     - ^run s@MasterChefNPC p:processOrderQueue id:processOrder_<npc.id> delay:2t
     - ^queue clear
 
@@ -775,28 +854,28 @@ dRestaurant:
   # washing dishes in prep for customers
     - ^narrate format:GenericNPCFormat "Time to wash some dishes." 'targets:<npc.location.find.players.within[5]>'
     - ^define fooditems li@bowl|wood_plate
-    - ~inject locally washfood
-    - ~inject locally prepFood
+    - inject locally washfood
+    - inject locally prepFood
     - ^lookclose state:true
-    - ~equip npc hand:i@air
+    - equip <npc> hand:i@air
 
   idleQueue_Chef_PrepCleaning:
     - ^narrate format:GenericNPCFormat "I<&sq>m going to clean the prep station." 'targets:<npc.location.find.players.within[5]>'
     - ^inject s@dRestaurant_Equipment_prep
     - ^define destination '<def[locations].random>'
-    - ^define prepstand '<def[destination].split[/].get[2].as_location>' speed:<def[speed].add[0.1].as_money||0.8>
+    - ^define prepstand '<def[destination].split[/].get[2].as_location>'
     - ^define prep '<def[destination].split[/].get[1].as_location>'
     - ^lookclose state:true
-    - ~walk auto_range %prepstand%
+    - ~walk auto_range %prepstand% speed:<def[speed].add[0.1].as_money||0.8>
     - ^lookclose state:false
     - ^look <npc> %prep%
-    - ~equip npc hand:i@potion,16388
+    - equip <npc> hand:i@potion,16388
     - wait 1s
     - ^playeffect %prep% effect:snow_shovel qty:2
     - playsound <npc.location> sound:fuse pitch:2
     - ^playeffect %prep% effect:snow_shovel qty:2
     - playsound <npc.location> sound:fuse pitch:2
-    - ~equip npc hand:i@red_carpet
+    - equip <npc> hand:i@red_carpet
     - ^animate <npc> animation:arm_swing
     - playsound <npc.location> sound:step_wood pitch:-1
     - ^animate <npc> animation:arm_swing
@@ -805,11 +884,11 @@ dRestaurant:
     - ^playeffect %prep% effect:fireworks_spark qty:5
     - ^playsound <npc.location> sound:level_up pitch:-1
     - ^lookclose state:true
-    - ~equip npc hand:i@air
+    - equip <npc> hand:i@air
 
   idleQueue_Chef_GrillCleaning:
     - narrate format:GenericNPCFormat "That grill needs a good cleaning!" 'targets:<npc.location.find.players.within[5]>'
-    - ^inject findgrill locally
+    - ^inject s@dRestaurant_Equipment_Grill
     - ^define destination '<def[locations].random>'
     - ^define grillpad'<def[destination].split[/].get[2].as_location>'
     - ^define grill '<def[destination].split[/].get[1].as_location>'
@@ -817,13 +896,13 @@ dRestaurant:
     - ~walk auto_range %grillpad% speed:<def[speed].add[0.1].as_money||0.8>
     - ^lookclose state:false
     - ^look <npc> %grill%
-    - ~equip npc hand:i@potion,16388
+    - equip <npc> hand:i@potion,16388
     - wait 1s
     - ^playeffect %grill% effect:snow_shovel qty:2
     - playsound <npc.location> sound:fuse pitch:2
     - ^playeffect %grill% effect:snow_shovel qty:2
     - playsound <npc.location> sound:fuse pitch:2
-    - ~equip npc hand:i@red_carpet
+    - equip <npc> hand:i@red_carpet
     - ^animate <npc> animation:arm_swing
     - playsound <npc.location> sound:fizz pitch:2
     - ^animate <npc> animation:arm_swing
@@ -832,7 +911,7 @@ dRestaurant:
     - ^playeffect %grill% effect:fireworks_spark qty:5
     - ^playsound <npc.location> sound:level_up pitch:-1
     - ^lookclose state:true
-    - ~equip npc hand:i@air
+    - equip <npc> hand:i@air
 
 #
 #  END Chef Idle Mechanics

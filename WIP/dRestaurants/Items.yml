@@ -33,6 +33,51 @@ dRestaurantTool:
   lore:
   - <&f>Right click to set pos1
   - <&f>Left click to set pos2
+
+dRestaurantMsg:
+  type: item
+  material: i@human_skull
+  display name: "<&4>[<&6>dRestaurant<&4>]"
+  lore:
+  - <&5>Click for Info
+  script:
+    - ^define text '<&4>[<&6>dRestaurant<&4>] <&co>'
+    - ^define hover '{<i@dRestaurantMsg.json>}'
+    - ^define click '/dr'
+    - ^define button "text:'%text%',clickEvent:{action:run_command,value:'%click%'},hoverEvent:{action:show_item,value:'%hover%'}"
+    - ^define spacer "text:'  '"
+    - ^define msg "text:'%1%'"
+    - ^execute as_server "tellraw <player.name> {text:'',extra:[{%button%},{%spacer%},{%msg%}]}"
+
+AnthonyBanner:
+  type: item
+  material: i@human_skull
+  display name: "<&f>             |Anthony|"
+  lore:
+  - <&7>  Owner<&co> <&e>M<&6>ine<&e>C<&6>onomy <&e>N<&6>etwork
+  - <&5>-------------------------
+  - <&7>
+  - <&7>  I`ve been playing minecraft
+  - <&7> and running a server since
+  - <&7> 2010. I have fun and share
+  - <&7> what I do.
+  - <&7>
+  - <&9>           Click To Visit
+
+CalicoBanner:
+  type: item
+  material: i@human_skull
+  display name: "<&f>            calico-kid"
+  lore:
+  - <&7>  Owner<&co> <&e>Adventure Time
+  - <&5>-------------------------
+  - <&7>
+  - <&7>  This is my bio.
+  - <&7> Something will be here soon!
+  - <&7>
+  - <&7>
+  - <&7>
+  - <&9>           Click To Visit
 #
 #  END Other Items
 #--------------------------------------

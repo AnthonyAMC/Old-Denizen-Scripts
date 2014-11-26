@@ -15,7 +15,7 @@ MasterWaitressNPC:
     on remove assignment:
       - run locally unassign instantly
     on spawn:
-      - run locally spawn instantly
+      - run locally spawn instantly delay:1t
     on despawn:
       - run locally despawn instantly
     on click:
@@ -58,17 +58,17 @@ MasterWaitressNPC:
 
   spawn:
     - narrate format:GenericNPCFormat "Alright, time to start work..." targets:<npc.location.find.players.within[5]||null>
-    - if <queue.exists[idleQueue_Waitress_<npc.id>]> queue queue:idleQueue_Waitress_<npc.id> stop
-    - if <queue.exists[processTicket_<npc.id>]> queue queue:processTicket_<npc.id> stop
-    - if <queue.exists[collectMenu_<npc.id>]> queue queue:collectMenu_<npc.id> stop
-    - follow stop target:<npc.navigator.target_entity>
+    - if <queue.exists[idleQueue_Waitress_<npc.id>]||false> queue queue:idleQueue_Waitress_<npc.id> stop
+    - if <queue.exists[processTicket_<npc.id>]||false> queue queue:processTicket_<npc.id> stop
+    - if <queue.exists[collectMenu_<npc.id>]||false> queue queue:collectMenu_<npc.id> stop
+    - if <npc.navigator.target_type.is[==].to[entity]||false> follow stop target:<npc.navigator.target_entity||null>
     - run s@MasterWaitressNPC p:processTicketQueue id:processTicket_<npc.id> delay:2s
 
   despawn:
-    - if <queue.exists[idleQueue_Waitress_<npc.id>]> queue queue:idleQueue_Waitress_<npc.id> stop
-    - if <queue.exists[processTicket_<npc.id>]> queue queue:processTicket_<npc.id> stop
-    - if <queue.exists[collectMenu_<npc.id>]> queue queue:collectMenu_<npc.id> stop
-    - follow stop target:<npc.navigator.target_entity>
+    - if <queue.exists[idleQueue_Waitress_<npc.id>]||false> queue queue:idleQueue_Waitress_<npc.id> stop
+    - if <queue.exists[processTicket_<npc.id>]||false> queue queue:processTicket_<npc.id> stop
+    - if <queue.exists[collectMenu_<npc.id>]||false> queue queue:collectMenu_<npc.id> stop
+    - if <npc.navigator.target_type.is[==].to[entity]||false> follow stop target:<npc.navigator.target_entity||null>
     - narrate format:GenericNPCFormat "Phew... I<&sq>m glad to be done work for the day!" targets:<npc.location.find.players.within[5]||null>
 
   damage:
@@ -99,10 +99,10 @@ MasterWaitressNPC:
         - wait 10t
         - narrate format:GenericNPCFormat "Your order should be out in just a moment." targets:%player%
         - animate <npc> animation:arm_swing
-        - playsound <def[player].location> sound:silverfish_walk auto_range pitch:0.3
+        - playsound <def[player].location> sound:silverfish_walk pitch:0.3
         - playsound <def[player].location> sound:step_grass pitch:0.7
         }
-      - inventory set 'd:<def[player].inventory>' 'o:i@dRestaurant_Menu' 'slot:<def[player].inventory.find[drestaurant_menu]>'
+      - inventory set 'd:<def[player].inventory>' 'o:i@dRestaurant_Menu' 'slot:<def[player].inventory.find_imperfect[drestaurant_menu]>'
       - take 'i@dRestaurant_Menu' player:%player%
       - flag %player% dRestaurant_Order:!
       - flag <npc> dRestaurant_MenuQueue:<-:%player%
@@ -119,7 +119,7 @@ MasterWaitressNPC:
       - run s@MasterWaitressNPC p:processTicketQueue id:processTicket_<npc.id> delay:2t
       - queue clear
       }
-    - ^if <queue.exists[idleQueue_Waitress_<npc.id>]> queue queue:idleQueue_Waitress_<npc.id> stop
+    - ^if <queue.exists[idleQueue_Waitress_<npc.id>]||false> queue queue:idleQueue_Waitress_<npc.id> stop
     - ^run s@MasterWaitressNPC p:idleQueue_Waitress id:idleQueue_Waitress_<npc.id> delay:2t
     - ^queue clear
 
@@ -156,14 +156,14 @@ MasterWaitressNPC:
       - run s@MasterWaitressNPC p:collectMenus id:collectMenu_<npc.id> delay:2t
       - queue clear
       }
-    - ^if <queue.exists[idleQueue_Waitress_<npc.id>]> queue queue:idleQueue_Waitress_<npc.id> stop
+    - ^if <queue.exists[idleQueue_Waitress_<npc.id>]||false> queue queue:idleQueue_Waitress_<npc.id> stop
     - ^run s@MasterWaitressNPC p:idleQueue_Waitress id:idleQueue_Waitress_<npc.id> delay:2t
     - ^queue clear
 
   idleQueue_Waitress:
     - ^if !<npc.is_spawned||false> queue clear
-    - ^if <queue.exists[processTicket_<npc.id>]> queue queue:processTicket_<npc.id> stop
-    - ^if <queue.exists[collectMenu_<npc.id>]> queue queue:collectMenu_<npc.id> stop
+    - ^if <queue.exists[processTicket_<npc.id>]||false> queue queue:processTicket_<npc.id> stop
+    - ^if <queue.exists[collectMenu_<npc.id>]||false> queue queue:collectMenu_<npc.id> stop
     - ^flag npc Status:idle
     - ^lookclose state:true
     - ^define fidgetValues '<npc.flag[dRestaurant_FidgetValues].as_list||null>'
@@ -183,8 +183,8 @@ MasterWaitressNPC:
   # This requires an NPC object and should only be run when the player is
   # getting a menu from a waitress in the on click action
     - define restaurants li@
-    - foreach <npc.location.cuboids> {
-      - if <def[value].notable_name.split[_].get[1].is[==].to[Restaurant]> {
+    - foreach <npc.location.cuboids||li@> {
+      - if <def[value].notable_name.split[_].get[1].is[==].to[Restaurant]||false> {
         - define restaurant '<def[value].notable_name.split[_].get[2]>'
         - define owner '<server.flag[dRestaurant.%restaurant%.Owner].as_player>'
         - if <def[owner].is[==].to[<npc.owner>]> {
@@ -204,17 +204,17 @@ MasterWaitressNPC:
   # This assumes we know the restaurant
     - define waitresses li@
     - define owner '<server.flag[dRestaurant.%restaurant%.Owner].as_player>'
-    - foreach <cu@restaurant_%restaurant%.list_npcs> {
+    - foreach <cu@restaurant_%restaurant%.list_npcs||li@> {
       - define npc %value%
-      - if <def[owner].is[==].to[<def[npc].owner>]>
-        && <def[npc].script.name.is[==].to[MasterWaitressNPC]> {
+      - if <def[owner].is[==].to[<def[npc].owner>]||false>
+        && <def[npc].script.name.is[==].to[MasterWaitressNPC]||false> {
         - define waitresses '<def[waitresses].include[%npc%]>'
         }
       }
     # Now we have a list of waitresses, let's find the least busy
-    - foreach %waitresses% {
+    - foreach <def[waitresses]||li@> {
       - define waitress '<def[waitress]||%value%>'
-      - if <def[value].flag[TicketQueue].size.is[LESS].than[<def[waitress].flag[TicketQueue].size>]> {
+      - if <def[value].flag[TicketQueue].size.is[LESS].than[<def[waitress].flag[TicketQueue].size>]||false> {
         - define waitress %value%
         }
       }
@@ -223,17 +223,17 @@ MasterWaitressNPC:
   # This assumes we know the restaurant
     - define chefs li@
     - define owner '<server.flag[dRestaurant.%restaurant%.Owner].as_player>'
-    - foreach <cu@restaurant_%restaurant%.list_npcs> {
+    - foreach <cu@restaurant_%restaurant%.list_npcs||li@> {
       - define npc %value%
-      - if <def[owner].is[==].to[<def[npc].owner>]>
-        && <def[npc].script.name.is[==].to[MasterChefNPC]> {
+      - if <def[owner].is[==].to[<def[npc].owner>]||false>
+        && <def[npc].script.name.is[==].to[MasterChefNPC]||false> {
         - define chefs '<def[chefs].include[%npc%]>'
         }
       }
     # Now we have a list of chefs, let's find the least busy
-    - foreach %chefs% {
+    - foreach <def[chefs]||li@> {
       - define chef '<def[chef]||%value%>'
-      - if <def[value].flag[OrderQueue].size.is[LESS].than[<def[chef].flag[OrderQueue].size>]> {
+      - if <def[value].flag[OrderQueue].size.is[LESS].than[<def[chef].flag[OrderQueue].size>]||false> {
         - define chef %value%
         }
       }
@@ -293,16 +293,19 @@ MasterWaitressNPC:
       - queue clear
       }
     - flag npc status:order
-    - if <queue.exists[idleQueue_Waitress_<npc.id>]> queue queue:idleQueue_Waitress_<npc.id> stop
-    - inject locally findRestaurant instantly
-    - define restaurant '<npc.flag[dRestaurant_FidgetValues].get[1]||%restaurant%>'
+    - if <queue.exists[idleQueue_Waitress_<npc.id>]||false> queue queue:idleQueue_Waitress_<npc.id> stop
+#    - inject locally findRestaurant instantly
+    - define fidgetValues '<npc.flag[dRestaurant_FidgetValues].as_list||null>'
+    - define restaurant '<def[fidgetValues].get[1]||null>'
     - if <def[restaurant].is[==].to[null]> {
       - flag npc Status:drunk
       - queue clear
       }
     - flag <player> dRestaurant_Order:%restaurant%
-    - define loc <player.location.find.surface_blocks[<npc.flag[Pathfind.FidgetPathMaterial].as_list>].within[2].get[1]||<npc.location>>
-    - ~walk auto_range %loc% 'speed:<npc.flag[dRestaurant_FidgetValues].get[4].add[0.1].as_money||0.8>'
+    - define speed '<def[fidgetValues].get[4].add[0.1].as_money||0.8>'
+    - define pathMaterial '<def[fidgetValues].get[7].split_by[/]||cobblestone|coal_block|cobblestone_stairs>'
+    - define loc <player.location.find.surface_blocks[%pathMaterial%].within[3].get[1]||<npc.location>>
+    - ~walk auto_range %loc% 'speed:%speed%'
     - look <player.eye_location> d:2s
     - wait 5t
     - random {
@@ -323,7 +326,7 @@ MasterWaitressNPC:
       - narrate format:GenericNPCFormat "Someone will come grab the menu when you are ready." targets:<player>
       }
     - wait 30t
-    - if <queue.exists[processTicket_<npc.id>]> queue queue:processTicket_<npc.id> stop
+    - if <queue.exists[processTicket_<npc.id>]||false> queue queue:processTicket_<npc.id> stop
     - run s@MasterWaitressNPC p:processTicketQueue id:processTicket_<npc.id>
 
   click_order:

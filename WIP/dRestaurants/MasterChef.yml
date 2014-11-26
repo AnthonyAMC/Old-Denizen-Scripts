@@ -15,9 +15,9 @@ MasterChefNPC:
     on remove assignment:
       - run locally unassign instantly
     on spawn:
-      - run locally spawn instantly
+      - run locally spawn instantly delay:1t
     on despawn:
-      - run locally despawn instantly delay:5s
+      - run locally despawn instantly
     on click:
       - run locally click instantly
     on damage:
@@ -98,13 +98,13 @@ MasterChefNPC:
 
   spawn:
     - narrate format:GenericNPCFormat "Alright, time to start work..." targets:<npc.location.find.players.within[5]||null>
-    - if <queue.exists[idleQueue_Chef_<npc.id>]> queue queue:idleQueue_Chef_<npc.id> stop
-    - if <queue.exists[processOrder_<npc.id>]> queue queue:processOrder_<npc.id> stop
-    - run s@MasterChefNPC p:processOrderQueue id:processOrder_<npc.id>
+    - if <queue.exists[idleQueue_Chef_<npc.id>]||false> queue q@idleQueue_Chef_<npc.id> stop
+    - if <queue.exists[processOrder_<npc.id>]||false> queue q@processOrder_<npc.id> stop
+    - run s@MasterChefNPC p:processOrderQueue id:processOrder_<npc.id> delay:2s
 
   despawn:
-    - if <queue.exists[idleQueue_Chef_<npc.id>]> queue queue:idleQueue_Chef_<npc.id> stop
-    - if <queue.exists[processOrder_<npc.id>]> queue queue:processOrder_<npc.id> stop
+    - if <queue.exists[idleQueue_Chef_<npc.id>]||false> queue q@idleQueue_Chef_<npc.id> stop
+    - if <queue.exists[processOrder_<npc.id>]||false> queue q@processOrder_<npc.id> stop
     - narrate format:GenericNPCFormat "Phew... I<&sq>m glad to be done work for the day!" targets:<npc.location.find.players.within[5]||null>
 
   damage:
@@ -165,7 +165,7 @@ MasterChefNPC:
     - ^lookclose <npc> state:false
     - ^define fidgetValues '<npc.flag[dRestaurant_FidgetValues].as_list||null>'
     - ^define restaurant '<def[fidgetValues].get[1]||null>'
-    - ^inject s@MasterWaitressNPC p:findRestaurant instantly
+#    - ^inject s@MasterWaitressNPC p:findRestaurant instantly
     - ^define orderQueue <npc.flag[OrderQueue].as_list||null>
     - ^if !<def[orderQueue].is_empty||true> {
       - narrate format:GenericNPCFormat "Ok, I have work to do." targets:<npc.location.find.players.within[5]||null>
@@ -191,7 +191,7 @@ MasterChefNPC:
     - ^if !<npc.flag[DeliveryQueue].as_list.is_empty||true> {
       - inject processDeliveryQueue locally
       }
-    - ^if <queue.exists[idleQueue_Chef_<npc.id>]> queue queue:idleQueue_Chef_<npc.id> stop
+    - ^if <queue.exists[idleQueue_Chef_<npc.id>]||false> queue q@idleQueue_Chef_<npc.id> stop
     - ^lookclose <npc> state:true
     - ^run s@dRestaurant p:idleQueue_Chef id:idleQueue_Chef_<npc.id> delay:2t
     - ^queue clear
@@ -205,7 +205,7 @@ MasterChefNPC:
     - ^lookclose <npc> state:false
     - ^define fidgetValues '<npc.flag[dRestaurant_FidgetValues].as_list||null>'
     - ^define restaurant '<def[fidgetValues].get[1]||null>'
-    - ^inject s@MasterWaitressNPC p:findRestaurant instantly
+#    - ^inject s@MasterWaitressNPC p:findRestaurant instantly
     - ^define deliveryQueue <npc.flag[DeliveryQueue].as_list||null>
     - ^if !<def[deliveryQueue].is_empty||true> {
       - narrate format:GenericNPCFormat "Food to deliver." targets:<npc.location.find.players.within[5]||null>
@@ -237,7 +237,7 @@ MasterChefNPC:
       - inject processOrderQueue locally
       }
     - ^lookclose <npc> state:true
-    - ^if <queue.exists[idleQueue_Chef_<npc.id>]> queue queue:idleQueue_Chef_<npc.id> stop
+    - ^if <queue.exists[idleQueue_Chef_<npc.id>]||false> queue q@idleQueue_Chef_<npc.id> stop
     - ^run s@dRestaurant p:idleQueue_Chef id:idleQueue_Chef_<npc.id> delay:2t
     - ^queue clear
 
@@ -261,7 +261,7 @@ MasterChefNPC:
   orderin_drunk:
   # A catchall if something derps
     - flag npc status:drunk
-    - if <queue.exists[idleQueue_Chef_<npc.id>]> queue queue:idleQueue_Chef_<npc.id> stop
+    - if <queue.exists[idleQueue_Chef_<npc.id>]||false> queue q@idleQueue_Chef_<npc.id> stop
     - random {
       - narrate format:GenericNPCFormat "I quit!" targets:<npc.location.find.players.within[5]||null>
       - narrate format:GenericNPCFormat "I<&sq>m done with this place!" targets:<npc.location.find.players.within[5]||null>
@@ -315,7 +315,7 @@ MasterChefNPC:
   cookComplete_drunk:
   # A catchall if something derps
     - flag npc status:drunk
-    - if <queue.exists[idleQueue_Chef_<npc.id>]> queue queue:idleQueue_Chef_<npc.id> stop
+    - if <queue.exists[idleQueue_Chef_<npc.id>]||false> queue q@idleQueue_Chef_<npc.id> stop
     - random {
       - narrate format:GenericNPCFormat "I quit!" targets:<npc.location.find.players.within[5]||null>
       - narrate format:GenericNPCFormat "I<&sq>m done with this place!" targets:<npc.location.find.players.within[5]||null>

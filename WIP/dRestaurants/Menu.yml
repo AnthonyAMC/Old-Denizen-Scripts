@@ -28,7 +28,7 @@ dRestaurantMenu:
     on player clicks in inventory:
       - if <c.inventory.replace[in@].split[_].get[1].is[!=].to[dRestaurant]||true> queue clear
       - determine passively cancelled
-      - inject locally 'p:narrateClickContext'
+#      - inject locally 'p:narrateClickContext'
       - inject locally 'p:inventoryClick_<c.inventory.replace[in@].split[_].get[2]>'
 
   narrateClickContext:
@@ -57,7 +57,7 @@ dRestaurantMenu:
 #    - take i@dRestaurant_Menu
 #    - narrate "Attempting to take <player.inventory.slot[<player.inventory.find[drestaurant_menu]>].full> from player..."
 #    - take '<player.inventory.slot[<player.inventory.find[drestaurant_menu]>].full>'
-    - inventory set 'd:<player.inventory>' 'o:i@dRestaurant_Menu' 'slot:<player.inventory.find[drestaurant_menu]>'
+    - inventory set 'd:<player.inventory>' 'o:i@dRestaurant_Menu' 'slot:<player.inventory.find_imperfect[drestaurant_menu]>'
     - take i@dRestaurant_Menu
 
 #
@@ -74,11 +74,11 @@ dRestaurantMenu:
     - define hasOrdered '<def[orderObj].split[/].get[3]||false>'
     - if <c.item.scriptname.split[_].get[2].is[==].to[food]||false> {
       - if <def[order].size.is[OR_MORE].than[9]> {
-        - narrate "<&b>dRestaurant<&co> <&c>You may only order 9 items at one time."
-        - narrate "<&b>dRestaurant<&co> <&c>Click the <&f>Review Order<&c> button to continue."
+        - run s@dRestaurantMsg 'def:<&c>You may only order 9 items at one time.' instantly
+        - run s@dRestaurantMsg 'def:<&c>Click the <&f>Review Order<&c> button to continue.' instantly
         - queue clear
         }
-      - narrate "<&b>dRestaurant<&co> <&f><c.item.display> <&3>added to your order."
+      - run s@dRestaurantMsg 'def:<&f><c.item.display> <&3>added to your order.' instantly
       - define price '<server.flag[dRestaurant.%restaurant%.Menu].as_list.map_get[<c.item.scriptname>]||<c.item.scriptname.as_script.yaml_key[price]>>'
       - flag player dRestaurant_Order:%restaurant%/<def[order].include[<c.item.simple>,%price%]>
       }
@@ -95,7 +95,7 @@ dRestaurantMenu:
     - define hasOrdered '<def[orderObj].split[/].get[3]||false>'
     - define GUI 'dRestaurant_OrderReview_<player.name>'
     - if <c.item.scriptname.split[_].get[2].is[==].to[food]||false> {
-      - narrate "<&b>dRestaurant<&co> <&f><c.item.display> <&3>removed from your order."
+      - run s@dRestaurantMsg 'def:<&f><c.item.display> <&3>removed from your order.' instantly
       - inventory set 'd:in@%GUI%' 'o:<c.item.simple>' 'slot:<el@val[in@%GUI%].as_inventory.find[<c.item.scriptname>]>'
       - inventory remove 'd:in@%GUI%' 'o:<c.item.simple>'
       - inventory update 'd:in@%GUI%'
@@ -124,18 +124,18 @@ dRestaurantMenu:
     # Adding an item to the menu
     - if <c.raw_slot.is[MORE].than[36]> {
       - if <c.item.scriptname.split[_].get[2].is[!=].to[food]||true> {
-        - narrate "<&b>dRestaurant<&co> <&c>This is not a dRestaurant Food item!"
+        - run s@dRestaurantMsg 'def:<&c>This is not a dRestaurant Food item!'
         - queue clear
         }
       - if <def[menuList].size.is[OR_MORE].than[27]> {
-        - narrate "<&b>dRestaurant<&co> <&c>You may only have 27 items in your menu!"
+        - run s@dRestaurantMsg 'def:<&c>You may only have 27 items in your menu!' instantly
         - queue clear
         }
       - if <def[menuList].get_sub_items[1].contains[<c.item.scriptname>]> {
-        - narrate "<&b>dRestaurant<&co> <&c>This item is already on your menu!"
+        - run s@dRestaurantMsg 'def:<&c>This item is already on your menu!' instantly
         - queue clear
         }
-      - narrate "<&b>dRestaurant<&co> <&a>Added <&f><c.item.display> <&a>to the menu."
+      - run s@dRestaurantMsg 'def:<&a>Added <&f><c.item.display> <&a>to the menu.' instantly
       - inventory remove 'd:<player.inventory>' 'o:<c.item>'
       - inventory update 'd:<player.inventory>'
       - define hr '<&5>--------------------'
@@ -157,7 +157,7 @@ dRestaurantMenu:
     # Editing an existing item
     - if <c.raw_slot.is[OR_LESS].than[27]> {
       - if <c.item.scriptname.split[_].get[2].is[!=].to[food]||true> {
-        - narrate "<&b>dRestaurant<&co> <&c>This is not a dRestaurant Food item!"
+        - run s@dRestaurantMsg 'def:<&c>This is not a dRestaurant Food item!' instantly
         - inventory set 'd:in@%GUI%' 'o:<c.item.simple>' 'slot:<el@val[in@%GUI%].as_inventory.find[<c.item>]>'
         - inventory remove 'd:in@%GUI%' 'o:<c.item.simple>'
         - inventory update 'd:in@%GUI%'
@@ -166,7 +166,7 @@ dRestaurantMenu:
 
       # Middle click removes
       - if <context.click.is[==].to[MIDDLE]> {
-        - narrate "<&b>dRestaurant<&co> <&c>Removed <&f><c.item.display> <&c>from the menu."
+        - run s@dRestaurantMsg 'def:<&c>Removed <&f><c.item.display> <&c>from the menu.' instantly
         - inventory set 'd:in@%GUI%' 'o:<c.item.simple>' 'slot:<el@val[in@%GUI%].as_inventory.find[<c.item.scriptname>]>'
         - inventory remove 'd:in@%GUI%' 'o:<c.item.simple>'
         - inventory update 'd:in@%GUI%'
@@ -196,7 +196,7 @@ dRestaurantMenu:
         - define price '<def[menuList].map_get[<c.item.scriptname>].add[1].as_money||%price%>'
         }
       - if <def[price].is[LESS].than[0]> {
-        - narrate "<&b>dRestaurant<&co> <&c>That price is too low fool!"
+        - run s@dRestaurantMsg 'def:<&c>That price is too low fool!' instantly
         - queue clear
         }
       # Adjust the inventory item
@@ -235,7 +235,7 @@ dRestaurantMenu:
     - if <c.raw_slot.is[MORE].than[36]> queue clear
     - if <c.item.scriptname.split[_].get[1].is[!=].to[dRestaurant]||true> queue clear
     - if <c.item.scriptname.split[_].get[2].is[==].to[food]||false> {
-      - narrate "FOOD!"
+      - - run s@dRestaurantMsg 'def:FOOD!' instantly
       }
     - if <c.item.scriptname.split[_].get[2].is[==].to[button]||false> {
       - define GUI 'dRestaurant_ManageInventory_<player.name>'
@@ -483,7 +483,7 @@ dRestaurant_Button_OrderCancel:
     - flag player dRestaurant_Order:!
     - note remove 'as:in@%GUI%'
     - run s@dRestaurantMenu p:takeMenu
-    - narrate "<&b>dRestaurant<&co> <&f>Order Canceled!"
+    - run s@dRestaurantMsg 'def:<&c>Order Canceled!' instantly
     - wait 1t
 
 dRestaurant_Button_OrderReview:
@@ -506,7 +506,7 @@ dRestaurant_Button_OrderAccept:
 #    - ""
   script:
     - if <def[order].is_empty> {
-      - narrate "<&b>dRestaurant<&co> <&c>Your order is empty!"
+      - run s@dRestaurantMsg 'def:<&c>Your order is empty!' instantly
       - queue clear
       }
     - foreach <def[order]||li@> {
@@ -515,7 +515,7 @@ dRestaurant_Button_OrderAccept:
       - define totalPrice '<def[totalPrice].add[%price%]||%price%>'
       }
     - if <player.money.is[LESS].than[%totalPrice%]||false> {
-      - narrate "<&b>dRestaurant<&co> <&c>You do not have <&6>$<&a>%totalPrice%<&c> for these items!"
+      - run s@dRestaurantMsg 'def:<&c>You do not have <&6>$<&a>%totalPrice%<&c> for these items!' instantly
       - queue clear
       }
     - take money qty:%totalPrice%
@@ -524,8 +524,8 @@ dRestaurant_Button_OrderAccept:
     - note remove 'as:in@%GUI%'
     - flag player dRestaurant_Order:%restaurant%/%order%/true
     - event "order placed" context:player|<player>
-    - narrate "<&b>dRestaurant<&co> <&6>$<&a>%totalPrice% <&f>has been deducted from you account."
-    - narrate "<&b>dRestaurant<&co> <&f>A waitress will collect your menu soon."
+    - run s@dRestaurantMsg 'def:<&6>$<&a>%totalPrice% <&f>has been deducted from you account.' instantly
+    - run s@dRestaurantMsg 'def:<&f>A waitress will collect your menu soon.' instantly
 #
 #
 #--------------------------------------
@@ -551,7 +551,7 @@ dRestaurant_Button_ManageStaff:
 #    - "<&b>Click to manage your staff"
 #    - ""
   script:
-    - narrate "<&b>dRestaurant<&co> <&f>This button hasn<&sq>t been made yet."
+    - run s@dRestaurantMsg 'def:<&f>This button has not been made yet.' instantly
     - note remove 'as:in@%GUI%'
     - inject s@dRestaurantMenu p:display_ManageStaff
 
@@ -563,7 +563,7 @@ dRestaurant_Button_ManageStaff_EditWaitress:
 #    - "<&b>Click to edit this Waitress"
 #    - ""
   script:
-    - narrate "<&b>dRestaurant<&co> <&f>This button hasn<&sq>t been made yet."
+    - run s@dRestaurantMsg 'def:<&f>This button has not been made yet.' instantly
 
 dRestaurant_Button_ManageStaff_EditChef:
   type: item
@@ -573,7 +573,7 @@ dRestaurant_Button_ManageStaff_EditChef:
 #    - "<&b>Click to edit this Chef"
 #    - ""
   script:
-    - narrate "<&b>dRestaurant<&co> <&f>This button hasn<&sq>t been made yet."
+    - run s@dRestaurantMsg 'def:<&f>This button has not been made yet.' instantly
 
 dRestaurant_Button_ManageStaff_HireWaitress:
   type: item
@@ -583,7 +583,7 @@ dRestaurant_Button_ManageStaff_HireWaitress:
 #    - "<&b>Click to hire a new Waitress"
 #    - ""
   script:
-    - narrate "<&b>dRestaurant<&co> <&f>This button hasn<&sq>t been made yet."
+    - run s@dRestaurantMsg 'def:<&f>This button has not been made yet.' instantly
 
 dRestaurant_Button_ManageStaff_HireChef:
   type: item
@@ -593,7 +593,7 @@ dRestaurant_Button_ManageStaff_HireChef:
 #    - "<&b>Click to hire a new Chef"
 #    - ""
   script:
-    - narrate "<&b>dRestaurant<&co> <&f>This button hasn<&sq>t been made yet."
+    - run s@dRestaurantMsg 'def:<&f>This button has not been made yet.' instantly
 
 dRestaurant_Button_ManageStaff_SetSpawn:
   type: item
@@ -603,7 +603,7 @@ dRestaurant_Button_ManageStaff_SetSpawn:
 #    - "<&b>Click to set your current"
 #    - "<&b>location as the NPC spawn"
   script:
-    - narrate "<&b>dRestaurant<&co> <&f>This button hasn<&sq>t been made yet."
+    - run s@dRestaurantMsg 'def:<&f>This button has not been made yet.' instantly
 
 dRestaurant_Button_ManageInventory:
   type: item
@@ -613,7 +613,7 @@ dRestaurant_Button_ManageInventory:
 #    - "<&b>Click to manage your inventory"
 #    - ""
   script:
-    - narrate "<&b>dRestaurant<&co> <&f>This button hasn<&sq>t been made yet."
+    - run s@dRestaurantMsg 'def:<&f>This button has not been made yet.' instantly
 
 dRestaurant_Button_EquipmentChecks:
   type: item
@@ -623,7 +623,7 @@ dRestaurant_Button_EquipmentChecks:
 #    - "<&b>Click to check your restaurant"
 #    - "<&b>for valid kitchen equipment"
   script:
-    - narrate "<&b>dRestaurant<&co> <&f>This button hasn<&sq>t been made yet."
+    - run s@dRestaurantMsg 'def:<&f>This button has not been made yet.' instantly
     - note remove 'as:in@%GUI%'
     - inject s@dRestaurantMenu p:display_EquipmentChecks
 
