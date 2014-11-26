@@ -1,0 +1,1076 @@
+################################################################################
+#
+#                                d R e g i o n s
+#
+#
+#   Authors: |Anthony|
+#   Version: 0.1
+#   dScript Version: 0.9.6-DEV_b146
+#
+#
+#
+#--- About this script
+#
+#  This is a basic recreation of WorldGuard in denizen
+#
+#
+#
+################################################################################
+#
+#  dRegions World Events Script
+#
+#  This should cover all dRegions related world events.
+#
+dRegions:
+  type: world
+  debug: false
+  events:
+    on player clicks block:
+      - if <c.item.scriptname.split[_].get[1].is[!=].to[dRegions]||true> queue clear
+      - determine passively CANCELLED
+      - inject <c.item.scriptname.as_script> instantly
+
+    on server start:
+    - run locally start delay:2t
+
+
+  start:
+    - inject locally loadYaml
+
+
+  loadYaml:
+  # Reloads the yaml files and generates default files if they don't exist.
+    - announce "<&b>dRegions<&co><&3> Loading system config files..." to_console
+    - if !<server.has_file[dRegions/config.yml]> {
+      - define world 'GLOBAL'
+      - define file 'config'
+      - if <player.is[!=].to[null]||false> {
+        - flag <player> ConfigFileGeneratorNotify:true
+        - inject locally createConfigFile
+        - flag <player> ConfigFileGeneratorNotify:!
+        - run s@dRegions_Msg 'def:<&7><&o>Created <&f><&o>%world%<&7><&o> config file!'
+        }
+        else inject locally createConfigFile
+      - announce "<&b>dRegions<&co> <&7><&o>Created <&f><&o>%world%<&7><&o> config file!" to_console
+      }
+    - if <yaml.list.contains[dRegions_GLOBAL_config]> yaml unload 'id:dRegions_GLOBAL_config'
+    - yaml 'load:dRegions/config.yml' 'id:dRegions_GLOBAL_config'
+
+    - foreach <server.list_worlds> {
+      - define world '<def[value].name>'
+
+      - define file 'worlds/%world%/config'
+      - if !<server.has_file[dRegions/%file%.yml]> {
+        - if <player.is[!=].to[null]||false> {
+          - flag <player> ConfigFileGeneratorNotify:true
+          - inject locally createConfigFile
+          - flag <player> ConfigFileGeneratorNotify:!
+          - run s@dRegions_Msg 'def:<&7><&o>Created <&f><&o>%world%<&7><&o> config file!'
+          }
+          else inject locally createConfigFile
+        - announce "<&b>dRegions<&co> <&7><&o>Created <&f><&o>%world%<&7><&o> config file!" to_console
+        }
+      - if <yaml.list.contains[dRegions_%world%_config]> yaml unload 'id:dRegions_%world%_config'
+      - yaml 'load:dRegions/%file%.yml' 'id:dRegions_%world%_config'
+
+      - define file 'worlds/%world%/regions'
+      - if !<server.has_file[dRegions/%file%.yml]> {
+        - define region '__global__'
+        - if <player.is[!=].to[null]||false> {
+          - flag <player> ConfigFileGeneratorNotify:true
+          - inject locally createRegionFile
+          - flag <player> ConfigFileGeneratorNotify:!
+          - run s@dRegions_Msg 'def:<&7><&o>Created <&f><&o>%world%<&7><&o> regions file!'
+          }
+          else inject locally createRegionFile
+        - announce "<&b>dRegions<&co> <&7><&o>Created <&f><&o>%world%<&7><&o> regions file!" to_console
+        }
+      - if <yaml.list.contains[dRegions_%world%_regions]> yaml unload 'id:dRegions_%world%_regions'
+      - yaml 'load:dRegions/%file%.yml' 'id:dRegions_%world%_regions'
+      }
+    - announce "<&b>dRegions<&co><&a> System config files Loaded!" to_console
+
+  reloadYaml:
+    - announce "<&b>dRegions<&co><&3> Reloading system config files..." to_console
+    - run s@dRegions_Msg 'def:<&7><&o>Reloading system config files...'
+    - if <yaml.list.contains[dRegions_GLOBAL_config]> yaml unload 'id:dRegions_GLOBAL_config'
+    - yaml 'load:dRegions/config.yml' 'id:dRegions_GLOBAL_config'
+    - foreach <server.list_worlds> {
+      - define world '<def[value].name>'
+      - if <yaml.list.contains[dRegions_%world%_config]> yaml unload 'id:dRegions_%world%_config'
+      - yaml 'load:dRegions/worlds/%world%/config.yml' 'id:dRegions_%world%_config'
+      - if <yaml.list.contains[dRegions_%world%_regions]> yaml unload 'id:dRegions_%world%_regions'
+      - yaml 'load:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
+      }
+    - announce "<&b>dRegions<&co><&a> System config files Loaded!" to_console
+    - run s@dRegions_Msg 'def:<&7><&o>System config files Loaded!'
+
+
+  createConfigFile:
+    - define readID 'dRegions_Configurations'
+    - define writeID 'dRegions_%world%_config'
+    - if !<yaml.list.contains[%readID%]> yaml 'load:<script.relative_filename>' 'id:%readID%'
+    - yaml create 'id:%writeID%'
+    - define readPath '%readID%.config'
+    - define writePath 'config'
+    - run s@ConfigFileGenerator def:%readID%|%writeID%|%readPath%|%writePath%|false|false|false instantly
+    - yaml unload 'id:%readID%'
+    - yaml 'savefile:dRegions/%file%.yml' 'id:%writeID%'
+
+
+  createRegionFile:
+    - define readID 'dRegions_Configurations'
+    - define writeID 'dRegions_%world%_regions'
+    - if !<yaml.list.contains[%readID%]> yaml 'load:<script.relative_filename>' 'id:%readID%'
+    - yaml create 'id:%writeID%'
+    - define readPath '%readID%.regions.__global__'
+    - define writePath 'regions.%region%'
+    - run s@ConfigFileGenerator def:%readID%|%writeID%|%readPath%|%writePath%|false|false|false instantly
+    - yaml unload 'id:%readID%'
+    - yaml 'savefile:dRegions/%file%.yml' 'id:%writeID%'
+
+
+  createRegionEntry:
+    - if !<yaml.list.contains[dRegions_%world%_regions]> yaml 'load:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
+    - yaml set 'regions.%name%.type:cuboid' 'id:dRegions_%world%_regions'
+    - yaml set 'regions.%name%.min:<def[selectedCuboid].min.simple>' 'id:dRegions_%world%_regions'
+    - yaml set 'regions.%name%.max:<def[selectedCuboid].max.simple>' 'id:dRegions_%world%_regions'
+    - yaml set 'regions.%name%.priority:0' 'id:dRegions_%world%_regions'
+    - yaml set 'regions.%name%.flags:|:' 'id:dRegions_%world%_regions'
+    - yaml set 'regions.%name%.owners:|:' 'id:dRegions_%world%_regions'
+    - foreach <def[ownerGroups]||li@> {
+      - yaml set 'regions.%name%.owners.groups:->:%value%' 'id:dRegions_%world%_regions'
+      }
+    - foreach <def[ownerPlayers]||li@> {
+      - yaml set 'regions.%name%.owners.players:->:%value%' 'id:dRegions_%world%_regions'
+      }
+    - yaml set 'regions.%name%.members:|:' 'id:dRegions_%world%_regions'
+    - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
+    - note cu@<def[selectedCuboid].min.simple>|<def[selectedCuboid].max.simple> 'as:dregions_%world%_%name%'
+
+
+
+
+dRegions_Msg:
+  type: item
+  debug: false
+  material: i@human_skull
+  display name: "<&4>[<&6>dRegions<&4>]"
+  lore:
+  - <&5>Click for Help
+  script:
+    - ^define text '<&4>[<&6>dRegions<&4>]'
+    - ^define hover '<&chr[007B]><i@dRegions_Msg.json><&chr[007D]>'
+    - ^define click '/dregions help'
+    - ^define button "text:'%text%',clickEvent:<&chr[007B]>action:run_command,value:'%click%'<&chr[007D]>,hoverEvent:<&chr[007B]>action:show_item,value:'%hover%'<&chr[007d]>"
+    - ^define spacer "text:'  '"
+    - ^define msg "text:'%1%'"
+    - ^execute as_server "tellraw <player.name> <&chr[007B]>text:'',extra:[<&chr[007B]>%button%<&chr[007D]>,<&chr[007B]>%spacer%<&chr[007D]>,<&chr[007B]>%msg%<&chr[007D]>]<&chr[007D]>"
+
+
+################################################################################
+#
+#  dRegions Command Script Container
+#
+# This script covers all dRegions commands
+#
+#
+#
+#--------------------------------------
+#
+#  dRegions Command Script Basics
+#
+# The basic stuff required in a command script container
+#
+dRegions_Commands:
+  type: command
+  debug: true
+  name: dregions
+  description: Denizen Regions Manager
+  usage: /dregions
+  aliases:
+  - drg
+  allowed help:
+  - determine true
+  tab complete:
+    - define argList 'li@help|reload|define|redefine|claim|select|info|addowner|removeowner|addmember|removemember|list|flag|setpriority|setparent|teleport|remove'
+    - define arg '<c.args.get[1]||null>'
+    - if <def[arg].is[==].to[null]>
+      || !<def[argList].contains[%arg%]> {
+      - inject locally tab_arg_1
+      }
+      else inject locally tab_%arg%
+    - determine '<def[result]||li@>'
+
+  script:
+    - define command '<c.args.get[1].escaped||help>'
+    - define args 'li@help|reload|select|define|redefine|remove|addowner|addmember'
+    - if !<def[args].contains[%command%]> inject locally help instantly
+      else inject locally %command% instantly
+
+
+#
+#  END dRegions Command Script Basics
+#--------------------------------------
+#
+#  dRegions Command TAB Completion
+#
+# Each of these subscripts handles TAB completion for the positional argument.
+#
+#
+#  tab_arg_1:
+#    # This builds a new resultSet list for the possible args
+#    - define resultSet li@
+#    - foreach %argList% {
+#      - if <player.has_permission[dregions.%value%]||false> define resultSet '<def[resultSet].include[%value%]>'
+#      }
+#    - if <def[resultSet].is_empty||true> {
+#      - define result ''
+#      }
+#      else {
+#      - define result '<def[resultSet].filter[starts_with[%arg%]]>'
+#      - if <def[result].is_empty> define result %resultset%
+
+  tab_arg_1:
+    # This Excludes args from the original argList
+    - foreach %argList% {
+      - if !<player.has_permission[dregions.%value%]||false> define argList '<def[argList].exclude[%value%]||%argList%>'
+      }
+    - if <def[argList].is_empty||true> define result 'li@'
+      else {
+      - define result '<def[argList].filter[starts_with[%arg%]]||li@> '
+      - if <def[result].is_empty||true> define result '%argList%'
+      }
+
+  tab_help:
+    - define result 'li@'
+
+  tab_reload:
+    - define result 'li@'
+
+  tab_define:
+  # /drg define [ID] (g:group) (player)
+    - if <player.has_permission[dregions.define]||false> {
+      - define spaces '<c.raw_args.to_list.count[ ]||0>'
+      - if <def[spaces].is[==].to[0]> define result 'define [ID]'
+        else if <def[spaces].is[==].to[1]> {
+        - if <c.args.get[2].is[==].to[null]||true> define result '[ID] (g:group) (player)'
+          else define result '<c.args.get[2]> (g:group) (player)'
+          }
+        else if <def[spaces].is[OR_MORE].than[2]> {
+        - define owners '<c.args.remove[1|2]||li@>'
+        - if <c.args.find[-w].is[OR_MORE].than[0]||false> {
+          - define owners '<def[owners].remove[<def[owners].find[-w]>|<def[owners].find[-w].add[1].as_int>]||li@>'
+          }
+        - define owner '<def[owners].last||li@>'
+        - if <def[owner].starts_with[g:]||false> {
+          - define group '<def[owner].replace[g:]>'
+          - define groups '<server.list_permission_groups.filter[starts_with[%group%]]||li@>'
+          - if <def[groups].is_empty> define groups '<server.list_permission_groups||li@>'
+          - define result '<def[groups].parse[replace[regex:^].with[g:]]>'
+          }
+          else {
+          - define result '<server.match_player[%owner%].name||null>'
+          - if <def[result].is[==].to[null]||true> define result '<server.list_online_players.parse[name]>'
+          }
+        }
+        else define result 'li@'
+      }
+      else define result 'li@'
+
+  tab_redefine:
+  # /drg redefine [ID]
+    - if <player.has_permission[dregions.redefine]||false> {
+      - define spaces '<c.raw_args.to_list.count[ ]||0>'
+      - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name||<player.world.name||null>>'
+      - define regions '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__]||li@>'
+      - if <player.has_permission[dregions.admin].not||true> {
+        - foreach %regions% {
+          - if <proc[dRegions_IsOwner].context[%value%|%world%|<player>].not> define regions '<def[regions].exclude[%value%]||%regions%>'
+          }
+        }
+      - if <def[spaces].is[==].to[0]> define result '<def[regions].parse[replace[regex:^].with[redefine ]]>'
+        else if <def[spaces].is[==].to[1]> {
+        - define result '<def[regions].filter[starts_with[<c.args.get[2].escaped>]]||li@>'
+        - if <def[result].is_empty||true> define result '%regions%'
+        }
+        else define result 'li@'
+      }
+      else define result 'li@'
+
+  tab_claim:
+    - define result 'li@'
+
+  tab_select:
+  # /drg select [ID] -w world
+    - if <player.has_permission[dregions.select]||false> {
+      - define spaces '<c.raw_args.to_list.count[ ]||0>'
+      - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name||<player.world.name||null>>'
+      - define regions '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__]||li@>'
+      - if <player.has_permission[dregions.admin].not||true> {
+        - foreach %regions% {
+          - if <proc[dRegions_IsOwner].context[%value%|%world%|<player>].not> define regions '<def[regions].exclude[%value%]||%regions%>'
+          }
+        }
+      - if <def[spaces].is[==].to[0]> define result '<def[regions].parse[replace[regex:^].with[select ]]>'
+        else if <def[spaces].is[==].to[1]> {
+        - define result '<def[regions].filter[starts_with[<c.args.get[2].escaped>]]||li@>'
+        - if <def[result].is_empty||true> define result '%regions%'
+        }
+        else define result 'li@'
+      }
+      else define result 'li@'
+
+  tab_info:
+    - define result 'li@'
+
+  tab_addowner:
+  # /drg addowner [ID] -w world
+    - if <player.has_permission[dregions.addowner]||false> {
+      - define spaces '<c.raw_args.to_list.count[ ]||0>'
+      - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name||<player.world.name||null>>'
+      - define regions '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__]||li@>'
+      - if <player.has_permission[dregions.admin].not||true> {
+        - foreach %regions% {
+          - if <proc[dRegions_IsOwner].context[%value%|%world%|<player>].not> define regions '<def[regions].exclude[%value%]||%regions%>'
+          }
+        }
+      - if <def[spaces].is[==].to[0]> define result '<def[regions].parse[replace[regex:^].with[addowner ]]>'
+        else if <def[spaces].is[==].to[1]> {
+        - define result '<def[regions].filter[starts_with[<c.args.get[2].escaped>]]||li@>'
+        - if <def[result].is_empty||true> define result '%regions%'
+        }
+        else if <def[spaces].is[OR_MORE].than[2]> {
+        - define owners '<c.args.remove[1|2]||li@>'
+        - if <c.args.find[-w].is[OR_MORE].than[0]||false> {
+          - define owners '<def[owners].remove[<def[owners].find[-w]>|<def[owners].find[-w].add[1].as_int>]||li@>'
+          }
+        - define owner '<def[owners].last||li@>'
+        - if <def[owner].starts_with[g:]||false> {
+          - define group '<def[owner].replace[g:]>'
+          - define groups '<server.list_permission_groups.filter[starts_with[%group%]]||li@>'
+          - if <def[groups].is_empty> define groups '<server.list_permission_groups||li@>'
+          - define result '<def[groups].parse[replace[regex:^].with[g:]]>'
+          }
+          else {
+          - define result '<server.match_player[%owner%].name||null>'
+          - if <def[result].is[==].to[null]||true> define result '<server.list_online_players.parse[name]>'
+          }
+        }
+        else define result 'li@'
+      }
+      else define result 'li@'
+
+  tab_removeowner:
+    - define result 'li@'
+
+  tab_addmember:
+  # /drg addmember [ID] -w world
+    - if <player.has_permission[dregions.addowner]||false> {
+      - define spaces '<c.raw_args.to_list.count[ ]||0>'
+      - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name||<player.world.name||null>>'
+      - define regions '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__]||li@>'
+      - if <player.has_permission[dregions.admin].not||true> {
+        - foreach %regions% {
+          - if <proc[dRegions_IsOwner].context[%value%|%world%|<player>].not> define regions '<def[regions].exclude[%value%]||%regions%>'
+          }
+        }
+      - if <def[spaces].is[==].to[0]> define result '<def[regions].parse[replace[regex:^].with[addmember ]]>'
+        else if <def[spaces].is[==].to[1]> {
+        - define result '<def[regions].filter[starts_with[<c.args.get[2].escaped>]]||li@>'
+        - if <def[result].is_empty||true> define result '%regions%'
+        }
+        else if <def[spaces].is[OR_MORE].than[2]> {
+        - define members '<c.args.remove[1|2]||li@>'
+        - if <c.args.find[-w].is[OR_MORE].than[0]||false> {
+          - define members '<def[members].remove[<def[members].find[-w]>|<def[members].find[-w].add[1].as_int>]||li@>'
+          }
+        - define member '<def[members].last||li@>'
+        - if <def[member].starts_with[g:]||false> {
+          - define group '<def[member].replace[g:]>'
+          - define groups '<server.list_permission_groups.filter[starts_with[%group%]]||li@>'
+          - if <def[groups].is_empty> define groups '<server.list_permission_groups||li@>'
+          - define result '<def[groups].parse[replace[regex:^].with[g:]]>'
+          }
+          else {
+          - define result '<server.match_player[%owner%].name||null>'
+          - if <def[result].is[==].to[null]||true> define result '<server.list_online_players.parse[name]>'
+          }
+        }
+        else define result 'li@'
+      }
+      else define result 'li@'
+
+  tab_removemember:
+    - define result 'li@'
+
+  tab_list:
+    - define result 'li@'
+
+  tab_flag:
+    - define result 'li@'
+
+  tab_setpriority:
+    - define result 'li@'
+
+  tab_setparent:
+    - define result 'li@'
+
+  tab_teleport:
+    - define result 'li@'
+
+  tab_remove:
+  # /drg remove [ID] -w world
+    - if <player.has_permission[dregions.remove]||false> {
+      - define spaces '<c.raw_args.to_list.count[ ]||0>'
+      - if <def[spaces].is[==].to[0]> define result 'remove [ID] -w world'
+        else if <def[spaces].is[==].to[1]> {
+        - if <c.args.get[2].is[==].to[null]||true> define result '[ID]'
+          else if <c.args.get[2].is[==].to[-w]||false> define result '<server.list_worlds.parse[name].parse[replace[regex:^].with[-w ]]>'
+          else if <context.server.not> {
+          - define regions '<yaml[dRegions_<player.world.name>_regions].list_keys[regions].exclude[__global__]||li@>'
+          - if <player.has_permission[dregions.admin].not||true> {
+            - foreach %regions% {
+              - if <proc[dRegions_IsOwner].context[%value%|<player.world.name>|<player>].not> define regions '<def[regions].exclude[%value%]||%regions%>'
+              }
+            }
+          - define result '<def[regions].filter[starts_with[<c.args.get[2].escaped>]]||li@>'
+          - if <def[result].is_empty||true> define result '%regions%'
+          }
+          else define result 'li@'
+        }
+        else if <def[spaces].is[==].to[2]> {
+        - if <c.args.get[2].is[==].to[-w]||false> {
+          - if <c.args.get[3].is[!=].to[null]||false> define result '<server.list_worlds.parse[name].filter[starts_with[<c.args.get[3].escaped>]]||li@>'
+          - if <def[result].is_empty||true> define result '<server.list_worlds.parse[name]||li@>'
+          }
+          else define result '<server.list_worlds.parse[name].parse[replace[regex:^].with[-w ]]>'
+        }
+        else if <def[spaces].is[==].to[3]> {
+        - if <c.args.get[2].is[==].to[-w]||false> {
+          - if <c.args.get[4].is[!=].to[null]||false> {
+            - define regions '<yaml[dRegions_<c.args.get[3].escaped>_regions].list_keys[regions].exclude[__global__]||li@>'
+            - define result '<def[regions].filter[starts_with[<c.args.get[4].escaped>]]||li@>'
+            - if <def[result].is_empty||true> define result '%regions%'
+            }
+            else define result '<yaml[dRegions_<c.args.get[3].escaped>_regions].list_keys[regions].exclude[__global__]||li@>'
+          }
+          else {
+          - if <c.args.get[4].is[!=].to[null]||false> define result '<server.list_worlds.parse[name].filter[starts_with[<c.args.get[4].escaped>]]||li@>'
+            else define result '<server.list_worlds.parse[name]||li@>'
+          - if <def[result].is_empty||true> define result '<server.list_worlds.parse[name]||li@>'
+          }
+        }
+        else define result 'li@'
+      }
+      else define result 'li@'
+
+
+#
+#  END dRegions Command Script Basics
+#--------------------------------------
+#
+#  dRegions Command Arguments
+#
+# Each of these subscripts is an argument for the root command.
+#
+  help:
+    - if <player.has_permission[dRegions.admin]||<context.server||false>> inject locally msgsHelpAdmin instantly
+      else inject locally msgsHelpUser instantly
+    - inject locally msgsFooter instantly
+    - queue clear
+
+  reload:
+    - if !<player.has_permission[dRegions.reload]||<player.is_op||<context.server||false>>> {
+      - inject locally help
+      - queue clear
+      }
+    - inject s@dRegions p:reloadYaml instantly
+    - run s@dRegions_Msg 'def:<&7><&o>System files loaded!'
+
+
+  define:
+  # /drg define [ID] (g:group) (player)
+    - inject locally prerun instantly
+    # Check for existing region
+    - define exists '<proc[dRegions_RegionExists].context[%name%|%world%]||true>'
+    - if <def[exists].is[==].to[orphan]> {
+      - run s@dRegions_Msg 'def:<&c>There is an orphaned region by this name!'
+      - run s@dRegions_Msg 'def:<&c>Please notify an admin!'
+      - queue clear
+      }
+      else if <def[exists]> {
+      - run s@dRegions_Msg 'def:<&c>There is already a region by this name!'
+      - queue clear
+      }
+    # Check for overlapping regions
+    - if !<player.has_permission[dregions.admin]||false> {
+      - if <proc[dRegions_RegionOverlaps].context[<def[selectedCuboid].replace[cu@].replace[|].with[/]>|%name%|%world%|<player>]> {
+        - run s@dRegions_Msg 'def:<&c>Region selection contains unowned regions!'
+        - queue clear
+        }
+      }
+    # Parse any declaired owners
+    - define owners '<c.args.remove[1|2].replace[:].with[;]||li@>'
+    - if <c.args.find[-w].is[OR_MORE].than[0]||false> {
+      - define owners '<def[owners].remove[<def[owners].find[-w]>|<def[owners].find[-w].add[1].as_int>]||li@>'
+      }
+    - define ownerGroups li@
+    - define ownerPlayers li@
+    - foreach %owners% {
+      - if <def[value].starts_with[g;]||false> define ownerGroups '<def[ownerGroups].include[<def[value].replace[g;]>]||%ownerGroups%>'
+        else {
+        - if <util.player_is_valid[%value%].not||true> foreach next
+        - define ownerPlayers '<def[ownerPlayers].include[<def[value].as_player.uuid>]||%ownerPlayers%>'
+        }
+      }
+    # Automatically add the player that defined the region as the owner
+#    - if <def[ownerPlayers].contains[<player.uuid>].not||false> define ownerPlayers '<def[ownerPlayers].include[<player.uuid>]||%ownerPlayers%>'
+    # Create the region
+    - inject s@dRegions p:createRegionEntry instantly
+    - run s@dRegions_Msg 'def:<&7><&o>Created %name% in %world%'
+
+  redefine:
+  # /drg redefine [ID]
+    - inject locally prerun instantly
+    # Check if region exists
+    - define exists '<proc[dRegions_RegionExists].context[%name%|%world%]>'
+    - if <def[exists].is[==].to[orphan]> {
+      - run s@dRegions_Msg 'def:<&c>There is an orphaned region by this name!'
+      - run s@dRegions_Msg 'def:<&c>Please notify an admin!'
+      - queue clear
+      }
+      else if <def[exists].not> {
+      - run s@dRegions_Msg 'def:<&c>There is no region by this name!'
+      - queue clear
+      }
+    # Check if is owner
+    - if !<player.has_permission[dregions.admin]||false> {
+      - if <proc[dRegions_IsOwner].context[%name%|%world%|<player>].not> {
+        - run s@dRegions_Msg 'def:<&c>You are not an owner of this region!'
+        - queue clear
+        }
+      }
+    # Check for overlapping regions
+    - if !<player.has_permission[dregions.admin]||false> {
+      - if <proc[dRegions_RegionOverlaps].context[<def[selectedCuboid].replace[cu@].replace[|].with[/]>|%name%|%world%|<player>]> {
+        - run s@dRegions_Msg 'def:<&c>Region selection contains unowned regions!'
+        - queue clear
+        }
+      }
+    # Update the region
+    - yaml set 'regions.%name%.min:<def[selectedCuboid].min.simple>' 'id:dRegions_%world%_regions'
+    - yaml set 'regions.%name%.max:<def[selectedCuboid].max.simple>' 'id:dRegions_%world%_regions'
+    - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
+    - note cu@<def[selectedCuboid].min.simple>|<def[selectedCuboid].max.simple> 'as:dregions_%world%_%name%'
+    - run s@dRegions_Msg 'def:<&f><&o>%name%<&7><&o> updated to selection'
+
+  claim:
+    - narrate "Stub"
+
+  select:
+  # /drg select [ID]
+    - inject locally prerun instantly
+    # Check if region exists
+    - define exists '<proc[dRegions_RegionExists].context[%name%|%world%]>'
+    - if <def[exists].is[==].to[orphan]> {
+      - run s@dRegions_Msg 'def:<&c>There is an orphaned region by this name!'
+      - run s@dRegions_Msg 'def:<&c>Please notify an admin!'
+      - queue clear
+      }
+      else if <def[exists].not> {
+      - run s@dRegions_Msg 'def:<&c>There is no region by this name!'
+      - queue clear
+      }
+    # Check if is owner
+    - if !<player.has_permission[dregions.admin]||false> {
+      - if <proc[dRegions_IsOwner].context[%name%|%world%|<player>].not> {
+        - run s@dRegions_Msg 'def:<&c>You are not an owner of this region!'
+        - queue clear
+        }
+      }
+    - define min '<yaml[dRegions_%world%_regions].read[regions.%name%.min].as_location.simple||null>'
+    - define max '<yaml[dRegions_%world%_regions].read[regions.%name%.max].as_location.simple||null>'
+    - flag player 'dWEWand_Type:cuboid'
+    - flag player dWEWand:!
+    - flag player dWEWand:|:%min%|%max%
+    - run s@dRegions_Msg 'def:<&7><&o>Selected <&f><&o>%name%'
+
+  info:
+    - narrate "Stub"
+
+  addowner:
+  # /drg addowner g:group player
+    - inject locally prerun instantly
+    # Check if region exists
+    - define exists '<proc[dRegions_RegionExists].context[%name%|%world%]>'
+    - if <def[exists].is[==].to[orphan]> {
+      - run s@dRegions_Msg 'def:<&c>There is an orphaned region by this name!'
+      - run s@dRegions_Msg 'def:<&c>Please notify an admin!'
+      - queue clear
+      }
+      else if <def[exists].not> {
+      - run s@dRegions_Msg 'def:<&c>There is no region by this name!'
+      - queue clear
+      }
+    # Check if is owner
+    - if !<player.has_permission[dregions.admin]||false> {
+      - if <proc[dRegions_IsOwner].context[%name%|%world%|<player>].not> {
+        - run s@dRegions_Msg 'def:<&c>You are not an owner of this region!'
+        - queue clear
+        }
+      }
+    # Parse specified owners
+    - if <c.args.find[-w].is[OR_MORE].than[0]||false> {
+      - define args '<c.args.remove[<c.args.find[-w].add[1].as_int>].exclude[-w]>'
+      - define owners '<def[args].get[3].to[<def[args].size>].replace[:].with[;]||null>'
+      }
+      else define owners '<c.args.get[3].to[<c.args.size>].replace[:].with[;]||null>'
+    - if <def[owners].is_empty||true> {
+      - run s@dRegions_Msg 'def:<&c>Must specify at least one owner'
+      - queue clear
+      }
+    - foreach %owners% {
+      - if <def[value].starts_with[g;]||false> {
+        - define group '<def[value].replace[g;]>'
+        - define groups '<yaml[dRegions_%world%_regions].read[regions.%name%.owners.groups]||li@>'
+        - if <def[groups].contains[%group%]||false> {
+          - run s@dRegions_Msg 'def:<&c>Group %group% is already an owner'
+          - foreach next
+          }
+        - define pass true
+        - yaml set 'regions.%name%.owners.groups:->:%group%' 'id:dRegions_%world%_regions'
+        }
+        else {
+        - if <util.player_is_valid[%value%].not||true> foreach next
+        - define players '<yaml[dRegions_%world%_regions].read[regions.%name%.owners.players]||li@>'
+        - if <def[players].contains[<def[value].as_player.uuid>]||false> {
+          - run s@dRegions_Msg 'def:<&c>Player %value% is already an owner'
+          - foreach next
+          }
+        - define pass true
+        - yaml set 'regions.%name%.owners.players:->:<def[value].as_player.uuid>' 'id:dRegions_%world%_regions'
+        }
+      }
+    - if <def[pass].exists||false> {
+      - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
+      - run s@dRegions_Msg 'def:<&f><&o>%name%<&7><&o> owners updated'
+      }
+
+  removeowner:
+    - narrate "Stub"
+
+  addmember:
+  # /drg member g:group player
+    - inject locally prerun instantly
+    # Check if region exists
+    - define exists '<proc[dRegions_RegionExists].context[%name%|%world%]>'
+    - if <def[exists].is[==].to[orphan]> {
+      - run s@dRegions_Msg 'def:<&c>There is an orphaned region by this name!'
+      - run s@dRegions_Msg 'def:<&c>Please notify an admin!'
+      - queue clear
+      }
+      else if <def[exists].not> {
+      - run s@dRegions_Msg 'def:<&c>There is no region by this name!'
+      - queue clear
+      }
+    # Check if is owner
+    - if !<player.has_permission[dregions.admin]||false> {
+      - if <proc[dRegions_IsOwner].context[%name%|%world%|<player>].not> {
+        - run s@dRegions_Msg 'def:<&c>You are not an owner of this region!'
+        - queue clear
+        }
+      }
+    # Parse specified owners
+    - if <c.args.find[-w].is[OR_MORE].than[0]||false> {
+      - define args '<c.args.remove[<c.args.find[-w].add[1].as_int>].exclude[-w]>'
+      - define owners '<def[args].get[3].to[<def[args].size>].replace[:].with[;]||null>'
+      }
+      else define owners '<c.args.get[3].to[<c.args.size>].replace[:].with[;]||null>'
+    - if <def[owners].is_empty||true> {
+      - run s@dRegions_Msg 'def:<&c>Must specify at least one member'
+      - queue clear
+      }
+    - foreach %owners% {
+      - if <def[value].starts_with[g;]||false> {
+        - define group '<def[value].replace[g;]>'
+        - define groups '<yaml[dRegions_%world%_regions].read[regions.%name%.members.groups]||li@>'
+        - if <def[groups].contains[%group%]||false> {
+          - run s@dRegions_Msg 'def:<&c>Group %group% is already a member'
+          - foreach next
+          }
+        - define pass true
+        - yaml set 'regions.%name%.members.groups:->:%group%' 'id:dRegions_%world%_regions'
+        }
+        else {
+        - if <util.player_is_valid[%value%].not||true> foreach next
+        - define players '<yaml[dRegions_%world%_regions].read[regions.%name%.members.players]||li@>'
+        - if <def[players].contains[<def[value].as_player.uuid>]||false> {
+          - run s@dRegions_Msg 'def:<&c>Player %value% is already a member'
+          - foreach next
+          }
+        - define pass true
+        - yaml set 'regions.%name%.members.players:->:<def[value].as_player.uuid>' 'id:dRegions_%world%_regions'
+        }
+      }
+    - if <def[pass].exists||false> {
+      - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
+      - run s@dRegions_Msg 'def:<&f><&o>%name%<&7><&o> members updated'
+      }
+
+  removeemember:
+    - narrate "Stub"
+
+  list:
+    - narrate "Stub"
+
+  flag:
+    - narrate "Stub"
+
+  setpriority:
+    - narrate "Stub"
+
+  setparent:
+    - narrate "Stub"
+
+  teleport:
+    - narrate "Stub"
+
+  remove:
+  # /drg remove [ID] -w world
+    - inject locally prerun instantly
+    # Check if region exists
+    - define exists '<proc[dRegions_RegionExists].context[%name%|%world%]>'
+    - if <def[exists].is[==].to[orphan]> {
+      - run s@dRegions_Msg 'def:<&c>There is an orphaned region by this name!'
+      - run s@dRegions_Msg 'def:<&c>Please notify an admin!'
+      - queue clear
+      }
+      else if <def[exists].not> {
+      - run s@dRegions_Msg 'def:<&c>There is no region by this name!'
+      - queue clear
+      }
+    # Check if is owner
+    - if !<player.has_permission[dregions.admin]||false> {
+      - if <proc[dRegions_IsOwner].context[%name%|%world%|<player>].not> {
+        - run s@dRegions_Msg 'def:<&c>You are not an owner of this region!'
+        - queue clear
+        }
+      }
+    # Check for child regions and unset parent
+    - define regions '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__]||li@>'
+    - foreach %regions% {
+      - if <yaml[dRegions_%world%_regions].read[regions.%value%.parent].is[==].to[%name%]||false> {
+        - yaml set 'regions.%value%.parent:<-:%name%' 'id:dRegions_%world%_regions'
+        }
+      }
+    # Remove the region
+    - yaml set 'regions.%name%:!' 'id:dRegions_%world%_regions'
+    - note remove 'as:dregions_%world%_%name%'
+    - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
+    - run s@dRegions_Msg 'def:<&f><&o>%name%<&7><&o> has been removed from <&f><&o>%world%'
+
+#
+#  END dRegions Command Arguments
+#--------------------------------------
+#
+#  dRegions Command Utilities
+#
+# Just some commonly used code blocks
+#
+  prerun:
+  # Block of checks run before /most/ commands
+    - if !<player.has_permission[dRegions.%command%]||<player.is_op||false>> {
+      - inject locally help
+      - queue clear
+      }
+    - if <c.args.find[-w].is[OR_MORE].than[0]||false> {
+      - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name||null>'
+      - if <def[world].is[==].to[null]||true> {
+        - run s@dRegions_Msg 'def:<&c>Invalid world specfied!'
+        - queue clear
+        }
+      - define args '<c.args.remove[<c.args.find[-w].add[1].as_int>].exclude[-w]>'
+      - define name '<def[args].get[2].escaped||null>'
+      }
+      else define world '<player.world.name>'
+    - if <li@define|redefine|claim.contains[%command%]> {
+      - define wandType '<player.flag[dWEWand_Type]||cuboid>'
+      - if <li@cuboid|extender.contains[%wandType%].not||true> {
+        - run s@dRegions_Msg 'def:<&c>You must select a cuboid type region!'
+        - queue clear
+        }
+      - define pos1 '<player.flag[dWEWand].get[1].as_location||null>'
+      - define pos2 '<player.flag[dWEWand].get[2].as_location||null>'
+      - if <def[pos1].is[==].to[null]>
+        || <def[pos2].is[==].to[null]> {
+        - run s@dRegions_Msg 'def:<&c>No region selected!'
+        - queue clear
+        }
+      - if <def[pos1].world.name.is[!=].to[%world%]>
+        || <def[pos2].world.name.is[!=].to[%world%]> {
+        - run s@dRegions_Msg 'def:<&c>Selected region not within specified world!'
+        - queue clear
+        }
+      - define selectedCuboid '<cu@%pos1%|%pos2%>'
+      }
+    - define name '<def[name]||<c.args.get[2].escaped||null>>'
+    - if <def[name].is[==].to[null]||true> {
+      - run s@dRegions_Msg 'def:<&c>You must specify a name!'
+      - queue stop
+      }
+#    - inject s@dRegions_Commands p:selection_Size instantly
+#    - define oldSize '%size%'
+
+#
+#  dRegions dRegions Command Utilities
+#--------------------------------------
+#
+#  dRegions Command Messages
+#
+# These are not complete! They are mostly just stubs till the rest is fleshed out!
+#
+  msgsHeader:
+    - narrate "<&5>|----------------------------------------|"
+    - narrate "<&5>|<&sp><&sp><&sp><&6>dRegions   <&7>%msgsHeaderTitle%"
+    - narrate "<&5>|<&f>"
+
+  msgsFooter:
+    - define anthony "text<&co>'<&7>|Anthony|',clickEvent<&co><&chr[007B]>action<&co>open_url,value<&co>'http<&co>//mineconomy.org'<&chr[007D]>,hoverEvent<&co><&chr[007B]>action<&co>show_item,value<&co>'<&chr[007B]><i@AnthonyBanner.json><&chr[007D]>'<&chr[007D]>"
+    - define spacer "text<&co>'  '"
+    - define prefix "text<&co>'<&5>|  <&f>Authors<&co>  '"
+    - execute as_server "tellraw <player.name> <&chr[007B]>text<&co>'',extra<&co>[<&chr[007B]>%prefix%<&chr[007D]>,<&chr[007B]>%anthony%<&chr[007D]>]<&chr[007D]>"
+    - narrate "<&d>|-----------S-c-r-o-l-l---U-p-------------|"
+
+  msgsHelpAdmin:
+    - define msgsHeaderTitle 'Admin Help'
+    - inject locally msgsHeader instantly
+    - narrate "<&5>|<&sp><&sp><&sp><&f>"
+    - narrate "<&5>|<&sp><&sp><&f>"
+    - narrate "<&5>|<&sp><&sp><&f>"
+    - narrate "<&5>|<&sp><&sp><&f>"
+    - narrate "<&5>|<&sp><&sp><&f>"
+    - narrate "<&5>|<&sp><&sp><&f>"
+    - narrate "<&5>|<&sp><&f>"
+
+  msgsHelpUser:
+    - define msgsHeaderTitle 'User Help'
+    - inject locally msgsHeader instantly
+    - narrate "<&5>|<&sp><&sp><&sp><&sp><&f>"
+    - narrate "<&5>|<&sp><&sp><&f>"
+    - narrate "<&5>|<&sp><&sp><&f>"
+    - narrate "<&5>|<&sp><&f>"
+
+#
+#  END dRegions Command Messages
+#--------------------------------------
+#
+#  dRegions Other Utilities
+#
+# Other Utility functions used throughout dRegions
+#
+##dRegions_HasPerm:
+##  I have to think about this more...
+##  # A procedure script to check if a player has any of the required permissions for a command
+##  # <proc[dRegions_HasPerm].context[command]>
+##  type: procedure
+##  definition: command
+##  constants:
+##    define:
+##    - admin
+##    - define
+##    redefine:
+##    - admin
+##    - redefine
+##    - redefine.own.*
+##    - redefine.own.%region%
+##    - redefine.member.*
+##    - redefine.member.%region%
+##
+##  script:
+##    - if '<def[region].exsits.not||true>' determine false
+##    - define perms <script.constant[%command%]>
+
+
+dRegions_IsOwner:
+  # A procedure script to check if a player is a region owner
+  # <proc[dRegions_IsOwner].context[region|world|player]>
+  type: procedure
+  definitions: region|world|player
+  script:
+    - define players '<yaml[dRegions_%world%_regions].read[regions.%region%.owners.players]||li@>'
+    - define groups '<yaml[dRegions_%world%_regions].read[regions.%region%.owners.groups]||li@>'
+    - if <def[players].contains[<def[player].uuid>].not||false>
+      && <def[groups].contains_any[<def[player].groups>].not||false> determine false
+      else determine true
+
+
+dRegions_RegionExists:
+  # A procedure script to check if a region exists
+  # <proc[dRegions_RegionExists].context[region|world]>
+  type: procedure
+  definitions: region|world
+  script:
+    - define notables '<cu@dregions_%world%_%region%.is[matches].to[cuboid].not||true>'
+    - define regions '<yaml[dRegions_%world%_regions].contains[regions.%region%].not||true>'
+    - if %notables% && %regions% determine false
+      else if %notables% || %regions% determine orphan
+      else determine true
+
+
+dRegions_RegionOverlaps:
+  # A procedure script to check if a region overlaps other (un)owned regions
+  # <proc[dRegions_RegionOverlaps].context[<def[selectedCuboid].replace[cu@].replace[|].with[/]>|%name%|%world%|<player>]>
+  # NOTE: We have the ability to return %overlaps% and %unowned% if we want
+  type: procedure
+  debug: true
+  definitions: selectedCuboid|region|world|player
+  script:
+    - define regions '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__]||li@>'
+    - define notables '<def[regions].parse[replace[regex:^()].with[cu@dregions_%world%_]].filter[is[matches].to[cuboid]]||li@>'
+    - define overlaps '<def[notables].filter[intersects[<def[selectedCuboid].split[/].as_cuboid>]].parse[replace[cu@dregions_%world%_]]||li@>'
+#    - define unowned '<def[overlaps].filter[<proc[dRegions_IsOwner].context[%region%|%world%|<player>].not>]||li@>'
+    - define unowned li@
+    - foreach %overlaps% {
+      - if <proc[dRegions_IsOwner].context[%value%|%world%|<player>].not> define unowned '<def[unowned].include[%value%]||%unowned%>'
+      }
+    - if <def[unowned].is_empty.not||true> determine true
+      else determine false
+
+
+#
+#  END other utilities
+#--------------------------------------
+#
+#  dRegions author banner items
+#
+# Banner items representing the authors
+#
+dRegions_Author_Anthony:
+  type: item
+  material: i@human_skull
+  display name: "<&f>             |Anthony|"
+  lore:
+  - <&7>  Owner<&co> <&e>M<&6>ine<&e>C<&6>onomy <&e>N<&6>etwork
+  - <&5>-------------------------
+  - <&7>
+  - <&7>  I`ve been playing minecraft
+  - <&7> and running a server since
+  - <&7> 2010. I have fun and share
+  - <&7> what I do.
+  - <&7>
+  - <&9>           Click To Visit
+#
+#  END dRegions author banner items
+#--------------------------------------
+
+
+
+
+################################################################################
+#                                                                              #
+# Configuration Files                                                          #
+#                                                                              #
+#   These are the default config files. They will be used to build the default #
+# configuration and data storage files.                                        #
+#                                                                              #
+#______________________________________________________________________________#
+#                                                                              #
+#______________________________DO_NOT_EDIT_THIS_DATA___________________________#
+#______________________________________________________________________________#
+
+
+dRegions_Configurations:
+  type: yaml data
+
+  config:
+    version: 0.1
+    regions:
+      enable: true
+      invincibility-removes-mobs: false
+      wand: dWE_Wand
+      claim:
+        max-volume: 0
+        only-inside-existing-regions: true
+        max-region-count-per-player:
+          default: 7
+    auto-invincible: false
+    protection:
+      item-durability: true
+      remove-infinite-stacks: false
+      disable-xp-orb-drops: false
+      disable-obsidian-generators: true
+    physics:
+      no-physics-gravel: false
+      no-physics-sand: false
+      allow-portal-anywhere: false
+      disable-water-damage-blocks: []
+    ignition:
+      block-tnt: false
+      block-tnt-block-damage: false
+      block-lighter: false
+    fire:
+      disable-lava-fire-spread: false
+      disable-all-fire-spread: false
+      disable-fire-spread-blocks: []
+      lava-spread-blocks: []
+    mobs:
+      block-creeper-explosions: false
+      block-creeper-block-damage: false
+      block-wither-explosions: false
+      block-wither-block-damage: false
+      block-wither-skull-explosions: false
+      block-wither-skull-block-damage: false
+      block-enderdragon-block-damage: false
+      block-fireball-explosions: false
+      block-fireball-block-damage: false
+      disable-enderman-griefing: false
+      block-painting-destroy: false
+      block-item-frame-destroy: false
+      block-creature-spawn: []
+    player-damage:
+      disable-fall-damage: false
+      disable-lava-damage: false
+      disable-fire-damage: false
+      disable-lightning-damage: false
+      disable-drowning-damage: false
+      disable-suffocation-damage: false
+      disable-contact-damage: false
+      teleport-on-suffocation: false
+      disable-void-damage: false
+      teleport-on-void-falling: false
+      disable-explosion-damage: false
+      disable-mob-damage: false
+      disable-death-messages: false
+    crops:
+      disable-creature-trampling: false
+      disable-player-trampling: false
+    weather:
+      prevent-lightning-strike-blocks: []
+      disable-lightning-strike-fire: false
+      disable-thunderstorm: false
+      disable-weather: false
+      disable-pig-zombification: false
+      disable-powered-creepers: false
+      always-raining: false
+      always-thundering: false
+    dynamics:
+      disable-mushroom-spread: false
+      disable-ice-melting: false
+      disable-snow-melting: false
+      disable-snow-formation: false
+      disable-ice-formation: false
+      disable-leaf-decay: false
+      disable-grass-growth: false
+      disable-mycelium-spread: false
+
+  regions:
+    __global__:
+        type: global
+        priority: 0
+        flags: []
+        owners: []
+        members: []
+
+
+#
