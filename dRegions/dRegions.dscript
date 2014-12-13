@@ -210,7 +210,7 @@ dRegions_Commands:
 
   script:
     - define command '<c.args.get[1].escaped||help>'
-    - define args 'li@help|reload|select|define|redefine|remove|addowner|addmember|setparent|setpriority|list'
+    - define args 'li@help|reload|select|define|redefine|remove|addowner|removeowner|addmember|setparent|setpriority|list'
     - if !<def[args].contains[%command%]> inject locally help instantly
       else inject locally %command% instantly
 
@@ -368,7 +368,41 @@ dRegions_Commands:
       else define result 'li@'
 
   tab_removeowner:
-    - define result 'li@'
+  # /drg removeowner [ID] g:group player -w world
+    - if <player.has_permission[dregions.removeowner]||false> {
+      - define spaces '<c.raw_args.to_list.count[ ]||0>'
+      - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name||<player.world.name||null>>'
+      - define regions '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__]||li@>'
+      - if <player.has_permission[dregions.admin].not||true> {
+        - foreach %regions% {
+          - if <proc[dRegions_IsOwner].context[%value%|%world%|<player>].not> define regions '<def[regions].exclude[%value%]||%regions%>'
+          }
+        }
+      - if <def[spaces].is[==].to[0]> define result '<def[regions].parse[replace[regex:^].with[removeowner ]]>'
+        else if <def[spaces].is[==].to[1]> {
+        - define result '<def[regions].filter[starts_with[<c.args.get[2].escaped>]]||li@>'
+        - if <def[result].is_empty||true> define result '%regions%'
+        }
+        else if <def[spaces].is[OR_MORE].than[2]> {
+        - define owners '<c.args.remove[1|2]||li@>'
+        - if <c.args.find[-w].is[OR_MORE].than[0]||false> {
+          - define owners '<def[owners].remove[<def[owners].find[-w]>|<def[owners].find[-w].add[1].as_int>]||li@>'
+          }
+        - define owner '<def[owners].last||li@>'
+        - if <def[owner].starts_with[g:]||false> {
+          - define group '<def[owner].replace[g:]>'
+          - define groups '<server.list_permission_groups.filter[starts_with[%group%]]||li@>'
+          - if <def[groups].is_empty> define groups '<server.list_permission_groups||li@>'
+          - define result '<def[groups].parse[replace[regex:^].with[g:]]>'
+          }
+          else {
+          - define result '<server.match_player[%owner%].name||null>'
+          - if <def[result].is[==].to[null]||true> define result '<server.list_online_players.parse[name]>'
+          }
+        }
+        else define result 'li@'
+      }
+      else define result 'li@'
 
   tab_addmember:
   # /drg addmember [ID] g:group player -w world
@@ -707,7 +741,62 @@ dRegions_Commands:
       }
 
   removeowner:
-    - narrate "Stub"
+  # /drg removeowner [ID] g:group player
+    - inject locally prerun instantly
+    # Check if region exists
+    - define exists '<proc[dRegions_RegionExists].context[%name%|%world%]>'
+    - if <def[exists].is[==].to[orphan]> {
+      - run s@dRegions_Msg 'def:<&c>There is an orphaned region by this name!'
+      - run s@dRegions_Msg 'def:<&c>Please notify an admin!'
+      - queue clear
+      }
+      else if <def[exists].not> {
+      - run s@dRegions_Msg 'def:<&c>There is no region by this name!'
+      - queue clear
+      }
+    # Check if is owner
+    - if !<player.has_permission[dregions.admin]||false> {
+      - if <proc[dRegions_IsOwner].context[%name%|%world%|<player>].not> {
+        - run s@dRegions_Msg 'def:<&c>You are not an owner of this region!'
+        - queue clear
+        }
+      }
+    # Parse specified owners
+    - if <c.args.find[-w].is[OR_MORE].than[0]||false> {
+      - define args '<c.args.remove[<c.args.find[-w].add[1].as_int>].exclude[-w]>'
+      - define owners '<def[args].get[3].to[<def[args].size>].replace[:].with[;]||null>'
+      }
+      else define owners '<c.args.get[3].to[<c.args.size>].replace[:].with[;]||null>'
+    - if <def[owners].is_empty||true> {
+      - run s@dRegions_Msg 'def:<&c>Must specify at least one owner'
+      - queue clear
+      }
+    - foreach %owners% {
+      - if <def[value].starts_with[g;]||false> {
+        - define group '<def[value].replace[g;]>'
+        - define groups '<yaml[dRegions_%world%_regions].read[regions.%name%.owners.groups]||li@>'
+        - if <def[groups].contains[%group%].not||true> {
+          - run s@dRegions_Msg 'def:<&c>Group %group% is not an owner'
+          - foreach next
+          }
+        - define pass true
+        - yaml set 'regions.%name%.owners.groups:<-:%group%' 'id:dRegions_%world%_regions'
+        }
+        else {
+        - if <util.player_is_valid[%value%].not||true> foreach next
+        - define players '<yaml[dRegions_%world%_regions].read[regions.%name%.owners.players]||li@>'
+        - if <def[players].contains[<def[value].as_player.uuid>].not||true> {
+          - run s@dRegions_Msg 'def:<&c>Player %value% is not an owner'
+          - foreach next
+          }
+        - define pass true
+        - yaml set 'regions.%name%.owners.players:<-:<def[value].as_player.uuid>' 'id:dRegions_%world%_regions'
+        }
+      }
+    - if <def[pass].exists||false> {
+      - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
+      - run s@dRegions_Msg 'def:<&f><&o>%name%<&7><&o> owners updated'
+      }
 
   addmember:
   # /drg addmember [ID] g:group player
