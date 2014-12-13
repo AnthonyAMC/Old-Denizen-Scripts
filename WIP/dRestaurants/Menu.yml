@@ -7,7 +7,7 @@ dRestaurantMenu:
 #
     on player closes inventory:
       - if <c.inventory.replace[in@].split[_].get[1].is[!=].to[dRestaurant]||true> queue clear
-      - note remove 'as:<context.inventory>'
+      - note remove 'as:<context.inventory.notable_name>'
 
     on player right clicks with i@dRestaurant_Menu:
       - if <player.has_flag[dRestaurant_Order]||false> {
@@ -468,7 +468,7 @@ dRestaurant_Button_Menu:
 #    - "<&b>Click to view the menu"
 #    - ""
   script:
-    - note remove 'as:in@%GUI%'
+    - note remove 'as:<def[GUI]>'
     - inject s@dRestaurantMenu p:display_Menu
 
 dRestaurant_Button_OrderCancel:
@@ -481,7 +481,7 @@ dRestaurant_Button_OrderCancel:
   script:
     - inventory close
     - flag player dRestaurant_Order:!
-    - note remove 'as:in@%GUI%'
+    - note remove 'as:<def[GUI]>'
     - run s@dRestaurantMenu p:takeMenu
     - run s@dRestaurantMsg 'def:<&c>Order Canceled!' instantly
     - wait 1t
@@ -494,7 +494,7 @@ dRestaurant_Button_OrderReview:
 #    - "<&b>Click to review your order"
 #    - ""
   script:
-    - note remove 'as:in@%GUI%'
+    - note remove 'as:<def[GUI]>'
     - inject s@dRestaurantMenu p:display_OrderReview
 
 dRestaurant_Button_OrderAccept:
@@ -521,7 +521,7 @@ dRestaurant_Button_OrderAccept:
     - take money qty:%totalPrice%
     - give money qty:%totalPrice% player:<server.flag[dRestaurant.%restaurant%.Owner].as_player>
     - inventory close
-    - note remove 'as:in@%GUI%'
+    - note remove 'as:<def[GUI]>'
     - flag player dRestaurant_Order:%restaurant%/%order%/true
     - event "order placed" context:player|<player>
     - run s@dRestaurantMsg 'def:<&6>$<&a>%totalPrice% <&f>has been deducted from you account.' instantly
@@ -540,7 +540,7 @@ dRestaurant_Button_MenuEdit:
 #    - "<&b>Click to edit your menu"
 #    - ""
   script:
-    - note remove 'as:in@%GUI%'
+    - note remove 'as:<def[GUI]>'
     - inject s@dRestaurantMenu p:display_MenuEdit
 
 dRestaurant_Button_ManageStaff:
@@ -552,7 +552,7 @@ dRestaurant_Button_ManageStaff:
 #    - ""
   script:
     - run s@dRestaurantMsg 'def:<&f>This button has not been made yet.' instantly
-    - note remove 'as:in@%GUI%'
+    - note remove 'as:<def[GUI]>'
     - inject s@dRestaurantMenu p:display_ManageStaff
 
 dRestaurant_Button_ManageStaff_EditWaitress:
@@ -624,7 +624,7 @@ dRestaurant_Button_EquipmentChecks:
 #    - "<&b>for valid kitchen equipment"
   script:
     - run s@dRestaurantMsg 'def:<&f>This button has not been made yet.' instantly
-    - note remove 'as:in@%GUI%'
+    - note remove 'as:<def[GUI]>'
     - inject s@dRestaurantMenu p:display_EquipmentChecks
 
 #
