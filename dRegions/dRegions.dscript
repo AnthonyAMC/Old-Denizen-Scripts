@@ -198,11 +198,65 @@ dRegions_Commands:
   - drg
   allowed help:
   - determine true
+
+  commandArgs:
+    help:
+      usage: '/drg help <&lt>arg<&gt>'
+      permissions: []
+    reload:
+      usage: '/drg reload'
+      permissions: []
+    define:
+      usage: '/drg define [ID] (g:group) (player)'
+      permissions: []
+    redefine:
+      usage: '/drg redefine [ID]'
+      permissions: []
+    claim:
+      usage: '/drg claim [ID]'
+      permissions: []
+    select:
+      usage: '/drg select [ID] -w world'
+      permissions: []
+    info:
+      usage: '/drg info [ID] -w world'
+      permissions: []
+    addowner:
+      usage: '/drg addowner [ID] g:group player -w world'
+      permissions: []
+    removeowner:
+      usage: '/drg removeowner [ID] g:group player -w world'
+      permissions: []
+    addmember:
+      usage: '/drg addmember [ID] g:group player -w world'
+      permissions: []
+    removemember:
+      usage: '/drg removemember [ID] g:group player -w world'
+      permissions: []
+    list:
+      usage: '/drg list (page#) -r region -w world -p player'
+      permissions: []
+    flag:
+      usage: '/drg flag [ID] [flag] [value] -g group -w world'
+      permissions: []
+    setpriority:
+      usage: '/drg setpriority [ID] [#]'
+      permissions: []
+    setparent:
+      usage: '/drg setparent [ID] [parent]'
+      permissions: []
+    teleport:
+      usage: '/drg teleport [ID] -w world'
+      permissions: []
+    remove:
+      usage: '/drg remove [ID] -w world'
+      permissions: []
+
   tab complete:
-    - define argList 'li@help|reload|define|redefine|claim|select|info|addowner|removeowner|addmember|removemember|list|flag|setpriority|setparent|teleport|remove'
+    - define args '<script.list_keys[commandArgs].alphanumeric.to_lowercase||li@>'
     - define arg '<c.args.get[1]||null>'
     - if <def[arg].is[==].to[null]>
-      || !<def[argList].contains[%arg%]> {
+      || !<def[args].contains[%arg%]> {
       - inject locally tab_arg_1
       }
       else inject locally tab_%arg%
@@ -210,7 +264,7 @@ dRegions_Commands:
 
   script:
     - define command '<c.args.get[1].escaped||help>'
-    - define args 'li@help|reload|select|define|redefine|remove|addowner|removeowner|addmember|removemember|setparent|setpriority|list'
+    - define args '<script.list_keys[commandArgs].alphanumeric.to_lowercase||li@>'
     - if !<def[args].contains[%command%]> inject locally help instantly
       else inject locally %command% instantly
 
@@ -227,7 +281,7 @@ dRegions_Commands:
 #  tab_arg_1:
 #    # This builds a new resultSet list for the possible args
 #    - define resultSet li@
-#    - foreach %argList% {
+#    - foreach %args% {
 #      - if <player.has_permission[dregions.%value%]||false> define resultSet '<def[resultSet].include[%value%]>'
 #      }
 #    - if <def[resultSet].is_empty||true> {
@@ -238,18 +292,27 @@ dRegions_Commands:
 #      - if <def[result].is_empty> define result %resultset%
 
   tab_arg_1:
-    # This Excludes args from the original argList
-    - foreach %argList% {
-      - if !<player.has_permission[dregions.%value%]||false> define argList '<def[argList].exclude[%value%]||%argList%>'
+    # This Excludes args from the original args
+    - foreach %args% {
+      - if !<player.has_permission[dregions.%value%]||false> define args '<def[args].exclude[%value%]||%args%>'
       }
-    - if <def[argList].is_empty||true> define result 'li@'
+    - if <def[args].is_empty||true> define result 'li@'
       else {
-      - define result '<def[argList].filter[starts_with[%arg%]]||li@> '
-      - if <def[result].is_empty||true> define result '%argList%'
+      - define result '<def[args].filter[starts_with[%arg%]]||li@> '
+      - if <def[result].is_empty||true> define result '%args%'
       }
 
   tab_help:
-    - define result 'li@'
+    - define spaces '<c.raw_args.to_list.count[ ]||0>'
+    - if <def[spaces].is[==].to[0]> define result 'help [command]'
+      else if <def[spaces].is[==].to[1]> {
+      - define result 'li@'
+      - foreach %args% {
+        - if <player.has_permission[dregions.%value%]> {
+        - define result '<def[result].include[%value%]||%result%>'
+        }
+        else foreach next
+      }
 
   tab_reload:
     - define result 'li@'
@@ -592,6 +655,11 @@ dRegions_Commands:
 # Each of these subscripts is an argument for the root command.
 #
   help:
+    - define arg '<c.args.get[2].escaped||null>'
+    - if <def[args].contains[%arg%]||false> {
+      - run s@dRegions_Msg 'def:<script.yaml_key[commandArgs.%arg%.usage]>'
+      - queue clear
+      }
     - if <player.has_permission[dRegions.admin]||<context.server||false>> inject locally msgsHelpAdmin instantly
       else inject locally msgsHelpUser instantly
     - inject locally msgsFooter instantly
@@ -1214,6 +1282,7 @@ dRegions_Commands:
       - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name||null>'
       - if <def[world].is[==].to[null]||true> {
         - run s@dRegions_Msg 'def:<&c>Invalid world specfied!'
+        - run s@dRegions_Msg 'def:<script.yaml_key[commandArgs.%command%.usage]>'
         - queue clear
         }
       - define args '<c.args.remove[<c.args.find[-w].add[1].as_int>].exclude[-w]>'
@@ -1224,6 +1293,7 @@ dRegions_Commands:
       - define wandType '<player.flag[dWEWand_Type]||cuboid>'
       - if <li@cuboid|extender.contains[%wandType%].not||true> {
         - run s@dRegions_Msg 'def:<&c>You must select a cuboid type region!'
+        - run s@dRegions_Msg 'def:<script.yaml_key[commandArgs.%command%.usage]>'
         - queue clear
         }
       - define pos1 '<player.flag[dWEWand].get[1].as_location||null>'
@@ -1236,13 +1306,15 @@ dRegions_Commands:
       - if <def[pos1].world.name.is[!=].to[%world%]>
         || <def[pos2].world.name.is[!=].to[%world%]> {
         - run s@dRegions_Msg 'def:<&c>Selected region not within specified world!'
+        - run s@dRegions_Msg 'def:<script.yaml_key[commandArgs.%command%.usage]>'
         - queue clear
         }
       - define selectedCuboid '<cu@%pos1%|%pos2%>'
       }
     - define name '<def[name]||<c.args.get[2].escaped||null>>'
     - if <def[name].is[==].to[null]||true> {
-      - run s@dRegions_Msg 'def:<&c>You must specify a name!'
+      - run s@dRegions_Msg 'def:<&c>You must specify a region ID!'
+      - run s@dRegions_Msg 'def:<script.yaml_key[commandArgs.%command%.usage]>'
       - queue stop
       }
 #    - inject s@dRegions_Commands p:selection_Size instantly
@@ -1305,13 +1377,16 @@ dRegions_Commands:
   msgsHelpAdmin:
     - define msgsHeaderTitle 'Admin Help'
     - inject locally msgsHeader instantly
-    - narrate "<&5>|<&sp><&sp><&sp><&f>"
-    - narrate "<&5>|<&sp><&sp><&f>"
-    - narrate "<&5>|<&sp><&sp><&f>"
-    - narrate "<&5>|<&sp><&sp><&f>"
-    - narrate "<&5>|<&sp><&sp><&f>"
-    - narrate "<&5>|<&sp><&sp><&f>"
-    - narrate "<&5>|<&sp><&f>"
+    - narrate "<&5>|"
+    - define commands '<script.list_keys[commandArgs].alphanumeric.to_lowercase||li@>'
+    - foreach %commands% {
+      - if <player.has_permission[dregions.%value%]> {
+        - narrate "<&5>|<&sp><&sp><&f><def[value].to_titlecase><&co>"
+        - narrate "<&5>|<&sp><&sp><&sp><&sp><&7><script.yaml_key[commandArgs.%value%.usage]>"
+        }
+        else foreach next
+      }
+    - narrate "<&5>|"
 
   msgsHelpUser:
     - define msgsHeaderTitle 'User Help'
@@ -1349,10 +1424,10 @@ dRegions_Commands:
 #  allowed help:
 #  - determine true
 #  tab complete:
-#    - define argList 'li@help|reload|define|redefine|claim|select|info|addowner|removeowner|addmember|removemember|list|flag|setpriority|setparent|teleport|remove'
+#    - define args 'li@help|reload|define|redefine|claim|select|info|addowner|removeowner|addmember|removemember|list|flag|setpriority|setparent|teleport|remove'
 #    - define arg '<c.args.get[1]||null>'
 #    - if <def[arg].is[==].to[null]>
-#      || !<def[argList].contains[%arg%]> {
+#      || !<def[args].contains[%arg%]> {
 #      - inject locally tab_arg_1
 #      }
 #      else inject locally tab_%arg%
