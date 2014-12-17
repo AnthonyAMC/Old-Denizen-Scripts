@@ -1938,6 +1938,88 @@ dRegions_LineWrap:
       }
 
 
+################################################################################
+#
+#  FlagTypeMatch Procedure script
+#
+#    Used to check that the player specified value matches the type required
+#   by the flag.
+#
+#    Use this to compare 2 values. Check if they are one of NUMBER, DECIMAL,
+#   LOCATION, BOOLEAN, STATE, GROUP, or any other STRING (list values are
+#   handled locally).
+#
+#   usage:
+#     - define YourValue "Some string"
+#     - define CompareValue "5.2"
+#     - define TypeMatch '<proc[TypeMatch].context[%YourValue%|%CompareValue%]>'
+#     - if <def[TypeMatch].get[1]> {
+#       - narrate "YourValue and CompareValue are both <def[TypeMatch].get[2]> strings."
+#       }
+#       else {
+#       - narrate "YourValue and CompareValue Do not Match!"
+#       - narrate "YourValue Type<&co> <def[TypeMatch].get[2]>"
+#       - narrate "CompareValue Type<&co> <def[TypeMatch].get[3]>"
+#       }
+#
+dRegion_FlagTypeMatch:
+  type: procedure
+  debug: false
+  definitions: YourValue|CompareValue
+
+  script:
+
+# Get the comparable type for your value
+    - if <def[YourValue].is[MATCHES].to[number]> {
+      - define YourValueType 'number'
+      }
+      else if <def[YourValue].is[MATCHES].to[decimal]> {
+      - define YourValueType 'decimal'
+      }
+      else if <def[YourValue].is[MATCHES].to[boolean]> {
+      - define YourValueType 'boolean'
+      }
+      else if <def[YourValue].as_location.world.is[!=].to[null]||false> {
+      - define YourValueType 'location'
+      }
+      else if <el@val[allow|deny|none].as_list.contains[%YourValue%]||false> {
+      - define YourValueType 'state'
+      }
+      else if <el@val[members|nonmembers|owners|nonowners|all].as_list.contains[%YourValue%]||false> {
+      - define YourValueType 'group'
+      }
+      else define YourValueType 'STRING'
+
+# Get the comparable type of the string you're comparing against
+    - if <def[CompareValue].is[MATCHES].to[number]> {
+      - define CompareValueType 'number'
+      }
+      else if <def[CompareValue].is[MATCHES].to[decimal]> {
+      - define CompareValueType 'decimal'
+      }
+      else if <def[CompareValue].is[MATCHES].to[boolean]> {
+      - define CompareValueType 'boolean'
+      }
+      else if <def[CompareValue].as_location.world.is[!=].to[null]||false> {
+      - define CompareValueType 'location'
+      }
+      else if <el@val[allow|deny|none].as_list.contains[%CompareValue%]||false> {
+      - define CompareValueType 'state'
+      }
+      else if <el@val[members|nonmembers|owners|nonowners|all].as_list.contains[%CompareValue%]||false> {
+      - define CompareValueType 'group'
+      }
+      else define CompareValueType 'STRING'
+
+# Return determination
+    - if <def[YourValueType].is[==].to[%CompareValueType%]> determine "li@true|%CompareValueType%"
+      else determine "li@false|%YourValueType%|%CompareValueType%"
+
+
+
+
+
+
 #
 #  END other utilities
 #--------------------------------------
