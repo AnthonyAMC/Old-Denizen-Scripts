@@ -33,6 +33,16 @@ dRegions:
     on server start:
     - run locally start delay:2t
 
+    on player enters notable cuboid:
+    - define world '<player.world.name>'
+    - define dRegions '<c.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[split[_].get[3]].replace[li@].replace[|].with[,]>'
+    - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|%dRegions%]>'
+    - narrate "<&7>---------------------------------------------"
+    - narrate "Regions <&7>%dRegions%"
+    - narrate ""
+    - narrate "orderedRegions <&7>%orderedRegions%"
+    - narrate "<&7>---------------------------------------------"
+
 
   start:
     - inject locally loadYaml instantly
@@ -1878,6 +1888,21 @@ dRegions_RegionExists:
     - if %notables% && %regions% determine false
       else if %notables% || %regions% determine orphan
       else determine true
+
+
+dRegions_HighestPriority:
+  # Filter a list of regions by priority in descending order
+  # <proc[dRegions_HighestPriority].context[world|region1,...]>
+  type: procedure
+  definitions: world|regions
+  script:
+    - define regions '<def[regions].split[,]>'
+    - define priList '<parse:<def[regions].parse[replace[regex:^()].with[<&lt>yaml<&lb>dRegions_%world%_regions<&rb>.read<&lb>regions.]].parse[replace[regex:()$].with[.priority<&rb>||0<&gt>]]>>'
+    - define regionPri 'li@'
+    - foreach <def[regions]> {
+      - define regionPri '<def[regionPri].include[<def[priList].get[%loop_index%]>/%value%]>'
+      }
+    - determine '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
 
 
 dRegions_RegionOverlaps:
