@@ -1,0 +1,134 @@
+################################################################################
+#
+#                                d R e g i o n s
+#
+#                                 Flag Modules
+#
+#   Authors: |Anthony|
+#   Version: 0.1
+#   dScript Version: 0.9.6-DEV_b146
+#
+#
+#
+#--- About this script
+#
+#  Adding new flags /can/ be as easy as making a new module!
+#
+#
+#
+################################################################################
+
+
+dRegions_Flag_Entry:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Entry<&4>]"
+  lore:
+  - <&5>Who can enter a region
+  event_hook: regionEnter
+  event_priority: 0
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+
+  event:
+    - narrate "Checking entry permission"
+#    - define msgList '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<&lt>yaml<&lb>dRegions_%world%_regions<&rb>.read<&lb>regions.]].parse[replace[regex:()$].with[.flags.entry<&rb>||null<&gt>]]>>'
+#    - foreach %msgList% {
+#      - if <def[value].is[!=].to[null]||false> {
+#        - narrate "<parse:%value%>"
+#        - foreach stop
+#        }
+#      }
+
+
+
+dRegions_Flag_Greeting:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Greeting<&4>]"
+  lore:
+  - <&5>Message on enter region
+  event_hook: regionEnter
+  event_priority: 10
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+
+  event:
+    - define msgList '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<&lt>yaml<&lb>dRegions_%world%_regions<&rb>.read<&lb>regions.]].parse[replace[regex:()$].with[.flags.greeting<&rb>||null<&gt>]]>>'
+    - foreach %msgList% {
+      - if <def[value].is[!=].to[null]||false> {
+        - narrate "<parse:%value%>"
+        - foreach stop
+        }
+      }
+
+
+dRegions_Flag_Exit:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Exit<&4>]"
+  lore:
+  - <&5>Who can exit a region
+  event_hook: regionExit
+  event_priority: 0
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+
+  event:
+    - narrate "Checking exit permission"
+#    - define msgList '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<&lt>yaml<&lb>dRegions_%world%_regions<&rb>.read<&lb>regions.]].parse[replace[regex:()$].with[.flags.entry<&rb>||null<&gt>]]>>'
+#    - foreach %msgList% {
+#      - if <def[value].is[!=].to[null]||false> {
+#        - narrate "<parse:%value%>"
+#        - foreach stop
+#        }
+#      }
+
+
+
+dRegions_Flag_Farewell:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Farewell<&4>]"
+  lore:
+  - <&5>Message on exit region
+  event_hook: regionExit
+  event_priority: 10
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+
+  event:
+    - define msgList '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<&lt>yaml<&lb>dRegions_%world%_regions<&rb>.read<&lb>regions.]].parse[replace[regex:()$].with[.flags.farewell<&rb>||null<&gt>]]>>'
+    - foreach %msgList% {
+      - if <def[value].is[!=].to[null]||false> {
+        - narrate "<parse:%value%>"
+        - foreach stop
+        }
+      }
+
+
+#
