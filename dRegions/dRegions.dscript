@@ -37,11 +37,38 @@ dRegions:
     - define world '<player.world.name>'
     - define dRegions '<c.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[split[_].get[3]].replace[li@].replace[|].with[,]>'
     - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|%dRegions%]>'
-    - narrate "<&7>---------------------------------------------"
-    - narrate "Regions <&7>%dRegions%"
-    - narrate ""
-    - narrate "orderedRegions <&7>%orderedRegions%"
-    - narrate "<&7>---------------------------------------------"
+
+    - define allFlagScripts '<server.list_scripts.filter[starts_with[s@dRegions_Flag]]||li@>'
+#    - define allFlagScripts '<server.list_scripts.filter[split[_].get[1|2].is[==].to[s@dRegions|Flag]]>'
+    - define regionEnterFlags '<def[allFlagScripts].filter[yaml_key[event_hook].is[==].to[regionEnter]]||li@>'
+    - define eventPri '<def[regionEnterFlags].parse[yaml_key[event_priority]]>'
+    - define eventList 'li@'
+    - foreach <def[regionEnterFlags]> {
+      - define eventList '<def[eventList].include[<def[eventPri].get[%loop_index%]>/%value%]>'
+      }
+    - define orderedEvents '<def[eventList].alphanumeric.parse[split[/].get[2]]>'
+    - foreach <def[orderedEvents]> {
+      - inject %value% p:event
+      }
+
+
+    on player exits notable cuboid:
+    - define world '<player.world.name>'
+    - define dRegions '<c.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[split[_].get[3]].replace[li@].replace[|].with[,]>'
+    - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|%dRegions%]>'
+
+    - define allFlagScripts '<server.list_scripts.filter[starts_with[s@dRegions_Flag]]||li@>'
+#    - define allFlagScripts '<server.list_scripts.filter[split[_].get[1|2].is[==].to[s@dRegions|Flag]]>'
+    - define regionExitFlags '<def[allFlagScripts].filter[yaml_key[event_hook].is[==].to[regionExit]]||li@>'
+    - define eventPri '<def[regionExitFlags].parse[yaml_key[event_priority]]>'
+    - define eventList 'li@'
+    - foreach <def[regionExitFlags]> {
+      - define eventList '<def[eventList].include[<def[eventPri].get[%loop_index%]>/%value%]>'
+      }
+    - define orderedEvents '<def[eventList].alphanumeric.parse[split[/].get[2]]>'
+    - foreach <def[orderedEvents]> {
+      - inject %value% p:event
+      }
 
 
   start:
