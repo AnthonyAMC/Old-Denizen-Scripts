@@ -35,17 +35,18 @@ dRegions:
 
     on player teleports:
     - if !<c.origin.cuboids.is_empty||true> {
-      - event "player exits notable cuboid" 'context:from|<c.origin>|to|<c.destination>|cuboids|<c.origin.cuboids>' save:event
+      - event "player exits notable cuboid" 'context:from|<c.origin>|to|<c.destination>|cuboids|<c.origin.cuboids.replace[|].with[;]>' save:event
       - determine '<entry[event].determination||cancelled>'
       }
     - if !<c.destination.cuboids.is_empty||true> {
-      - event "player enters notable cuboid" 'context:from|<c.origin>|to|<c.destination>|cuboids|<c.destination.cuboids>' save:event
+      - event "player enters notable cuboid" 'context:from|<c.origin>|to|<c.destination>|cuboids|<c.destination.cuboids.replace[|].with[;]>' save:event
       - determine '<entry[event].determination||cancelled>'
       }
 
     on player enters notable cuboid:
     - define world '<player.world.name>'
-    - define dRegions '<c.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[split[_].get[3]].replace[li@].replace[|].with[,]>'
+    - define cuboids '<c.cuboids.replace[;].with[|]>'
+    - define dRegions '<def[cuboids].parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[split[_].get[3]].replace[li@].replace[|].with[,]>'
     - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|%dRegions%]>'
 
     - define allFlagScripts '<server.list_scripts.filter[starts_with[s@dRegions_Flag]]||li@>'
@@ -64,7 +65,8 @@ dRegions:
 
     on player exits notable cuboid:
     - define world '<player.world.name>'
-    - define dRegions '<c.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[split[_].get[3]].replace[li@].replace[|].with[,]>'
+    - define cuboids '<c.cuboids.replace[;].with[|]>'
+    - define dRegions '<def[cuboids].parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[split[_].get[3]].replace[li@].replace[|].with[,]>'
     - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|%dRegions%]>'
 
     - define allFlagScripts '<server.list_scripts.filter[starts_with[s@dRegions_Flag]]||li@>'
