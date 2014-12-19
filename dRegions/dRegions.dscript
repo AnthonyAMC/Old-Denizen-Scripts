@@ -1043,9 +1043,9 @@ dRegions_Commands:
       else {
       - define ownerList '<def[ownerPlayers].parse[as_player.name].include[<def[ownerGroups].parse[replace[regex:^()].with[<&b>]]||>].comma_separated>'
       - define lines '<proc[dRegions_LineWrap].context[Owners, <def[ownerList]>|45]>'
-      - narrate "<&5><el@val[|].pad_right[3]><&7><def[lines].get[1].split[, ].get[1]><&co>      <&f><&o><def[lines].get[1].split[, ].remove[1].comma_separated>"
+      - narrate "<&5><el@val[|].pad_right[3]><&7><def[lines].get[1].split[, ].get[1]><&co>  <&f><def[lines].get[1].split[, ].remove[1].comma_separated>"
       - foreach <def[lines].remove[1]> {
-        - narrate "<&5><el@val[|].pad_right[7]><&f><&o><def[value]>"
+        - narrate "<&5><el@val[|].pad_right[7]><&f><def[value]>"
         }
       }
     - if <def[memberPlayers].is_empty||true>
@@ -1055,9 +1055,9 @@ dRegions_Commands:
       else {
       - define memberList '<def[memberPlayers].parse[as_player.name].include[<def[memberGroups].parse[replace[regex:^()].with[<&b>]]||>].comma_separated>'
       - define lines '<proc[dRegions_LineWrap].context[Members, <def[memberList]>|45]>'
-      - narrate "<&5><el@val[|].pad_right[3]><&7><def[lines].get[1].split[, ].get[1]><&co>      <&f><&o><def[lines].get[1].split[, ].remove[1].comma_separated>"
+      - narrate "<&5><el@val[|].pad_right[3]><&7><def[lines].get[1].split[, ].get[1]><&co>  <&f><def[lines].get[1].split[, ].remove[1].comma_separated>"
       - foreach <def[lines].remove[1]> {
-        - narrate "<&5><el@val[|].pad_right[7]><&f><&o><def[value]>"
+        - narrate "<&5><el@val[|].pad_right[7]><&f><def[value]>"
         }
       }
     - if <def[flags].is_empty> {
@@ -1067,17 +1067,12 @@ dRegions_Commands:
       - narrate "<&5><el@val[|].pad_right[3]><&7>Flags<&co>"
       - foreach '<def[flags]>' {
         - define flag '<def[value].split[/].get[1]>'
-        - define flagVal '<def[value].split[/].get[2]>'
+        - define flagVal '<def[value].after[/]>'
         - define flagValLength '<def[flagVal].length>'
-        - if <def[flagValLength].is[MORE].than[41]> {
-          - define lines '<proc[dRegions_LineWrap].context[%flag%, <def[flagVal]>|45]>'
-          - narrate "<&5><el@val[|].pad_right[5]><&e><def[lines].get[1].split[, ].get[1]><&co>      <&f><&o><def[lines].get[1].split[, ].remove[1].comma_separated>"
-          - foreach <def[lines].remove[1]> {
-            - narrate "<&5><el@val[|].pad_right[7]><&f><&o><def[value]>"
-            }
-          }
-          else {
-          - narrate "<&5><el@val[|].pad_right[5]><&f><def[flag]><&co> <&7><&o><def[flagVal]>"
+        - define lines '<proc[dRegions_LineWrap].context[%flag%, <def[flagVal]>|45]>'
+        - narrate "<&5><el@val[|].pad_right[5]><&e><def[lines].get[1].split[, ].get[1]><&co> <&f><def[lines].get[1].split[, ].remove[1].comma_separated>"
+        - foreach <def[lines].remove[1]> {
+          - narrate "<&5><el@val[|].pad_right[7]><&f><def[value]>"
           }
         }
       }
@@ -1883,12 +1878,39 @@ dRegions_IsOwner:
   # <proc[dRegions_IsOwner].context[region|world|player]>
   type: procedure
   definitions: region|world|player
+  debug: false
+
   script:
+    - define playerUUID '<def[player].uuid>'
+    - define playerGroups '<def[player].groups>'
     - define players '<yaml[dRegions_%world%_regions].read[regions.%region%.owners.players]||li@>'
     - define groups '<yaml[dRegions_%world%_regions].read[regions.%region%.owners.groups]||li@>'
-    - if <def[players].contains[<def[player].uuid>].not||false>
-      && <def[groups].contains_any[<def[player].groups>].not||false> determine false
-      else determine true
+    - if <def[players].contains[<def[playerUUID]>].not||false>
+      && <def[groups].contains_any[<def[playerGroups]>].not||false> {
+      - define return 'null'
+      }
+      else {
+      - determine 'true'
+      }
+
+    - define thisRegion '<def[region]>'
+    - while <def[return].is[==].to[null]||false> {
+      - define thisRegion '<yaml[dRegions_%world%_regions].read[regions.%thisRegion%.parent]||null>'
+      - if <def[thisRegion].is[==].to[null]||false>
+        || <def[loop_index].is[MORE].than[25]||false> {
+        - while stop
+        }
+      - define players '<yaml[dRegions_%world%_regions].read[regions.%thisRegion%.owners.players]||li@>'
+      - define groups '<yaml[dRegions_%world%_regions].read[regions.%thisRegion%.owners.groups]||li@>'
+      - if <def[players].contains[<def[playerUUID]>].not||false>
+        && <def[groups].contains_any[<def[playerGroups]>].not||false> {
+        - define return 'null'
+        }
+        else {
+        - determine 'true'
+        }
+      }
+    - determine 'false'
 
 
 dRegions_IsMember:
@@ -1896,12 +1918,44 @@ dRegions_IsMember:
   # <proc[dRegions_IsOwner].context[region|world|player]>
   type: procedure
   definitions: region|world|player
+  debug: false
+
   script:
+#    - define players '<yaml[dRegions_%world%_regions].read[regions.%region%.members.players]||li@>'
+#    - define groups '<yaml[dRegions_%world%_regions].read[regions.%region%.members.groups]||li@>'
+#    - if <def[players].contains[<def[player].uuid>].not||false>
+#      && <def[groups].contains_any[<def[player].groups>].not||false> determine false
+#      else determine true
+    - define playerUUID '<def[player].uuid>'
+    - define playerGroups '<def[player].groups>'
     - define players '<yaml[dRegions_%world%_regions].read[regions.%region%.members.players]||li@>'
     - define groups '<yaml[dRegions_%world%_regions].read[regions.%region%.members.groups]||li@>'
-    - if <def[players].contains[<def[player].uuid>].not||false>
-      && <def[groups].contains_any[<def[player].groups>].not||false> determine false
-      else determine true
+    - if <def[players].contains[<def[playerUUID]>].not||false>
+      && <def[groups].contains_any[<def[playerGroups]>].not||false> {
+      - define return 'null'
+      }
+      else {
+      - determine 'true'
+      }
+
+    - define thisRegion '<def[region]>'
+    - while <def[return].is[==].to[null]||false> {
+      - define thisRegion '<yaml[dRegions_%world%_regions].read[regions.%thisRegion%.parent]||null>'
+      - if <def[thisRegion].is[==].to[null]||false>
+        || <def[loop_index].is[MORE].than[25]||false> {
+        - while stop
+        }
+      - define players '<yaml[dRegions_%world%_regions].read[regions.%thisRegion%.members.players]||li@>'
+      - define groups '<yaml[dRegions_%world%_regions].read[regions.%thisRegion%.members.groups]||li@>'
+      - if <def[players].contains[<def[playerUUID]>].not||false>
+        && <def[groups].contains_any[<def[playerGroups]>].not||false> {
+        - define return 'null'
+        }
+        else {
+        - determine 'true'
+        }
+      }
+    - determine 'false'
 
 
 dRegions_RegionExists:
@@ -1909,6 +1963,8 @@ dRegions_RegionExists:
   # <proc[dRegions_RegionExists].context[region|world]>
   type: procedure
   definitions: region|world
+  debug: false
+
   script:
     - define notables '<cu@dregions_%world%_%region%.is[matches].to[cuboid].not||true>'
     - define regions '<yaml[dRegions_%world%_regions].contains[regions.%region%].not||true>'
@@ -1922,6 +1978,8 @@ dRegions_HighestPriority:
   # <proc[dRegions_HighestPriority].context[world|region1,...]>
   type: procedure
   definitions: world|regions
+  debug: false
+
   script:
     - define regions '<def[regions].split[,]>'
     - define priList '<parse:<def[regions].parse[replace[regex:^()].with[<&lt>yaml<&lb>dRegions_%world%_regions<&rb>.read<&lb>regions.]].parse[replace[regex:()$].with[.priority<&rb>||0<&gt>]]>>'
@@ -1939,6 +1997,8 @@ dRegions_RegionOverlaps:
   type: procedure
   debug: true
   definitions: selectedCuboid|region|world|player
+  debug: false
+
   script:
     - define regions '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__]||li@>'
     - define notables '<def[regions].parse[replace[regex:^()].with[cu@dregions_%world%_]].filter[is[matches].to[cuboid]]||li@>'
@@ -1952,6 +2012,64 @@ dRegions_RegionOverlaps:
       }
     - if <def[unowned].is_empty.not||true> determine true
       else determine false
+
+
+dRegions_PlayerMatchRegionGroup:
+  # Check if a player is matches a region flag group setting.
+  # <proc[dRegions_PlayerMatchRegionGroup].context[group|isMember|isOwner]>
+  type: procedure
+  definitions: group|isMember|isOwner
+  debug: false
+
+  script:
+    - if <def[group].is[==].to[nonmembers]> {
+      - if <def[isMember].not> || <def[isOwner].not> {
+        - determine true
+        }
+      }
+      else if <def[group].is[==].to[owners]> {
+      - if <def[isOwner]> {
+        - determine true
+        }
+      }
+      else if <def[group].is[==].to[nonowners]> {
+      - if <def[isOwner].not> {
+        - determine true
+        }
+      }
+      else if <def[group].is[==].to[members]> {
+      - if <def[isMember]> {
+        - determine true
+        }
+      }
+      else if <def[group].is[==].to[all]> {
+      - determine true
+      }
+      else {
+        - determine false
+      }
+
+
+dRegions_GetInheritedFlag:
+  # Get a region flag value. Start at current child and ascend through parents
+  # until a value is set or you reach the origin ancestor
+  # <proc[dRegions_GetInheritedFlag].context[world|region|flag]>
+  type: procedure
+  definitions: world|region|flag
+  debug: false
+
+  script:
+    - define return '<yaml[dRegions_%world%_regions].read[regions.%region%.flags.%flag%]||null>'
+    - define thisRegion '<def[region]>'
+    - while <def[return].is[==].to[null]||false> {
+      - define thisRegion '<yaml[dRegions_%world%_regions].read[regions.%thisRegion%.parent]||null>'
+      - if <def[thisRegion].is[==].to[null]||false>
+        || <def[loop_index].is[MORE].than[25]||false> {
+        - while stop
+        }
+      - define return '<yaml[dRegions_%world%_regions].read[regions.%thisRegion%.flags.%flag%]||null>'
+      }
+    - determine '<def[return]||null>'
 
 
 dRegions_LineWrap:
@@ -2018,6 +2136,7 @@ dRegion_FlagTypeMatch:
   type: procedure
   debug: false
   definitions: YourValue|CompareValue
+  debug: false
 
   script:
 
@@ -2082,6 +2201,7 @@ dRegion_FlagTypeMatch:
 #
 dRegions_Author_Anthony:
   type: item
+  debug: false
   material: i@human_skull
   display name: "<&f>             |Anthony|"
   lore:
