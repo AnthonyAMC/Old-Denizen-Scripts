@@ -834,6 +834,11 @@ dRegions_Commands:
       - run s@dRegions_Msg 'def:<&c>There is no region by this name!'
       - queue clear
       }
+    # Don't redefine global type regions
+    - if <def[dRegions_%world%_regions].read[regions.%name%.type].is[==].to[global]> {
+      - run s@dRegions_Msg 'def:<&c>You can not redefine global regions!'
+      - queue clear
+      }
     # Check if is owner
     - if !<player.has_permission[dregions.admin]||false> {
       - if <proc[dRegions_IsOwner].context[%name%|%world%|<player>].not> {
@@ -956,8 +961,6 @@ dRegions_Commands:
       - queue clear
       }
       else if <def[exists]> {
-      - run s@dRegions_Msg 'def:<&c>Region already exists!'
-      - run s@dRegions_Msg 'def:<&7>You must want to update the region'
       # Check if is owner
       # Remove commented lines and re-indent to allow admins to "redefine" existing claims.
       # Otherwise, just use the redefine command as intended!
@@ -966,6 +969,13 @@ dRegions_Commands:
         - run s@dRegions_Msg 'def:<&c>You are not an owner of this region!'
         - queue clear
         }
+      # Don't redefine global type regions
+      - if <def[dRegions_%world%_regions].read[regions.%name%.type].is[==].to[global]> {
+        - run s@dRegions_Msg 'def:<&c>You can not redefine global regions!'
+        - queue clear
+        }
+      - run s@dRegions_Msg 'def:<&c>Region already exists!'
+      - run s@dRegions_Msg 'def:<&7>You must want to update the region'
 #        }
       - define update ''
       }
@@ -1005,6 +1015,11 @@ dRegions_Commands:
       }
       else if <def[exists].not> {
       - run s@dRegions_Msg 'def:<&c>There is no region by this name!'
+      - queue clear
+      }
+    # Don't select global type regions
+    - if <yaml[dRegions_%world%_regions].read[regions.%name%.type].is[==].to[global]> {
+      - run s@dRegions_Msg 'def:<&c>You can not select global regions!'
       - queue clear
       }
     # Check if is owner
@@ -1551,6 +1566,11 @@ dRegions_Commands:
       - run s@dRegions_Msg 'def:<&c>There is no region by this name!'
       - queue clear
       }
+    # Don't remove the __global__ region
+    - if <def[name].is[==].to[__global__]> {
+      - run s@dRegions_Msg 'def:<&c>You can not remove the __global__ region!'
+      - queue clear
+      }
     # Check if is owner
     - if !<player.has_permission[dregions.admin]||false> {
       - if <proc[dRegions_IsOwner].context[%name%|%world%|<player>].not> {
@@ -1620,8 +1640,29 @@ dRegions_Commands:
       - define selectedCuboid '<cu@%pos1%|%pos2%>'
       }
     - define name '<def[name]||<c.args.get[2].escaped||null>>'
-    - if <def[name].is[==].to[null]||true> {
-      - run s@dRegions_Msg 'def:<&c>You must specify a region ID!'
+    - if '<def[name].is[==].to[null]||true>' {
+      - if <li@info|select.contains[%command%]> {
+        - define dRegions '<player.location.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[split[_].get[3]].replace[li@].replace[|].with[,]>'
+        - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|%dRegions%]>'
+        - if <def[orderedRegions].is_empty||true> {
+          - define name '__global__'
+          }
+          else {
+          - define name '<def[orderedRegions].get[1]>'
+          - if <def[orderedRegions].size.is[MORE].than[1]> {
+            - run s@dRegions_Msg 'def:<&c><&o>There are multiple regions at this location!'
+            - run s@dRegions_Msg 'def:<&7><&o>Getting highest priority region info.'
+            }
+          }
+        }
+        else {
+        - run s@dRegions_Msg 'def:<&c>You must specify a region ID!'
+        - run s@dRegions_Msg 'def:<script.yaml_key[commandArgs.%command%.usage]>'
+        - queue stop
+        }
+      }
+    - if '<def[name].matches[^[a-zA-Z0-9-_]+$].not>' {
+      - run s@dRegions_Msg 'def:<&c>Region ID may only contain letters, numbers, hyphen, and underscore!'
       - run s@dRegions_Msg 'def:<script.yaml_key[commandArgs.%command%.usage]>'
       - queue stop
       }
@@ -1663,6 +1704,11 @@ dRegions_Commands:
       - define POS1 '<yaml[dRegions_%world%_regions].read[regions.%name%.min]>'
       - define POS2 '<yaml[dRegions_%world%_regions].read[regions.%name%.max]>'
       - inject s@dWE_Commands p:selection_Size instantly
+      }
+      else if <def[type].is[==].to[global]||false> {
+      - define POS1 '0,0,0,%world%'
+      - define POS2 '0,0,0,%world%'
+      - define size 'infinite'
       }
     - define priority '<yaml[dRegions_%world%_regions].read[regions.%name%.priority]||0>'
     - define parent '<yaml[dRegions_%world%_regions].read[regions.%name%.parent]||<&c>none>'
@@ -1978,6 +2024,9 @@ dRegions_RegionExists:
   debug: false
 
   script:
+    - if <def[region].is[==].to[__global__]> {
+      - determine true
+      }
     - define notables '<cu@dregions_%world%_%region%.is[matches].to[cuboid].not||true>'
     - define regions '<yaml[dRegions_%world%_regions].contains[regions.%region%].not||true>'
     - if %notables% && %regions% determine false
