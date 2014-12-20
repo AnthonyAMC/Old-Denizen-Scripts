@@ -205,7 +205,7 @@ dRegions_Msg:
   type: item
   debug: false
   material: i@human_skull
-  display name: "<&4>[<&6>dRegions<&4>]"
+  display name: "<&4>  [<&6>dRegions<&4>]"
   lore:
   - <&5>Click for Help
   script:
@@ -1699,7 +1699,7 @@ dRegions_Commands:
       else {
       - announce to_console "<&5>|  <&f>Authors<&co>    <&7>|Anthony|"
       }
-    - narrate "<&d>|-----------S-c-r-o-l-l---U-p-------------|"
+    - narrate "<&5>|-----------<&d>S<&5>-<&d>c<&5>-<&d>r<&5>-<&d>o<&5>-<&d>l<&5>-<&d>l<&5>---<&d>U<&5>-<&d>p<&5>-------------|"
 
   msgsHelpAdmin:
     - define msgsHeaderTitle 'Admin Help'
@@ -2039,27 +2039,25 @@ dRegions_PlayerMatchRegionGroup:
         - determine true
         }
       }
-      else if <def[group].is[==].to[owners]> {
+    - if <def[group].is[==].to[owners]> {
       - if <def[isOwner]> {
         - determine true
         }
       }
-      else if <def[group].is[==].to[nonowners]> {
+    - if <def[group].is[==].to[nonowners]> {
       - if <def[isOwner].not> {
         - determine true
         }
       }
-      else if <def[group].is[==].to[members]> {
+    - if <def[group].is[==].to[members]> {
       - if <def[isMember]> {
         - determine true
         }
       }
-      else if <def[group].is[==].to[all]> {
+    - if <def[group].is[==].to[all]> {
       - determine true
       }
-      else {
-        - determine false
-      }
+    - determine false
 
 
 dRegions_GetInheritedFlag:
