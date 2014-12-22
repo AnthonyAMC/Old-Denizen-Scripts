@@ -46,13 +46,15 @@ dRegions:
     on player enters notable cuboid:
     - define world '<player.world.name>'
     - define cuboids '<c.cuboids.replace[;].with[|]>'
-    - define dRegions '<def[cuboids].parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[split[_].get[3]].replace[li@].replace[|].with[,]>'
-    - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|%dRegions%]>'
-
+    - define dRegions '<def[cuboids].parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[split[_].get[3]].replace[li@].replace[|].with[,]||null>'
+    - if <def[dRegions].is[==].to[null]||true> {
+      - queue clear
+      }
+    - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|%dRegions%]||li@>'
     - define allFlagScripts '<server.list_scripts.filter[starts_with[s@dRegions_Flag]]||li@>'
 #    - define allFlagScripts '<server.list_scripts.filter[split[_].get[1|2].is[==].to[s@dRegions|Flag]]>'
     - define regionEnterFlags '<def[allFlagScripts].filter[yaml_key[event_hook].is[==].to[regionEnter]]||li@>'
-    - define eventPri '<def[regionEnterFlags].parse[yaml_key[event_priority]]>'
+    - define eventPri '<def[regionEnterFlags].parse[yaml_key[event_priority]]||0>'
     - define eventList 'li@'
     - foreach <def[regionEnterFlags]> {
       - define eventList '<def[eventList].include[<def[eventPri].get[%loop_index%]>/%value%]>'
@@ -66,13 +68,15 @@ dRegions:
     on player exits notable cuboid:
     - define world '<player.world.name>'
     - define cuboids '<c.cuboids.replace[;].with[|]>'
-    - define dRegions '<def[cuboids].parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[split[_].get[3]].replace[li@].replace[|].with[,]>'
-    - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|%dRegions%]>'
-
+    - define dRegions '<def[cuboids].parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[split[_].get[3]].replace[li@].replace[|].with[,]||null>'
+    - if <def[dRegions].is[==].to[null]||true> {
+      - queue clear
+      }
+    - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|%dRegions%]||li@>'
     - define allFlagScripts '<server.list_scripts.filter[starts_with[s@dRegions_Flag]]||li@>'
 #    - define allFlagScripts '<server.list_scripts.filter[split[_].get[1|2].is[==].to[s@dRegions|Flag]]>'
     - define regionExitFlags '<def[allFlagScripts].filter[yaml_key[event_hook].is[==].to[regionExit]]||li@>'
-    - define eventPri '<def[regionExitFlags].parse[yaml_key[event_priority]]>'
+    - define eventPri '<def[regionExitFlags].parse[yaml_key[event_priority]]||0>'
     - define eventList 'li@'
     - foreach <def[regionExitFlags]> {
       - define eventList '<def[eventList].include[<def[eventPri].get[%loop_index%]>/%value%]>'
@@ -286,7 +290,7 @@ dRegions_Commands:
       usage: '/drg removemember [ID] g:group player -w world'
       permissions: []
     list:
-      usage: '/drg list (page#) -r region -w world -p player'
+      usage: '/drg list (page#) -h -r region -w world -p player'
       permissions: []
     flag:
       usage: '/drg flag [ID] [flag] [value] -g group -w world'
@@ -747,7 +751,7 @@ dRegions_Commands:
 
 
 #
-#  END dRegions Command Script Basics
+#  END dRegions Command TAB Completion
 #--------------------------------------
 #
 #  dRegions Command Arguments
@@ -757,7 +761,7 @@ dRegions_Commands:
   help:
     - define arg '<c.args.get[2].escaped||null>'
     - if <def[args].contains[%arg%]||false> {
-      - run s@dRegions_Msg 'def:<script.yaml_key[commandArgs.%arg%.usage]>'
+      - run s@dRegions_Msg 'def:<script.yaml_key[commandArgs.%arg%.usage]||No help for you!>'
       - queue clear
       }
     - if <player.has_permission[dRegions.admin]||<context.server||false>> inject locally msgsHelpAdmin instantly
@@ -800,7 +804,7 @@ dRegions_Commands:
         - queue clear
         }
       }
-    # Parse any declaired owners
+    # Parse any declared owners
     - define owners '<c.args.remove[1|2].replace[:].with[;]||li@>'
     - if <c.args.find[-w].is[OR_MORE].than[0]||false> {
       - define owners '<def[owners].remove[<def[owners].find[-w]>|<def[owners].find[-w].add[1].as_int>]||li@>'
@@ -835,7 +839,7 @@ dRegions_Commands:
       - queue clear
       }
     # Don't redefine global type regions
-    - if <def[dRegions_%world%_regions].read[regions.%name%.type].is[==].to[global]> {
+    - if <yaml[dRegions_%world%_regions].read[regions.%name%.type].is[==].to[global]||false> {
       - run s@dRegions_Msg 'def:<&c>You can not redefine global regions!'
       - queue clear
       }
@@ -937,7 +941,7 @@ dRegions_Commands:
             }
           }
         }
-      - define cuboids '<def[playerWorldRegions].parse[replace[regex:^()].with[cu@dregions_%world%_]].filter[is[matches].to[cuboid]]||li@>'
+      - define cuboids '<def[playerWorldRegions].parse[replace[regex:^()].with[cu@dregions_%world%_]].filter[as_cuboid.is[!=].to[null]||false]||li@>'
       - foreach %cuboids% {
         - if <def[pos1].as_location.is_within[%value%]>
           && <def[pos2].as_location.is_within[%value%]> {
@@ -970,7 +974,7 @@ dRegions_Commands:
         - queue clear
         }
       # Don't redefine global type regions
-      - if <def[dRegions_%world%_regions].read[regions.%name%.type].is[==].to[global]> {
+      - if <yaml[dRegions_%world%_regions].read[regions.%name%.type].is[==].to[global]||false> {
         - run s@dRegions_Msg 'def:<&c>You can not redefine global regions!'
         - queue clear
         }
@@ -1018,7 +1022,7 @@ dRegions_Commands:
       - queue clear
       }
     # Don't select global type regions
-    - if <yaml[dRegions_%world%_regions].read[regions.%name%.type].is[==].to[global]> {
+    - if <yaml[dRegions_%world%_regions].read[regions.%name%.type].is[==].to[global]||false> {
       - run s@dRegions_Msg 'def:<&c>You can not select global regions!'
       - queue clear
       }
@@ -1042,7 +1046,7 @@ dRegions_Commands:
     # Check if region exists
     - define exists '<proc[dRegions_RegionExists].context[%name%|%world%]>'
     - if <def[exists].is[==].to[orphan]> {
-      - run s@dRegions_Msg 'def:<&c>There is an orphaned region by this name!'
+      - run s@dRegions_Msg 'def:<&c>There is an orphaned region named %name%!'
       - run s@dRegions_Msg 'def:<&c>Please notify an admin!'
       - queue clear
       }
@@ -1384,6 +1388,12 @@ dRegions_Commands:
         else define world 'null'
       }
 
+    # Does the player want to list the regions where he stands?
+    - if <def[args].find[-h].is[OR_MORE].than[0]||false> {
+      - define filterHere ''
+      - define args '<def[args].remove[<def[args].find[-h]>]||li@>'
+      }
+
     # Do we want to show results for ALL worlds?
     - if <def[args].find[-a].is[OR_MORE].than[0]||false> {
       - define worlds '<server.list_worlds.parse[name]>'
@@ -1422,7 +1432,15 @@ dRegions_Commands:
 
     # OK, we've validated all the user input, let's get the regions and apply filters
     - define regions li@
-    - if <def[getAll].exists> {
+    - if <def[filterHere].exists> {
+      - define standingIn '<player.location.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[split[_].get[3]].replace[li@].replace[|].with[,]>'
+      - define worldRegions '<proc[dRegions_HighestPriority].context[%world%|%standingIn%]||li@>'
+      - if <def[worldRegions].is_empty||true> {
+        - define worldRegions 'li@__global__'
+        }
+      - inject locally filterRegionList
+      }
+      else if <def[getAll].exists> {
       - foreach %worlds% {
         - define world %value%
         - define worldRegions '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__].alphanumeric||li@>'
@@ -1606,16 +1624,16 @@ dRegions_Commands:
       - queue clear
       }
     - if <c.args.find[-w].is[OR_MORE].than[0]||false> {
-      - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name||null>'
+      - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name.to_lowercase||null>'
       - if <def[world].is[==].to[null]||true> {
         - run s@dRegions_Msg 'def:<&c>Invalid world specfied!'
         - run s@dRegions_Msg 'def:<script.yaml_key[commandArgs.%command%.usage]>'
         - queue clear
         }
       - define args '<c.args.remove[<c.args.find[-w].add[1].as_int>].exclude[-w]>'
-      - define name '<def[args].get[2].escaped||null>'
+      - define name '<def[args].get[2].escaped.to_lowercase||null>'
       }
-      else define world '<player.world.name>'
+      else define world '<player.world.name.to_lowercase>'
     - if <li@define|redefine|claim.contains[%command%]> {
       - define wandType '<player.flag[dWEWand_Type]||cuboid>'
       - if <li@cuboid|extender.contains[%wandType%].not||true> {
@@ -1639,7 +1657,7 @@ dRegions_Commands:
         }
       - define selectedCuboid '<cu@%pos1%|%pos2%>'
       }
-    - define name '<def[name]||<c.args.get[2].escaped||null>>'
+    - define name '<def[name]||<c.args.get[2].escaped.to_lowercase||null>>'
     - if '<def[name].is[==].to[null]||true>' {
       - if <li@info|select.contains[%command%]> {
         - define dRegions '<player.location.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[split[_].get[3]].replace[li@].replace[|].with[,]>'
@@ -1661,8 +1679,9 @@ dRegions_Commands:
         - queue stop
         }
       }
-    - if '<def[name].matches[^[a-zA-Z0-9-_]+$].not>' {
-      - run s@dRegions_Msg 'def:<&c>Region ID may only contain letters, numbers, hyphen, and underscore!'
+    - if '<def[name].matches[^[a-z0-9-_]+$].not>' {
+      - run s@dRegions_Msg 'def:<&c>Region ID may only contain letters, numbers,'
+      - run s@dRegions_Msg 'def:<&c>hyphen, and underscore!'
       - run s@dRegions_Msg 'def:<script.yaml_key[commandArgs.%command%.usage]>'
       - queue stop
       }
@@ -1699,16 +1718,21 @@ dRegions_Commands:
 
   regionInfo:
   # Build the data set for region info
-    - define type '<yaml[dRegions_%world%_regions].read[regions.%name%.type]>'
+    - define type '<yaml[dRegions_%world%_regions].read[regions.%name%.type]||null>'
     - if <def[type].is[==].to[cuboid]||false> {
-      - define POS1 '<yaml[dRegions_%world%_regions].read[regions.%name%.min]>'
-      - define POS2 '<yaml[dRegions_%world%_regions].read[regions.%name%.max]>'
+      - define POS1 '<yaml[dRegions_%world%_regions].read[regions.%name%.min]||null>'
+      - define POS2 '<yaml[dRegions_%world%_regions].read[regions.%name%.max]||null>'
       - inject s@dWE_Commands p:selection_Size instantly
       }
       else if <def[type].is[==].to[global]||false> {
       - define POS1 '0,0,0,%world%'
       - define POS2 '0,0,0,%world%'
       - define size 'infinite'
+      }
+      else {
+      - run s@dRegions_Msg 'def:<&c>This region is misconfigured!'
+      - run s@dRegions_Msg 'def:<&c>Notify an Admin!'
+      - queue clear
       }
     - define priority '<yaml[dRegions_%world%_regions].read[regions.%name%.priority]||0>'
     - define parent '<yaml[dRegions_%world%_regions].read[regions.%name%.parent]||<&c>none>'
@@ -1723,12 +1747,12 @@ dRegions_Commands:
       }
 
 #
-#  dRegions dRegions Command Utilities
+#  END dRegions dRegions Command Utilities
 #--------------------------------------
 #
 #  dRegions Command Messages
 #
-# These are not complete! They are mostly just stubs till the rest is fleshed out!
+# Some messages used by commands. Should probably move to s@dRegions_Msg
 #
   msgsHeader:
     - narrate "<&5>|----------------------------------------|"
@@ -1755,7 +1779,7 @@ dRegions_Commands:
     - foreach %commands% {
       - if <player.has_permission[dregions.%value%]> {
         - narrate "<&5>|<&sp><&sp><&f><def[value].to_titlecase><&co>"
-        - narrate "<&5>|<&sp><&sp><&sp><&sp><&7><script.yaml_key[commandArgs.%value%.usage]>"
+        - narrate "<&5>|<&sp><&sp><&sp><&sp><&7><script.yaml_key[commandArgs.%value%.usage]||No usage info available!>"
         }
         else foreach next
       }
@@ -2027,7 +2051,7 @@ dRegions_RegionExists:
     - if <def[region].is[==].to[__global__]> {
       - determine true
       }
-    - define notables '<cu@dregions_%world%_%region%.is[matches].to[cuboid].not||true>'
+    - define notables '<cu@dregions_%world%_%region%.as_cuboid.is[!=].to[null].not||true>'
     - define regions '<yaml[dRegions_%world%_regions].contains[regions.%region%].not||true>'
     - if %notables% && %regions% determine false
       else if %notables% || %regions% determine orphan
@@ -2062,7 +2086,7 @@ dRegions_RegionOverlaps:
 
   script:
     - define regions '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__]||li@>'
-    - define notables '<def[regions].parse[replace[regex:^()].with[cu@dregions_%world%_]].filter[is[matches].to[cuboid]]||li@>'
+    - define notables '<def[regions].parse[replace[regex:^()].with[cu@dregions_%world%_]].filter[as_cuboid.is[!=].to[null]||false]||li@>'
     - define overlaps '<def[notables].filter[intersects[<def[selectedCuboid].split[/].as_cuboid>]].parse[replace[cu@dregions_%world%_]]||li@>'
 #    - define unowned '<def[overlaps].filter[<proc[dRegions_IsOwner].context[%region%|%world%|<player>].not>]||li@>'
     - define unowned li@
