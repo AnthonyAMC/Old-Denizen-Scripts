@@ -44,16 +44,17 @@ dRegions:
       }
 
     on player enters notable cuboid:
-    - define world '<player.world.name>'
+    - define world '<player.world.name.to_lowercase>'
     - define cuboids '<c.cuboids.replace[;].with[|]>'
     - define dRegions '<def[cuboids].parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[split[_].get[3]].replace[li@].replace[|].with[,]||null>'
     - if <def[dRegions].is[==].to[null]||true> {
       - queue clear
       }
+    - define isEnter ''
     - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|%dRegions%]||li@>'
     - define allFlagScripts '<server.list_scripts.filter[starts_with[s@dRegions_Flag]]||li@>'
 #    - define allFlagScripts '<server.list_scripts.filter[split[_].get[1|2].is[==].to[s@dRegions|Flag]]>'
-    - define regionEnterFlags '<def[allFlagScripts].filter[yaml_key[event_hook].is[==].to[regionEnter]]||li@>'
+    - define regionEnterFlags '<def[allFlagScripts].filter[yaml_key[event_hook].contains_any[regionEnter|regionToggle]]||li@>'
     - define eventPri '<def[regionEnterFlags].parse[yaml_key[event_priority]]||0>'
     - define eventList 'li@'
     - foreach <def[regionEnterFlags]> {
@@ -66,16 +67,17 @@ dRegions:
 
 
     on player exits notable cuboid:
-    - define world '<player.world.name>'
+    - define world '<player.world.name.to_lowercase>'
     - define cuboids '<c.cuboids.replace[;].with[|]>'
     - define dRegions '<def[cuboids].parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[split[_].get[3]].replace[li@].replace[|].with[,]||null>'
     - if <def[dRegions].is[==].to[null]||true> {
       - queue clear
       }
+    - define isExit ''
     - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|%dRegions%]||li@>'
     - define allFlagScripts '<server.list_scripts.filter[starts_with[s@dRegions_Flag]]||li@>'
 #    - define allFlagScripts '<server.list_scripts.filter[split[_].get[1|2].is[==].to[s@dRegions|Flag]]>'
-    - define regionExitFlags '<def[allFlagScripts].filter[yaml_key[event_hook].is[==].to[regionExit]]||li@>'
+    - define regionExitFlags '<def[allFlagScripts].filter[yaml_key[event_hook].contains_any[regionExit|regionToggle]]||li@>'
     - define eventPri '<def[regionExitFlags].parse[yaml_key[event_priority]]||0>'
     - define eventList 'li@'
     - foreach <def[regionExitFlags]> {
@@ -95,7 +97,7 @@ dRegions:
   # Reloads the yaml files and generates default files if they don't exist.
     - announce "<&b>dRegions<&co><&3> Loading system config files..." to_console
     - if !<server.has_file[dRegions/config.yml]> {
-      - define world 'GLOBAL'
+      - define world 'global'
       - define file 'config'
       - if <player.is[!=].to[null]||false> {
         - flag <player> ConfigFileGeneratorNotify:true
@@ -106,11 +108,11 @@ dRegions:
         else inject locally createConfigFile
       - announce "<&b>dRegions<&co> <&7><&o>Created <&f><&o>%world%<&7><&o> config file!" to_console
       }
-    - if <yaml.list.contains[dRegions_GLOBAL_config]> yaml unload 'id:dRegions_GLOBAL_config'
-    - yaml 'load:dRegions/config.yml' 'id:dRegions_GLOBAL_config'
+    - if <yaml.list.contains[dRegions_global_config]> yaml unload 'id:dRegions_global_config'
+    - yaml 'load:dRegions/config.yml' 'id:dRegions_global_config'
 
-    - foreach <server.list_worlds> {
-      - define world '<def[value].name>'
+    - foreach <server.list_worlds.parse[name.to_lowercase]> {
+      - define world '<def[value]>'
 
       - define file 'worlds/%world%/config'
       - if !<server.has_file[dRegions/%file%.yml]> {
@@ -147,10 +149,10 @@ dRegions:
   # A simpler reload
     - announce "<&b>dRegions<&co><&3> Reloading system config files..." to_console
     - run s@dRegions_Msg 'def:<&7><&o>Reloading system config files...'
-    - if <yaml.list.contains[dRegions_GLOBAL_config]> yaml unload 'id:dRegions_GLOBAL_config'
-    - yaml 'load:dRegions/config.yml' 'id:dRegions_GLOBAL_config'
-    - foreach <server.list_worlds> {
-      - define world '<def[value].name>'
+    - if <yaml.list.contains[dRegions_global_config]> yaml unload 'id:dRegions_global_config'
+    - yaml 'load:dRegions/config.yml' 'id:dRegions_global_config'
+    - foreach <server.list_worlds.parse[name.to_lowercase]> {
+      - define world '<def[value]>'
       - if <yaml.list.contains[dRegions_%world%_config]> yaml unload 'id:dRegions_%world%_config'
       - yaml 'load:dRegions/worlds/%world%/config.yml' 'id:dRegions_%world%_config'
       - if <yaml.list.contains[dRegions_%world%_regions]> yaml unload 'id:dRegions_%world%_regions'
@@ -163,7 +165,8 @@ dRegions:
   createConfigFile:
     - define readID 'dRegions_Configurations'
     - define writeID 'dRegions_%world%_config'
-    - if !<yaml.list.contains[%readID%]> yaml 'load:<script.relative_filename>' 'id:%readID%'
+    - if !<yaml.list.contains[%readID%]> yaml fix_formatting 'load:<script.relative_filename>' 'id:%readID%'
+    - if !<yaml.list.contains[%readID%]> announce to_console "Loaded <script.relative_filename>"
     - yaml create 'id:%writeID%'
     - define readPath '%readID%.config'
     - define writePath 'config'
@@ -175,7 +178,7 @@ dRegions:
   createRegionFile:
     - define readID 'dRegions_Configurations'
     - define writeID 'dRegions_%world%_regions'
-    - if !<yaml.list.contains[%readID%]> yaml 'load:<script.relative_filename>' 'id:%readID%'
+    - if !<yaml.list.contains[%readID%]> yaml fix_formatting 'load:<script.relative_filename>' 'id:%readID%'
     - yaml create 'id:%writeID%'
     - define readPath '%readID%.regions.__global__'
     - define writePath 'regions.%region%'
@@ -422,7 +425,7 @@ dRegions_Commands:
   # /drg redefine [ID]
     - if <player.has_permission[dregions.redefine]||false> {
       - define spaces '<c.raw_args.to_list.count[ ]||0>'
-      - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name||<player.world.name||null>>'
+      - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name.to_lowercase||<player.world.name.to_lowercase||null>>'
       - define regions '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__].alphanumeric||li@>'
       - if <player.has_permission[dregions.admin].not||true> {
         - foreach %regions% {
@@ -441,7 +444,7 @@ dRegions_Commands:
   tab_claim:
     - if <player.has_permission[dregions.claim]||false> {
       - define spaces '<c.raw_args.to_list.count[ ]||0>'
-      - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name||<player.world.name||null>>'
+      - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name.to_lowercase||<player.world.name.to_lowercase||null>>'
       - define regions '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__].alphanumeric||li@>'
       - if <player.has_permission[dregions.admin].not||true> {
         - foreach %regions% {
@@ -461,7 +464,7 @@ dRegions_Commands:
   # /drg select [ID] -w world
     - if <player.has_permission[dregions.select]||false> {
       - define spaces '<c.raw_args.to_list.count[ ]||0>'
-      - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name||<player.world.name||null>>'
+      - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name.to_lowercase||<player.world.name.to_lowercase||null>>'
       - define regions '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__].alphanumeric||li@>'
       - if <player.has_permission[dregions.admin].not||true> {
         - foreach %regions% {
@@ -481,7 +484,7 @@ dRegions_Commands:
   # /drg info [ID] -w world
     - if <player.has_permission[dregions.info]||false> {
       - define spaces '<c.raw_args.to_list.count[ ]||0>'
-      - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name||<player.world.name||null>>'
+      - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name.to_lowercase||<player.world.name.to_lowercase||null>>'
       - define regions '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__].alphanumeric||li@>'
       - if <player.has_permission[dregions.admin].not||true> {
         - foreach %regions% {
@@ -501,7 +504,7 @@ dRegions_Commands:
   # /drg addowner [ID] g:group player -w world
     - if <player.has_permission[dregions.addowner]||false> {
       - define spaces '<c.raw_args.to_list.count[ ]||0>'
-      - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name||<player.world.name||null>>'
+      - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name.to_lowercase||<player.world.name.to_lowercase||null>>'
       - define regions '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__].alphanumeric||li@>'
       - if <player.has_permission[dregions.admin].not||true> {
         - foreach %regions% {
@@ -538,7 +541,7 @@ dRegions_Commands:
   # /drg removeowner [ID] g:group player -w world
     - if <player.has_permission[dregions.removeowner]||false> {
       - define spaces '<c.raw_args.to_list.count[ ]||0>'
-      - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name||<player.world.name||null>>'
+      - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name.to_lowercase||<player.world.name.to_lowercase||null>>'
       - define regions '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__].alphanumeric||li@>'
       - if <player.has_permission[dregions.admin].not||true> {
         - foreach %regions% {
@@ -575,7 +578,7 @@ dRegions_Commands:
   # /drg addmember [ID] g:group player -w world
     - if <player.has_permission[dregions.addmember]||false> {
       - define spaces '<c.raw_args.to_list.count[ ]||0>'
-      - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name||<player.world.name||null>>'
+      - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name.to_lowercase||<player.world.name.to_lowercase||null>>'
       - define regions '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__].alphanumeric||li@>'
       - if <player.has_permission[dregions.admin].not||true> {
         - foreach %regions% {
@@ -612,7 +615,7 @@ dRegions_Commands:
   # /drg removemember [ID] g:group player -w world
     - if <player.has_permission[dregions.removemember]||false> {
       - define spaces '<c.raw_args.to_list.count[ ]||0>'
-      - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name||<player.world.name||null>>'
+      - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name.to_lowercase||<player.world.name.to_lowercase||null>>'
       - define regions '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__].alphanumeric||li@>'
       - if <player.has_permission[dregions.admin].not||true> {
         - foreach %regions% {
@@ -649,6 +652,7 @@ dRegions_Commands:
     - define result 'li@'
 
   tab_flag:
+  # /drg flag [ID] [flag] [value] -g group -w world
     - define result 'li@'
 
   tab_setpriority:
@@ -658,12 +662,12 @@ dRegions_Commands:
       - if <def[spaces].is[==].to[0]> define result 'setpriority [ID] [<&ns>] -w world'
         else if <def[spaces].is[==].to[1]> {
         - if <c.args.get[2].is[==].to[null]||true> define result '[ID]'
-          else if <c.args.get[2].is[==].to[-w]||false> define result '<server.list_worlds.parse[name].parse[replace[regex:^].with[-w ]]>'
+          else if <c.args.get[2].is[==].to[-w]||false> define result '<server.list_worlds.parse[name.to_lowercase].parse[replace[regex:^].with[-w ]]>'
           else if <context.server.not> {
-          - define regions '<yaml[dRegions_<player.world.name>_regions].list_keys[regions].exclude[__global__].alphanumeric||li@>'
+          - define regions '<yaml[dRegions_<player.world.name.to_lowercase>_regions].list_keys[regions].exclude[__global__].alphanumeric||li@>'
           - if <player.has_permission[dregions.admin].not||true> {
             - foreach %regions% {
-              - if <proc[dRegions_IsOwner].context[%value%|<player.world.name>|<player>].not> define regions '<def[regions].exclude[%value%]||%regions%>'
+              - if <proc[dRegions_IsOwner].context[%value%|<player.world.name.to_lowercase>|<player>].not> define regions '<def[regions].exclude[%value%]||%regions%>'
               }
             }
           - define result '<def[regions].filter[starts_with[<c.args.get[2].escaped>]]||li@>'
@@ -673,8 +677,8 @@ dRegions_Commands:
         }
         else if <def[spaces].is[==].to[2]> {
         - if <c.args.get[2].is[==].to[-w]||false> {
-          - if <c.args.get[3].is[!=].to[null]||false> define result '<server.list_worlds.parse[name].filter[starts_with[<c.args.get[3].escaped>]]||li@>'
-          - if <def[result].is_empty||true> define result '<server.list_worlds.parse[name]||li@>'
+          - if <c.args.get[3].is[!=].to[null]||false> define result '<server.list_worlds.parse[name.to_lowercase].filter[starts_with[<c.args.get[3].escaped>]]||li@>'
+          - if <def[result].is_empty||true> define result '<server.list_worlds.parse[name.to_lowercase]||li@>'
           }
           else define result '<&ns>'
         }
@@ -688,9 +692,9 @@ dRegions_Commands:
             else define result '<yaml[dRegions_<c.args.get[3].escaped>_regions].list_keys[regions].exclude[__global__].alphanumeric||li@>'
           }
           else {
-          - if <c.args.get[4].is[!=].to[null]||false> define result '<server.list_worlds.parse[name].filter[starts_with[<c.args.get[4].escaped>]]||li@>'
+          - if <c.args.get[4].is[!=].to[null]||false> define result '<server.list_worlds.parse[name.to_lowercase].filter[starts_with[<c.args.get[4].escaped>]]||li@>'
             else define result '<server.list_worlds.parse[name]||li@>'
-          - if <def[result].is_empty||true> define result '<server.list_worlds.parse[name]||li@>'
+          - if <def[result].is_empty||true> define result '<server.list_worlds.parse[name.to_lowercase]||li@>'
           }
         }
         else define result 'li@'
@@ -710,12 +714,12 @@ dRegions_Commands:
       - if <def[spaces].is[==].to[0]> define result 'remove [ID] -w world'
         else if <def[spaces].is[==].to[1]> {
         - if <c.args.get[2].is[==].to[null]||true> define result '[ID]'
-          else if <c.args.get[2].is[==].to[-w]||false> define result '<server.list_worlds.parse[name].parse[replace[regex:^].with[-w ]]>'
+          else if <c.args.get[2].is[==].to[-w]||false> define result '<server.list_worlds.parse[name.to_lowercase].parse[replace[regex:^].with[-w ]]>'
           else if <context.server.not> {
-          - define regions '<yaml[dRegions_<player.world.name>_regions].list_keys[regions].exclude[__global__].alphanumeric||li@>'
+          - define regions '<yaml[dRegions_<player.world.name.to_lowercase>_regions].list_keys[regions].exclude[__global__].alphanumeric||li@>'
           - if <player.has_permission[dregions.admin].not||true> {
             - foreach %regions% {
-              - if <proc[dRegions_IsOwner].context[%value%|<player.world.name>|<player>].not> define regions '<def[regions].exclude[%value%]||%regions%>'
+              - if <proc[dRegions_IsOwner].context[%value%|<player.world.name.to_lowercase>|<player>].not> define regions '<def[regions].exclude[%value%]||%regions%>'
               }
             }
           - define result '<def[regions].filter[starts_with[<c.args.get[2].escaped>]]||li@>'
@@ -725,10 +729,10 @@ dRegions_Commands:
         }
         else if <def[spaces].is[==].to[2]> {
         - if <c.args.get[2].is[==].to[-w]||false> {
-          - if <c.args.get[3].is[!=].to[null]||false> define result '<server.list_worlds.parse[name].filter[starts_with[<c.args.get[3].escaped>]]||li@>'
-          - if <def[result].is_empty||true> define result '<server.list_worlds.parse[name]||li@>'
+          - if <c.args.get[3].is[!=].to[null]||false> define result '<server.list_worlds.parse[name.to_lowercase].filter[starts_with[<c.args.get[3].escaped>]]||li@>'
+          - if <def[result].is_empty||true> define result '<server.list_worlds.parse[name.to_lowercase]||li@>'
           }
-          else define result '<server.list_worlds.parse[name].parse[replace[regex:^].with[-w ]]>'
+          else define result '<server.list_worlds.parse[name.to_lowercase].parse[replace[regex:^].with[-w ]]>'
         }
         else if <def[spaces].is[==].to[3]> {
         - if <c.args.get[2].is[==].to[-w]||false> {
@@ -740,9 +744,9 @@ dRegions_Commands:
             else define result '<yaml[dRegions_<c.args.get[3].escaped>_regions].list_keys[regions].exclude[__global__].alphanumeric||li@>'
           }
           else {
-          - if <c.args.get[4].is[!=].to[null]||false> define result '<server.list_worlds.parse[name].filter[starts_with[<c.args.get[4].escaped>]]||li@>'
-            else define result '<server.list_worlds.parse[name]||li@>'
-          - if <def[result].is_empty||true> define result '<server.list_worlds.parse[name]||li@>'
+          - if <c.args.get[4].is[!=].to[null]||false> define result '<server.list_worlds.parse[name.to_lowercase].filter[starts_with[<c.args.get[4].escaped>]]||li@>'
+            else define result '<server.list_worlds.parse[name.to_lowercase]||li@>'
+          - if <def[result].is_empty||true> define result '<server.list_worlds.parse[name.to_lowercase]||li@>'
           }
         }
         else define result 'li@'
@@ -871,7 +875,7 @@ dRegions_Commands:
     - define globalRegionLimit '<yaml[dregions_global_config].read[config.regions.claim.max-region-count-per-player.default]||0>'
     - if <def[globalRegionLimit].is[MORE].than[0]> {
       - define playerGlobalRegions 'li@'
-      - foreach <server.list_worlds.parse[name]> {
+      - foreach <server.list_worlds.parse[name.to_lowercase]> {
         - define thisWorld '%value%'
         - foreach '<yaml[dRegions_%thisWorld%_regions].list_keys[regions].exclude[__global__].alphanumeric||li@>' {
           - define region '%value%'
@@ -965,22 +969,16 @@ dRegions_Commands:
       - queue clear
       }
       else if <def[exists]> {
-      # Check if is owner
-      # Remove commented lines and re-indent to allow admins to "redefine" existing claims.
-      # Otherwise, just use the redefine command as intended!
-#      - if !<player.has_permission[dregions.admin]||false> {
       - if <proc[dRegions_IsOwner].context[%name%|%world%|<player>].not> {
         - run s@dRegions_Msg 'def:<&c>You are not an owner of this region!'
         - queue clear
         }
-      # Don't redefine global type regions
       - if <yaml[dRegions_%world%_regions].read[regions.%name%.type].is[==].to[global]||false> {
         - run s@dRegions_Msg 'def:<&c>You can not redefine global regions!'
         - queue clear
         }
       - run s@dRegions_Msg 'def:<&c>Region already exists!'
       - run s@dRegions_Msg 'def:<&7>You must want to update the region'
-#        }
       - define update ''
       }
     # Check for overlapping regions
@@ -1366,7 +1364,6 @@ dRegions_Commands:
       - define filterPlayer ''
       - define args '<def[args].remove[<def[args].find[-p].add[1].as_int>].exclude[-p]||li@>'
       }
-#      else define player '<player.name||null>'
       else {
       - if <context.server.not> define player '<player.name>'
         else define player 'null'
@@ -1374,7 +1371,7 @@ dRegions_Commands:
 
     # Check the specified world
     - if <def[args].find[-w].is[OR_MORE].than[0]||false> {
-      - define world '<def[args].get[<def[args].find[-w].add[1].as_int>].as_world.name.escaped||null>'
+      - define world '<def[args].get[<def[args].find[-w].add[1].as_int>].as_world.name.to_lowercase.escaped||null>'
       - if <def[world].is[==].to[null]||true> {
         - run s@dRegions_Msg 'def:<&c>Invalid world specfied!'
         - queue clear
@@ -1382,9 +1379,8 @@ dRegions_Commands:
       - define filterWorld ''
       - define args '<def[args].remove[<def[args].find[-w].add[1].as_int>].exclude[-w]||li@>'
       }
-#      else define world '<player.world.name||null>'
       else {
-      - if <context.server.not> define world '<player.world.name>'
+      - if <context.server.not> define world '<player.world.name.to_lowercase>'
         else define world 'null'
       }
 
@@ -1396,7 +1392,7 @@ dRegions_Commands:
 
     # Do we want to show results for ALL worlds?
     - if <def[args].find[-a].is[OR_MORE].than[0]||false> {
-      - define worlds '<server.list_worlds.parse[name]>'
+      - define worlds '<server.list_worlds.parse[name.to_lowercase]>'
       - define getAll ''
       - define args '<def[args].remove[<def[args].find[-a]>]||li@>'
       }
@@ -1473,8 +1469,111 @@ dRegions_Commands:
     - inject locally msgsFooter instantly
 
   flag:
-    - narrate "Stub"
+  # /drg flag [ID] [flag] [value] -g group -w world
 
+    - define args '<c.args.remove[1]>'
+
+    # Check the specified world
+    - if <def[args].find[-w].is[OR_MORE].than[0]||false> {
+      - define world '<def[args].get[<def[args].find[-w].add[1].as_int>].as_world.name.escaped.to_lowercase||null>'
+      - if <def[world].is[==].to[null]||true> {
+        - run s@dRegions_Msg 'def:<&c>Invalid world specfied!'
+        - queue clear
+        }
+      - define args '<def[args].remove[<def[args].find_all[-w].parse[add[1].as_int]>].exclude[-w]||li@>'
+      }
+      else {
+      - if <context.server.not> define world '<player.world.name.to_lowercase>'
+        else define world 'null'
+      }
+
+    # Check the specified group
+    - if <def[args].find[-g].is[OR_MORE].than[0]||false> {
+      - define group '<def[args].get[<def[args].find[-g].add[1].as_int>].escaped.to_lowercase||null>'
+      - if !<el@val[members|nonmembers|owners|nonowners|all].as_list.contains[%group%]||false> {
+        - run s@dRegions_Msg 'def:<&c><def[group].unescaped> is an invalid group!'
+        - queue clear
+        }
+      - define args '<def[args].remove[<def[args].find_all[-g].parse[add[1].as_int]>].exclude[-g]||li@>'
+      }
+
+    # Check the specified region name
+    - define region '<def[args].get[1].escaped.to_lowercase||null>'
+    - if <def[region].is[!=].to[null]||true> {
+      - define exists '<proc[dRegions_RegionExists].context[<def[region]>|<def[world]>]>'
+      - if <def[exists].is[==].to[orphan]> {
+        - run s@dRegions_Msg 'def:<&c>There is an orphaned region by this name!'
+        - run s@dRegions_Msg 'def:<&c>Please notify an admin!'
+        - queue clear
+        }
+        else if <def[exists].not> {
+        - run s@dRegions_Msg 'def:<&c>There is no region by this name!'
+        - queue clear
+        }
+      - if !<player.has_permission[dregions.admin]||true> {
+        - if <proc[dRegions_IsOwner].context[<def[region]>|<def[world]>|<player>].not> {
+          - run s@dRegions_Msg 'def:<&c>You are not an owner of this region!'
+          - queue clear
+          }
+        }
+      }
+      else {
+      - run s@dRegions_Msg 'def:<&c>You must specify a valid region ID!'
+      - queue clear
+      }
+
+    # Check the specified flag name
+    - define flag '<def[args].get[2].escaped.to_lowercase||null>'
+    - if <def[flag].is[!=].to[null]||true> {
+      - define flags '<server.list_scripts.filter[starts_with[s@dRegions_Flag]].parse[name.split[_].get[3]]||li@>'
+      - if !<def[flags].contains[%flag%]||false> {
+        - run s@dRegions_Msg 'def:<&c>You must specify a valid region flag!'
+        - queue clear
+        }
+      }
+      else {
+      - run s@dRegions_Msg 'def:<&c>You must specify a valid region flag!'
+      - queue clear
+      }
+
+    # Check the specified flag value
+    - define flagValue '<def[args].get[3].to[<def[args].size>].space_separated.escaped||null>'
+    - if <def[flagValue].is[!=].to[null]||true> {
+      - define type "<s@dRegions_Flag_%flag%.yaml_key[flag_type]||null>"
+      - define typeMatch '<proc[dRegion_FlagTypeMatch].context[%flagValue%|%flag%]>'
+      - if !<def[TypeMatch]> {
+        - define lines '<proc[dRegions_LineWrap].context[<s@dRegions_Flag_%Flag%.yaml_key[flag_help]||<&c>%flag% flag requires a %type% value!>|45]>'
+        - foreach <def[lines]> {
+          - run s@dRegions_Msg 'def:<&c><def[value]>'
+          }
+        - queue clear
+        }
+      - if <s@dRegions_Flag_%flag%.yaml_key[flag_takeGroup]||false> {
+        - if <def[group].exists> {
+          - yaml set 'regions.%region%.flags.%flag%:<def[flagValue].unescaped>/%group%' 'id:dRegions_%world%_regions'
+          }
+          else {
+          - yaml set 'regions.%region%.flags.%flag%:<def[flagValue].unescaped>' 'id:dRegions_%world%_regions'
+          }
+        }
+        else {
+        - yaml set 'regions.%region%.flags.%flag%:<def[flagValue].unescaped>' 'id:dRegions_%world%_regions'
+        }
+      - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
+      - define string "<&f><&o>%region%<&7><&o> set %flag% flag to <&f><&o>%flagValue%"
+      - define lines '<proc[dRegions_LineWrap].context[<def[string]>|45]>'
+      - foreach <def[lines]> {
+        - run s@dRegions_Msg 'def:<&f><&o><def[value].unescaped>'
+        }
+      }
+      else {
+      - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
+      - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
+      - run s@dRegions_Msg 'def:<&c>Cleared %flag% flag for region %region%'
+      - queue clear
+      }
+
+    # All seems well, let's set the flag
   setpriority:
   # /drg setpriority [ID] [#]
     - inject locally prerun instantly
@@ -2080,7 +2179,6 @@ dRegions_RegionOverlaps:
   # <proc[dRegions_RegionOverlaps].context[<def[selectedCuboid].replace[cu@].replace[|].with[/]>|%name%|%world%|<player>]>
   # NOTE: We have the ability to return %overlaps% and %unowned% if we want
   type: procedure
-  debug: true
   definitions: selectedCuboid|region|world|player
   debug: false
 
@@ -2204,70 +2302,93 @@ dRegions_LineWrap:
 #
 #   usage:
 #     - define YourValue "Some string"
-#     - define CompareValue "5.2"
-#     - define TypeMatch '<proc[TypeMatch].context[%YourValue%|%CompareValue%]>'
-#     - if <def[TypeMatch].get[1]> {
-#       - narrate "YourValue and CompareValue are both <def[TypeMatch].get[2]> strings."
+#     - define Type "<s@dRegions_Flag_%flag%.yaml_key[flag_type]||null>"
+#     - define TypeMatch '<proc[dRegion_FlagTypeMatch].context[%YourValue%|%Type%]>'
+#     - if <def[TypeMatch]> {
+#       - narrate "%YourValue% matches %type%."
 #       }
 #       else {
-#       - narrate "YourValue and CompareValue Do not Match!"
-#       - narrate "YourValue Type<&co> <def[TypeMatch].get[2]>"
-#       - narrate "CompareValue Type<&co> <def[TypeMatch].get[3]>"
+#       - narrate "%YourValue% is a %YourValueType% not a %type%"
 #       }
 #
 dRegion_FlagTypeMatch:
   type: procedure
   debug: false
-  definitions: YourValue|CompareValue
-  debug: false
+  definitions: YourValue|Flag
 
   script:
 
-# Get the comparable type for your value
-    - if <def[YourValue].is[MATCHES].to[number]> {
-      - define YourValueType 'number'
+    - define Type "<s@dRegions_Flag_%Flag%.yaml_key[flag_type]||null>"
+    - if <def[Type].is[==].to[number]> {
+      - if <def[YourValue].is[MATCHES].to[number]> {
+        - determine 'true'
+        }
+        else {
+        - determine 'false'
+        }
       }
-      else if <def[YourValue].is[MATCHES].to[decimal]> {
-      - define YourValueType 'decimal'
+    - if <def[Type].is[==].to[decimal]> {
+      - if <def[YourValue].is[MATCHES].to[decimal]> {
+        - determine 'true'
+        }
+        else {
+        - determine 'false'
+        }
       }
-      else if <def[YourValue].is[MATCHES].to[boolean]> {
-      - define YourValueType 'boolean'
+    - if <def[Type].is[==].to[boolean]> {
+      - if <def[YourValue].is[MATCHES].to[boolean]> {
+        - determine 'true'
+        }
+        else {
+        - determine 'false'
+        }
       }
-      else if <def[YourValue].as_location.world.is[!=].to[null]||false> {
-      - define YourValueType 'location'
+    - if <def[Type].is[==].to[location]> {
+      - if <def[YourValue].as_location.world.is[!=].to[null]||false> {
+        - determine 'true'
+        }
+        else {
+        - determine 'false'
+        }
       }
-      else if <el@val[allow|deny|none].as_list.contains[%YourValue%]||false> {
-      - define YourValueType 'state'
+    - if <def[Type].is[==].to[state]> {
+      - if <el@val[allow|deny|none].as_list.contains[%YourValue%]||false> {
+        - determine 'true'
+        }
+        else {
+        - determine 'false'
+        }
       }
-      else if <el@val[members|nonmembers|owners|nonowners|all].as_list.contains[%YourValue%]||false> {
-      - define YourValueType 'group'
+    - if <def[Type].is[==].to[group]> {
+      - if <el@val[members|nonmembers|owners|nonowners|all].as_list.contains[%YourValue%]||false> {
+        - determine 'true'
+        }
+        else {
+        - determine 'false'
+        }
       }
-      else define YourValueType 'STRING'
+    - if <def[Type].is[==].to[custom]> {
+      - if <s@dRegions_Flag_%flag%.yaml_key[flag_type_customVal].as_list.contains[%YourValue%]||false> {
+        - determine 'true'
+        }
+        else {
+        - determine 'false'
+        }
+      }
+    - if <def[Type].is[==].to[string]> {
+      - if <def[YourValue].is[!=].to[null]||false> {
+        - determine 'true'
+        }
+        else {
+        - determine 'false'
+        }
+      }
+    - determine 'false'
 
-# Get the comparable type of the string you're comparing against
-    - if <def[CompareValue].is[MATCHES].to[number]> {
-      - define CompareValueType 'number'
-      }
-      else if <def[CompareValue].is[MATCHES].to[decimal]> {
-      - define CompareValueType 'decimal'
-      }
-      else if <def[CompareValue].is[MATCHES].to[boolean]> {
-      - define CompareValueType 'boolean'
-      }
-      else if <def[CompareValue].as_location.world.is[!=].to[null]||false> {
-      - define CompareValueType 'location'
-      }
-      else if <el@val[allow|deny|none].as_list.contains[%CompareValue%]||false> {
-      - define CompareValueType 'state'
-      }
-      else if <el@val[members|nonmembers|owners|nonowners|all].as_list.contains[%CompareValue%]||false> {
-      - define CompareValueType 'group'
-      }
-      else define CompareValueType 'STRING'
 
 # Return determination
-    - if <def[YourValueType].is[==].to[%CompareValueType%]> determine "li@true|%CompareValueType%"
-      else determine "li@false|%YourValueType%|%CompareValueType%"
+    - if <def[YourValueType].is[==].to[%Type%]> determine "li@true"
+      else determine "li@false|%YourValueType%"
 
 
 
