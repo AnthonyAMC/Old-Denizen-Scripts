@@ -1060,11 +1060,10 @@ dRegions_Commands:
         }
       }
     - inject locally regionInfo instantly
-    - define msgsHeaderTitle '<&7>Region Info<&co> <&e>%name% (%world%)'
+    - define msgsHeaderTitle '<&7>Region Info<&co> <&e>%name% <&8><&lb><&7>%world%<&8><&rb>'
     - inject locally msgsHeader instantly
     - narrate "<&5><el@val[|].pad_right[3]><&7>Type<&co> <&f>%type% <&8><&lb><&7><&o><def[pos1].split[,].remove[4].comma_separated.replace[ ]> <&8><&pipe> <&7><&o><def[pos2].split[,].remove[4].comma_separated.replace[ ]><&8><&rb> <&lb><&7><&o>%size%<&8><&rb>"
-    - narrate "<&5><el@val[|].pad_right[3]><&7>Priority<&co> <&f>%priority%"
-    - narrate "<&5><el@val[|].pad_right[3]><&7>Parent<&co> <&f>%parent%"
+    - narrate "<&5><el@val[|].pad_right[3]><&7>Priority<&co> <&f><el@val[%priority%].pad_right[3]><&7>  Parent<&co> <&f>%parent%"
     - if <def[ownerPlayers].is_empty||true>
       && <def[ownerGroups].is_empty||true> {
       - narrate "<&5><el@val[|].pad_right[3]><&7>Owners<&co> <&c>none"
@@ -1536,7 +1535,7 @@ dRegions_Commands:
       - queue clear
       }
 
-    # Check the specified flag value
+    # Check the specified flag value and set or clear it.
     - define flagValue '<def[args].get[3].to[<def[args].size>].space_separated.escaped||null>'
     - if <def[flagValue].is[!=].to[null]||true> {
       - define type "<s@dRegions_Flag_%flag%.yaml_key[flag_type]||null>"
@@ -1573,7 +1572,6 @@ dRegions_Commands:
       - queue clear
       }
 
-    # All seems well, let's set the flag
   setpriority:
   # /drg setpriority [ID] [#]
     - inject locally prerun instantly
@@ -2303,7 +2301,7 @@ dRegions_LineWrap:
 #   usage:
 #     - define YourValue "Some string"
 #     - define Type "<s@dRegions_Flag_%flag%.yaml_key[flag_type]||null>"
-#     - define TypeMatch '<proc[dRegion_FlagTypeMatch].context[%YourValue%|%Type%]>'
+#     - define TypeMatch '<proc[dRegion_FlagTypeMatch].context[%YourValue%|%flag%]>'
 #     - if <def[TypeMatch]> {
 #       - narrate "%YourValue% matches %type%."
 #       }
