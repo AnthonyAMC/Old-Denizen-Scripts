@@ -563,7 +563,7 @@ dWE_Commands:
 #    - define blocks <cu@%pos1%|%pos2%.get_blocks>
     - define undoMaterials <def[blocks].parse[material.full]>
 #    - ~modifyblock %blocks% %material% delayed
-    - ~modifyblock <cu@%pos1%|%pos2%> %material% delayed
+    - ~modifyblock cu@%pos1%|%pos2% %material% delayed
     - flag player 'dWE_UndoHistory:->:set_blocks;<cu@%pos1%|%pos2%>;%undoMaterials%'
     - run s@dWE_Msg 'def:Set complete!'
 
