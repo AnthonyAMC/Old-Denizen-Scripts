@@ -29,6 +29,7 @@ dRegions_Flag_Entry:
   event_hook: regionEnter
   event_priority: 0
   flag_type: state
+  flag_takeGroup: true
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
@@ -71,6 +72,7 @@ dRegions_Flag_Greeting:
   event_hook: regionEnter
   event_priority: 10
   flag_type: string
+  flag_takeGroup: false
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
@@ -105,6 +107,7 @@ dRegions_Flag_Exit:
   event_hook: regionExit
   event_priority: 0
   flag_type: state
+  flag_takeGroup: true
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
@@ -147,6 +150,7 @@ dRegions_Flag_Farewell:
   event_hook: regionExit
   event_priority: 10
   flag_type: string
+  flag_takeGroup: false
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
@@ -196,19 +200,26 @@ dRegions_Flag_Gamemode:
     - define gmList '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
     - foreach %gmList% {
       - if <def[value].is[!=].to[null]||false> {
-        - if <def[isExit].exists> {
-          - adjust <player> 'gamemode:<player.flag[dRegions_PreviousGamemode]||survival>'
-          - flag <player> 'dRegions_PreviousGamemode:!'
+        - define gm '<def[value].split[/].get[1]||survival>'
+        - define group '<def[value].split[/].get[2]||members>'
+        - define isOwner '<proc[dRegions_IsOwner].context[<def[orderedRegions].get[%loop_index%]>|%world%|<player>]>'
+        - define isMember '<proc[dRegions_isMember].context[<def[orderedRegions].get[%loop_index%]>|%world%|<player>]>'
+
+        - if <proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]> {
+          - if <def[isExit].exists> {
+            - adjust <player> 'gamemode:<player.flag[dRegions_PreviousGamemode]||survival>'
+            - flag <player> 'dRegions_PreviousGamemode:!'
+            }
+            else if <def[isEnter].exists> {
+            - flag <player> 'dRegions_PreviousGamemode:<player.gamemode>'
+            - adjust <player> 'gamemode:%gm%'
+            }
+            else {
+            - adjust <player> 'gamemode:survival'
+            }
+          - run s@dRegions_Msg 'def:<&7><&o>Your gamemode has been updated.'
+          - foreach stop
           }
-          else if <def[isEnter].exists> {
-          - flag <player> 'dRegions_PreviousGamemode:<player.gamemode>'
-          - adjust <player> 'gamemode:%value%'
-          }
-          else {
-          - adjust <player> 'gamemode:survival'
-          }
-        - run s@dRegions_Msg 'def:<&7><&o>Your gamemode has been updated.'
-        - foreach stop
         }
       }
 
