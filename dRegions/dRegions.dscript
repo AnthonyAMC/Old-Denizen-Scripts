@@ -650,6 +650,58 @@ dRegions_Commands:
           }
           else define result 'li@'
         }
+        else if <def[spaces].is[==].to[2]> {
+        - if <c.args.get[2].is[==].to[-w]||false> {
+          - if <c.args.get[3].is[!=].to[null]||false> define result '<server.list_worlds.parse[name.to_lowercase].filter[starts_with[<c.args.get[3].escaped>]]||li@>'
+          - if <def[result].is_empty||true> define result '<server.list_worlds.parse[name.to_lowercase]||li@>'
+          }
+          else if <c.args.get[2].is[!=].to[null]||false> {
+          - define allFlagScripts '<server.list_scripts.filter[starts_with[s@dRegions_Flag]]||li@>'
+          - define allFlags '<def[allFlagScripts].parse[name.split[_].get[3].to_lowercase].alphanumeric||li@>'
+          - if <c.args.get[3].is[==].to[-w]||false> {
+            - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name.to_lowercase||<player.world.name.to_lowercase||null>>'
+            - if <c.args.get[3].is[!=].to[null]||false> define result '<server.list_worlds.parse[name.to_lowercase].filter[starts_with[<c.args.get[3].escaped>]]||li@>'
+            - if <def[result].is_empty||true> define result '<server.list_worlds.parse[name.to_lowercase].parse[replace[regex:^].with[-w ]]||li@>'
+            }
+            else if <c.args.get[3].is[!=].to[null]||false> {
+            - define result '<def[allFlags].filter[starts_with[<c.args.get[3].escaped>]]||li@>'
+            - if <def[result].is_empty||true> define result '<def[allFlags]||li@>'
+            }
+            else {
+            - if <def[result].is_empty||true> define result '<def[allFlags]||li@>'
+            }
+          }
+        }
+        else if <def[spaces].is[==].to[3]> {
+        - if <c.args.get[2].is[==].to[-w]||false> {
+          - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name.to_lowercase||<player.world.name.to_lowercase||null>>'
+          - define regions '<yaml[dRegions_%world%_regions].list_keys[regions].alphanumeric||li@>'
+          - if <c.args.get[4].is[!=].to[null]||false> define result '<def[regions].filter[starts_with[<c.args.get[4].escaped>]]||li@>'
+          - if <def[result].is_empty||true> define result '<def[regions]||li@>'
+          }
+          else if <c.args.get[3].is[==].to[-w]||false> {
+          - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name.to_lowercase||<player.world.name.to_lowercase||null>>'
+          - if <c.args.get[4].is[!=].to[null]||false> define result '<server.list_worlds.parse[name.to_lowercase].filter[starts_with[<c.args.get[3].escaped>]].parse[replace[regex:^].with[-w ]]||li@>'
+          - if <def[result].is_empty||true> define result '<server.list_worlds.parse[name.to_lowercase]||li@>'
+          }
+          else if <c.args.get[4].is[==].to[-w]||false> {
+          - define result '<server.list_worlds.parse[name.to_lowercase].parse[replace[regex:^].with[-w ]]||li@>'
+          }
+        }
+        else if <def[spaces].is[==].to[4]> {
+        - if <c.args.get[4].is[==].to[-w]||false> {
+          - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name.to_lowercase||<player.world.name.to_lowercase||null>>'
+          - define regions '<yaml[dRegions_%world%_regions].list_keys[regions].alphanumeric||li@>'
+          - if <c.args.get[5].is[!=].to[null]||false> define result '<server.list_worlds.parse[name.to_lowercase].filter[starts_with[<c.args.get[5].escaped>]]||li@>'
+          - if <def[result].is_empty||true> define result '<server.list_worlds.parse[name.to_lowercase]||li@>'
+          }
+          else {
+          - define allFlagScripts '<server.list_scripts.filter[starts_with[s@dRegions_Flag]]||li@>'
+          - define allFlags '<def[allFlagScripts].parse[name.split[_].get[3].to_lowercase].alphanumeric||li@>'
+          - if <c.args.get[5].is[!=].to[null]||false> define result '<def[allFlags].filter[starts_with[<c.args.get[5].escaped>]]||li@>'
+          - if <def[result].is_empty||true> define result '<def[allFlags]||li@>'
+          }
+        }
       }
       else {
       - define result 'li@'
