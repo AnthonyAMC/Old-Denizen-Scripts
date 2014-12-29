@@ -5,7 +5,7 @@
 #
 #   Authors: |Anthony|, mcmonkey
 #   Version: 0.21
-#   dScript Version: 0.9.6-1543
+#   dScript Version: 0.9.6-DEV-b54
 #
 #
 #
@@ -560,9 +560,10 @@ dWE_Commands:
       - run s@dWE_Msg 'def:<&c>Must specify a valid material.'
       - queue clear
       }
-    - define blocks <cu@%pos1%|%pos2%.get_blocks>
+#    - define blocks <cu@%pos1%|%pos2%.get_blocks>
     - define undoMaterials <def[blocks].parse[material.full]>
-    - ~modifyblock %blocks% %material% delayed
+#    - ~modifyblock %blocks% %material% delayed
+    - ~modifyblock <cu@%pos1%|%pos2%> %material% delayed
     - flag player 'dWE_UndoHistory:->:set_blocks;<cu@%pos1%|%pos2%>;%undoMaterials%'
     - run s@dWE_Msg 'def:Set complete!'
 
@@ -589,9 +590,10 @@ dWE_Commands:
       - queue clear
       }
     - define ellipsoid ellipsoid@<player.location.simple>,%size%
-    - define blocks <def[ellipsoid].get_blocks>
+#    - define blocks <def[ellipsoid].get_blocks>
     - define undoMaterials <def[blocks].parse[material.full]>
-    - ~modifyblock %blocks% %material% delayed
+#    - ~modifyblock %blocks% %material% delayed
+    - ~modifyblock %ellipsoid% %material% delayed
     - flag player 'dWE_UndoHistory:->:set_blocks;<def[ellipsoid]>;%undoMaterials%'
     - run s@dWE_Msg 'def:Set complete!'
 
@@ -662,9 +664,11 @@ dWE_Commands:
       }
 
   undo_set_blocks:
-    - define cuboid '<def[last_action].split[;].get[2].get_blocks||null>'
+#    - define cuboid '<def[last_action].split[;].get[2].get_blocks||null>'
+    - define selection '<def[last_action].split[;].get[2]||null>'
     - define materials '<def[last_action].split[;].get[3]||li@>'
-    - ~modifyblock %cuboid% %materials% delayed
+#    - ~modifyblock %cuboid% %materials% delayed
+    - ~modifyblock %selection% %materials% delayed
     - run s@dWE_Msg 'def:<&a>Undo complete!'
 
   selection_Size:
