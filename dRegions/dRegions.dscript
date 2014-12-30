@@ -133,6 +133,21 @@ dRegions:
         }
       - if <yaml.list.contains[dRegions_%world%_regions]> yaml unload 'id:dRegions_%world%_regions'
       - yaml 'load:dRegions/%file%.yml' 'id:dRegions_%world%_regions'
+
+      - define file 'worlds/%world%/inventories'
+      - if !<server.has_file[dRegions/%file%.yml]> {
+        - define region '__global__'
+        - if <player.is[!=].to[null]||false> {
+          - flag <player> ConfigFileGeneratorNotify:true
+          - inject locally createRegionFile instantly
+          - flag <player> ConfigFileGeneratorNotify:!
+          - run s@dRegions_Msg 'def:<&7><&o>Created <&f><&o>%world%<&7><&o> regions file!'
+          }
+          else inject locally createInventoryFile instantly
+        - announce "<&b>dRegions<&co> <&7><&o>Created <&f><&o>%world%<&7><&o> inventory file!" to_console
+        }
+      - if <yaml.list.contains[dRegions_%world%_inventories]> yaml unload 'id:dRegions_%world%_inventories'
+      - yaml 'load:dRegions/%file%.yml' 'id:dRegions_%world%_inventories'
       }
     - announce "<&b>dRegions<&co><&a> System config files Loaded!" to_console
 
@@ -148,6 +163,8 @@ dRegions:
       - yaml 'load:dRegions/worlds/%world%/config.yml' 'id:dRegions_%world%_config'
       - if <yaml.list.contains[dRegions_%world%_regions]> yaml unload 'id:dRegions_%world%_regions'
       - yaml 'load:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
+      - if <yaml.list.contains[dRegions_%world%_inventories]> yaml unload 'id:dRegions_%world%_inventories'
+      - yaml 'load:dRegions/worlds/%world%/inventories.yml' 'id:dRegions_%world%_inventories'
       }
     - announce "<&b>dRegions<&co><&a> System config files Loaded!" to_console
     - run s@dRegions_Msg 'def:<&7><&o>System config files Loaded!'
@@ -173,6 +190,18 @@ dRegions:
     - yaml create 'id:%writeID%'
     - define readPath '%readID%.regions.__global__'
     - define writePath 'regions.%region%'
+    - run s@ConfigFileGenerator def:%readID%|%writeID%|%readPath%|%writePath%|false|false|false instantly
+    - yaml unload 'id:%readID%'
+    - yaml 'savefile:dRegions/%file%.yml' 'id:%writeID%'
+
+
+  createInventoryFile:
+    - define readID 'dRegions_Configurations'
+    - define writeID 'dRegions_%world%_inventories'
+    - if !<yaml.list.contains[%readID%]> yaml fix_formatting 'load:<script.relative_filename>' 'id:%readID%'
+    - yaml create 'id:%writeID%'
+    - define readPath '%readID%.inventories'
+    - define writePath 'inventories'
     - run s@ConfigFileGenerator def:%readID%|%writeID%|%readPath%|%writePath%|false|false|false instantly
     - yaml unload 'id:%readID%'
     - yaml 'savefile:dRegions/%file%.yml' 'id:%writeID%'
@@ -1631,6 +1660,7 @@ dRegions_Commands:
           }
         - queue clear
         }
+      - inject s@dRegions_Flag_%flag% p:command_handler
       - if <s@dRegions_Flag_%flag%.yaml_key[flag_takeGroup]||false> {
         - if <def[group].exists> {
           - yaml set 'regions.%region%.flags.%flag%:<def[flagValue].unescaped>/%group%' 'id:dRegions_%world%_regions'
@@ -1650,6 +1680,7 @@ dRegions_Commands:
         }
       }
       else {
+      - inject s@dRegions_Flag_%flag% p:command_handler
       - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
       - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
       - run s@dRegions_Msg 'def:<&c>Cleared %flag% flag for region %region%'
@@ -2280,7 +2311,7 @@ dRegions_RegionOverlaps:
 
 
 dRegions_PlayerMatchRegionGroup:
-  # Check if a player is matches a region flag group setting.
+  # Check if a player matches a region flag group setting.
   # <proc[dRegions_PlayerMatchRegionGroup].context[group|isMember|isOwner]>
   type: procedure
   definitions: group|isMember|isOwner
@@ -2606,11 +2637,31 @@ dRegions_Configurations:
 
   regions:
     __global__:
-        type: global
-        priority: 0
-        flags: []
-        owners: []
-        members: []
+      type: global
+      priority: 0
+      flags: []
+      owners: []
+      members: []
+
+  inventories:
+    info:
+      - This is the inventory save file.
+      - DO NOT EDIT!
+    example:
+      region:
+        entry:
+          kit:
+            equip: []
+            inv: []
+          players:
+            player:
+              equip: []
+              inv: []
+        exit:
+          players:
+            player:
+              equip: []
+              inv: []
 
 
 #
