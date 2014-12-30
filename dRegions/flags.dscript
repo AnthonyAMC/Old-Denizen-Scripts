@@ -207,17 +207,23 @@ dRegions_Flag_Gamemode:
 
         - if <proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]> {
           - if <def[isExit].exists> {
-            - adjust <player> 'gamemode:<player.flag[dRegions_PreviousGamemode]||survival>'
+            - if <player.flag[dRegions_PreviousGamemode].is[!=].to[<player.gamemode>]||false> {
+              - adjust <player> 'gamemode:<player.flag[dRegions_PreviousGamemode]||survival>'
+              - run s@dRegions_Msg 'def:<&7><&o>Your gamemode has been updated.'
+              }
             - flag <player> 'dRegions_PreviousGamemode:!'
             }
             else if <def[isEnter].exists> {
-            - flag <player> 'dRegions_PreviousGamemode:<player.gamemode>'
-            - adjust <player> 'gamemode:%gm%'
+            - if <def[gm].is[!=].to[<player.gamemode>]> {
+              - flag <player> 'dRegions_PreviousGamemode:<player.gamemode>'
+              - adjust <player> 'gamemode:%gm%'
+              - run s@dRegions_Msg 'def:<&7><&o>Your gamemode has been updated.'
+              }
             }
             else {
             - adjust <player> 'gamemode:survival'
+            - run s@dRegions_Msg 'def:<&7><&o>Your gamemode has been updated.'
             }
-          - run s@dRegions_Msg 'def:<&7><&o>Your gamemode has been updated.'
           - foreach stop
           }
         }
