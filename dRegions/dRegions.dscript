@@ -159,7 +159,7 @@ dRegions:
 
     on player breaks hanging:
     - define world '<player.world.name.to_lowercase>'
-    - define dRegions '<c.location.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[split[_].get[3]].include[__global__].replace[li@].replace[|].with[,]||null>'
+    - define dRegions '<c.hanging.location.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[split[_].get[3]].include[__global__].replace[li@].replace[|].with[,]||null>'
     - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|%dRegions%]||li@>'
     - define allFlagScripts '<server.list_scripts.filter[starts_with[s@dRegions_Flag]]||li@>'
     - define Flags '<def[allFlagScripts].filter[yaml_key[event_hook].contains_any[hangingBreak|build]]||li@>'
