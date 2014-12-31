@@ -109,6 +109,121 @@ dRegions:
       - inject %value% p:event
       }
 
+    on player empties bucket:
+    - define world '<player.world.name.to_lowercase>'
+    - define dRegions '<c.location.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[split[_].get[3]].include[__global__].replace[li@].replace[|].with[,]||null>'
+    - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|%dRegions%]||li@>'
+    - define allFlagScripts '<server.list_scripts.filter[starts_with[s@dRegions_Flag]]||li@>'
+    - define Flags '<def[allFlagScripts].filter[yaml_key[event_hook].contains_any[emptyBucket|build]]||li@>'
+    - define eventPri '<def[Flags].parse[yaml_key[event_priority]]||0>'
+    - define eventList 'li@'
+    - foreach <def[Flags]> {
+      - define eventList '<def[eventList].include[<def[eventPri].get[%loop_index%]>/%value%]>'
+      }
+    - define orderedEvents '<def[eventList].alphanumeric.parse[split[/].get[2]]>'
+    - foreach <def[orderedEvents]> {
+      - inject %value% p:event
+      }
+
+    on player fills bucket:
+    - define world '<player.world.name.to_lowercase>'
+    - define dRegions '<c.location.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[split[_].get[3]].include[__global__].replace[li@].replace[|].with[,]||null>'
+    - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|%dRegions%]||li@>'
+    - define allFlagScripts '<server.list_scripts.filter[starts_with[s@dRegions_Flag]]||li@>'
+    - define Flags '<def[allFlagScripts].filter[yaml_key[event_hook].contains_any[fillBucket|build]]||li@>'
+    - define eventPri '<def[Flags].parse[yaml_key[event_priority]]||0>'
+    - define eventList 'li@'
+    - foreach <def[Flags]> {
+      - define eventList '<def[eventList].include[<def[eventPri].get[%loop_index%]>/%value%]>'
+      }
+    - define orderedEvents '<def[eventList].alphanumeric.parse[split[/].get[2]]>'
+    - foreach <def[orderedEvents]> {
+      - inject %value% p:event
+      }
+
+    on player places hanging:
+    - define world '<player.world.name.to_lowercase>'
+    - define dRegions '<c.location.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[split[_].get[3]].include[__global__].replace[li@].replace[|].with[,]||null>'
+    - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|%dRegions%]||li@>'
+    - define allFlagScripts '<server.list_scripts.filter[starts_with[s@dRegions_Flag]]||li@>'
+    - define Flags '<def[allFlagScripts].filter[yaml_key[event_hook].contains_any[hangingPlace|build]]||li@>'
+    - define eventPri '<def[Flags].parse[yaml_key[event_priority]]||0>'
+    - define eventList 'li@'
+    - foreach <def[Flags]> {
+      - define eventList '<def[eventList].include[<def[eventPri].get[%loop_index%]>/%value%]>'
+      }
+    - define orderedEvents '<def[eventList].alphanumeric.parse[split[/].get[2]]>'
+    - foreach <def[orderedEvents]> {
+      - inject %value% p:event
+      }
+
+    on player breaks hanging:
+    - define world '<player.world.name.to_lowercase>'
+    - define dRegions '<c.location.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[split[_].get[3]].include[__global__].replace[li@].replace[|].with[,]||null>'
+    - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|%dRegions%]||li@>'
+    - define allFlagScripts '<server.list_scripts.filter[starts_with[s@dRegions_Flag]]||li@>'
+    - define Flags '<def[allFlagScripts].filter[yaml_key[event_hook].contains_any[hangingBreak|build]]||li@>'
+    - define eventPri '<def[Flags].parse[yaml_key[event_priority]]||0>'
+    - define eventList 'li@'
+    - foreach <def[Flags]> {
+      - define eventList '<def[eventList].include[<def[eventPri].get[%loop_index%]>/%value%]>'
+      }
+    - define orderedEvents '<def[eventList].alphanumeric.parse[split[/].get[2]]>'
+    - foreach <def[orderedEvents]> {
+      - inject %value% p:event
+      }
+
+    on player right clicks item_frame:
+    - define world '<player.world.name.to_lowercase>'
+    - define dRegions '<c.entity.location.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[split[_].get[3]].include[__global__].replace[li@].replace[|].with[,]||null>'
+    - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|%dRegions%]||li@>'
+    - define allFlagScripts '<server.list_scripts.filter[starts_with[s@dRegions_Flag]]||li@>'
+    - define Flags '<def[allFlagScripts].filter[yaml_key[event_hook].contains_any[useFrame|build]]||li@>'
+    - define eventPri '<def[Flags].parse[yaml_key[event_priority]]||0>'
+    - define eventList 'li@'
+    - foreach <def[Flags]> {
+      - define eventList '<def[eventList].include[<def[eventPri].get[%loop_index%]>/%value%]>'
+      }
+    - define orderedEvents '<def[eventList].alphanumeric.parse[split[/].get[2]]>'
+    - foreach <def[orderedEvents]> {
+      - inject %value% p:event
+      }
+
+    on player damages item_frame:
+    - define world '<player.world.name.to_lowercase>'
+    - define dRegions '<c.entity.location.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[split[_].get[3]].include[__global__].replace[li@].replace[|].with[,]||null>'
+    - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|%dRegions%]||li@>'
+    - define allFlagScripts '<server.list_scripts.filter[starts_with[s@dRegions_Flag]]||li@>'
+    - define Flags '<def[allFlagScripts].filter[yaml_key[event_hook].contains_any[useFrame|build]]||li@>'
+    - define eventPri '<def[Flags].parse[yaml_key[event_priority]]||0>'
+    - define eventList 'li@'
+    - foreach <def[Flags]> {
+      - define eventList '<def[eventList].include[<def[eventPri].get[%loop_index%]>/%value%]>'
+      }
+    - define orderedEvents '<def[eventList].alphanumeric.parse[split[/].get[2]]>'
+    - foreach <def[orderedEvents]> {
+      - inject %value% p:event
+      }
+
+    on player clicks block with bone_meal:
+    - define world '<player.world.name.to_lowercase>'
+    - define dRegions '<c.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[split[_].get[3]].include[__global__].replace[li@].replace[|].with[,]||null>'
+    - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|%dRegions%]||li@>'
+    - define allFlagScripts '<server.list_scripts.filter[starts_with[s@dRegions_Flag]]||li@>'
+    - define Flags '<def[allFlagScripts].filter[yaml_key[event_hook].contains_any[bonemeal|build]]||li@>'
+    - define eventPri '<def[Flags].parse[yaml_key[event_priority]]||0>'
+    - define eventList 'li@'
+    - foreach <def[Flags]> {
+      - define eventList '<def[eventList].include[<def[eventPri].get[%loop_index%]>/%value%]>'
+      }
+    - define orderedEvents '<def[eventList].alphanumeric.parse[split[/].get[2]]>'
+    - foreach <def[orderedEvents]> {
+      - inject %value% p:event
+      }
+
+
+
+
   start:
     - inject locally loadYaml instantly
 
