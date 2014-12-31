@@ -33,7 +33,6 @@ dRegions:
     on server start:
     - run locally start delay:2t
 
-
     on player enters notable cuboid:
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<c.cuboids.replace[;].with[|]>'
@@ -55,7 +54,6 @@ dRegions:
     - foreach <def[orderedEvents]> {
       - inject %value% p:event
       }
-
 
     on player exits notable cuboid:
     - define world '<player.world.name.to_lowercase>'
@@ -79,6 +77,37 @@ dRegions:
       - inject %value% p:event
       }
 
+    on player breaks block:
+    - define world '<player.world.name.to_lowercase>'
+    - define dRegions '<c.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[split[_].get[3]].include[__global__].replace[li@].replace[|].with[,]||null>'
+    - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|%dRegions%]||li@>'
+    - define allFlagScripts '<server.list_scripts.filter[starts_with[s@dRegions_Flag]]||li@>'
+    - define blockBreakFlags '<def[allFlagScripts].filter[yaml_key[event_hook].contains_any[blockBreak|build]]||li@>'
+    - define eventPri '<def[blockBreakFlags].parse[yaml_key[event_priority]]||0>'
+    - define eventList 'li@'
+    - foreach <def[blockBreakFlags]> {
+      - define eventList '<def[eventList].include[<def[eventPri].get[%loop_index%]>/%value%]>'
+      }
+    - define orderedEvents '<def[eventList].alphanumeric.parse[split[/].get[2]]>'
+    - foreach <def[orderedEvents]> {
+      - inject %value% p:event
+      }
+
+    on player places block:
+    - define world '<player.world.name.to_lowercase>'
+    - define dRegions '<c.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[split[_].get[3]].include[__global__].replace[li@].replace[|].with[,]||null>'
+    - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|%dRegions%]||li@>'
+    - define allFlagScripts '<server.list_scripts.filter[starts_with[s@dRegions_Flag]]||li@>'
+    - define blockPlaceFlags '<def[allFlagScripts].filter[yaml_key[event_hook].contains_any[blockPlace|build]]||li@>'
+    - define eventPri '<def[blockBreakFlags].parse[yaml_key[event_priority]]||0>'
+    - define eventList 'li@'
+    - foreach <def[blockPlaceFlags]> {
+      - define eventList '<def[eventList].include[<def[eventPri].get[%loop_index%]>/%value%]>'
+      }
+    - define orderedEvents '<def[eventList].alphanumeric.parse[split[/].get[2]]>'
+    - foreach <def[orderedEvents]> {
+      - inject %value% p:event
+      }
 
   start:
     - inject locally loadYaml instantly
@@ -1660,6 +1689,14 @@ dRegions_Commands:
           }
         - queue clear
         }
+      - if <def[type].is[==].to[state]||false>
+        && <def[flagValue].is[==].to[none]||false> {
+        - inject s@dRegions_Flag_%flag% p:command_handler
+        - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
+        - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
+        - run s@dRegions_Msg 'def:<&c>Cleared %flag% flag for region %region%'
+        - queue clear
+        }
       - inject s@dRegions_Flag_%flag% p:command_handler
       - if <s@dRegions_Flag_%flag%.yaml_key[flag_takeGroup]||false> {
         - if <def[group].exists> {
@@ -1751,7 +1788,7 @@ dRegions_Commands:
       }
       else define parent '<c.args.get[3].escaped||null>'
     - if <def[parent].is[==].to[null]> {
-      - yaml set 'regions.%name%.parent:' 'id:dRegions_%world%_regions'
+      - yaml set 'regions.%name%.parent:!' 'id:dRegions_%world%_regions'
       - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
       - run s@dRegions_Msg 'def:<&7><&o>Unset parent for <&f><&o>%name%'
       - queue clear
@@ -2208,8 +2245,8 @@ dRegions_IsOwner:
 
 
 dRegions_IsMember:
-  # A procedure script to check if a player is a region owner
-  # <proc[dRegions_IsOwner].context[region|world|player]>
+  # A procedure script to check if a player is a region member
+  # <proc[dRegions_IsMember].context[region|world|player]>
   type: procedure
   definitions: region|world|player
   debug: false
@@ -2319,7 +2356,7 @@ dRegions_PlayerMatchRegionGroup:
 
   script:
     - if <def[group].is[==].to[nonmembers]> {
-      - if <def[isMember].not> || <def[isOwner].not> {
+      - if <def[isMember].not> && <def[isOwner].not> {
         - determine true
         }
       }
