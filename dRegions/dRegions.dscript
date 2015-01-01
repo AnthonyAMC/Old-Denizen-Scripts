@@ -25,13 +25,30 @@ dRegions:
   type: world
   debug: false
   events:
-    on player clicks block:
-      - if <c.item.scriptname.split[_].get[1].is[!=].to[dRegions]||true> queue clear
-      - determine passively CANCELLED
-      - inject <c.item.scriptname.as_script> instantly
-
+##################################################
+#
+#  World Events
+#
+#
     on server start:
     - run locally start delay:2t
+
+#    on structure grows:
+#    - announce "Grew <context.structure>"
+#    - announce "<player.name||unknown>"
+
+
+#
+#  END World Events
+##################################################
+#
+#  Player Events
+#
+#
+#    on player clicks block:
+#    - if <c.item.scriptname.split[_].get[1].is[!=].to[dRegions]||true> queue clear
+#    - determine passively CANCELLED
+#    - inject <c.item.scriptname.as_script> instantly
 
     on player enters notable cuboid:
     - define world '<player.world.name.to_lowercase>'
@@ -43,7 +60,6 @@ dRegions:
     - define isEnter ''
     - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|%dRegions%]||li@>'
     - define allFlagScripts '<server.list_scripts.filter[starts_with[s@dRegions_Flag]]||li@>'
-#    - define allFlagScripts '<server.list_scripts.filter[split[_].get[1|2].is[==].to[s@dRegions|Flag]]>'
     - define regionEnterFlags '<def[allFlagScripts].filter[yaml_key[event_hook].contains_any[regionEnter|regionToggle]]||li@>'
     - define eventPri '<def[regionEnterFlags].parse[yaml_key[event_priority]]||0>'
     - define eventList 'li@'
@@ -65,7 +81,6 @@ dRegions:
     - define isExit ''
     - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|%dRegions%]||li@>'
     - define allFlagScripts '<server.list_scripts.filter[starts_with[s@dRegions_Flag]]||li@>'
-#    - define allFlagScripts '<server.list_scripts.filter[split[_].get[1|2].is[==].to[s@dRegions|Flag]]>'
     - define regionExitFlags '<def[allFlagScripts].filter[yaml_key[event_hook].contains_any[regionExit|regionToggle]]||li@>'
     - define eventPri '<def[regionExitFlags].parse[yaml_key[event_priority]]||0>'
     - define eventList 'li@'
@@ -221,11 +236,60 @@ dRegions:
       - inject %value% p:event
       }
 
+#
+#  END Player Events
+##################################################
+#
+#  Mob Events
+#
+#
+
+    on entity targets:
+    - define cuboids '<c.cuboids>'
+    - inject instantly s@dRegions p:event_PreProc_LoadData
+    - define eventHooks '<c.entity.prefix>_Target_<c.target.entity_type>'
+    - inject instantly s@dRegions p:event_PreProc_RunEvent
 
 
+#
+#  END Mob Events
+##################################################
+#
+#  Utility Subscripts
+#
 
   start:
     - inject locally loadYaml instantly
+
+
+  event_PreProc_LoadData:
+  # Reusable code block injected from events. It's the first pre-processor before the flags take over.
+    - define world '<player.world.name.to_lowercase>'
+    - if <def[useGlobal].exists||false> {
+      - define dRegions '<def[cuboids].parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[split[_].get[3]].include[__global__].replace[li@].replace[|].with[,]||null>'
+      }
+      else {
+      - define dRegions '<def[cuboids].parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[split[_].get[3]].replace[li@].replace[|].with[,]||null>'
+      - if <def[dRegions].is[==].to[null]||true> {
+        - queue clear
+        }
+      }
+    - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|%dRegions%]||li@>'
+
+
+  event_preProc_RunEvent:
+  # Reusable code block injected from events. It's the final pre-processor before the flags take over.
+    - define allFlagScripts '<server.list_scripts.filter[starts_with[s@dRegions_Flag]]||li@>'
+    - define Flags '<def[allFlagScripts].filter[yaml_key[event_hook].contains_any[%eventHooks%]]||li@>'
+    - define eventPri '<def[Flags].parse[yaml_key[event_priority]||0]||li@>'
+    - define eventList 'li@'
+    - foreach <def[Flags]> {
+      - define eventList '<def[eventList].include[<def[eventPri].get[%loop_index%]>/%value%]>'
+      }
+    - define orderedEvents '<def[eventList].alphanumeric.parse[split[/].get[2]]||li@>'
+    - foreach <def[orderedEvents]> {
+      - inject %value% p:event
+      }
 
 
   loadYaml:
@@ -370,6 +434,12 @@ dRegions:
     - note cu@<def[selectedCuboid].min.simple>|<def[selectedCuboid].max.simple> 'as:dregions_%world%_%name%'
 
 
+#
+#  END Utility Subscripts
+##################################################
+#
+#  Message format
+#
 
 
 dRegions_Msg:
@@ -457,13 +527,13 @@ dRegions_Commands:
       usage: '/drg removemember [ID] g:group player -w world'
       permissions: []
     list:
-      usage: '/drg list (page#) -h -r region -w world -p player'
+      usage: '/drg list (page<&ns>) -h -r region -w world -p player'
       permissions: []
     flag:
       usage: '/drg flag [ID] [flag] [value] -g group -w world'
       permissions: []
     setpriority:
-      usage: '/drg setpriority [ID] [#]'
+      usage: '/drg setpriority [ID] [<&ns>]'
       permissions: []
     setparent:
       usage: '/drg setparent [ID] [parent]'
@@ -2632,6 +2702,14 @@ dRegion_FlagTypeMatch:
         - determine 'false'
         }
       }
+    - if <def[Type].is[==].to[list]> {
+      - if '<def[YourValue].split[ ].get[1].contains_any_text[-a|-r]||false>' {
+        - determine 'true'
+        }
+        else {
+        - determine 'false'
+        }
+      }
     - if <def[Type].is[==].to[custom]> {
       - if <s@dRegions_Flag_%flag%.yaml_key[flag_type_customVal].as_list.contains[%YourValue%]||false> {
         - determine 'true'
@@ -2649,12 +2727,6 @@ dRegion_FlagTypeMatch:
         }
       }
     - determine 'false'
-
-
-# Return determination
-    - if <def[YourValueType].is[==].to[%Type%]> determine "li@true"
-      else determine "li@false|%YourValueType%"
-
 
 
 
