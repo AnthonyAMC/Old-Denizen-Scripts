@@ -368,6 +368,143 @@ dRegions_Flag_Build:
       }
 
 
+dRegions_Flag_Mob-Targeting:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Mob-Targeting<&4>]"
+  lore:
+  - <&5>Can mobs target players
+  event_hook: ENTITY_Target_Player
+  event_priority: 0
+  flag_type: state
+  flag_takeGroup: true
+  flag_help: State flag controlling whether mobs will be able to target players in this region. Defaults to allow all. Use mob-targeting flag to specify mob types. Takes the -g group switch.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+
+  event:
+    - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
+    - define suffix '<&pipe>mob-target<&rb>||null<&gt>'
+    - define InheritedMobs '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
+    - define suffix '<&pipe>mob-targeting<&rb>||null<&gt>'
+    - define InheritedFlags '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
+    - foreach %InheritedFlags% {
+      - define mobList '<def[InheritedMobs].get[%loop_index%].replace[, ].with[|].as_list||all>'
+      - if <def[mobList].is[==].to[all]||false>
+        || <def[moblist].contains[<c.entity.entity_type>]||false> {
+        - define flagVal '<def[value]>'
+        - if <def[flagVal].is[==].to[null]||true> {
+          - define flagVal 'allow/all'
+          }
+        - define flag '<def[flagVal].split[/].get[1]>'
+        - define group '<def[flagVal].split[/].get[2]||all>'
+        - define region '<def[orderedRegions].get[%loop_index%]>'
+        - define isOwner '<proc[dRegions_IsOwner].context[%region%|%world%|<player>]>'
+        - define isMember '<proc[dRegions_isMember].context[%region%|%world%|<player>]>'
+
+        - if <def[flag].is[==].to[allow]||false> {
+          - if <proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%].not> {
+            - if <player.has_flag[dRegions_Message_Cooldown].not> {
+              - flag player dRegions_Message_Cooldown duration:3s
+              - run s@dRegions_Msg 'def:<&c><&o>You have been ignored by a mob!'
+              }
+            - determine cancelled
+            - queue clear
+            }
+          }
+
+        - if <def[flag].is[==].to[deny]||false> {
+          - if <proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]> {
+            - if <player.has_flag[dRegions_Message_Cooldown].not> {
+              - flag player dRegions_Message_Cooldown duration:3s
+              - run s@dRegions_Msg 'def:<&c><&o>You have been ignored by a mob!'
+              }
+            - determine cancelled
+            - queue clear
+            }
+          }
+        }
+      }
+
+
+
+dRegions_Flag_Mob-Target:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Mob-Target<&4>]"
+  lore:
+  - <&5>List of mobs used by mob-targeting flag
+  flag_type: list
+  flag_takeGroup: false
+  flag_help: List flag used with mob-targeting flag. To add to list -a skeleton. To remove from list -r skeleton.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  command_handler:
+    - if <def[flagValue].is[==].to[null]||false> {
+      - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
+      - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
+      - run s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
+      - queue clear
+      }
+      else {
+      - define mobs '<def[flagValue].split[ ].get[2].to[<def[flagValue].split[ ].size>].parse[to_lowercase].deduplicate||li@>'
+      - if <def[mobs].get[1].is[==].to[all]> {
+        - if '<def[flagValue].split[ ].get[1].is[==].to[-a]||false>' {
+          - yaml set 'regions.%region%.flags.%flag%:all' 'id:dRegions_%world%_regions'
+          - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
+          - run s@dRegions_Msg 'def:<&f><&o>%region%<&7><&o> set %flag% flag to <&f><&o>%flagValue%'
+          - queue clear
+          }
+        - if '<def[flagValue].split[ ].get[1].is[==].to[-r]||false>' {
+          - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
+          - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
+          - run s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
+          - queue clear
+          }
+        }
+      - foreach %mobs% {
+        - if <def[value].is[matches].to[entity].not> {
+          - define mobs '<def[mobs].exclude[%value%]||li@>'
+          - run  s@dRegions_Msg 'def:<&c><&o>%value% is not a valid a mob!'
+          }
+        }
+      - if <def[mobs].is_empty||true> {
+        - run  s@dRegions_Msg 'def:<&c><&o>No valid mobs specified!'
+        - define lines '<proc[dRegions_LineWrap].context[<s@dRegions_Flag_%Flag%.yaml_key[flag_help]||<&c>%flag% flag requires a %type% value!>|45]>'
+        - foreach <def[lines]> {
+          - run s@dRegions_Msg 'def:<&c><def[value]>'
+          }
+        - queue clear
+        }
+
+      - define currentMobs '<yaml[dRegions_%world%_regions].read[regions.%region%.flags.%flag%].replace[, ].with[|].as_list||li@>'
+      - if '<def[flagValue].split[ ].get[1].is[==].to[-a]||false>' {
+        - define flagValue '<def[currentMobs].include[<def[mobs].replace[li@]>].deduplicate||li@>'
+        }
+      - if '<def[flagValue].split[ ].get[1].is[==].to[-r]||false>' {
+        - define flagValue '<def[currentMobs].exclude[<def[mobs].replace[li@]>].deduplicate||li@>'
+        }
+      - if <def[flagValue].is_empty||true> {
+        - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
+        - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
+        - run s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
+        - queue clear
+        }
+      - define flagValue '<def[flagValue].comma_separated>'
+      }
+
 
 
 
