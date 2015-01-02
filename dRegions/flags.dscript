@@ -163,7 +163,6 @@ dRegions_Flag_Farewell:
     - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
     - define suffix '<&pipe>farewell<&rb>||null<&gt>'
     - define msgList '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
-#    - define msgList '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<&lt>yaml<&lb>dRegions_%world%_regions<&rb>.read<&lb>regions.]].parse[replace[regex:()$].with[.flags.farewell<&rb>||null<&gt>]]>>'
     - foreach %msgList% {
       - if <def[value].is[!=].to[null]||false> {
         - narrate "<parse:%value%>"
@@ -389,14 +388,18 @@ dRegions_Flag_Mob-Targeting:
 
 
   event:
+    - define player <c.target>
     - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
-    - define suffix '<&pipe>mob-target<&rb>||null<&gt>'
+    - define suffix '<&pipe>mob-target<&rb>||all<&gt>'
     - define InheritedMobs '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
-    - define suffix '<&pipe>mob-targeting<&rb>||null<&gt>'
+    - define suffix '<&pipe>mob-targeting<&rb>||allow<&gt>'
     - define InheritedFlags '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
     - foreach %InheritedFlags% {
-      - define mobList '<def[InheritedMobs].get[%loop_index%].replace[, ].with[|].as_list||all>'
-      - if <def[mobList].is[==].to[all]||false>
+      - define mobList '<def[InheritedMobs].get[%loop_index%].replace[, ].with[|].as_list||li@all>'
+      - if <def[mobList].is[==].to[li@null]> {
+        - define mobList 'li@all'
+        }
+      - if <def[mobList].is[==].to[li@all]||false>
         || <def[moblist].contains[<c.entity.entity_type>]||false> {
         - define flagVal '<def[value]>'
         - if <def[flagVal].is[==].to[null]||true> {
@@ -405,15 +408,12 @@ dRegions_Flag_Mob-Targeting:
         - define flag '<def[flagVal].split[/].get[1]>'
         - define group '<def[flagVal].split[/].get[2]||all>'
         - define region '<def[orderedRegions].get[%loop_index%]>'
-        - define isOwner '<proc[dRegions_IsOwner].context[%region%|%world%|<player>]>'
-        - define isMember '<proc[dRegions_isMember].context[%region%|%world%|<player>]>'
+        - define isOwner '<proc[dRegions_IsOwner].context[%region%|%world%|<def[player]>]>'
+        - define isMember '<proc[dRegions_isMember].context[%region%|%world%|<def[player]>]>'
 
         - if <def[flag].is[==].to[allow]||false> {
           - if <proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%].not> {
-            - if <player.has_flag[dRegions_Message_Cooldown].not> {
-              - flag player dRegions_Message_Cooldown duration:3s
-              - run s@dRegions_Msg 'def:<&c><&o>You have been ignored by a mob!'
-              }
+            - attack <def[mob]> target:cancel
             - determine cancelled
             - queue clear
             }
@@ -421,10 +421,7 @@ dRegions_Flag_Mob-Targeting:
 
         - if <def[flag].is[==].to[deny]||false> {
           - if <proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]> {
-            - if <player.has_flag[dRegions_Message_Cooldown].not> {
-              - flag player dRegions_Message_Cooldown duration:3s
-              - run s@dRegions_Msg 'def:<&c><&o>You have been ignored by a mob!'
-              }
+            - attack <def[mob]> target:cancel
             - determine cancelled
             - queue clear
             }
@@ -443,7 +440,7 @@ dRegions_Flag_Mob-Target:
   - <&5>List of mobs used by mob-targeting flag
   flag_type: list
   flag_takeGroup: false
-  flag_help: List flag used with mob-targeting flag. To add to list -a skeleton. To remove from list -r skeleton.
+  flag_help: List flag used with mob-targeting flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of mobs.
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
