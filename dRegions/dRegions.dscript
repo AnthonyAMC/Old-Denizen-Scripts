@@ -21,6 +21,7 @@
 #
 #  This should cover all dRegions related world events.
 #
+#
 dRegions:
   type: world
   debug: false
@@ -32,6 +33,9 @@ dRegions:
 #
     on server start:
     - run locally start delay:2t
+
+    on world initializes:
+    - run locally loadYaml instantly
 
 #    on structure grows:
 #    - announce "Grew <context.structure>"
@@ -245,9 +249,19 @@ dRegions:
 #
 
     on entity targets:
-    - define cuboids '<c.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_LoadData
-    - define eventHooks '<c.entity.prefix>_Target_<c.target.entity_type>'
+    - define world '<c.entity.world.name.to_lowercase>'
+    - define cuboids '<c.target.location.cuboids>'
+    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - define mob '<c.entity>'
+    - define eventHooks '<c.entity.prefix>_Target_<c.target.entity_type||null>'
+    - inject instantly s@dRegions p:event_PreProc_RunEvent
+
+    on entity damages entity:
+    - define world '<c.entity.world.name.to_lowercase>'
+    - define cuboids '<c.entity.location.cuboids>'
+    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - define mob '<c.damager>'
+    - define eventHooks '<c.damager.prefix>_Target_<c.entity.entity_type||null>|<c.damager.prefix>_Damage_<c.entity.entity_type||null>'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
 
@@ -262,17 +276,21 @@ dRegions:
     - inject locally loadYaml instantly
 
 
-  event_PreProc_LoadData:
-  # Reusable code block injected from events. It's the first pre-processor before the flags take over.
-    - define world '<player.world.name.to_lowercase>'
-    - if <def[useGlobal].exists||false> {
-      - define dRegions '<def[cuboids].parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[split[_].get[3]].include[__global__].replace[li@].replace[|].with[,]||null>'
-      }
-      else {
-      - define dRegions '<def[cuboids].parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[split[_].get[3]].replace[li@].replace[|].with[,]||null>'
-      - if <def[dRegions].is[==].to[null]||true> {
-        - queue clear
-        }
+  event_PreProc_OrderRegionsGlobal:
+  # Reusable code block injected from events.
+  # This pre-processor returns %orderedRegions% including the __global__ region.
+    - define dRegions '<def[cuboids].parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[split[_].get[3]].include[__global__].replace[li@].replace[|].with[,]||null>'
+    - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|%dRegions%]||li@>'
+
+
+  event_PreProc_OrderRegions:
+  # Reusable code block injected from events.
+  # This pre-processor returns %orderedRegions% excluding the __global__ region.
+  # It stops processing if there are no regions present.
+#    - narrate "PreProcLoad"
+    - define dRegions '<def[cuboids].parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[split[_].get[3]].replace[li@].replace[|].with[,]||null>'
+    - if <def[dRegions].is[==].to[null]||true> {
+      - queue clear
       }
     - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|%dRegions%]||li@>'
 
@@ -2632,8 +2650,7 @@ dRegions_LineWrap:
 #   by the flag.
 #
 #    Use this to compare 2 values. Check if they are one of NUMBER, DECIMAL,
-#   LOCATION, BOOLEAN, STATE, GROUP, or any other STRING (list values are
-#   handled locally).
+#   LOCATION, BOOLEAN, STATE, GROUP, LIST or any other STRING.
 #
 #   usage:
 #     - define YourValue "Some string"
