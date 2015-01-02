@@ -37,6 +37,11 @@ dRegions:
     on world initializes:
     - run locally loadYaml instantly
 
+    on script reload:
+    - if !<yaml.list.contains[dRegions_global_config]||false> {
+      - run locally loadYaml instantly
+      }
+
 #    on structure grows:
 #    - announce "Grew <context.structure>"
 #    - announce "<player.name||unknown>"

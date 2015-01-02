@@ -333,35 +333,37 @@ dRegions_Flag_Build:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - define region '<def[orderedRegions].get[1]>'
-    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|build]||null>'
-    - if <def[flagVal].is[==].to[null]||true> {
-      - define flagVal 'deny/nonmembers'
-      }
-    - define flag '<def[flagVal].split[/].get[1]>'
-    - define group '<def[flagVal].split[/].get[2]||nonmembers>'
-    - define isOwner '<proc[dRegions_IsOwner].context[<def[orderedRegions].get[%loop_index%]>|%world%|<player>]>'
-    - define isMember '<proc[dRegions_isMember].context[<def[orderedRegions].get[%loop_index%]>|%world%|<player>]>'
-
-    - if <def[flag].is[==].to[deny]||false> {
-      - if <proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]> {
-        - if <player.has_flag[dRegions_Message_Cooldown].not> {
-          - flag player dRegions_Message_Cooldown duration:3s
-          - run s@dRegions_Msg 'def:<&c><&o>You do not have permission to build in this region'
-          }
-        - determine cancelled
-        - queue clear
+    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+      - define region '<def[orderedRegions].get[1]>'
+      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|build]||null>'
+      - if <def[flagVal].is[==].to[null]||true> {
+        - define flagVal 'deny/nonmembers'
         }
-      }
+      - define flag '<def[flagVal].split[/].get[1]>'
+      - define group '<def[flagVal].split[/].get[2]||nonmembers>'
+      - define isOwner '<proc[dRegions_IsOwner].context[<def[orderedRegions].get[%loop_index%]>|%world%|<player>]>'
+      - define isMember '<proc[dRegions_isMember].context[<def[orderedRegions].get[%loop_index%]>|%world%|<player>]>'
 
-    - if <def[flag].is[==].to[allow]||false> {
-      - if <proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%].not> {
-        - if <player.has_flag[dRegions_Message_Cooldown].not> {
-          - flag player dRegions_Message_Cooldown duration:3s
-          - run s@dRegions_Msg 'def:<&c><&o>You do not have permission to build in this region'
+      - if <def[flag].is[==].to[deny]||false> {
+        - if <proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]> {
+          - if <player.has_flag[dRegions_Message_Cooldown].not> {
+            - flag player dRegions_Message_Cooldown duration:3s
+            - run s@dRegions_Msg 'def:<&c><&o>You do not have permission to build in this region'
+            }
+          - determine cancelled
+          - queue clear
           }
-        - determine cancelled
-        - queue clear
+        }
+
+      - if <def[flag].is[==].to[allow]||false> {
+        - if <proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%].not> {
+          - if <player.has_flag[dRegions_Message_Cooldown].not> {
+            - flag player dRegions_Message_Cooldown duration:3s
+            - run s@dRegions_Msg 'def:<&c><&o>You do not have permission to build in this region'
+            }
+          - determine cancelled
+          - queue clear
+          }
         }
       }
 
