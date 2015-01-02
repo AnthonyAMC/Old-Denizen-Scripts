@@ -120,7 +120,6 @@ dRegions_Flag_Exit:
     - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
     - define suffix '<&pipe>exit<&rb>||null<&gt>'
     - define exitList '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
-#    - define exitList '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<&lt>yaml<&lb>dRegions_%world%_regions<&rb>.read<&lb>regions.]].parse[replace[regex:()$].with[.flags.exit<&rb>||null<&gt>]]>>'
     - foreach %exitList% {
       - if <def[value].split[/].get[1].is[==].to[deny]||false> {
         - define group '<def[value].split[/].get[2]||nonmembers>'
@@ -232,7 +231,7 @@ dRegions_Flag_Gamemode:
 
 dRegions_Flag_Inventory:
   type: item
-  debug: true
+  debug: false
   material: i@paper
   display name: "<&4>[<&6>Inventory<&4>]"
   lore:
@@ -316,7 +315,7 @@ dRegions_Flag_Inventory:
 
 dRegions_Flag_Build:
   type: item
-  debug: true
+  debug: false
   material: i@paper
   display name: "<&4>[<&6>Build<&4>]"
   lore:
