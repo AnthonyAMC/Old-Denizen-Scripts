@@ -2423,7 +2423,7 @@ dRegions_IsOwner:
 
   script:
     - define playerUUID '<def[player].uuid>'
-    - define playerGroups '<def[player].groups>'
+    - define playerGroups '<def[player].groups||li@>'
     - define players '<yaml[dRegions_%world%_regions].read[regions.%region%.owners.players]||li@>'
     - define groups '<yaml[dRegions_%world%_regions].read[regions.%region%.owners.groups]||li@>'
     - if <def[players].contains[<def[playerUUID]>].not||false>
@@ -2468,7 +2468,7 @@ dRegions_IsMember:
 #      && <def[groups].contains_any[<def[player].groups>].not||false> determine false
 #      else determine true
     - define playerUUID '<def[player].uuid>'
-    - define playerGroups '<def[player].groups>'
+    - define playerGroups '<def[player].groups||li@>'
     - define players '<yaml[dRegions_%world%_regions].read[regions.%region%.members.players]||li@>'
     - define groups '<yaml[dRegions_%world%_regions].read[regions.%region%.members.groups]||li@>'
     - if <def[players].contains[<def[playerUUID]>].not||false>
