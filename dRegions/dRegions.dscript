@@ -39,7 +39,7 @@ dRegions:
 
     on script reload:
     - if !<yaml.list.contains[dRegions_global_config]||false> {
-      - run locally loadYaml instantly
+      - run locally start instantly
       }
 
 #    on structure grows:
