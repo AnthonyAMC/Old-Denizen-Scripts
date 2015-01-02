@@ -50,9 +50,17 @@ dRegions:
 #
 #
 #    on player clicks block:
-#    - if <c.item.scriptname.split[_].get[1].is[!=].to[dRegions]||true> queue clear
-#    - determine passively CANCELLED
-#    - inject <c.item.scriptname.as_script> instantly
+#    - narrate "item <c.item||i@air>"
+#    - narrate "mat <c.location.material.bukkit_enum||air>"
+#    - narrate "type <c.click_type||unknown>"
+#    - define world '<player.world.name.to_lowercase>'
+#    - define cuboids '<c.cuboids>'
+#    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+#    - define allFlagScripts '<server.list_scripts.filter[starts_with[s@dRegions_Flag]]||li@>'
+
+#    - inject instantly s@dRegions p:use_<c.item||null>
+#    - inject instantly s@dRegions p:playerClick_<c.type||null>
+
 
     on player enters notable cuboid:
     - define world '<player.world.name.to_lowercase>'
@@ -399,7 +407,7 @@ dRegions_Msg:
 #
 dRegions_Commands:
   type: command
-  debug: true
+  debug: false
   name: dregions
   description: Denizen Regions Manager
   usage: /dregions
@@ -417,6 +425,9 @@ dRegions_Commands:
       permissions: []
     reload:
       usage: '/drg reload'
+      permissions: []
+    restart:
+      usage: '/drg restart'
       permissions: []
     define:
       usage: '/drg define [ID] (g:group) (player)'
@@ -529,6 +540,9 @@ dRegions_Commands:
     - define result 'li@'
 
   tab_reload:
+    - define result 'li@'
+
+  tab_restart:
     - define result 'li@'
 
   tab_define:
@@ -1031,6 +1045,13 @@ dRegions_Commands:
       }
     - inject s@dRegions p:reloadYaml instantly
 #    - run s@dRegions_Msg 'def:<&7><&o>System files loaded!'
+
+  restart:
+    - if !<player.has_permission[dRegions.restart]||<player.is_op||<context.server||false>>> {
+      - inject locally help
+      - queue clear
+      }
+    - run s@dRegions p:start instantly
 
 
   define:
@@ -2173,7 +2194,7 @@ dRegions_Commands:
 #
 #dRegions_Command_Sel:
 #  type: command
-#  debug: true
+#  debug: false
 #  name: select
 #  description: Select a region by ID and optionally world
 #  usage: /.sel
