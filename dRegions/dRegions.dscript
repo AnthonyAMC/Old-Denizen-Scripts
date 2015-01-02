@@ -268,7 +268,7 @@ dRegions:
     - define cuboids '<c.cuboids>'
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define mob '<c.entity>'
-    - define eventHooks '<c.entity.prefix>_Spawns'
+    - define eventHooks '<c.entity.prefix>_Spawn'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
 
