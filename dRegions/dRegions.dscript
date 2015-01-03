@@ -8,11 +8,88 @@
 #   dScript Version: 0.9.6-DEV_b54
 #
 #
+#   Dependencies:
 #
-#--- About this script
+#    - dWorldEditor
+#      - Integrates with region selection wand
+#      - https://github.com/AnthonyAMC/Public-Denizen-Scripts/blob/master/dWE/dWorldEditor.yml
 #
-#  This is a basic recreation of WorldGuard in denizen
+#    - ConfigFileGenerator
+#      - Used to build default config files and data storage.
+#      - https://github.com/AnthonyAMC/Public-Denizen-Scripts/blob/master/ConfigFileGenerator.yml
 #
+#    - Flags
+#      - All the flags for dRegions. It will be bundled in eventually.
+#      - https://github.com/AnthonyAMC/Public-Denizen-Scripts/blob/master/dRegions/flags.dscript
+#
+#_______________________________________________________________________________
+#
+#--- About dRegions
+#
+#  dRegions is an advanced region management and world protection system written
+# with the Denizen Scripting Engine. Heavily inspired by WorldGuard, the goal is
+# to have an extremely efficient events system supporting an exhaustive set of
+# region flags and configuration options. dRegions offers an intuitive command
+# interface and provides thorough TAB completion.
+#
+#
+#--- Installation & Setup
+#
+#  Install Flags, ConfigFileGenerator, dWorldEditor, and dRegions to your scripts
+# folder and reload scripts. /denizen reload scripts
+#
+#  All config and data storage files will be automatically generated in your
+# Denizen plugin folder. /plugins/Denizen/dRegions
+#
+#
+#--- Permissions & Commands
+#
+#  Here's a list of all the permissions and commands with a brief description
+# of each. More verbose usage info can be found in game. /drg help
+#
+#  dRegions provides thorough TAB completion! Use this to your benefit!
+#
+#  The permissions system isn't fully realized yet. Meanwhile, we have a list of
+# generic permissions to get you by.
+#
+#  /drg help [arg/#]      dregions.help          Specify a page number or command arg
+#  /drg define            dregions.define        Define a region
+#  /drg redefine          dregions.redefine      Update region to new selection
+#  /drg claim             dregions.claim         Claim the selected region
+#  /drg select            dregions.select        Select a region by id
+#  /drg remove            dregions.remove        Remove a region
+#  /drg list              dregions.list          List regions
+#  /drg info              dregions.info          See info on a region
+#  /drg addowner          dregions.addowner      Add a player or perm group as a region owner
+#  /drg removeowner       dregions.removeowner   Remove a player or perm group from region owner
+#  /drg addmember         dregions.addmember     Add a player or perm group as a region member
+#  /drg removemember      dregions.removemember  Remove a player or perm group from region member
+#  /drg flag              dregions.flag          Set region flags
+#  /drg setpriority       dregions.setpriority   Set region priority
+#  /drg setparent         dregions.setparent     Set region parent
+#  /drg teleport          dregions.teleport      Teleport to region
+#  /drg reload            dregions.reload        Reload all config files
+#  /drg restart           dregions.restart       Restart dRegions for whatever reason
+#                         dregions.admin         Override permission for all things dRegions
+#
+#
+#--- Basic Usage Tutorial
+#
+#  After you've gotten installed, setup, and permissions assigned (op-only mode
+# is fine too), you will need to give yourself a region wand. /dwe wand
+#
+#  Mark your region selection using the wand as directed.
+#
+#  Define your region noting any owners (player or -g group) you want
+#   - /drg define myRegion notch herobrine -g members -g vip
+#
+#  Your region is now protected! *Still indev! Not all protections implemented!*
+#
+#  Set region priority
+#   - /drg setpriority myRegion 10
+#
+#  Set any region flags you need
+#   - /drg flag myRegion greeting Hello <player.name>!
 #
 #
 ################################################################################
