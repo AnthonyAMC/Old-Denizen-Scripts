@@ -2151,34 +2151,49 @@ dRegions_Commands:
     - narrate "<&5>|-----------<&d>S<&5>-<&d>c<&5>-<&d>r<&5>-<&d>o<&5>-<&d>l<&5>-<&d>l<&5>---<&d>U<&5>-<&d>p<&5>-------------|"
 
   msgsHelpAdmin:
-    - define msgsHeaderTitle 'Admin Help'
-    - inject locally msgsHeader instantly
-    - narrate "<&5>|"
+    # Filter the list of commands this player can use
     - define commands '<script.list_keys[commandArgs].alphanumeric.to_lowercase||li@>'
     - foreach %commands% {
-      - if <player.has_permission[dregions.%value%]||<player.is_op||false>> {
-        - narrate "<&5>|<&sp><&sp><&f><def[value].to_titlecase><&co>"
-        - narrate "<&5>|<&sp><&sp><&sp><&sp><&7><script.yaml_key[commandArgs.%value%.usage]||No usage info available!>"
+      - if !<player.has_permission[dregions.%value%]||<player.is_op||<c.server||false>>> {
+        - define commands '<def[commands].exclude[%value%]>'
         }
         else foreach next
+      }
+
+    # Display the list
+    - define page '<def[arg].replace[-].escaped||1>'
+    - if <def[page].is[MATCHES].to[number].not> {
+      - define page '1'
+      }
+    - define pages '<def[commands].size.div[5].round_up||1>'
+    - if <def[page].is[MORE].than[%pages%]> {
+      - define page '%pages%'
+      }
+    - define highNumber '<def[page].mul[5].as_int>'
+    - define lowNumber '<def[highNumber].sub[4].as_int>'
+    - define msgsHeaderTitle '<&e>Admin Help   <el@val[<&7><&o>Page <&f><&o>%page% <&7><&o>of %pages%].pad_left[30]>'
+    - inject locally msgsHeader instantly
+    - foreach <def[commands].get[%lowNumber%].to[%highNumber%]||li@> {
+      - narrate "<&5>|<&sp><&sp><&f><def[value].to_titlecase><&co>"
+      - narrate "<&5>|<&sp><&sp><&sp><&sp><&7><script.yaml_key[commandArgs.%value%.usage]||No usage info available!>"
       }
     - narrate "<&5>|"
 
   msgsHelpUser:
     - define msgsHeaderTitle 'User Help'
     - inject locally msgsHeader instantly
-    - narrate "<&5>|<&sp><&sp><&sp><&sp><&f>dRegions is an advanced region management"
-    - narrate "<&5>|<&sp><&sp><&f>and world protection system written with the"
-    - narrate "<&5>|<&sp><&sp><&f>Denizen Scripting Engine."
-    - narrate "<&5>|"
-    - narrate "<&5>|<&sp><&sp><&sp><&sp><&f>Heavily inspired by WorldGuard, the goal is"
-    - narrate "<&5>|<&sp><&sp><&f>to have an extremely efficient events system"
-    - narrate "<&5>|<&sp><&sp><&f>supporting an exhaustive set of region"
-    - narrate "<&5>|<&sp><&sp><&f>flags and configuration options."
-    - narrate "<&5>|"
-    - narrate "<&5>|<&sp><&sp><&sp><&sp><&f>dRegions offers an intuitive command interface"
-    - narrate "<&5>|<&sp><&sp><&f>and provides thorough TAB completion."
-    - narrate "<&5>|"
+    - define par1 "dRegions is an advanced region management and world protection system written with the Denizen Scripting Engine."
+    - define par2 "Heavily inspired by WorldGuard, the goal is to have an extremely efficient events system supporting an exhaustive set of region flags and configuration options."
+    - define par3 "dRegions offers an intuitive command interface and provides thorough TAB completion."
+    - define strings "<el@val[%par1%|%par2%|%par3%].as_list>"
+    - foreach <def[strings]> {
+      - define string "<&f><&sp><def[value]>"
+      - define lines '<proc[dRegions_LineWrap].context[<def[string]>|44]>'
+      - foreach <def[lines]> {
+        - narrate "<&5>|<&f><&sp><&sp><def[value].unescaped>"
+        }
+      - narrate "<&5>|"
+      }
 
 #
 #  END dRegions Command Messages
