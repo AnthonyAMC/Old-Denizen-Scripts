@@ -39,23 +39,24 @@ dRegions_Flag_Entry:
 
 
   event:
-    - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
-    - define suffix '<&pipe>entry<&rb>||null<&gt>'
-    - define entryList '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
-#    - define entryList '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<&lt>yaml<&lb>dRegions_%world%_regions<&rb>.read<&lb>regions.]].parse[replace[regex:()$].with[.flags.entry<&rb>||null<&gt>]]>>'
-    - foreach %entryList% {
-      - if <def[value].split[/].get[1].is[==].to[deny]||false> {
-        - define group '<def[value].split[/].get[2]||nonmembers>'
-        - define isOwner '<proc[dRegions_IsOwner].context[<def[orderedRegions].get[%loop_index%]>|%world%|<player>]>'
-        - define isMember '<proc[dRegions_isMember].context[<def[orderedRegions].get[%loop_index%]>|%world%|<player>]>'
+    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+      - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
+      - define suffix '<&pipe>entry<&rb>||null<&gt>'
+      - define entryList '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
+      - foreach %entryList% {
+        - if <def[value].split[/].get[1].is[==].to[deny]||false> {
+          - define group '<def[value].split[/].get[2]||nonmembers>'
+          - define isOwner '<proc[dRegions_IsOwner].context[<def[orderedRegions].get[%loop_index%]>|%world%|<player>]>'
+          - define isMember '<proc[dRegions_isMember].context[<def[orderedRegions].get[%loop_index%]>|%world%|<player>]>'
 
-        - if <proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]> {
-          - if <player.has_flag[dRegions_Message_Cooldown].not> {
-            - flag player dRegions_Message_Cooldown duration:3s
-            - run s@dRegions_Msg 'def:<&c><&o>You do not have permission to enter this region'
+          - if <proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]> {
+            - if <player.has_flag[dRegions_Message_Cooldown].not> {
+              - flag player dRegions_Message_Cooldown duration:3s
+              - run s@dRegions_Msg 'def:<&c><&o>You do not have permission to enter this region'
+              }
+            - determine cancelled
+            - queue clear
             }
-          - determine cancelled
-          - queue clear
           }
         }
       }
@@ -117,22 +118,24 @@ dRegions_Flag_Exit:
 
 
   event:
-    - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
-    - define suffix '<&pipe>exit<&rb>||null<&gt>'
-    - define exitList '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
-    - foreach %exitList% {
-      - if <def[value].split[/].get[1].is[==].to[deny]||false> {
-        - define group '<def[value].split[/].get[2]||nonmembers>'
-        - define isOwner '<proc[dRegions_IsOwner].context[<def[orderedRegions].get[%loop_index%]>|%world%|<player>]>'
-        - define isMember '<proc[dRegions_isMember].context[<def[orderedRegions].get[%loop_index%]>|%world%|<player>]>'
+    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+      - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
+      - define suffix '<&pipe>exit<&rb>||null<&gt>'
+      - define exitList '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
+      - foreach %exitList% {
+        - if <def[value].split[/].get[1].is[==].to[deny]||false> {
+          - define group '<def[value].split[/].get[2]||nonmembers>'
+          - define isOwner '<proc[dRegions_IsOwner].context[<def[orderedRegions].get[%loop_index%]>|%world%|<player>]>'
+          - define isMember '<proc[dRegions_isMember].context[<def[orderedRegions].get[%loop_index%]>|%world%|<player>]>'
 
-        - if <proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]> {
-          - if <player.has_flag[dRegions_Message_Cooldown].not> {
-            - flag player dRegions_Message_Cooldown duration:3s
-            - run s@dRegions_Msg 'def:<&c><&o>You do not have permission to exit this region'
+          - if <proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]> {
+            - if <player.has_flag[dRegions_Message_Cooldown].not> {
+              - flag player dRegions_Message_Cooldown duration:3s
+              - run s@dRegions_Msg 'def:<&c><&o>You do not have permission to exit this region'
+              }
+            - determine cancelled
+            - queue clear
             }
-          - determine cancelled
-          - queue clear
           }
         }
       }
