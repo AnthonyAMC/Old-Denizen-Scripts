@@ -123,7 +123,48 @@ dRegions:
 #    - announce "Grew <context.structure>"
 #    - announce "<player.name||unknown>"
 
+    on block ignites:
+#    - announce "ignite <t[<c.entity.is[!=].to[null]||false>]:fire.<t[<c.entity.is_living>]:<c.entity.as_player.prefix||<c.entity.prefix>>||unknown <c.entity.prefix>>-start||fire.spread>"
+#    - announce "<c.material.bukkit_enum.to_lowercase> <c.location.simple>"
+    - define world '<c.location.world.name.to_lowercase>'
+    - define mat '<c.material.bukkit_enum.to_lowercase>'
+    - define readPath '<t[<c.entity.is[!=].to[null]||false>]:fire.<t[<c.entity.is_living>]:<c.entity.as_player.prefix||<c.entity.prefix>>||<c.entity.prefix>>-start||fire.spread>'
+    - inject instantly s@dRegions p:event_PreProc_Config
 
+    on block burns:
+#    - announce "burn <c.location.material.bukkit_enum.to_lowercase> <context.material.bukkit_enum.to_lowercase||null>"
+    - define world '<c.location.world.name.to_lowercase>'
+    - define mat '<c.location.material.bukkit_enum.to_lowercase>'
+    - define readPath 'fire.destroyBlocks'
+    - inject instantly s@dRegions p:event_PreProc_Config
+
+    on block spreads:
+#    - announce "spreads <c.location.material.bukkit_enum.to_lowercase> <c.material.bukkit_enum.to_lowercase>"
+    - define world '<c.location.world.name.to_lowercase>'
+    - define mat '<c.material.bukkit_enum.to_lowercase>'
+    - define readPath 'spread.<c.material.bukkit_enum.split[_].last.to_lowercase||null>'
+    - inject instantly s@dRegions p:event_PreProc_Config
+
+    on liquid spreads:
+#    - announce "spreads <c.location.material.bukkit_enum.to_lowercase> <c.material.bukkit_enum.to_lowercase> <c.destination.material.bukkit_enum.to_lowercase>"
+    - define world '<c.location.world.name.to_lowercase>'
+    - define mat '<c.destination.material.bukkit_enum.to_lowercase>'
+    - define readPath 'spread.<c.location.material.bukkit_enum.split[_].last.to_lowercase||null>'
+    - inject instantly s@dRegions p:event_PreProc_Config
+
+    on block falls:
+    - define world '<c.location.world.name.to_lowercase>'
+    - define readPath 'physics.<c.location.material.bukkit_enum.to_lowercase||null>'
+    - inject instantly s@dRegions p:event_PreProc_Config
+#    - define cuboids '<c.location.cuboids>'
+#    - inject instantly s@dRegions p:event_PreProc_OrderRegions
+#    - define eventHooks 'blockPhysics'
+#    - inject instantly s@dRegions p:event_PreProc_RunEvent
+
+    on portal created:
+    - define world '<c.world.name.to_lowercase>'
+    - define readPath 'portal.create'
+    - inject instantly s@dRegions p:event_PreProc_Config
 #
 #  END World Events
 ##################################################
@@ -255,6 +296,12 @@ dRegions:
     - define eventHooks '<c.entity.prefix>_Spawn'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
+    on entity enters portal:
+    - define world '<c.world.name.to_lowercase>'
+    - define readPath 'portal.<c.entity.as_player.prefix||<c.entity.prefix>>-enter'
+    - inject instantly s@dRegions p:event_PreProc_Config
+
+
 
 #
 #  END Mob Events
@@ -265,6 +312,41 @@ dRegions:
 
   start:
     - inject locally loadYaml instantly
+
+
+  event_PreProc_Config:
+  # Reusable code block injected from events.
+  # This pre-processor handles events in the global and world config files before
+  # any regions even get a chance. Default is 'true' for most things for this reason.
+  # Events that take a block list are handled here as well. Blocklists can operate
+  # in whitelist or blacklist modes.
+  # When an event is set to 'false' and no blocks are specified in the blocklist,
+  # it will always cancel the event. If there are blocks specified, it will only
+  # cancel events involving those blocks listed. Blacklist mode.
+  # When an event is set to 'true' and no blocks are specified in the blocklist,
+  # it will always allow the event. If there are blocks specifed, it will only
+  # allow events involving those blocks listed. Whitelist mode
+    - foreach '<el@val[global|%world%].as_list>' {
+      - define settingValue '<yaml[dRegions_%value%_config].read[config.%readPath%]||true>'
+      - define blockList '<yaml[dRegions_%value%_config].read[config.%readPath%-blockList]||li@>'
+      - if <def[settingValue]||true> {
+        - if !<def[blockList].is_empty||true> {
+          - if !<def[blockList].contains[<def[mat]||null]>]||true> {
+            - determine CANCELLED
+            }
+          }
+        }
+        else {
+        - if <def[blockList].is_empty||true> {
+          - determine CANCELLED
+          }
+          else {
+          - if <def[blockList].contains[<def[mat]||null]>]||false> {
+            - determine CANCELLED
+            }
+          }
+        }
+      }
 
 
   event_PreProc_OrderRegionsGlobal:
@@ -538,7 +620,7 @@ dRegions_Commands:
 
   commandArgs:
     help:
-      usage: '/drg help <&lt>arg<&gt>'
+      usage: '/drg help <&lt>arg/<&ns><&gt>'
       permissions: []
     about:
       usage: '/drg about'
@@ -2853,7 +2935,7 @@ dRegions_Configurations:
   type: yaml data
 
   config:
-    version: 0.1
+    version: 0.2
     regions:
       enable: true
       invincibility-removes-mobs: false
@@ -2863,75 +2945,87 @@ dRegions_Configurations:
         only-inside-existing-regions: true
         max-region-count-per-player:
           default: 7
-    auto-invincible: false
-    protection:
-      item-durability: true
-      remove-infinite-stacks: false
-      disable-xp-orb-drops: false
-      disable-obsidian-generators: true
+    spread:
+      water: false
+      water-blockList: []
+      lava: false
+      lava-blockList: []
+      mycel: false
+      grass: false
+      mushroom: false
     physics:
-      no-physics-gravel: false
-      no-physics-sand: false
-      allow-portal-anywhere: false
-      disable-water-damage-blocks: []
-    ignition:
-      block-tnt: false
-      block-tnt-block-damage: false
-      block-lighter: false
+      gravel: false
+      sand: false
+    portal:
+      create: true
+      entity-enter: true
+      player-enter: true
     fire:
-      disable-lava-fire-spread: false
-      disable-all-fire-spread: false
-      disable-fire-spread-blocks: []
-      lava-spread-blocks: []
-    mobs:
-      block-creeper-explosions: false
-      block-creeper-block-damage: false
-      block-wither-explosions: false
-      block-wither-block-damage: false
-      block-wither-skull-explosions: false
-      block-wither-skull-block-damage: false
-      block-enderdragon-block-damage: false
-      block-fireball-explosions: false
-      block-fireball-block-damage: false
-      disable-enderman-griefing: false
-      block-painting-destroy: false
-      block-item-frame-destroy: false
-      block-creature-spawn: []
-    player-damage:
-      disable-fall-damage: false
-      disable-lava-damage: false
-      disable-fire-damage: false
-      disable-lightning-damage: false
-      disable-drowning-damage: false
-      disable-suffocation-damage: false
-      disable-contact-damage: false
-      teleport-on-suffocation: false
-      disable-void-damage: false
-      teleport-on-void-falling: false
-      disable-explosion-damage: false
-      disable-mob-damage: false
-      disable-death-messages: false
-    crops:
-      disable-creature-trampling: false
-      disable-player-trampling: false
-    weather:
-      prevent-lightning-strike-blocks: []
-      disable-lightning-strike-fire: false
-      disable-thunderstorm: false
-      disable-weather: false
-      disable-pig-zombification: false
-      disable-powered-creepers: false
-      always-raining: false
-      always-thundering: false
-    dynamics:
-      disable-mushroom-spread: false
-      disable-ice-melting: false
-      disable-snow-melting: false
-      disable-snow-formation: false
-      disable-ice-formation: false
-      disable-leaf-decay: false
-      disable-grass-growth: false
-      disable-mycelium-spread: false
+      player-start: true
+      entity-start: false
+      spread: false
+      spread-blockList: []
+      destroyBlocks: false
+      destroyBlocks-blockList: []
+#    auto-invincible: false
+#    protection:
+#      item-durability: true
+#      remove-infinite-stacks: false
+#      disable-xp-orb-drops: false
+#      disable-obsidian-generators: true
+#    ignition:
+#      block-tnt: false
+#      block-tnt-block-damage: false
+#      block-lighter: false
+#    mobs:
+#      block-creeper-explosions: false
+#      block-creeper-block-damage: false
+#      block-wither-explosions: false
+#      block-wither-block-damage: false
+#      block-wither-skull-explosions: false
+#      block-wither-skull-block-damage: false
+#      block-enderdragon-block-damage: false
+#      block-fireball-explosions: false
+#      block-fireball-block-damage: false
+#      disable-enderman-griefing: false
+#      block-painting-destroy: false
+#      block-item-frame-destroy: false
+#      block-creature-spawn: []
+#    player-damage:
+#      disable-fall-damage: false
+#      disable-lava-damage: false
+#      disable-fire-damage: false
+#      disable-lightning-damage: false
+#      disable-drowning-damage: false
+#      disable-suffocation-damage: false
+#      disable-contact-damage: false
+#      teleport-on-suffocation: false
+#      disable-void-damage: false
+#      teleport-on-void-falling: false
+#      disable-explosion-damage: false
+#      disable-mob-damage: false
+#      disable-death-messages: false
+#    crops:
+#      disable-creature-trampling: false
+#      disable-player-trampling: false
+#    weather:
+#      prevent-lightning-strike-blocks: []
+#      disable-lightning-strike-fire: false
+#      disable-thunderstorm: false
+#      disable-weather: false
+#      disable-pig-zombification: false
+#      disable-powered-creepers: false
+#      always-raining: false
+#      always-thundering: false
+#    dynamics:
+#      disable-mushroom-spread: false
+#      disable-ice-melting: false
+#      disable-snow-melting: false
+#      disable-snow-formation: false
+#      disable-ice-formation: false
+#      disable-leaf-decay: false
+#      disable-grass-growth: false
+#      disable-mycelium-spread: false
 
   regions:
     __global__:
