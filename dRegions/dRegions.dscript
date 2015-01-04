@@ -5,7 +5,7 @@
 #
 #   Authors: |Anthony|
 #   Version: 0.1
-#   dScript Version: 0.9.6-DEV_b54
+#   dScript Version: 0.9.6-DEV_b59
 #
 #
 #   Dependencies:
@@ -127,9 +127,13 @@ dRegions:
 #    - announce "ignite <t[<c.entity.is[!=].to[null]||false>]:fire.<t[<c.entity.is_living>]:<c.entity.as_player.prefix||<c.entity.prefix>>||unknown <c.entity.prefix>>-start||fire.spread>"
 #    - announce "<c.material.bukkit_enum.to_lowercase> <c.location.simple>"
     - define world '<c.location.world.name.to_lowercase>'
-    - define mat '<c.material.bukkit_enum.to_lowercase>'
+    - define mat '<c.location.material.bukkit_enum.to_lowercase>'
     - define readPath '<t[<c.entity.is[!=].to[null]||false>]:fire.<t[<c.entity.is_living>]:<c.entity.as_player.prefix||<c.entity.prefix>>||<c.entity.prefix>>-start||fire.spread>'
     - inject instantly s@dRegions p:event_PreProc_Config
+    - define cuboids '<c.location.cuboids>'
+    - inject instantly s@dRegions p:event_PreProc_OrderRegions
+    - define eventHooks '<t[<c.entity.is_player||false>]:useLighter||fireSpread>'
+    - inject instantly s@dRegions p:event_PreProc_RunEvent
 
     on block burns:
 #    - announce "burn <c.location.material.bukkit_enum.to_lowercase> <context.material.bukkit_enum.to_lowercase||null>"
@@ -141,9 +145,13 @@ dRegions:
     on block spreads:
 #    - announce "spreads <c.location.material.bukkit_enum.to_lowercase> <c.material.bukkit_enum.to_lowercase>"
     - define world '<c.location.world.name.to_lowercase>'
-    - define mat '<c.material.bukkit_enum.to_lowercase>'
+    - define mat '<c.location.material.bukkit_enum.to_lowercase>'
     - define readPath 'spread.<c.material.bukkit_enum.split[_].last.to_lowercase||null>'
     - inject instantly s@dRegions p:event_PreProc_Config
+    - define cuboids '<c.location.cuboids>'
+    - inject instantly s@dRegions p:event_PreProc_OrderRegions
+    - define eventHooks '<c.material.bukkit_enum.split[_].last>Spread'
+    - inject instantly s@dRegions p:event_PreProc_RunEvent
 
     on liquid spreads:
 #    - announce "spreads <c.location.material.bukkit_enum.to_lowercase> <c.material.bukkit_enum.to_lowercase> <c.destination.material.bukkit_enum.to_lowercase>"
@@ -151,6 +159,10 @@ dRegions:
     - define mat '<c.destination.material.bukkit_enum.to_lowercase>'
     - define readPath 'spread.<c.location.material.bukkit_enum.split[_].last.to_lowercase||null>'
     - inject instantly s@dRegions p:event_PreProc_Config
+    - define cuboids '<c.location.cuboids>'
+    - inject instantly s@dRegions p:event_PreProc_OrderRegions
+    - define eventHooks '<c.location.material.bukkit_enum.split[_].last>Spread'
+    - inject instantly s@dRegions p:event_PreProc_RunEvent
 
     on block falls:
     - define world '<c.location.world.name.to_lowercase>'
