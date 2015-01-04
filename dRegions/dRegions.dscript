@@ -303,26 +303,44 @@ dRegions:
 
   loadYaml:
   # Reloads the yaml files and generates default files if they don't exist.
+  # Rewrites config files that do not match internal version number!
     - announce "<&b>dRegions<&co><&3> Loading system config files..." to_console
+    - define world 'global'
+    - define file 'config'
     - if !<server.has_file[dRegions/config.yml]> {
-      - define world 'global'
-      - define file 'config'
       - if <player.is[!=].to[null]||false> {
         - flag <player> ConfigFileGeneratorNotify:true
         - inject locally createConfigFile instantly
         - flag <player> ConfigFileGeneratorNotify:!
         - run s@dRegions_Msg 'def:<&7><&o>Created <&f><&o>%world%<&7><&o> config file!'
         }
-        else inject locally createConfigFile
+        else {
+        - inject locally createConfigFile instantly
+        }
       - announce "<&b>dRegions<&co> <&7><&o>Created <&f><&o>%world%<&7><&o> config file!" to_console
       }
     - if <yaml.list.contains[dRegions_global_config]> yaml unload 'id:dRegions_global_config'
     - yaml 'load:dRegions/config.yml' 'id:dRegions_global_config'
 
+    - if <yaml[dRegions_<def[world]>_config].read[config.version].is[!=].to[<s@dRegions_Configurations.yaml_key[config.version]>]||false> {
+      - define isUpdate ''
+      - if <player.is[!=].to[null]||false> {
+        - flag <player> ConfigFileGeneratorNotify:true
+        - inject locally createConfigFile instantly
+        - flag <player> ConfigFileGeneratorNotify:!
+        - run s@dRegions_Msg 'def:<&7><&o>Updated <&f><&o>%world%<&7><&o> config file!'
+        }
+        else {
+        - inject locally createConfigFile instantly
+        }
+      - define isUpdate:!
+      - announce "<&b>dRegions<&co> <&7><&o>Updated <&f><&o>%world%<&7><&o> config file!" to_console
+      }
+
     - foreach <server.list_worlds.parse[name.to_lowercase]> {
       - define world '<def[value]>'
-
       - define file 'worlds/%world%/config'
+
       - if !<server.has_file[dRegions/%file%.yml]> {
         - if <player.is[!=].to[null]||false> {
           - flag <player> ConfigFileGeneratorNotify:true
@@ -335,6 +353,21 @@ dRegions:
         }
       - if <yaml.list.contains[dRegions_%world%_config]> yaml unload 'id:dRegions_%world%_config'
       - yaml 'load:dRegions/%file%.yml' 'id:dRegions_%world%_config'
+
+      - if <yaml[dRegions_<def[world]>_config].read[config.version].is[!=].to[<s@dRegions_Configurations.yaml_key[config.version]>]||false> {
+        - define isUpdate ''
+        - if <player.is[!=].to[null]||false> {
+          - flag <player> ConfigFileGeneratorNotify:true
+          - inject locally createConfigFile instantly
+          - flag <player> ConfigFileGeneratorNotify:!
+          - run s@dRegions_Msg 'def:<&7><&o>Updated <&f><&o>%world%<&7><&o> config file!'
+          }
+          else {
+          - inject locally createConfigFile instantly
+          }
+        - define isUpdate:!
+        - announce "<&b>dRegions<&co> <&7><&o>Updated <&f><&o>%world%<&7><&o> config file!" to_console
+        }
 
       - define file 'worlds/%world%/regions'
       - if !<server.has_file[dRegions/%file%.yml]> {
@@ -395,7 +428,12 @@ dRegions:
     - yaml create 'id:%writeID%'
     - define readPath '%readID%.config'
     - define writePath 'config'
-    - run s@ConfigFileGenerator def:%readID%|%writeID%|%readPath%|%writePath%|false|false|false instantly
+    - if <def[isUpdate].exists||false> {
+      - run s@ConfigFileGenerator def:%readID%|%writeID%|%readPath%|%writePath%|false|false|true instantly
+      }
+      else {
+      - run s@ConfigFileGenerator def:%readID%|%writeID%|%readPath%|%writePath%|false|false|false instantly
+      }
     - yaml unload 'id:%readID%'
     - yaml 'savefile:dRegions/%file%.yml' 'id:%writeID%'
 
