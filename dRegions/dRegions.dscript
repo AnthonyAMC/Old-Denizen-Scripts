@@ -131,7 +131,7 @@ dRegions:
     - define readPath '<t[<c.entity.is[!=].to[null]||false>]:fire.<t[<c.entity.is_living>]:<c.entity.as_player.prefix||<c.entity.prefix>>||<c.entity.prefix>>-start||fire.spread>'
     - inject instantly s@dRegions p:event_PreProc_Config
     - define cuboids '<c.location.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegions
+    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks '<t[<c.entity.is_player||false>]:useLighter||fireSpread>'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
@@ -149,7 +149,7 @@ dRegions:
     - define readPath 'spread.<c.material.bukkit_enum.split[_].last.to_lowercase||null>'
     - inject instantly s@dRegions p:event_PreProc_Config
     - define cuboids '<c.location.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegions
+    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks '<c.material.bukkit_enum.split[_].last>Spread'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
@@ -160,7 +160,7 @@ dRegions:
     - define readPath 'spread.<c.location.material.bukkit_enum.split[_].last.to_lowercase||null>'
     - inject instantly s@dRegions p:event_PreProc_Config
     - define cuboids '<c.location.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegions
+    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks '<c.location.material.bukkit_enum.split[_].last>Spread'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
@@ -169,7 +169,7 @@ dRegions:
     - define readPath 'physics.<c.location.material.bukkit_enum.to_lowercase||null>'
     - inject instantly s@dRegions p:event_PreProc_Config
 #    - define cuboids '<c.location.cuboids>'
-#    - inject instantly s@dRegions p:event_PreProc_OrderRegions
+#    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
 #    - define eventHooks 'blockPhysics'
 #    - inject instantly s@dRegions p:event_PreProc_RunEvent
 
@@ -2967,26 +2967,26 @@ dRegions_Configurations:
         max-region-count-per-player:
           default: 7
     spread:
-      water: false
+      water: true
       water-blockList: []
-      lava: false
+      lava: true
       lava-blockList: []
-      mycel: false
-      grass: false
-      mushroom: false
+      mycel: true
+      grass: true
+      mushroom: true
     physics:
-      gravel: false
-      sand: false
+      gravel: true
+      sand: true
     portal:
       create: true
       entity-enter: true
       player-enter: true
     fire:
       player-start: true
-      entity-start: false
-      spread: false
+      entity-start: true
+      spread: true
       spread-blockList: []
-      destroyBlocks: false
+      destroyBlocks: true
       destroyBlocks-blockList: []
 #    auto-invincible: false
 #    protection:
