@@ -5,7 +5,7 @@
 #
 #   Authors: |Anthony|
 #   Version: 0.1
-#   dScript Version: 0.9.6-DEV_b59
+#   dScript Version: 0.9.6-DEV_b60
 #
 #
 #   Dependencies:
@@ -124,11 +124,9 @@ dRegions:
 #    - announce "<player.name||unknown>"
 
     on block ignites:
-#    - announce "ignite <t[<c.entity.is[!=].to[null]||false>]:fire.<t[<c.entity.is_living>]:<c.entity.as_player.prefix||<c.entity.prefix>>||unknown <c.entity.prefix>>-start||fire.spread>"
-#    - announce "<c.material.bukkit_enum.to_lowercase> <c.location.simple>"
     - define world '<c.location.world.name.to_lowercase>'
     - define mat '<c.location.material.bukkit_enum.to_lowercase>'
-    - define readPath '<t[<c.entity.is[!=].to[null]||false>]:fire.<t[<c.entity.is_living>]:<c.entity.as_player.prefix||<c.entity.prefix>>||<c.entity.prefix>>-start||fire.spread>'
+    - define readPath 'fire.<c.cause||spread>'
     - inject instantly s@dRegions p:event_PreProc_Config
     - define cuboids '<c.location.cuboids>'
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
@@ -136,14 +134,12 @@ dRegions:
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
     on block burns:
-#    - announce "burn <c.location.material.bukkit_enum.to_lowercase> <context.material.bukkit_enum.to_lowercase||null>"
     - define world '<c.location.world.name.to_lowercase>'
     - define mat '<c.location.material.bukkit_enum.to_lowercase>'
     - define readPath 'fire.destroyBlocks'
     - inject instantly s@dRegions p:event_PreProc_Config
 
     on block spreads:
-#    - announce "spreads <c.location.material.bukkit_enum.to_lowercase> <c.material.bukkit_enum.to_lowercase>"
     - define world '<c.location.world.name.to_lowercase>'
     - define mat '<c.location.material.bukkit_enum.to_lowercase>'
     - define readPath 'spread.<c.material.bukkit_enum.split[_].last.to_lowercase||null>'
@@ -154,12 +150,11 @@ dRegions:
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
     on liquid spreads:
-#    - announce "spreads <c.location.material.bukkit_enum.to_lowercase> <c.material.bukkit_enum.to_lowercase> <c.destination.material.bukkit_enum.to_lowercase>"
     - define world '<c.location.world.name.to_lowercase>'
     - define mat '<c.destination.material.bukkit_enum.to_lowercase>'
     - define readPath 'spread.<c.location.material.bukkit_enum.split[_].last.to_lowercase||null>'
     - inject instantly s@dRegions p:event_PreProc_Config
-    - define cuboids '<c.location.cuboids>'
+    - define cuboids '<c.location.cuboids.include[<c.destination.cuboids>].deduplicate>'
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks '<c.location.material.bukkit_enum.split[_].last>Spread'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
@@ -2956,7 +2951,7 @@ dRegions_Configurations:
   type: yaml data
 
   config:
-    version: 0.2
+    version: 0.21
     regions:
       enable: true
       invincibility-removes-mobs: false
@@ -2982,8 +2977,11 @@ dRegions_Configurations:
       entity-enter: true
       player-enter: true
     fire:
-      player-start: true
-      entity-start: true
+      ender_crystal: true
+      explosion: true
+      fireball: true
+      flint_and_steel: true
+      lava: true
       spread: true
       spread-blockList: []
       destroyBlocks: true
