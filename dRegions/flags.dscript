@@ -480,7 +480,7 @@ dRegions_Flag_Mob-Target:
       - foreach %mobs% {
         - if <def[value].is[matches].to[entity].not> {
           - define mobs '<def[mobs].exclude[%value%]||li@>'
-          - run  s@dRegions_Msg 'def:<&c><&o>%value% is not a valid a mob!'
+          - run  s@dRegions_Msg 'def:<&c><&o>%value% is not a valid mob!'
           }
         }
       - if <def[mobs].is_empty||true> {
@@ -618,7 +618,7 @@ dRegions_Flag_Mob-Damagelist:
       - foreach %mobs% {
         - if <def[value].is[matches].to[entity].not> {
           - define mobs '<def[mobs].exclude[%value%]||li@>'
-          - run  s@dRegions_Msg 'def:<&c><&o>%value% is not a valid a mob!'
+          - run  s@dRegions_Msg 'def:<&c><&o>%value% is not a valid mob!'
           }
         }
       - if <def[mobs].is_empty||true> {
@@ -740,7 +740,7 @@ dRegions_Flag_Mob-SpawnList:
       - foreach %mobs% {
         - if <def[value].is[matches].to[entity].not> {
           - define mobs '<def[mobs].exclude[%value%]||li@>'
-          - run  s@dRegions_Msg 'def:<&c><&o>%value% is not a valid a mob!'
+          - run  s@dRegions_Msg 'def:<&c><&o>%value% is not a valid mob!'
           }
         }
       - if <def[mobs].is_empty||true> {
@@ -758,6 +758,135 @@ dRegions_Flag_Mob-SpawnList:
         }
       - if '<def[flagValue].split[ ].get[1].is[==].to[-r]||false>' {
         - define flagValue '<def[currentMobs].exclude[<def[mobs].replace[li@]>].deduplicate||li@>'
+        }
+      - if <def[flagValue].is_empty||true> {
+        - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
+        - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
+        - run s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
+        - queue clear
+        }
+      - define flagValue '<def[flagValue].comma_separated>'
+      }
+
+
+dRegions_Flag_Fire-Spread:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Fire-Spread<&4>]"
+  lore:
+  - <&5>Can fire spread
+  event_hook: fireSpread
+  event_priority: 10
+  flag_type: state
+  flag_takeGroup: false
+  flag_help: State flag controlling whether fire will be able to spread in this region. Defaults to allow all. Use fire-spreadblocks flag to specify blocks to check when spreading.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+
+  event:
+    - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
+    - define suffix '<&pipe>fire-spreadBlocks<&rb>||all<&gt>'
+    - define InheritedBlocks '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
+    - define suffix '<&pipe>fire-spread<&rb>||allow<&gt>'
+    - define InheritedFlags '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
+    - foreach %InheritedFlags% {
+      - define blockList '<def[InheritedBlocks].get[%loop_index%].replace[, ].with[|].as_list||li@all>'
+      - if <def[blockList].is[==].to[li@null]> {
+        - define blockList 'li@all'
+        }
+      - define flag '<def[value]>'
+      - if <def[flag].is[==].to[null]||true> {
+        - define flag 'allow'
+        }
+
+      - if <def[flag].is[==].to[allow]||false> {
+        - if <def[blockList].is[!=].to[li@all]||true> {
+          - if !<def[blockList].contains[<def[mat]>]||false> {
+            - determine cancelled
+            }
+          }
+        }
+        else {
+        - if <def[blockList].is[==].to[li@all]||true> {
+          - determine cancelled
+          }
+          else {
+          - if <def[blockList].contains[<def[mat]>]||false> {
+            - determine cancelled
+            }
+          }
+        }
+      }
+
+
+
+dRegions_Flag_Fire-SpreadBlocks:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Mob-Spawnlist<&4>]"
+  lore:
+  - <&5>List of blocks involved in fire spread
+  flag_type: list
+  flag_takeGroup: false
+  flag_help: List flag used with fire-spread flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of mobs.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  command_handler:
+    - if <def[flagValue].is[==].to[null]||false> {
+      - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
+      - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
+      - run s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
+      - queue clear
+      }
+      else {
+      - define blocks '<def[flagValue].split[ ].get[2].to[<def[flagValue].split[ ].size>].parse[to_lowercase].deduplicate||li@>'
+      - if <def[blocks].get[1].is[==].to[all]> {
+        - if '<def[flagValue].split[ ].get[1].is[==].to[-a]||false>' {
+          - yaml set 'regions.%region%.flags.%flag%:all' 'id:dRegions_%world%_regions'
+          - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
+          - run s@dRegions_Msg 'def:<&f><&o>%region%<&7><&o> set %flag% flag to <&f><&o>%flagValue%'
+          - queue clear
+          }
+        - if '<def[flagValue].split[ ].get[1].is[==].to[-r]||false>' {
+          - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
+          - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
+          - run s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
+          - queue clear
+          }
+        }
+      - foreach %blocks% {
+        - if <def[value].as_material.is_block.not||true> {
+          - define blocks '<def[blocks].exclude[%value%]||li@>'
+          - run  s@dRegions_Msg 'def:<&c><&o>%value% is not a valid block!'
+          }
+        }
+      - if <def[blocks].is_empty||true> {
+        - run  s@dRegions_Msg 'def:<&c><&o>No valid blocks specified!'
+        - define lines '<proc[dRegions_LineWrap].context[<s@dRegions_Flag_%Flag%.yaml_key[flag_help]||<&c>%flag% flag requires a %type% value!>|45]>'
+        - foreach <def[lines]> {
+          - run s@dRegions_Msg 'def:<&c><def[value]>'
+          }
+        - queue clear
+        }
+
+      - define currentBlocks '<yaml[dRegions_%world%_regions].read[regions.%region%.flags.%flag%].replace[, ].with[|].as_list||li@>'
+      - if '<def[flagValue].split[ ].get[1].is[==].to[-a]||false>' {
+        - define flagValue '<def[currentBlocks].include[<def[blocks].replace[li@]>].deduplicate||li@>'
+        }
+      - if '<def[flagValue].split[ ].get[1].is[==].to[-r]||false>' {
+        - define flagValue '<def[currentBlocks].exclude[<def[blocks].replace[li@]>].deduplicate||li@>'
         }
       - if <def[flagValue].is_empty||true> {
         - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
