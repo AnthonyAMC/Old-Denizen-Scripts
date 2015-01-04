@@ -317,16 +317,25 @@ dRegions:
   event_PreProc_Config:
   # Reusable code block injected from events.
   # This pre-processor handles events in the global and world config files before
-  # any regions even get a chance. Default is 'true' for most things for this reason.
-  # Events that take a block list are handled here as well. Blocklists can operate
-  # in whitelist or blacklist modes.
-  # When an event is set to 'false' and no blocks are specified in the blocklist,
-  # it will always cancel the event. If there are blocks specified, it will only
-  # cancel events involving those blocks listed. Blacklist mode.
+  # any regions even get a chance. World configs are processed before global.
+  # This way worlds can deny events that global allows, but global has ultimate
+  # control for denying events. Denying an event takes precedence over allowing.
+  # Default is 'true' on most events for this reason.
+  #
+  # Events that take a block list are handled here as well. Blocklists can
+  # operate in whitelist or blacklist modes.
+  #
+  # Blacklist mode.
+  # When an event is set to 'false' and no blocks are specified in the
+  # blocklist, it will always cancel the event. If there are blocks specified,
+  # it will only cancel events involving those blocks listed.
+  #
+  # Whitelist mode.
   # When an event is set to 'true' and no blocks are specified in the blocklist,
   # it will always allow the event. If there are blocks specifed, it will only
-  # allow events involving those blocks listed. Whitelist mode
-    - foreach '<el@val[global|%world%].as_list>' {
+  # allow events involving those blocks listed.
+  #
+    - foreach '<el@val[%world%|global].as_list>' {
       - define settingValue '<yaml[dRegions_%value%_config].read[config.%readPath%]||true>'
       - define blockList '<yaml[dRegions_%value%_config].read[config.%readPath%-blockList]||li@>'
       - if <def[settingValue]||true> {
