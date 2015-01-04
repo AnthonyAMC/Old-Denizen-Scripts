@@ -1182,6 +1182,41 @@ dRegions_Flag_Mushroom-Spread:
       }
 
 
+dRegions_Flag_Grass-Spread:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Grass-Spread<&4>]"
+  lore:
+  - <&5>Can Grass spread
+  event_hook: GrassSpread
+  event_priority: 10
+  flag_type: state
+  flag_takeGroup: false
+  flag_help: State flag controlling whether grass will be able to spread in this region. Defaults to allow.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+
+  event:
+    - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
+    - define suffix '<&pipe>grass-spread<&rb>||allow<&gt>'
+    - define InheritedFlags '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
+    - foreach %InheritedFlags% {
+      - define flag '<def[value]>'
+      - if <def[flag].is[==].to[null]||true> {
+        - define flag 'allow'
+        }
+      - if <def[flag].is[==].to[deny]||false> {
+        - determine cancelled
+        }
+      }
+
+
 
 
 #
