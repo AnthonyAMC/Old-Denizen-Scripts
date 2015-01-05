@@ -1578,7 +1578,7 @@ dRegions_Commands:
       }
       else {
       - narrate "<&5><el@val[|].pad_right[3]><&7>Flags<&co>"
-      - foreach '<def[flags]>' {
+      - foreach '<def[flags].alphanumeric>' {
         - define flag '<def[value].split[/].get[1]>'
         - define flagVal '<def[value].after[/]>'
         - define flagValLength '<def[flagVal].length>'
