@@ -52,7 +52,7 @@ dRegions_Flag_Entry:
           - if <proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]> {
             - if <player.has_flag[dRegions_Message_Cooldown].not> {
               - flag player dRegions_Message_Cooldown duration:3s
-              - run s@dRegions_Msg 'def:<&c><&o>You do not have permission to enter this region'
+              - run instantly s@dRegions_Msg 'def:<&c><&o>You do not have permission to enter this region'
               }
             - determine cancelled
             - queue clear
@@ -130,7 +130,7 @@ dRegions_Flag_Exit:
           - if <proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]> {
             - if <player.has_flag[dRegions_Message_Cooldown].not> {
               - flag player dRegions_Message_Cooldown duration:3s
-              - run s@dRegions_Msg 'def:<&c><&o>You do not have permission to exit this region'
+              - run instantly s@dRegions_Msg 'def:<&c><&o>You do not have permission to exit this region'
               }
             - determine cancelled
             - queue clear
@@ -207,7 +207,7 @@ dRegions_Flag_Gamemode:
           - if <def[isExit].exists> {
             - if <player.flag[dRegions_PreviousGamemode].is[!=].to[<player.gamemode>]||false> {
               - adjust <player> 'gamemode:<player.flag[dRegions_PreviousGamemode]||survival>'
-              - run s@dRegions_Msg 'def:<&7><&o>Your gamemode has been updated.'
+              - run instantly s@dRegions_Msg 'def:<&7><&o>Your gamemode has been updated.'
               }
             - flag <player> 'dRegions_PreviousGamemode:!'
             }
@@ -215,12 +215,12 @@ dRegions_Flag_Gamemode:
             - if <def[gm].is[!=].to[<player.gamemode>]> {
               - flag <player> 'dRegions_PreviousGamemode:<player.gamemode>'
               - adjust <player> 'gamemode:%gm%'
-              - run s@dRegions_Msg 'def:<&7><&o>Your gamemode has been updated.'
+              - run instantly s@dRegions_Msg 'def:<&7><&o>Your gamemode has been updated.'
               }
             }
             else {
             - adjust <player> 'gamemode:survival'
-            - run s@dRegions_Msg 'def:<&7><&o>Your gamemode has been updated.'
+            - run instantly s@dRegions_Msg 'def:<&7><&o>Your gamemode has been updated.'
             }
           - foreach stop
           }
@@ -237,7 +237,7 @@ dRegions_Flag_Inventory:
   lore:
   - <&5>Save inventory before going into a region
   event_hook: regionToggle
-  event_priority: 20
+  event_priority: 10
   flag_type: custom
   flag_type_customVal: unique|kit
   flag_help: Inventory flag can be set to unique or kit. Unique inventories start empty. Kit inventories use your current inventory.
@@ -296,7 +296,7 @@ dRegions_Flag_Inventory:
               - define equipment '<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.entry.players.<player.uuid>.equip]||li@>'
               - equip <player> 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>'
               }
-            - run s@dRegions_Msg 'def:<&7><&o>Your inventory has been updated.'
+            - run instantly s@dRegions_Msg 'def:<&7><&o>Your inventory has been updated.'
             }
             else if <def[isExit].exists> {
             - if <def[inv].is[==].to[kit]||false> {
@@ -305,7 +305,7 @@ dRegions_Flag_Inventory:
               - inventory set 'd:<player.inventory>' 'o:<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.exit.players.<player.uuid>.inv]||li@>'
               - equip <player> 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>'
               - yaml set 'inventories.regions.%region%.exit.players.<player.uuid>:!' 'id:dRegions_%world%_inventories'
-              - run s@dRegions_Msg 'def:<&7><&o>Your inventory has been updated.'
+              - run instantly s@dRegions_Msg 'def:<&7><&o>Your inventory has been updated.'
               }
               else if <def[inv].is[==].to[unique]||false> {
               - yaml set 'inventories.regions.%region%.entry.players.<player.uuid>.equip:<player.equipment>' 'id:dRegions_%world%_inventories'
@@ -315,11 +315,11 @@ dRegions_Flag_Inventory:
               - inventory set 'd:<player.inventory>' 'o:<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.exit.players.<player.uuid>.inv]||li@>'
               - equip <player> 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>'
               - yaml set 'inventories.regions.%region%.exit.players.<player.uuid>:!' 'id:dRegions_%world%_inventories'
-              - run s@dRegions_Msg 'def:<&7><&o>Your inventory has been updated.'
+              - run instantly s@dRegions_Msg 'def:<&7><&o>Your inventory has been updated.'
               }
             }
             else {
-            - run s@dRegions_Msg 'def:<&7><&o>THIS SHOULD NOT RUN EVER!'
+            - run instantly s@dRegions_Msg 'def:<&7><&o>THIS SHOULD NOT RUN EVER!'
             }
           - yaml 'savefile:dRegions/worlds/%world%/inventories.yml' 'id:dRegions_%world%_inventories'
           - foreach stop
@@ -363,7 +363,7 @@ dRegions_Flag_Build:
         - if <proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]> {
           - if <player.has_flag[dRegions_Message_Cooldown].not> {
             - flag player dRegions_Message_Cooldown duration:3s
-            - run s@dRegions_Msg 'def:<&c><&o>You do not have permission to build in this region'
+            - run instantly s@dRegions_Msg 'def:<&c><&o>You do not have permission to build in this region'
             }
           - determine cancelled
           - queue clear
@@ -374,7 +374,7 @@ dRegions_Flag_Build:
         - if <proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%].not> {
           - if <player.has_flag[dRegions_Message_Cooldown].not> {
             - flag player dRegions_Message_Cooldown duration:3s
-            - run s@dRegions_Msg 'def:<&c><&o>You do not have permission to build in this region'
+            - run instantly s@dRegions_Msg 'def:<&c><&o>You do not have permission to build in this region'
             }
           - determine cancelled
           - queue clear
@@ -434,7 +434,7 @@ dRegions_Flag_Mob-Target:
     - if <def[flagValue].is[==].to[null]||false> {
       - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
       - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-      - run s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
+      - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
       - queue clear
       }
       else {
@@ -443,13 +443,13 @@ dRegions_Flag_Mob-Target:
         - if '<def[flagValue].split[ ].get[1].is[==].to[-a]||false>' {
           - yaml set 'regions.%region%.flags.%flag%:all' 'id:dRegions_%world%_regions'
           - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-          - run s@dRegions_Msg 'def:<&f><&o>%region%<&7><&o> set %flag% flag to <&f><&o>%flagValue%'
+          - run instantly s@dRegions_Msg 'def:<&f><&o>%region%<&7><&o> set %flag% flag to <&f><&o>%flagValue%'
           - queue clear
           }
         - if '<def[flagValue].split[ ].get[1].is[==].to[-r]||false>' {
           - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
           - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-          - run s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
+          - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
           - queue clear
           }
         }
@@ -463,7 +463,7 @@ dRegions_Flag_Mob-Target:
         - run  s@dRegions_Msg 'def:<&c><&o>No valid mobs specified!'
         - define lines '<proc[dRegions_LineWrap].context[<s@dRegions_Flag_%Flag%.yaml_key[flag_help]||<&c>%flag% flag requires a %type% value!>|45]>'
         - foreach <def[lines]> {
-          - run s@dRegions_Msg 'def:<&c><def[value]>'
+          - run instantly s@dRegions_Msg 'def:<&c><def[value]>'
           }
         - queue clear
         }
@@ -478,7 +478,7 @@ dRegions_Flag_Mob-Target:
       - if <def[flagValue].is_empty||true> {
         - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
         - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-        - run s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
+        - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
         - queue clear
         }
       - define flagValue '<def[flagValue].comma_separated>'
@@ -536,7 +536,7 @@ dRegions_Flag_Mob-Damagelist:
     - if <def[flagValue].is[==].to[null]||false> {
       - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
       - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-      - run s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
+      - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
       - queue clear
       }
       else {
@@ -545,13 +545,13 @@ dRegions_Flag_Mob-Damagelist:
         - if '<def[flagValue].split[ ].get[1].is[==].to[-a]||false>' {
           - yaml set 'regions.%region%.flags.%flag%:all' 'id:dRegions_%world%_regions'
           - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-          - run s@dRegions_Msg 'def:<&f><&o>%region%<&7><&o> set %flag% flag to <&f><&o>%flagValue%'
+          - run instantly s@dRegions_Msg 'def:<&f><&o>%region%<&7><&o> set %flag% flag to <&f><&o>%flagValue%'
           - queue clear
           }
         - if '<def[flagValue].split[ ].get[1].is[==].to[-r]||false>' {
           - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
           - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-          - run s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
+          - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
           - queue clear
           }
         }
@@ -565,7 +565,7 @@ dRegions_Flag_Mob-Damagelist:
         - run  s@dRegions_Msg 'def:<&c><&o>No valid mobs specified!'
         - define lines '<proc[dRegions_LineWrap].context[<s@dRegions_Flag_%Flag%.yaml_key[flag_help]||<&c>%flag% flag requires a %type% value!>|45]>'
         - foreach <def[lines]> {
-          - run s@dRegions_Msg 'def:<&c><def[value]>'
+          - run instantly s@dRegions_Msg 'def:<&c><def[value]>'
           }
         - queue clear
         }
@@ -580,7 +580,7 @@ dRegions_Flag_Mob-Damagelist:
       - if <def[flagValue].is_empty||true> {
         - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
         - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-        - run s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
+        - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
         - queue clear
         }
       - define flagValue '<def[flagValue].comma_separated>'
@@ -633,7 +633,7 @@ dRegions_Flag_Mob-SpawnList:
     - if <def[flagValue].is[==].to[null]||false> {
       - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
       - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-      - run s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
+      - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
       - queue clear
       }
       else {
@@ -642,13 +642,13 @@ dRegions_Flag_Mob-SpawnList:
         - if '<def[flagValue].split[ ].get[1].is[==].to[-a]||false>' {
           - yaml set 'regions.%region%.flags.%flag%:all' 'id:dRegions_%world%_regions'
           - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-          - run s@dRegions_Msg 'def:<&f><&o>%region%<&7><&o> set %flag% flag to <&f><&o>%flagValue%'
+          - run instantly s@dRegions_Msg 'def:<&f><&o>%region%<&7><&o> set %flag% flag to <&f><&o>%flagValue%'
           - queue clear
           }
         - if '<def[flagValue].split[ ].get[1].is[==].to[-r]||false>' {
           - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
           - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-          - run s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
+          - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
           - queue clear
           }
         }
@@ -662,7 +662,7 @@ dRegions_Flag_Mob-SpawnList:
         - run  s@dRegions_Msg 'def:<&c><&o>No valid mobs specified!'
         - define lines '<proc[dRegions_LineWrap].context[<s@dRegions_Flag_%Flag%.yaml_key[flag_help]||<&c>%flag% flag requires a %type% value!>|45]>'
         - foreach <def[lines]> {
-          - run s@dRegions_Msg 'def:<&c><def[value]>'
+          - run instantly s@dRegions_Msg 'def:<&c><def[value]>'
           }
         - queue clear
         }
@@ -677,7 +677,7 @@ dRegions_Flag_Mob-SpawnList:
       - if <def[flagValue].is_empty||true> {
         - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
         - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-        - run s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
+        - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
         - queue clear
         }
       - define flagValue '<def[flagValue].comma_separated>'
@@ -730,7 +730,7 @@ dRegions_Flag_Fire-SpreadBlocks:
     - if <def[flagValue].is[==].to[null]||false> {
       - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
       - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-      - run s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
+      - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
       - queue clear
       }
       else {
@@ -739,13 +739,13 @@ dRegions_Flag_Fire-SpreadBlocks:
         - if '<def[flagValue].split[ ].get[1].is[==].to[-a]||false>' {
           - yaml set 'regions.%region%.flags.%flag%:all' 'id:dRegions_%world%_regions'
           - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-          - run s@dRegions_Msg 'def:<&f><&o>%region%<&7><&o> set %flag% flag to <&f><&o>%flagValue%'
+          - run instantly s@dRegions_Msg 'def:<&f><&o>%region%<&7><&o> set %flag% flag to <&f><&o>%flagValue%'
           - queue clear
           }
         - if '<def[flagValue].split[ ].get[1].is[==].to[-r]||false>' {
           - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
           - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-          - run s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
+          - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
           - queue clear
           }
         }
@@ -759,7 +759,7 @@ dRegions_Flag_Fire-SpreadBlocks:
         - run  s@dRegions_Msg 'def:<&c><&o>No valid blocks specified!'
         - define lines '<proc[dRegions_LineWrap].context[<s@dRegions_Flag_%Flag%.yaml_key[flag_help]||<&c>%flag% flag requires a %type% value!>|45]>'
         - foreach <def[lines]> {
-          - run s@dRegions_Msg 'def:<&c><def[value]>'
+          - run instantly s@dRegions_Msg 'def:<&c><def[value]>'
           }
         - queue clear
         }
@@ -774,7 +774,7 @@ dRegions_Flag_Fire-SpreadBlocks:
       - if <def[flagValue].is_empty||true> {
         - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
         - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-        - run s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
+        - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
         - queue clear
         }
       - define flagValue '<def[flagValue].comma_separated>'
@@ -827,7 +827,7 @@ dRegions_Flag_Water-SpreadBlocks:
     - if <def[flagValue].is[==].to[null]||false> {
       - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
       - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-      - run s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
+      - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
       - queue clear
       }
       else {
@@ -836,13 +836,13 @@ dRegions_Flag_Water-SpreadBlocks:
         - if '<def[flagValue].split[ ].get[1].is[==].to[-a]||false>' {
           - yaml set 'regions.%region%.flags.%flag%:all' 'id:dRegions_%world%_regions'
           - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-          - run s@dRegions_Msg 'def:<&f><&o>%region%<&7><&o> set %flag% flag to <&f><&o>%flagValue%'
+          - run instantly s@dRegions_Msg 'def:<&f><&o>%region%<&7><&o> set %flag% flag to <&f><&o>%flagValue%'
           - queue clear
           }
         - if '<def[flagValue].split[ ].get[1].is[==].to[-r]||false>' {
           - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
           - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-          - run s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
+          - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
           - queue clear
           }
         }
@@ -856,7 +856,7 @@ dRegions_Flag_Water-SpreadBlocks:
         - run  s@dRegions_Msg 'def:<&c><&o>No valid blocks specified!'
         - define lines '<proc[dRegions_LineWrap].context[<s@dRegions_Flag_%Flag%.yaml_key[flag_help]||<&c>%flag% flag requires a %type% value!>|45]>'
         - foreach <def[lines]> {
-          - run s@dRegions_Msg 'def:<&c><def[value]>'
+          - run instantly s@dRegions_Msg 'def:<&c><def[value]>'
           }
         - queue clear
         }
@@ -871,7 +871,7 @@ dRegions_Flag_Water-SpreadBlocks:
       - if <def[flagValue].is_empty||true> {
         - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
         - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-        - run s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
+        - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
         - queue clear
         }
       - define flagValue '<def[flagValue].comma_separated>'
@@ -924,7 +924,7 @@ dRegions_Flag_Lava-SpreadBlocks:
     - if <def[flagValue].is[==].to[null]||false> {
       - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
       - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-      - run s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
+      - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
       - queue clear
       }
       else {
@@ -933,13 +933,13 @@ dRegions_Flag_Lava-SpreadBlocks:
         - if '<def[flagValue].split[ ].get[1].is[==].to[-a]||false>' {
           - yaml set 'regions.%region%.flags.%flag%:all' 'id:dRegions_%world%_regions'
           - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-          - run s@dRegions_Msg 'def:<&f><&o>%region%<&7><&o> set %flag% flag to <&f><&o>%flagValue%'
+          - run instantly s@dRegions_Msg 'def:<&f><&o>%region%<&7><&o> set %flag% flag to <&f><&o>%flagValue%'
           - queue clear
           }
         - if '<def[flagValue].split[ ].get[1].is[==].to[-r]||false>' {
           - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
           - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-          - run s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
+          - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
           - queue clear
           }
         }
@@ -953,7 +953,7 @@ dRegions_Flag_Lava-SpreadBlocks:
         - run  s@dRegions_Msg 'def:<&c><&o>No valid blocks specified!'
         - define lines '<proc[dRegions_LineWrap].context[<s@dRegions_Flag_%Flag%.yaml_key[flag_help]||<&c>%flag% flag requires a %type% value!>|45]>'
         - foreach <def[lines]> {
-          - run s@dRegions_Msg 'def:<&c><def[value]>'
+          - run instantly s@dRegions_Msg 'def:<&c><def[value]>'
           }
         - queue clear
         }
@@ -968,7 +968,7 @@ dRegions_Flag_Lava-SpreadBlocks:
       - if <def[flagValue].is_empty||true> {
         - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
         - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-        - run s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
+        - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
         - queue clear
         }
       - define flagValue '<def[flagValue].comma_separated>'
