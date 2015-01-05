@@ -388,7 +388,7 @@ dRegions:
   # Reusable code block injected from events. It's the final pre-processor before the flags take over.
     - define allFlagScripts '<server.list_scripts.filter[starts_with[s@dRegions_Flag]]||li@>'
     - define Flags '<def[allFlagScripts].filter[yaml_key[event_hook].contains_any[%eventHooks%]]||li@>'
-    - define eventPri '<def[Flags].parse[yaml_key[event_priority]||0]||li@>'
+    - define eventPri '<def[Flags].parse[yaml_key[event_priority]]||li@>'
     - define eventList 'li@'
     - foreach <def[Flags]> {
       - define eventList '<def[eventList].include[<def[eventPri].get[%loop_index%]>/%value%]>'
