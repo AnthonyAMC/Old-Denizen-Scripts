@@ -661,34 +661,11 @@ dRegions_Flag_Mob-Spawn:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
-
   event:
-    - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
-    - define suffix '<&pipe>mob-spawnlist<&rb>||all<&gt>'
-    - define InheritedMobs '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
-    - define suffix '<&pipe>mob-spawn<&rb>||allow<&gt>'
-    - define InheritedFlags '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
-    - foreach %InheritedFlags% {
-      - define mobList '<def[InheritedMobs].get[%loop_index%].replace[, ].with[|].as_list||li@all>'
-      - if <def[mobList].is[==].to[li@null]> {
-        - define mobList 'li@all'
-        }
-      - define flag '<def[value]>'
-      - if <def[flag].is[==].to[null]||true> {
-        - define flag 'allow'
-        }
-      - if <def[mobList].is[==].to[li@all]||false>
-        || <def[moblist].contains[<def[mob].entity_type>]||false> {
-        - if <def[flag].is[==].to[deny]||false> {
-          - determine cancelled
-          }
-        }
-        else {
-        - if <def[flag].is[==].to[allow]||false> {
-          - determine cancelled
-          }
-        }
-      }
+    - define flag 'mob-spawn'
+    - define flag-targetList 'mob-spawnlist'
+    - define target '<def[mob].entity_type>'
+    - inject s@dRegions_Flags_Processors p:state-withTarget
 
 
 dRegions_Flag_Mob-SpawnList:
@@ -782,41 +759,11 @@ dRegions_Flag_Fire-Spread:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
-
   event:
-    - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
-    - define suffix '<&pipe>fire-spreadblocks<&rb>||all<&gt>'
-    - define InheritedBlocks '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
-    - define suffix '<&pipe>fire-spread<&rb>||allow<&gt>'
-    - define InheritedFlags '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
-    - foreach %InheritedFlags% {
-      - define blockList '<def[InheritedBlocks].get[%loop_index%].replace[, ].with[|].as_list||li@all>'
-      - if <def[blockList].is[==].to[li@null]> {
-        - define blockList 'li@all'
-        }
-      - define flag '<def[value]>'
-      - if <def[flag].is[==].to[null]||true> {
-        - define flag 'allow'
-        }
-
-      - if <def[flag].is[==].to[allow]||false> {
-        - if <def[blockList].is[!=].to[li@all]||true> {
-          - if !<def[blockList].contains[<def[mat]>]||false> {
-            - determine cancelled
-            }
-          }
-        }
-        else {
-        - if <def[blockList].is[==].to[li@all]||true> {
-          - determine cancelled
-          }
-          else {
-          - if <def[blockList].contains[<def[mat]>]||false> {
-            - determine cancelled
-            }
-          }
-        }
-      }
+    - define flag 'fire-spread'
+    - define flag-targetList 'fire-spreadblocks'
+    - define target '<def[mat]>'
+    - inject s@dRegions_Flags_Processors p:state-withTarget
 
 
 dRegions_Flag_Fire-SpreadBlocks:
@@ -910,41 +857,11 @@ dRegions_Flag_Water-Spread:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
-
   event:
-    - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
-    - define suffix '<&pipe>water-spreadblocks<&rb>||all<&gt>'
-    - define InheritedBlocks '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
-    - define suffix '<&pipe>water-spread<&rb>||allow<&gt>'
-    - define InheritedFlags '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
-    - foreach %InheritedFlags% {
-      - define blockList '<def[InheritedBlocks].get[%loop_index%].replace[, ].with[|].as_list||li@all>'
-      - if <def[blockList].is[==].to[li@null]> {
-        - define blockList 'li@all'
-        }
-      - define flag '<def[value]>'
-      - if <def[flag].is[==].to[null]||true> {
-        - define flag 'allow'
-        }
-
-      - if <def[flag].is[==].to[allow]||false> {
-        - if <def[blockList].is[!=].to[li@all]||true> {
-          - if !<def[blockList].contains[<def[mat]>]||false> {
-            - determine cancelled
-            }
-          }
-        }
-        else {
-        - if <def[blockList].is[==].to[li@all]||true> {
-          - determine cancelled
-          }
-          else {
-          - if <def[blockList].contains[<def[mat]>]||false> {
-            - determine cancelled
-            }
-          }
-        }
-      }
+    - define flag 'water-spread'
+    - define flag-targetList 'water-spreadblocks'
+    - define target '<def[mat]>'
+    - inject s@dRegions_Flags_Processors p:state-withTarget
 
 
 dRegions_Flag_Water-SpreadBlocks:
@@ -1038,41 +955,11 @@ dRegions_Flag_Lava-Spread:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
-
   event:
-    - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
-    - define suffix '<&pipe>lava-spreadblocks<&rb>||all<&gt>'
-    - define InheritedBlocks '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
-    - define suffix '<&pipe>lava-spread<&rb>||allow<&gt>'
-    - define InheritedFlags '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
-    - foreach %InheritedFlags% {
-      - define blockList '<def[InheritedBlocks].get[%loop_index%].replace[, ].with[|].as_list||li@all>'
-      - if <def[blockList].is[==].to[li@null]> {
-        - define blockList 'li@all'
-        }
-      - define flag '<def[value]>'
-      - if <def[flag].is[==].to[null]||true> {
-        - define flag 'allow'
-        }
-
-      - if <def[flag].is[==].to[allow]||false> {
-        - if <def[blockList].is[!=].to[li@all]||true> {
-          - if !<def[blockList].contains[<def[mat]>]||false> {
-            - determine cancelled
-            }
-          }
-        }
-        else {
-        - if <def[blockList].is[==].to[li@all]||true> {
-          - determine cancelled
-          }
-          else {
-          - if <def[blockList].contains[<def[mat]>]||false> {
-            - determine cancelled
-            }
-          }
-        }
-      }
+    - define flag 'lava-spread'
+    - define flag-targetList 'lava-spreadblocks'
+    - define target '<def[mat]>'
+    - inject s@dRegions_Flags_Processors p:state-withTarget
 
 
 dRegions_Flag_Lava-SpreadBlocks:
@@ -1156,9 +1043,9 @@ dRegions_Flag_Mushroom-Spread:
   - <&5>Can Mushrooms spread
   event_hook: MushroomSpread
   event_priority: 10
-  flag_type: state
+  flag_type: boolean
   flag_takeGroup: false
-  flag_help: State flag controlling whether mushrooms will be able to spread in this region. Defaults to allow.
+  flag_help: Boolean flag controlling whether mushrooms will be able to spread in this region. Set to true or false. Defaults to true.
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
@@ -1166,20 +1053,9 @@ dRegions_Flag_Mushroom-Spread:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
-
   event:
-    - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
-    - define suffix '<&pipe>mushroom-spread<&rb>||allow<&gt>'
-    - define InheritedFlags '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
-    - foreach %InheritedFlags% {
-      - define flag '<def[value]>'
-      - if <def[flag].is[==].to[null]||true> {
-        - define flag 'allow'
-        }
-      - if <def[flag].is[==].to[deny]||false> {
-        - determine cancelled
-        }
-      }
+    - define flag 'mushroom-spread'
+    - inject s@dRegions_Flags_Processors p:boolean
 
 
 dRegions_Flag_Grass-Spread:
@@ -1191,9 +1067,9 @@ dRegions_Flag_Grass-Spread:
   - <&5>Can Grass spread
   event_hook: GrassSpread
   event_priority: 10
-  flag_type: state
+  flag_type: boolean
   flag_takeGroup: false
-  flag_help: State flag controlling whether grass will be able to spread in this region. Defaults to allow.
+  flag_help: Boolean flag controlling whether grass will be able to spread in this region. Set to true or false. Defaults to true.
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
@@ -1201,20 +1077,9 @@ dRegions_Flag_Grass-Spread:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
-
   event:
-    - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
-    - define suffix '<&pipe>grass-spread<&rb>||allow<&gt>'
-    - define InheritedFlags '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
-    - foreach %InheritedFlags% {
-      - define flag '<def[value]>'
-      - if <def[flag].is[==].to[null]||true> {
-        - define flag 'allow'
-        }
-      - if <def[flag].is[==].to[deny]||false> {
-        - determine cancelled
-        }
-      }
+    - define flag 'grass-spread'
+    - inject s@dRegions_Flags_Processors p:boolean
 
 
 dRegions_Flag_Mycel-Spread:
@@ -1226,9 +1091,9 @@ dRegions_Flag_Mycel-Spread:
   - <&5>Can Mycelium spread
   event_hook: MycelSpread
   event_priority: 10
-  flag_type: state
+  flag_type: boolean
   flag_takeGroup: false
-  flag_help: State flag controlling whether mycelium will be able to spread in this region. Defaults to allow.
+  flag_help: Boolean flag controlling whether mycelium will be able to spread in this region. Set to true or false. Defaults to true.
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
@@ -1236,22 +1101,60 @@ dRegions_Flag_Mycel-Spread:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
-
   event:
+    - define flag 'mycel-spread'
+    - inject s@dRegions_Flags_Processors p:boolean
+
+
+################################################################################
+
+dRegions_Flags_Processors:
+  type: task
+  debug: false
+
+  boolean:
     - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
-    - define suffix '<&pipe>mycel-spread<&rb>||allow<&gt>'
+    - define suffix '<&pipe>%flag%<&rb>||allow<&gt>'
     - define InheritedFlags '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
     - foreach %InheritedFlags% {
-      - define flag '<def[value]>'
-      - if <def[flag].is[==].to[null]||true> {
-        - define flag 'allow'
-        }
-      - if <def[flag].is[==].to[deny]||false> {
+      - if <def[value].is[==].to[false]||false> {
         - determine cancelled
         }
       }
 
+  state-withTarget:
+    - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
+    - define suffix '<&pipe>%flag-targetList%<&rb>||all<&gt>'
+    - define InheritedTargets '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
+    - define suffix '<&pipe>%flag%<&rb>||allow<&gt>'
+    - define InheritedFlags '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
+    - foreach %InheritedFlags% {
+      - define targetList '<def[InheritedTargets].get[%loop_index%].replace[, ].with[|].as_list||li@all>'
+      - if <def[targetList].is[==].to[li@null]> {
+        - define targetList 'li@all'
+        }
+      - define flagVal '<def[value]>'
+      - if <def[flagVal].is[==].to[null]||true> {
+        - define flagVal 'allow'
+        }
 
-
+      - if <def[flagVal].is[==].to[allow]||false> {
+        - if <def[targetList].is[!=].to[li@all]||true> {
+          - if !<def[targetList].contains[<def[target]>]||false> {
+            - determine cancelled
+            }
+          }
+        }
+        else {
+        - if <def[targetList].is[==].to[li@all]||true> {
+          - determine cancelled
+          }
+          else {
+          - if <def[targetList].contains[<def[target]>]||false> {
+            - determine cancelled
+            }
+          }
+        }
+      }
 
 #
