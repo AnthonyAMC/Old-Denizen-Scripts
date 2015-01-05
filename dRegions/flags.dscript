@@ -231,7 +231,7 @@ dRegions_Flag_Gamemode:
 
 dRegions_Flag_Inventory:
   type: item
-  debug: false
+  debug: true
   material: i@paper
   display name: "<&4>[<&6>Inventory<&4>]"
   lore:
@@ -281,27 +281,42 @@ dRegions_Flag_Inventory:
         - if <proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]> {
           - if <def[isEnter].exists> {
             - if <def[inv].is[==].to[kit]||false> {
-              - define equipment '<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.entry.kit.equip]||li@>'
               - yaml set 'inventories.regions.%region%.exit.players.<player.uuid>.equip:<player.equipment>' 'id:dRegions_%world%_inventories'
               - yaml set 'inventories.regions.%region%.exit.players.<player.uuid>.inv:<player.inventory.list_contents>' 'id:dRegions_%world%_inventories'
+              - inventory clear
               - inventory set 'd:<player.inventory>' 'o:<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.entry.kit.inv]||li@>'
+              - define equipment '<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.entry.kit.equip]||li@>'
               - equip <player> 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>'
               }
               else if <def[inv].is[==].to[unique]||false> {
-              - define equipment '<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.entry.players.<player.uuid>.equip]||li@>'
               - yaml set 'inventories.regions.%region%.exit.players.<player.uuid>.equip:<player.equipment>' 'id:dRegions_%world%_inventories'
-              - yaml set 'inventories.regions.%region%.exit.players.<player.uuid>.inv:<player.inventory.list_contents||li@i@air>' 'id:dRegions_%world%_inventories'
+              - yaml set 'inventories.regions.%region%.exit.players.<player.uuid>.inv:<player.inventory.list_contents>' 'id:dRegions_%world%_inventories'
+              - inventory clear
               - inventory set 'd:<player.inventory>' 'o:<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.entry.players.<player.uuid>.inv]||li@>'
+              - define equipment '<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.entry.players.<player.uuid>.equip]||li@>'
               - equip <player> 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>'
               }
             - run s@dRegions_Msg 'def:<&7><&o>Your inventory has been updated.'
             }
             else if <def[isExit].exists> {
-            - define equipment '<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.exit.players.<player.uuid>.equip]||li@>'
-            - inventory set 'd:<player.inventory>' 'o:<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.exit.players.<player.uuid>.inv]||li@>'
-            - equip <player> 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>'
-            - yaml set 'inventories.regions.%region%.exit.players.<player.uuid>:!' 'id:dRegions_%world%_inventories'
-            - run s@dRegions_Msg 'def:<&7><&o>Your inventory has been updated.'
+            - if <def[inv].is[==].to[kit]||false> {
+              - define equipment '<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.exit.players.<player.uuid>.equip]||li@>'
+              - inventory clear
+              - inventory set 'd:<player.inventory>' 'o:<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.exit.players.<player.uuid>.inv]||li@>'
+              - equip <player> 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>'
+              - yaml set 'inventories.regions.%region%.exit.players.<player.uuid>:!' 'id:dRegions_%world%_inventories'
+              - run s@dRegions_Msg 'def:<&7><&o>Your inventory has been updated.'
+              }
+              else if <def[inv].is[==].to[unique]||false> {
+              - yaml set 'inventories.regions.%region%.entry.players.<player.uuid>.equip:<player.equipment>' 'id:dRegions_%world%_inventories'
+              - yaml set 'inventories.regions.%region%.entry.players.<player.uuid>.inv:<player.inventory.list_contents>' 'id:dRegions_%world%_inventories'
+              - define equipment '<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.exit.players.<player.uuid>.equip]||li@>'
+              - inventory clear
+              - inventory set 'd:<player.inventory>' 'o:<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.exit.players.<player.uuid>.inv]||li@>'
+              - equip <player> 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>'
+              - yaml set 'inventories.regions.%region%.exit.players.<player.uuid>:!' 'id:dRegions_%world%_inventories'
+              - run s@dRegions_Msg 'def:<&7><&o>Your inventory has been updated.'
+              }
             }
             else {
             - run s@dRegions_Msg 'def:<&7><&o>THIS SHOULD NOT RUN EVER!'
