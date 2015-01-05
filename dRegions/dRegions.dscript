@@ -125,7 +125,7 @@ dRegions:
 
     on block ignites:
     - define world '<c.location.world.name.to_lowercase>'
-    - define mat '<c.location.material.bukkit_enum.to_lowercase>'
+    - define target '<c.location.material.bukkit_enum.to_lowercase>'
     - define readPath 'fire.<c.cause||spread>'
     - inject instantly s@dRegions p:event_PreProc_Config
     - define cuboids '<c.location.cuboids>'
@@ -135,13 +135,13 @@ dRegions:
 
     on block burns:
     - define world '<c.location.world.name.to_lowercase>'
-    - define mat '<c.location.material.bukkit_enum.to_lowercase>'
+    - define target '<c.location.material.bukkit_enum.to_lowercase>'
     - define readPath 'fire.destroyBlocks'
     - inject instantly s@dRegions p:event_PreProc_Config
 
     on block spreads:
     - define world '<c.location.world.name.to_lowercase>'
-    - define mat '<c.location.material.bukkit_enum.to_lowercase>'
+    - define target '<c.location.material.bukkit_enum.to_lowercase>'
     - define readPath 'spread.<c.material.bukkit_enum.split[_].last.to_lowercase||null>'
     - inject instantly s@dRegions p:event_PreProc_Config
     - define cuboids '<c.location.cuboids>'
@@ -151,7 +151,7 @@ dRegions:
 
     on liquid spreads:
     - define world '<c.location.world.name.to_lowercase>'
-    - define mat '<c.destination.material.bukkit_enum.to_lowercase>'
+    - define target '<c.destination.material.bukkit_enum.to_lowercase>'
     - define readPath 'spread.<c.location.material.bukkit_enum.split[_].last.to_lowercase||null>'
     - inject instantly s@dRegions p:event_PreProc_Config
     - define cuboids '<c.location.cuboids.include[<c.destination.cuboids>].deduplicate>'
@@ -299,7 +299,7 @@ dRegions:
     - define world '<c.entity.world.name.to_lowercase>'
     - define cuboids '<c.cuboids>'
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
-    - define mob '<c.entity>'
+    - define target '<c.entity.entity_type>'
     - define eventHooks '<c.entity.prefix>_Spawn'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
@@ -344,20 +344,20 @@ dRegions:
   #
     - foreach '<el@val[%world%|global].as_list>' {
       - define settingValue '<yaml[dRegions_%value%_config].read[config.%readPath%]||true>'
-      - define blockList '<yaml[dRegions_%value%_config].read[config.%readPath%-blockList]||li@>'
+      - define targetList '<yaml[dRegions_%value%_config].read[config.%readPath%-list]||li@>'
       - if <def[settingValue]||true> {
-        - if !<def[blockList].is_empty||true> {
-          - if !<def[blockList].contains[<def[mat]||null]>]||true> {
+        - if !<def[targetList].is_empty||true> {
+          - if !<def[targetList].contains[<def[target]>]||true> {
             - determine CANCELLED
             }
           }
         }
         else {
-        - if <def[blockList].is_empty||true> {
+        - if <def[targetList].is_empty||true> {
           - determine CANCELLED
           }
           else {
-          - if <def[blockList].contains[<def[mat]||null]>]||false> {
+          - if <def[targetList].contains[<def[target]>]||false> {
             - determine CANCELLED
             }
           }
@@ -2951,7 +2951,7 @@ dRegions_Configurations:
   type: yaml data
 
   config:
-    version: 0.21
+    version: 0.22
     regions:
       enable: true
       invincibility-removes-mobs: false
@@ -2963,9 +2963,9 @@ dRegions_Configurations:
           default: 7
     spread:
       water: true
-      water-blockList: []
+      water-list: []
       lava: true
-      lava-blockList: []
+      lava-list: []
       mycel: true
       grass: true
       mushroom: true
@@ -2983,9 +2983,9 @@ dRegions_Configurations:
       flint_and_steel: true
       lava: true
       spread: true
-      spread-blockList: []
+      spread-list: []
       destroyBlocks: true
-      destroyBlocks-blockList: []
+      destroyBlocks-list: []
 #    auto-invincible: false
 #    protection:
 #      item-durability: true
