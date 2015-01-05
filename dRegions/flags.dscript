@@ -664,7 +664,6 @@ dRegions_Flag_Mob-Spawn:
   event:
     - define flag 'mob-spawn'
     - define flag-targetList 'mob-spawnlist'
-    - define target '<def[mob].entity_type>'
     - inject s@dRegions_Flags_Processors p:state-withTarget
 
 
@@ -762,7 +761,6 @@ dRegions_Flag_Fire-Spread:
   event:
     - define flag 'fire-spread'
     - define flag-targetList 'fire-spreadblocks'
-    - define target '<def[mat]>'
     - inject s@dRegions_Flags_Processors p:state-withTarget
 
 
@@ -860,7 +858,6 @@ dRegions_Flag_Water-Spread:
   event:
     - define flag 'water-spread'
     - define flag-targetList 'water-spreadblocks'
-    - define target '<def[mat]>'
     - inject s@dRegions_Flags_Processors p:state-withTarget
 
 
@@ -958,7 +955,6 @@ dRegions_Flag_Lava-Spread:
   event:
     - define flag 'lava-spread'
     - define flag-targetList 'lava-spreadblocks'
-    - define target '<def[mat]>'
     - inject s@dRegions_Flags_Processors p:state-withTarget
 
 
