@@ -283,7 +283,7 @@ dRegions:
     - define world '<c.entity.world.name.to_lowercase>'
     - define cuboids '<c.target.location.cuboids>'
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
-    - define mob '<c.entity>'
+    - define target '<c.entity.entity_type>'
     - define eventHooks '<c.entity.prefix>_Target_<c.target.entity_type||null>'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
@@ -291,7 +291,7 @@ dRegions:
     - define world '<c.entity.world.name.to_lowercase>'
     - define cuboids '<c.entity.location.cuboids>'
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
-    - define mob '<c.damager>'
+    - define target '<c.damager.entity_type>'
     - define eventHooks '<c.damager.prefix>_Target_<c.entity.entity_type||null>|<c.damager.prefix>_Damage_<c.entity.entity_type||null>'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
@@ -395,6 +395,7 @@ dRegions:
       }
     - define orderedEvents '<def[eventList].alphanumeric.parse[split[/].get[2]]||li@>'
     - foreach <def[orderedEvents]> {
+      - define FlagScript '%value%'
       - inject %value% p:event
       }
 
@@ -1768,6 +1769,9 @@ dRegions_Commands:
       - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
       - run s@dRegions_Msg 'def:<&f><&o>%name%<&7><&o> members updated'
       }
+      else {
+      - run s@dRegions_Msg 'def:<&6><&o>%name%<&c><&o> members not updated!'
+      }
 
   removemember:
   # /drg reomvemember [ID] g:group player
@@ -1827,7 +1831,7 @@ dRegions_Commands:
       - run s@dRegions_Msg 'def:<&f><&o>%name%<&7><&o> members updated'
       }
       else {
-      - run s@dRegions_Msg 'def:<&6><&o>%name%<&c><&o> owners not updated!'
+      - run s@dRegions_Msg 'def:<&6><&o>%name%<&c><&o> members not updated!'
       }
 
   list:
