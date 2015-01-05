@@ -37,28 +37,17 @@ dRegions_Flag_Entry:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
+  event-cleanup:
+    - if <player.has_flag[dRegions_Message_Cooldown].not> {
+      - flag player dRegions_Message_Cooldown duration:3s
+      - run instantly s@dRegions_Msg 'def:<&c><&o>You do not have permission to enter this region'
+      }
 
   event:
     - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
-      - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
-      - define suffix '<&pipe>entry<&rb>||null<&gt>'
-      - define entryList '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
-      - foreach %entryList% {
-        - if <def[value].split[/].get[1].is[==].to[deny]||false> {
-          - define group '<def[value].split[/].get[2]||nonmembers>'
-          - define isOwner '<proc[dRegions_IsOwner].context[<def[orderedRegions].get[%loop_index%]>|%world%|<player>]>'
-          - define isMember '<proc[dRegions_isMember].context[<def[orderedRegions].get[%loop_index%]>|%world%|<player>]>'
-
-          - if <proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]> {
-            - if <player.has_flag[dRegions_Message_Cooldown].not> {
-              - flag player dRegions_Message_Cooldown duration:3s
-              - run instantly s@dRegions_Msg 'def:<&c><&o>You do not have permission to enter this region'
-              }
-            - determine cancelled
-            - queue clear
-            }
-          }
-        }
+      - define player <player>
+      - define flag 'entry'
+      - inject s@dRegions_Flags_Processors p:state-withGroup instantly
       }
 
 
@@ -79,7 +68,6 @@ dRegions_Flag_Greeting:
 
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
-
 
   event:
   # Now using GetInheritedFlag procedure
@@ -115,28 +103,17 @@ dRegions_Flag_Exit:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
+  event-cleanup:
+    - if <player.has_flag[dRegions_Message_Cooldown].not> {
+      - flag player dRegions_Message_Cooldown duration:3s
+      - run instantly s@dRegions_Msg 'def:<&c><&o>You do not have permission to exit this region'
+      }
 
   event:
     - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
-      - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
-      - define suffix '<&pipe>exit<&rb>||null<&gt>'
-      - define exitList '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
-      - foreach %exitList% {
-        - if <def[value].split[/].get[1].is[==].to[deny]||false> {
-          - define group '<def[value].split[/].get[2]||nonmembers>'
-          - define isOwner '<proc[dRegions_IsOwner].context[<def[orderedRegions].get[%loop_index%]>|%world%|<player>]>'
-          - define isMember '<proc[dRegions_isMember].context[<def[orderedRegions].get[%loop_index%]>|%world%|<player>]>'
-
-          - if <proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]> {
-            - if <player.has_flag[dRegions_Message_Cooldown].not> {
-              - flag player dRegions_Message_Cooldown duration:3s
-              - run instantly s@dRegions_Msg 'def:<&c><&o>You do not have permission to exit this region'
-              }
-            - determine cancelled
-            - queue clear
-            }
-          }
-        }
+      - define player <player>
+      - define flag 'exit'
+      - inject s@dRegions_Flags_Processors p:state-withGroup instantly
       }
 
 
@@ -157,7 +134,6 @@ dRegions_Flag_Farewell:
 
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
-
 
   event:
     - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
@@ -190,7 +166,6 @@ dRegions_Flag_Gamemode:
 
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
-
 
   event:
     - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
@@ -228,7 +203,6 @@ dRegions_Flag_Gamemode:
       }
 
 
-
 dRegions_Flag_Inventory:
   type: item
   debug: true
@@ -249,7 +223,6 @@ dRegions_Flag_Inventory:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
-
   command_handler:
     - if <def[flagValue].is[==].to[kit]> {
       - yaml set 'inventories.regions.%region%.entry.kit.equip:<player.equipment>' 'id:dRegions_%world%_inventories'
@@ -264,7 +237,6 @@ dRegions_Flag_Inventory:
       - yaml set 'inventories.regions.%region%:!' 'id:dRegions_%world%_inventories'
       }
     - yaml 'savefile:dRegions/worlds/%world%/inventories.yml' 'id:dRegions_%world%_inventories'
-
 
   event:
     - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
@@ -1082,18 +1054,52 @@ dRegions_Flags_Processors:
       - if <def[flagVal].is[==].to[allow]||false> {
         - if <def[targetList].is[!=].to[li@all]||true> {
           - if !<def[targetList].contains[<def[target]>]||false> {
+            - inject <def[FlagScript]||null> p:event-cleanup instantly
             - determine cancelled
             }
           }
         }
         else {
         - if <def[targetList].is[==].to[li@all]||true> {
+          - inject <def[FlagScript]||null> p:event-cleanup instantly
           - determine cancelled
           }
           else {
           - if <def[targetList].contains[<def[target]>]||false> {
+            - inject <def[FlagScript]||null> p:event-cleanup instantly
             - determine cancelled
             }
+          }
+        }
+      }
+
+  state-withGroup:
+    # requires %player% to be filled with a valid player object
+    - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
+    - define suffix '<&pipe>%flag%<&rb>||allow<&gt>'
+    - define InheritedFlags '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
+    - foreach %InheritedFlags% {
+      - define flagObj '<def[value]>'
+      - if <def[flagObj].is[==].to[null]||true> {
+        - define flagObj 'allow/all'
+        }
+      - define flagVal '<def[flagObj].split[/].get[1]>'
+      - define group '<def[flagObj].split[/].get[2]||all>'
+      - define region '<def[orderedRegions].get[%loop_index%]>'
+      - define isOwner '<proc[dRegions_IsOwner].context[%region%|%world%|<def[player]>]>'
+      - define isMember '<proc[dRegions_isMember].context[%region%|%world%|<def[player]>]>'
+      - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]>'
+
+      - if <def[flagVal].is[==].to[allow]||false> {
+        - if !<def[isGroup]> {
+          - inject <def[FlagScript]||null> p:event-cleanup instantly
+          - determine cancelled
+          }
+        }
+        else {
+        - if <def[isGroup]> {
+          - inject <def[FlagScript]||null> p:event-cleanup instantly
+          - determine cancelled
           }
         }
       }
