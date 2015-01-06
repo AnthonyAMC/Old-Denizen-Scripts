@@ -392,6 +392,8 @@ dRegions_Flag_Mob-Target:
   display name: "<&4>[<&6>Mob-Target<&4>]"
   lore:
   - <&5>List of mobs used by mob-targeting flag
+  command_entryType: mob
+  command_verifyEntry: <def[value].is[matches].to[entity].not>
   flag_type: list
   flag_takeGroup: false
   flag_help: List flag used with mob-targeting flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of mobs.
@@ -403,58 +405,7 @@ dRegions_Flag_Mob-Target:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   command_handler:
-    - if <def[flagValue].is[==].to[null]||false> {
-      - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
-      - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-      - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
-      - queue clear
-      }
-      else {
-      - define mobs '<def[flagValue].split[ ].get[2].to[<def[flagValue].split[ ].size>].parse[to_lowercase].deduplicate||li@>'
-      - if <def[mobs].get[1].is[==].to[all]> {
-        - if '<def[flagValue].split[ ].get[1].is[==].to[-a]||false>' {
-          - yaml set 'regions.%region%.flags.%flag%:all' 'id:dRegions_%world%_regions'
-          - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-          - run instantly s@dRegions_Msg 'def:<&f><&o>%region%<&7><&o> set %flag% flag to <&f><&o>%flagValue%'
-          - queue clear
-          }
-        - if '<def[flagValue].split[ ].get[1].is[==].to[-r]||false>' {
-          - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
-          - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-          - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
-          - queue clear
-          }
-        }
-      - foreach %mobs% {
-        - if <def[value].is[matches].to[entity].not> {
-          - define mobs '<def[mobs].exclude[%value%]||li@>'
-          - run  s@dRegions_Msg 'def:<&c><&o>%value% is not a valid mob!'
-          }
-        }
-      - if <def[mobs].is_empty||true> {
-        - run  s@dRegions_Msg 'def:<&c><&o>No valid mobs specified!'
-        - define lines '<proc[dRegions_LineWrap].context[<s@dRegions_Flag_%Flag%.yaml_key[flag_help]||<&c>%flag% flag requires a %type% value!>|45]>'
-        - foreach <def[lines]> {
-          - run instantly s@dRegions_Msg 'def:<&c><def[value]>'
-          }
-        - queue clear
-        }
-
-      - define currentMobs '<yaml[dRegions_%world%_regions].read[regions.%region%.flags.%flag%].replace[, ].with[|].as_list||li@>'
-      - if '<def[flagValue].split[ ].get[1].is[==].to[-a]||false>' {
-        - define flagValue '<def[currentMobs].include[<def[mobs].replace[li@]>].deduplicate||li@>'
-        }
-      - if '<def[flagValue].split[ ].get[1].is[==].to[-r]||false>' {
-        - define flagValue '<def[currentMobs].exclude[<def[mobs].replace[li@]>].deduplicate||li@>'
-        }
-      - if <def[flagValue].is_empty||true> {
-        - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
-        - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-        - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
-        - queue clear
-        }
-      - define flagValue '<def[flagValue].comma_separated>'
-      }
+    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
 
 dRegions_Flag_Mob-Damage:
@@ -494,6 +445,8 @@ dRegions_Flag_Mob-Damagelist:
   display name: "<&4>[<&6>Mob-DamageList<&4>]"
   lore:
   - <&5>List of mobs used by mob-damage flag
+  command_entryType: mob
+  command_verifyEntry: <def[value].is[matches].to[entity].not>
   flag_type: list
   flag_takeGroup: false
   flag_help: List flag used with mob-damage flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of mobs.
@@ -505,58 +458,7 @@ dRegions_Flag_Mob-Damagelist:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   command_handler:
-    - if <def[flagValue].is[==].to[null]||false> {
-      - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
-      - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-      - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
-      - queue clear
-      }
-      else {
-      - define mobs '<def[flagValue].split[ ].get[2].to[<def[flagValue].split[ ].size>].parse[to_lowercase].deduplicate||li@>'
-      - if <def[mobs].get[1].is[==].to[all]> {
-        - if '<def[flagValue].split[ ].get[1].is[==].to[-a]||false>' {
-          - yaml set 'regions.%region%.flags.%flag%:all' 'id:dRegions_%world%_regions'
-          - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-          - run instantly s@dRegions_Msg 'def:<&f><&o>%region%<&7><&o> set %flag% flag to <&f><&o>%flagValue%'
-          - queue clear
-          }
-        - if '<def[flagValue].split[ ].get[1].is[==].to[-r]||false>' {
-          - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
-          - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-          - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
-          - queue clear
-          }
-        }
-      - foreach %mobs% {
-        - if <def[value].is[matches].to[entity].not> {
-          - define mobs '<def[mobs].exclude[%value%]||li@>'
-          - run  s@dRegions_Msg 'def:<&c><&o>%value% is not a valid mob!'
-          }
-        }
-      - if <def[mobs].is_empty||true> {
-        - run  s@dRegions_Msg 'def:<&c><&o>No valid mobs specified!'
-        - define lines '<proc[dRegions_LineWrap].context[<s@dRegions_Flag_%Flag%.yaml_key[flag_help]||<&c>%flag% flag requires a %type% value!>|45]>'
-        - foreach <def[lines]> {
-          - run instantly s@dRegions_Msg 'def:<&c><def[value]>'
-          }
-        - queue clear
-        }
-
-      - define currentMobs '<yaml[dRegions_%world%_regions].read[regions.%region%.flags.%flag%].replace[, ].with[|].as_list||li@>'
-      - if '<def[flagValue].split[ ].get[1].is[==].to[-a]||false>' {
-        - define flagValue '<def[currentMobs].include[<def[mobs].replace[li@]>].deduplicate||li@>'
-        }
-      - if '<def[flagValue].split[ ].get[1].is[==].to[-r]||false>' {
-        - define flagValue '<def[currentMobs].exclude[<def[mobs].replace[li@]>].deduplicate||li@>'
-        }
-      - if <def[flagValue].is_empty||true> {
-        - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
-        - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-        - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
-        - queue clear
-        }
-      - define flagValue '<def[flagValue].comma_separated>'
-      }
+    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
 
 dRegions_Flag_Mob-Spawn:
@@ -566,8 +468,6 @@ dRegions_Flag_Mob-Spawn:
   display name: "<&4>[<&6>Mob-Spawn<&4>]"
   lore:
   - <&5>Can mobs Spawn
-  event_hook: ENTITY_Spawn
-  event_priority: 10
   flag_type: state
   flag_takeGroup: false
   flag_help: State flag controlling whether mobs will be able to spawn in this region. Defaults to allow all. Use mob-spawnlist flag to specify mob types.
@@ -591,6 +491,8 @@ dRegions_Flag_Mob-SpawnList:
   display name: "<&4>[<&6>Mob-Spawnlist<&4>]"
   lore:
   - <&5>List of mobs used by mob-spawn flag
+  command_entryType: mob
+  command_verifyEntry: <def[value].is[matches].to[entity].not>
   flag_type: list
   flag_takeGroup: false
   flag_help: List flag used with mob-spawn flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of mobs.
@@ -602,58 +504,7 @@ dRegions_Flag_Mob-SpawnList:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   command_handler:
-    - if <def[flagValue].is[==].to[null]||false> {
-      - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
-      - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-      - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
-      - queue clear
-      }
-      else {
-      - define mobs '<def[flagValue].split[ ].get[2].to[<def[flagValue].split[ ].size>].parse[to_lowercase].deduplicate||li@>'
-      - if <def[mobs].get[1].is[==].to[all]> {
-        - if '<def[flagValue].split[ ].get[1].is[==].to[-a]||false>' {
-          - yaml set 'regions.%region%.flags.%flag%:all' 'id:dRegions_%world%_regions'
-          - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-          - run instantly s@dRegions_Msg 'def:<&f><&o>%region%<&7><&o> set %flag% flag to <&f><&o>%flagValue%'
-          - queue clear
-          }
-        - if '<def[flagValue].split[ ].get[1].is[==].to[-r]||false>' {
-          - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
-          - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-          - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
-          - queue clear
-          }
-        }
-      - foreach %mobs% {
-        - if <def[value].is[matches].to[entity].not> {
-          - define mobs '<def[mobs].exclude[%value%]||li@>'
-          - run  s@dRegions_Msg 'def:<&c><&o>%value% is not a valid mob!'
-          }
-        }
-      - if <def[mobs].is_empty||true> {
-        - run  s@dRegions_Msg 'def:<&c><&o>No valid mobs specified!'
-        - define lines '<proc[dRegions_LineWrap].context[<s@dRegions_Flag_%Flag%.yaml_key[flag_help]||<&c>%flag% flag requires a %type% value!>|45]>'
-        - foreach <def[lines]> {
-          - run instantly s@dRegions_Msg 'def:<&c><def[value]>'
-          }
-        - queue clear
-        }
-
-      - define currentMobs '<yaml[dRegions_%world%_regions].read[regions.%region%.flags.%flag%].replace[, ].with[|].as_list||li@>'
-      - if '<def[flagValue].split[ ].get[1].is[==].to[-a]||false>' {
-        - define flagValue '<def[currentMobs].include[<def[mobs].replace[li@]>].deduplicate||li@>'
-        }
-      - if '<def[flagValue].split[ ].get[1].is[==].to[-r]||false>' {
-        - define flagValue '<def[currentMobs].exclude[<def[mobs].replace[li@]>].deduplicate||li@>'
-        }
-      - if <def[flagValue].is_empty||true> {
-        - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
-        - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-        - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
-        - queue clear
-        }
-      - define flagValue '<def[flagValue].comma_separated>'
-      }
+    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
 
 dRegions_Flag_Fire-Spread:
@@ -688,6 +539,8 @@ dRegions_Flag_Fire-SpreadBlocks:
   display name: "<&4>[<&6>Fire-Spread-BlockList<&4>]"
   lore:
   - <&5>List of blocks involved in fire spread
+  command_entryType: block
+  command_verifyEntry: <def[value].as_material.is_block.not||true>
   flag_type: list
   flag_takeGroup: false
   flag_help: List flag used with fire-spread flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks.
@@ -699,58 +552,8 @@ dRegions_Flag_Fire-SpreadBlocks:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   command_handler:
-    - if <def[flagValue].is[==].to[null]||false> {
-      - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
-      - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-      - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
-      - queue clear
-      }
-      else {
-      - define blocks '<def[flagValue].split[ ].get[2].to[<def[flagValue].split[ ].size>].parse[to_lowercase].deduplicate||li@>'
-      - if <def[blocks].get[1].is[==].to[all]> {
-        - if '<def[flagValue].split[ ].get[1].is[==].to[-a]||false>' {
-          - yaml set 'regions.%region%.flags.%flag%:all' 'id:dRegions_%world%_regions'
-          - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-          - run instantly s@dRegions_Msg 'def:<&f><&o>%region%<&7><&o> set %flag% flag to <&f><&o>%flagValue%'
-          - queue clear
-          }
-        - if '<def[flagValue].split[ ].get[1].is[==].to[-r]||false>' {
-          - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
-          - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-          - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
-          - queue clear
-          }
-        }
-      - foreach %blocks% {
-        - if <def[value].as_material.is_block.not||true> {
-          - define blocks '<def[blocks].exclude[%value%]||li@>'
-          - run  s@dRegions_Msg 'def:<&c><&o>%value% is not a valid block!'
-          }
-        }
-      - if <def[blocks].is_empty||true> {
-        - run  s@dRegions_Msg 'def:<&c><&o>No valid blocks specified!'
-        - define lines '<proc[dRegions_LineWrap].context[<s@dRegions_Flag_%Flag%.yaml_key[flag_help]||<&c>%flag% flag requires a %type% value!>|45]>'
-        - foreach <def[lines]> {
-          - run instantly s@dRegions_Msg 'def:<&c><def[value]>'
-          }
-        - queue clear
-        }
+    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
-      - define currentBlocks '<yaml[dRegions_%world%_regions].read[regions.%region%.flags.%flag%].replace[, ].with[|].as_list||li@>'
-      - if '<def[flagValue].split[ ].get[1].is[==].to[-a]||false>' {
-        - define flagValue '<def[currentBlocks].include[<def[blocks].replace[li@]>].deduplicate||li@>'
-        }
-      - if '<def[flagValue].split[ ].get[1].is[==].to[-r]||false>' {
-        - define flagValue '<def[currentBlocks].exclude[<def[blocks].replace[li@]>].deduplicate||li@>'
-        }
-      - if <def[flagValue].is_empty||true> {
-        - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
-        - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-        - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
-        - queue clear
-        }
-      - define flagValue '<def[flagValue].comma_separated>'
-      }
 
 
 dRegions_Flag_Water-Spread:
@@ -785,6 +588,8 @@ dRegions_Flag_Water-SpreadBlocks:
   display name: "<&4>[<&6>Water-Spread-BlockList<&4>]"
   lore:
   - <&5>List of blocks involved in fire spread
+  command_entryType: block
+  command_verifyEntry: <def[value].as_material.is_block.not||true>
   flag_type: list
   flag_takeGroup: false
   flag_help: List flag used with water-spread flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks.
@@ -796,58 +601,7 @@ dRegions_Flag_Water-SpreadBlocks:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   command_handler:
-    - if <def[flagValue].is[==].to[null]||false> {
-      - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
-      - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-      - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
-      - queue clear
-      }
-      else {
-      - define blocks '<def[flagValue].split[ ].get[2].to[<def[flagValue].split[ ].size>].parse[to_lowercase].deduplicate||li@>'
-      - if <def[blocks].get[1].is[==].to[all]> {
-        - if '<def[flagValue].split[ ].get[1].is[==].to[-a]||false>' {
-          - yaml set 'regions.%region%.flags.%flag%:all' 'id:dRegions_%world%_regions'
-          - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-          - run instantly s@dRegions_Msg 'def:<&f><&o>%region%<&7><&o> set %flag% flag to <&f><&o>%flagValue%'
-          - queue clear
-          }
-        - if '<def[flagValue].split[ ].get[1].is[==].to[-r]||false>' {
-          - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
-          - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-          - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
-          - queue clear
-          }
-        }
-      - foreach %blocks% {
-        - if <def[value].as_material.is_block.not||true> {
-          - define blocks '<def[blocks].exclude[%value%]||li@>'
-          - run  s@dRegions_Msg 'def:<&c><&o>%value% is not a valid block!'
-          }
-        }
-      - if <def[blocks].is_empty||true> {
-        - run  s@dRegions_Msg 'def:<&c><&o>No valid blocks specified!'
-        - define lines '<proc[dRegions_LineWrap].context[<s@dRegions_Flag_%Flag%.yaml_key[flag_help]||<&c>%flag% flag requires a %type% value!>|45]>'
-        - foreach <def[lines]> {
-          - run instantly s@dRegions_Msg 'def:<&c><def[value]>'
-          }
-        - queue clear
-        }
-
-      - define currentBlocks '<yaml[dRegions_%world%_regions].read[regions.%region%.flags.%flag%].replace[, ].with[|].as_list||li@>'
-      - if '<def[flagValue].split[ ].get[1].is[==].to[-a]||false>' {
-        - define flagValue '<def[currentBlocks].include[<def[blocks].replace[li@]>].deduplicate||li@>'
-        }
-      - if '<def[flagValue].split[ ].get[1].is[==].to[-r]||false>' {
-        - define flagValue '<def[currentBlocks].exclude[<def[blocks].replace[li@]>].deduplicate||li@>'
-        }
-      - if <def[flagValue].is_empty||true> {
-        - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
-        - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-        - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
-        - queue clear
-        }
-      - define flagValue '<def[flagValue].comma_separated>'
-      }
+    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
 
 dRegions_Flag_Lava-Spread:
@@ -882,6 +636,8 @@ dRegions_Flag_Lava-SpreadBlocks:
   display name: "<&4>[<&6>Lava-Spread-BlockList<&4>]"
   lore:
   - <&5>List of blocks involved in lava spread
+  command_entryType: block
+  command_verifyEntry: <def[value].as_material.is_block.not||true>
   flag_type: list
   flag_takeGroup: false
   flag_help: List flag used with lava-spread flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks.
@@ -893,58 +649,7 @@ dRegions_Flag_Lava-SpreadBlocks:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   command_handler:
-    - if <def[flagValue].is[==].to[null]||false> {
-      - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
-      - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-      - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
-      - queue clear
-      }
-      else {
-      - define blocks '<def[flagValue].split[ ].get[2].to[<def[flagValue].split[ ].size>].parse[to_lowercase].deduplicate||li@>'
-      - if <def[blocks].get[1].is[==].to[all]> {
-        - if '<def[flagValue].split[ ].get[1].is[==].to[-a]||false>' {
-          - yaml set 'regions.%region%.flags.%flag%:all' 'id:dRegions_%world%_regions'
-          - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-          - run instantly s@dRegions_Msg 'def:<&f><&o>%region%<&7><&o> set %flag% flag to <&f><&o>%flagValue%'
-          - queue clear
-          }
-        - if '<def[flagValue].split[ ].get[1].is[==].to[-r]||false>' {
-          - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
-          - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-          - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
-          - queue clear
-          }
-        }
-      - foreach %blocks% {
-        - if <def[value].as_material.is_block.not||true> {
-          - define blocks '<def[blocks].exclude[%value%]||li@>'
-          - run  s@dRegions_Msg 'def:<&c><&o>%value% is not a valid block!'
-          }
-        }
-      - if <def[blocks].is_empty||true> {
-        - run  s@dRegions_Msg 'def:<&c><&o>No valid blocks specified!'
-        - define lines '<proc[dRegions_LineWrap].context[<s@dRegions_Flag_%Flag%.yaml_key[flag_help]||<&c>%flag% flag requires a %type% value!>|45]>'
-        - foreach <def[lines]> {
-          - run instantly s@dRegions_Msg 'def:<&c><def[value]>'
-          }
-        - queue clear
-        }
-
-      - define currentBlocks '<yaml[dRegions_%world%_regions].read[regions.%region%.flags.%flag%].replace[, ].with[|].as_list||li@>'
-      - if '<def[flagValue].split[ ].get[1].is[==].to[-a]||false>' {
-        - define flagValue '<def[currentBlocks].include[<def[blocks].replace[li@]>].deduplicate||li@>'
-        }
-      - if '<def[flagValue].split[ ].get[1].is[==].to[-r]||false>' {
-        - define flagValue '<def[currentBlocks].exclude[<def[blocks].replace[li@]>].deduplicate||li@>'
-        }
-      - if <def[flagValue].is_empty||true> {
-        - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
-        - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-        - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
-        - queue clear
-        }
-      - define flagValue '<def[flagValue].comma_separated>'
-      }
+    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
 
 dRegions_Flag_Mushroom-Spread:
@@ -1156,6 +861,66 @@ dRegions_Flags_Processors:
           }
         }
       }
+
+
+dRegions_Flags_CommandProcessors:
+  type: task
+  debug: false
+
+  command_verifiedList:
+    - if <def[flagValue].is[==].to[null]||false> {
+      - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
+      - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
+      - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
+      - queue clear
+      }
+      else {
+      - define entries '<def[flagValue].split[ ].get[2].to[<def[flagValue].split[ ].size>].parse[to_lowercase].deduplicate||li@>'
+      - if <def[entries].get[1].is[==].to[all]> {
+        - if '<def[flagValue].split[ ].get[1].is[==].to[-a]||false>' {
+          - yaml set 'regions.%region%.flags.%flag%:all' 'id:dRegions_%world%_regions'
+          - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
+          - run instantly s@dRegions_Msg 'def:<&f><&o>%region%<&7><&o> set %flag% flag to <&f><&o>%flagValue%'
+          - queue clear
+          }
+        - if '<def[flagValue].split[ ].get[1].is[==].to[-r]||false>' {
+          - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
+          - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
+          - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
+          - queue clear
+          }
+        }
+      - foreach %entries% {
+        - if <parse:<s@dRegions_Flag_%Flag%.yaml_key[command_verifyEntry]||false>> {
+          - define entries '<def[entries].exclude[%value%]||li@>'
+          - run  s@dRegions_Msg 'def:<&c><&o>%value% is not a valid <s@dRegions_Flag_%Flag%.yaml_key[command_entryType]>!'
+          }
+        }
+      - if <def[entries].is_empty||true> {
+        - run  s@dRegions_Msg 'def:<&c><&o>No valid <s@dRegions_Flag_%Flag%.yaml_key[command_entryType]>s specified!'
+        - define lines '<proc[dRegions_LineWrap].context[<s@dRegions_Flag_%Flag%.yaml_key[flag_help]||<&c>%flag% flag requires a %type% value!>|45]>'
+        - foreach <def[lines]> {
+          - run instantly s@dRegions_Msg 'def:<&c><def[value]>'
+          }
+        - queue clear
+        }
+
+      - define currentEntries '<yaml[dRegions_%world%_regions].read[regions.%region%.flags.%flag%].replace[, ].with[|].as_list||li@>'
+      - if '<def[flagValue].split[ ].get[1].is[==].to[-a]||false>' {
+        - define flagValue '<def[currentEntries].include[<def[entries].replace[li@]>].deduplicate||li@>'
+        }
+      - if '<def[flagValue].split[ ].get[1].is[==].to[-r]||false>' {
+        - define flagValue '<def[currentEntries].exclude[<def[entries].replace[li@]>].deduplicate||li@>'
+        }
+      - if <def[flagValue].is_empty||true> {
+        - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
+        - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
+        - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
+        - queue clear
+        }
+      - define flagValue '<def[flagValue].comma_separated>'
+      }
+
 
 
 #
