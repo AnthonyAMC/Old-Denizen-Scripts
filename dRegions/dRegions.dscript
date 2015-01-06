@@ -251,13 +251,6 @@ dRegions:
     - define eventHooks 'hangingPlace|build'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
-    on player breaks hanging:
-    - define world '<player.world.name.to_lowercase>'
-    - define cuboids '<c.hanging.location.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
-    - define eventHooks 'hangingBreak|build'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
-
     on player right clicks item_frame:
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<c.entity.location.cuboids>'
@@ -332,6 +325,15 @@ dRegions:
     - define cuboids '<c.location.cuboids>'
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks '<c.entity.entity_type.to_lowercase.replace[_]||null>-explode-blocks|<c.entity.entity_type.to_lowercase.replace[_]||null>-explosion'
+    - inject instantly s@dRegions p:event_PreProc_RunEvent
+
+    on entity breaks hanging:
+    - define world '<c.entity.world.name.to_lowercase>'
+    - define readPath '<c.entity.prefix.to_lowercase||null>-break-<c.hanging.entity_type.to_lowercase>'
+    - inject instantly s@dRegions p:event_PreProc_Config
+    - define cuboids '<c.hanging.location.cuboids>'
+    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - define eventHooks '<t[<c.entity.is_player||false>]:hangingBreak|build||<c.entity.prefix.to_lowercase||null>-break-<c.hanging.entity_type.to_lowercase>>'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
 
@@ -2981,7 +2983,7 @@ dRegions_Configurations:
   type: yaml data
 
   config:
-    version: 0.22
+    version: 0.23
     regions:
       enable: true
       invincibility-removes-mobs: false
@@ -3029,6 +3031,8 @@ dRegions_Configurations:
         wither: true
         wither_skull: true
         zombie: true
+    entity-break-item_frame: true
+    entity-break-painting: true
 #    auto-invincible: false
 #    protection:
 #      item-durability: true
