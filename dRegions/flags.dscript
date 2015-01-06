@@ -823,9 +823,6 @@ dRegions_Flag_Creeper-Grief:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
-  event-cleanup:
-    - determine 'li@'
-
   event:
     - define flag 'creeper-grief'
     - inject s@dRegions_Flags_Processors p:boolean
@@ -878,7 +875,6 @@ dRegions_Flag_PrimedTNT-Grief:
     - determine 'li@'
 
   event:
-    - announce "tnt"
     - define flag 'primedtnt-grief'
     - inject s@dRegions_Flags_Processors p:boolean
 
