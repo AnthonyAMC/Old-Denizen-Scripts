@@ -186,7 +186,7 @@ dRegions:
 #    - define world '<player.world.name.to_lowercase>'
 #    - define cuboids '<c.cuboids>'
 #    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
-#    - define allFlagScripts '<server.list_scripts.filter[starts_with[s@dRegions_Flag]]||li@>'
+#    - define allFlagScripts '<server.list_scripts.filter[starts_with[s@dRegions_Flag_]]||li@>'
 
 #    - inject instantly s@dRegions p:use_<c.item||null>
 #    - inject instantly s@dRegions p:playerClick_<c.type||null>
@@ -386,7 +386,7 @@ dRegions:
 
   event_preProc_RunEvent:
   # Reusable code block injected from events. It's the final pre-processor before the flags take over.
-    - define allFlagScripts '<server.list_scripts.filter[starts_with[s@dRegions_Flag]]||li@>'
+    - define allFlagScripts '<server.list_scripts.filter[starts_with[s@dRegions_Flag_]]||li@>'
     - define Flags '<def[allFlagScripts].filter[yaml_key[event_hook].contains_any[%eventHooks%]]||li@>'
     - define eventPri '<def[Flags].parse[yaml_key[event_priority]]||li@>'
     - define eventList 'li@'
@@ -1051,7 +1051,7 @@ dRegions_Commands:
           - if <def[result].is_empty||true> define result '<server.list_worlds.parse[name.to_lowercase]||li@>'
           }
           else if <c.args.get[2].is[!=].to[null]||false> {
-          - define allFlagScripts '<server.list_scripts.filter[starts_with[s@dRegions_Flag]]||li@>'
+          - define allFlagScripts '<server.list_scripts.filter[starts_with[s@dRegions_Flag_]]||li@>'
           - define allFlags '<def[allFlagScripts].parse[name.split[_].get[3].to_lowercase].alphanumeric||li@>'
           - if <c.args.get[3].is[==].to[-w]||false> {
             - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name.to_lowercase||<player.world.name.to_lowercase||null>>'
@@ -1091,7 +1091,7 @@ dRegions_Commands:
           - if <def[result].is_empty||true> define result '<server.list_worlds.parse[name.to_lowercase]||li@>'
           }
           else {
-          - define allFlagScripts '<server.list_scripts.filter[starts_with[s@dRegions_Flag]]||li@>'
+          - define allFlagScripts '<server.list_scripts.filter[starts_with[s@dRegions_Flag_]]||li@>'
           - define allFlags '<def[allFlagScripts].parse[name.split[_].get[3].to_lowercase].alphanumeric||li@>'
           - if <c.args.get[5].is[!=].to[null]||false> define result '<def[allFlags].filter[starts_with[<c.args.get[5].escaped>]]||li@>'
           - if <def[result].is_empty||true> define result '<def[allFlags]||li@>'
@@ -2013,7 +2013,7 @@ dRegions_Commands:
     # Check the specified flag name
     - define flag '<def[args].get[2].escaped.to_lowercase||null>'
     - if <def[flag].is[!=].to[null]||true> {
-      - define flags '<server.list_scripts.filter[starts_with[s@dRegions_Flag]].parse[name.split[_].get[3]]||li@>'
+      - define flags '<server.list_scripts.filter[starts_with[s@dRegions_Flag_]].parse[name.split[_].get[3]]||li@>'
       - if !<def[flags].contains[%flag%]||false> {
         - run instantly s@dRegions_Msg 'def:<&c>You must specify a valid region flag!'
         - queue clear
