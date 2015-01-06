@@ -786,7 +786,7 @@ dRegions_Flag_Block-Place:
   material: i@paper
   display name: "<&4>[<&6>Block-Place<&4>]"
   lore:
-  - <&5>Can players blace blocks.
+  - <&5>Can players place blocks.
   event_hook: blockPlace
   event_priority: 10
   flag_type: state
@@ -810,7 +810,7 @@ dRegions_Flag_Block-Place:
   event-cleanup:
     - if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run instantly s@dRegions_Msg 'def:<&c><&o>You can not place <c.material.name> in this region!'
+      - run instantly s@dRegions_Msg 'def:<&c><&o>You can not place <def[target]> in this region!'
       }
 
 
@@ -826,6 +826,63 @@ dRegions_Flag_Block-PlaceList:
   flag_type: list
   flag_takeGroup: false
   flag_help: List flag used with block-place flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  command_handler:
+    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
+
+
+dRegions_Flag_Block-Break:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Block-Break<&4>]"
+  lore:
+  - <&5>Can players break blocks.
+  event_hook: blockBreak
+  event_priority: 10
+  flag_type: state
+  flag_takeGroup: true
+  flag_help: State flag controlling whether players will be able to break blocks in this region. Defaults to allow all. Use block-breaklist flag to specify block types. Takes the -g group switch.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event:
+    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+      - define player <player>
+      - define flag 'block-break'
+      - define flag-targetList 'block-breaklist'
+      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup instantly
+      }
+
+  event-cleanup:
+    - if <player.has_flag[dRegions_Message_Cooldown].not> {
+      - flag player dRegions_Message_Cooldown duration:3s
+      - run instantly s@dRegions_Msg 'def:<&c><&o>You can not break <def[target]> in this region!'
+      }
+
+
+dRegions_Flag_Block-BreakList:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Block-BreakList<&4>]"
+  lore:
+  - <&5>List of blocks used by block-break flag
+  command_entryType: block
+  command_verifyEntry: <def[value].as_material.is_block.not||true>
+  flag_type: list
+  flag_takeGroup: false
+  flag_help: List flag used with block-break flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks.
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
