@@ -333,7 +333,7 @@ dRegions:
     - inject instantly s@dRegions p:event_PreProc_Config
     - define cuboids '<c.hanging.location.cuboids>'
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
-    - define eventHooks '<t[<c.entity.is_player||false>]:hangingBreak|build||<c.entity.prefix.to_lowercase||null>-break-<c.hanging.entity_type.to_lowercase>>'
+    - define eventHooks '<t[<c.entity.is_player||false>]:hangingBreak|build||<c.entity.prefix.to_lowercase||null>-break-<c.hanging.entity_type.replace[_].to_lowercase>>'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
 
