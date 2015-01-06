@@ -820,6 +820,30 @@ dRegions_Flag_Hanging-Break:
       }
 
 
+dRegions_Flag_Entity-Break-Painting:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Entity-Break-Painting<&4>]"
+  lore:
+  - <&5>Can Entities break paintings
+  event_hook: entity-break-painting
+  event_priority: 10
+  flag_type: boolean
+  flag_takeGroup: false
+  flag_help: Boolean flag controlling whether mobs will be able to destroy paintings in this region. Set to true or false. Defaults to true.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event:
+    - define flag 'entity-break-painting'
+    - inject s@dRegions_Flags_Processors p:boolean
+
+
 dRegions_Flag_Fire-Destroy:
   type: item
   debug: false
