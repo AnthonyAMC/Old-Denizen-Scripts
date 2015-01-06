@@ -756,6 +756,38 @@ dRegions_Flag_Lighter:
       }
 
 
+dRegions_Flag_Hanging-Place:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Hanging-Place<&4>]"
+  lore:
+  - <&5>Who can place item frames and paintings
+  event_hook: hangingPlace
+  event_priority: 10
+  flag_type: state
+  flag_takeGroup: true
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event-cleanup:
+    - if <player.has_flag[dRegions_Message_Cooldown].not> {
+      - flag player dRegions_Message_Cooldown duration:3s
+      - run instantly s@dRegions_Msg 'def:<&c><&o>You can not hang that in this region'
+      }
+
+  event:
+    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+      - define player <player>
+      - define flag 'hanging-place'
+      - inject s@dRegions_Flags_Processors p:state-withGroup instantly
+      }
+
+
 dRegions_Flag_Fire-Destroy:
   type: item
   debug: false
