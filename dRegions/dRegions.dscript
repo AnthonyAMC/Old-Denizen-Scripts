@@ -1304,7 +1304,7 @@ dRegions_Commands:
     - foreach %owners% {
       - if <def[value].starts_with[g;]||false> define ownerGroups '<def[ownerGroups].include[<def[value].replace[g;]>]||%ownerGroups%>'
         else {
-        - if <util.player_is_valid[%value%].not||true> foreach next
+        - if !<def[value].as_player.is[!=].to[null]||false> foreach next
         - define ownerPlayers '<def[ownerPlayers].include[<def[value].as_player.uuid>]||%ownerPlayers%>'
         }
       }
@@ -1636,7 +1636,7 @@ dRegions_Commands:
         - yaml set 'regions.%name%.owners.groups:->:%group%' 'id:dRegions_%world%_regions'
         }
         else {
-        - if <util.player_is_valid[%value%].not||true> foreach next
+        - if !<def[value].as_player.is[!=].to[null]||false> foreach next
         - define players '<yaml[dRegions_%world%_regions].read[regions.%name%.owners.players]||li@>'
         - if <def[players].contains[<def[value].as_player.uuid>]||false> {
           - run instantly s@dRegions_Msg 'def:<&c>Player %value% is already an owner'
@@ -1694,7 +1694,7 @@ dRegions_Commands:
         - yaml set 'regions.%name%.owners.groups:<-:%group%' 'id:dRegions_%world%_regions'
         }
         else {
-        - if <util.player_is_valid[%value%].not||true> foreach next
+        - if !<def[value].as_player.is[!=].to[null]||false> foreach next
         - define players '<yaml[dRegions_%world%_regions].read[regions.%name%.owners.players]||li@>'
         - if <def[players].contains[<def[value].as_player.uuid>].not||true> {
           - run instantly s@dRegions_Msg 'def:<&c>Player %value% is not an owner'
@@ -1755,7 +1755,7 @@ dRegions_Commands:
         - yaml set 'regions.%name%.members.groups:->:%group%' 'id:dRegions_%world%_regions'
         }
         else {
-        - if <util.player_is_valid[%value%].not||true> foreach next
+        - if !<def[value].as_player.is[!=].to[null]||false> foreach next
         - define players '<yaml[dRegions_%world%_regions].read[regions.%name%.members.players]||li@>'
         - if <def[players].contains[<def[value].as_player.uuid>]||false> {
           - run instantly s@dRegions_Msg 'def:<&c>Player %value% is already a member'
@@ -1816,7 +1816,7 @@ dRegions_Commands:
         - yaml set 'regions.%name%.members.groups:<-:%group%' 'id:dRegions_%world%_regions'
         }
         else {
-        - if <util.player_is_valid[%value%].not||true> foreach next
+        - if !<def[value].as_player.is[!=].to[null]||false> foreach next
         - define players '<yaml[dRegions_%world%_regions].read[regions.%name%.members.players]||li@>'
         - if <def[players].contains[<def[value].as_player.uuid>].not||true> {
           - run instantly s@dRegions_Msg 'def:<&c>Player %value% is not a member'
@@ -1845,7 +1845,7 @@ dRegions_Commands:
         - queue clear
         }
       - define player '<def[args].get[<def[args].find[-p].add[1].as_int>].escaped||null>'
-      - if <util.player_is_valid[<def[player]>].not||true> {
+      - if !<def[player].as_player.is[!=].to[null]||false> {
         - run instantly s@dRegions_Msg 'def:<&c>Invalid player specfied!'
         - queue clear
         }
