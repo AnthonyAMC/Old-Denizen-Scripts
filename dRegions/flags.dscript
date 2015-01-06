@@ -811,7 +811,7 @@ dRegions_Flag_Creeper-Grief:
   display name: "<&4>[<&6>Creeper-Grief<&4>]"
   lore:
   - <&5>Can Creeper explosions alter blocks
-  event_hook: creeper-grief
+  event_hook: creeper-explode-blocks
   event_priority: 10
   flag_type: boolean
   flag_takeGroup: false
@@ -823,19 +823,22 @@ dRegions_Flag_Creeper-Grief:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
+  event-cleanup:
+    - determine 'li@'
+
   event:
     - define flag 'creeper-grief'
     - inject s@dRegions_Flags_Processors p:boolean
 
 
-dRegions_Flag_Ender_Dragon-Grief:
+dRegions_Flag_EnderDragon-Grief:
   type: item
   debug: false
   material: i@paper
-  display name: "<&4>[<&6>Ender_Dragon-Grief<&4>]"
+  display name: "<&4>[<&6>EnderDragon-Grief<&4>]"
   lore:
   - <&5>Can the Enderdragon alter blocks
-  event_hook: ender_dragon-grief
+  event_hook: enderdragon-grief
   event_priority: 10
   flag_type: boolean
   flag_takeGroup: false
@@ -848,7 +851,7 @@ dRegions_Flag_Ender_Dragon-Grief:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - define flag 'ender_dragon-grief'
+    - define flag 'enderdragon-grief'
     - inject s@dRegions_Flags_Processors p:boolean
 
 
@@ -979,6 +982,7 @@ dRegions_Flags_Processors:
     - define InheritedFlags '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
     - foreach %InheritedFlags% {
       - if <def[value].is[==].to[false]||false> {
+        - inject <def[FlagScript]||null> p:event-cleanup instantly
         - determine cancelled
         }
       }
