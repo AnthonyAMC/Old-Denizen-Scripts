@@ -811,7 +811,7 @@ dRegions_Flag_Zombie-Grief:
   display name: "<&4>[<&6>Zombie-Grief<&4>]"
   lore:
   - <&5>Can Zombie alter blocks
-  event_hook: Zombie-grief
+  event_hook: zombie-grief
   event_priority: 10
   flag_type: boolean
   flag_takeGroup: false
@@ -825,6 +825,30 @@ dRegions_Flag_Zombie-Grief:
 
   event:
     - define flag 'zombie-grief'
+    - inject s@dRegions_Flags_Processors p:boolean
+
+
+dRegions_Flag_Squid-Grief:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Squid-Grief<&4>]"
+  lore:
+  - <&5>Can Squid alter blocks
+  event_hook: squid-grief
+  event_priority: 10
+  flag_type: boolean
+  flag_takeGroup: false
+  flag_help: Boolean flag controlling whether squids will be able to alter blocks in this region. Set to true or false. Defaults to true.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event:
+    - define flag 'squid-grief'
     - inject s@dRegions_Flags_Processors p:boolean
 
 
