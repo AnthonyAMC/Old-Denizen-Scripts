@@ -514,7 +514,7 @@ dRegions_Flag_Fire-Spread:
   display name: "<&4>[<&6>Fire-Spread<&4>]"
   lore:
   - <&5>Can fire spread
-  event_hook: fireSpread
+  event_hook: fireFrom-Spread
   event_priority: 10
   flag_type: state
   flag_takeGroup: false
@@ -722,6 +722,7 @@ dRegions_Flag_Mycel-Spread:
   event:
     - define flag 'mycel-spread'
     - inject s@dRegions_Flags_Processors p:boolean
+
 
 
 ################################################################################
