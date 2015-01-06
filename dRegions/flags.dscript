@@ -828,6 +828,30 @@ dRegions_Flag_Creeper-Grief:
     - inject s@dRegions_Flags_Processors p:boolean
 
 
+dRegions_Flag_Ender_Dragon-Grief:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Ender_Dragon-Grief<&4>]"
+  lore:
+  - <&5>Can the Enderdragon alter blocks
+  event_hook: ender_dragon-grief
+  event_priority: 10
+  flag_type: boolean
+  flag_takeGroup: false
+  flag_help: Boolean flag controlling whether enderdragon will alter blocks in this region. Set to true or false. Defaults to true.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event:
+    - define flag 'ender_dragon-grief'
+    - inject s@dRegions_Flags_Processors p:boolean
+
+
 dRegions_Flag_Block-Place:
   type: item
   debug: false
