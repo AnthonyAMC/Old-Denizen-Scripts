@@ -216,6 +216,7 @@ dRegions:
 
     on player breaks block:
     - define world '<player.world.name.to_lowercase>'
+    - define target '<c.material.bukkit_enum.to_lowercase>'
     - define cuboids '<c.cuboids>'
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'blockBreak|build'
@@ -223,6 +224,7 @@ dRegions:
 
     on player places block:
     - define world '<player.world.name.to_lowercase>'
+    - define target '<c.material.bukkit_enum.to_lowercase>'
     - define cuboids '<c.cuboids>'
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'blockPlace|build'
