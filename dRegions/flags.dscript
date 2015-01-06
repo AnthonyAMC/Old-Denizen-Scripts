@@ -756,6 +756,30 @@ dRegions_Flag_Lighter:
       }
 
 
+dRegions_Flag_Fire-Destroy:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Fire-Destroy<&4>]"
+  lore:
+  - <&5>Can Fire destroy blocks
+  event_hook: fire-destroyBlocks
+  event_priority: 10
+  flag_type: boolean
+  flag_takeGroup: false
+  flag_help: Boolean flag controlling whether fire will be able to destroy blocks in this region. Set to true or false. Defaults to true.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event:
+    - define flag 'fire-destroy'
+    - inject s@dRegions_Flags_Processors p:boolean
+
+
 
 ################################################################################
 
