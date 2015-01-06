@@ -322,7 +322,16 @@ dRegions:
     - inject instantly s@dRegions p:event_PreProc_Config
     - define cuboids '<c.location.cuboids>'
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
-    - define eventHooks '<c.entity.entity_type.to_lowercase||null>-grief'
+    - define eventHooks '<c.entity.entity_type.to_lowercase.replace[_]||null>-grief'
+    - inject instantly s@dRegions p:event_PreProc_RunEvent
+
+    on entity explodes:
+    - define world '<c.location.world.name.to_lowercase>'
+    - define readPath 'entity.changeBlocks.<c.entity.entity_type.to_lowercase||null>'
+    - inject instantly s@dRegions p:event_PreProc_Config
+    - define cuboids '<c.location.cuboids>'
+    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - define eventHooks '<c.entity.entity_type.to_lowercase.replace[_]||null>-explode-blocks|<c.entity.entity_type.to_lowercase.replace[_]||null>-explosion'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
 
