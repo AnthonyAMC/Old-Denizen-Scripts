@@ -780,6 +780,30 @@ dRegions_Flag_Fire-Destroy:
     - inject s@dRegions_Flags_Processors p:boolean
 
 
+dRegions_Flag_Enderman-Grief:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Enderman-Grief<&4>]"
+  lore:
+  - <&5>Can Enderman alter blocks
+  event_hook: enderman-grief
+  event_priority: 10
+  flag_type: boolean
+  flag_takeGroup: false
+  flag_help: Boolean flag controlling whether enderman will be able to alter blocks in this region. Set to true or false. Defaults to true.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event:
+    - define flag 'enderman-grief'
+    - inject s@dRegions_Flags_Processors p:boolean
+
+
 dRegions_Flag_Block-Place:
   type: item
   debug: false
