@@ -316,6 +316,15 @@ dRegions:
     - define readPath 'portal.<c.entity.as_player.prefix||<c.entity.prefix>>-enter'
     - inject instantly s@dRegions p:event_PreProc_Config
 
+    on entity changes block:
+    - define world '<c.location.world.name.to_lowercase>'
+    - define readPath 'entity.changeBlocks.<c.entity.entity_type.to_lowercase||null>'
+    - inject instantly s@dRegions p:event_PreProc_Config
+    - define cuboids '<c.location.cuboids>'
+    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - define eventHooks '<c.entity.entity_type.to_lowercase||null>-grief'
+    - inject instantly s@dRegions p:event_PreProc_RunEvent
+
 
 
 #
@@ -2998,6 +3007,19 @@ dRegions_Configurations:
       spread-list: []
       destroyBlocks: true
       destroyBlocks-list: []
+    entity:
+      changeBlocks:
+        creeper: true
+        ender_dragon: true
+        enderman: true
+        ghast: true
+        primed_tnt: true
+        sheep: true
+        squid: true
+        snowman: true
+        wither: true
+        wither_skull: true
+        zombie: true
 #    auto-invincible: false
 #    protection:
 #      item-durability: true
