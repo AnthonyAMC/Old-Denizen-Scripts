@@ -507,6 +507,65 @@ dRegions_Flag_Mob-SpawnList:
     - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
 
+dRegions_Flag_PVE:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>PVE<&4>]"
+  lore:
+  - <&5>Can players damage mobs
+  event_hook: PLAYER_Damage_Entity
+  event_priority: 10
+  flag_type: state
+  flag_takeGroup: true
+  flag_help: State flag controlling whether players will be able to damage mobs in this region. Defaults to allow all. Use pve-moblist flag to specify mob types. Takes the -g group switch.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event:
+    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+      - define player <c.damager>
+      - define target '<c.entity.entity_type>'
+      - define flag 'pve'
+      - define flag-targetList 'pve-moblist'
+      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup instantly
+      }
+
+  event-cleanup:
+    - remove <c.projectile||li@>
+    - if <player.has_flag[dRegions_Message_Cooldown].not> {
+      - flag player dRegions_Message_Cooldown duration:3s
+      - run instantly s@dRegions_Msg 'def:<&c><&o>You can not attack <def[target]> here!'
+      }
+
+
+dRegions_Flag_PVE-Moblist:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>PVE-Moblist<&4>]"
+  lore:
+  - <&5>List of mobs used by pve flag
+  command_entryType: mob
+  command_verifyEntry: <def[value].is[matches].to[entity].not>
+  flag_type: list
+  flag_takeGroup: false
+  flag_help: List flag used with pve flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of mobs.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  command_handler:
+    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
+
+
 dRegions_Flag_Fire-Spread:
   type: item
   debug: false
