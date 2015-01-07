@@ -285,7 +285,7 @@ dRegions:
     - define cuboids '<c.target.location.cuboids>'
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define target '<c.entity.entity_type>'
-    - define eventHooks '<c.entity.prefix>_Target_<c.target.entity_type||null>'
+    - define eventHooks '<c.entity.prefix>_Target_<c.target.prefix>'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
     on entity damages entity:
@@ -293,7 +293,7 @@ dRegions:
     - define cuboids '<c.entity.location.cuboids>'
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define target '<c.damager.entity_type>'
-    - define eventHooks '<c.damager.prefix>_Target_<c.entity.entity_type||null>|<c.damager.prefix>_Damage_<c.entity.entity_type||null>'
+    - define eventHooks '<c.damager.prefix>_Target_<c.entity.prefix>|<c.damager.prefix>_Damage_<c.entity.prefix>'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
     on entity spawns:
