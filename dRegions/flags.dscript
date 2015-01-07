@@ -30,6 +30,7 @@ dRegions_Flag_Entry:
   event_priority: 0
   flag_type: state
   flag_takeGroup: true
+  flag_defaultValue: allow/all
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
@@ -96,6 +97,7 @@ dRegions_Flag_Exit:
   event_priority: 0
   flag_type: state
   flag_takeGroup: true
+  flag_defaultValue: allow/all
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
@@ -320,6 +322,8 @@ dRegions_Flag_Build:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
+  # Build is handled differently than the other flags. It checks only the HIGHEST
+  # priority region. It does inherit owners, members, and flags from parent regions.
     - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
       - define region '<def[orderedRegions].get[1]>'
       - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|build]||null>'
@@ -366,7 +370,8 @@ dRegions_Flag_Mob-Targeting:
   event_priority: 0
   flag_type: state
   flag_takeGroup: true
-  flag_help: State flag controlling whether mobs will be able to target players in this region. Defaults to allow all. Use mob-targeting flag to specify mob types. Takes the -g group switch.
+  flag_defaultValue: allow/all
+  flag_help: State flag controlling whether mobs will be able to target players in this region. Defaults to allow all. Use mob-target flag to specify mob types. Takes the -g group switch.
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
@@ -419,6 +424,7 @@ dRegions_Flag_Mob-Damage:
   event_priority: 10
   flag_type: state
   flag_takeGroup: true
+  flag_defaultValue: allow/all
   flag_help: State flag controlling whether mobs will be able to damage players in this region. Defaults to allow all. Use mob-damagelist flag to specify mob types. Takes the -g group switch.
   script:
     - narrate "A handy container for region flags."
@@ -470,6 +476,7 @@ dRegions_Flag_Mob-Spawn:
   - <&5>Can mobs Spawn
   flag_type: state
   flag_takeGroup: false
+  flag_defaultValue: allow
   flag_help: State flag controlling whether mobs will be able to spawn in this region. Defaults to allow all. Use mob-spawnlist flag to specify mob types.
   script:
     - narrate "A handy container for region flags."
@@ -518,6 +525,7 @@ dRegions_Flag_PVE:
   event_priority: 10
   flag_type: state
   flag_takeGroup: true
+  flag_defaultValue: allow/all
   flag_help: State flag controlling whether players will be able to damage mobs in this region. Defaults to allow all. Use pve-moblist flag to specify mob types. Takes the -g group switch.
   script:
     - narrate "A handy container for region flags."
@@ -577,6 +585,7 @@ dRegions_Flag_Fire-Spread:
   event_priority: 10
   flag_type: state
   flag_takeGroup: false
+  flag_defaultValue: allow
   flag_help: State flag controlling whether fire will be able to spread in this region. Defaults to allow all. Use fire-spreadblocks flag to specify blocks to check when spreading.
   script:
     - narrate "A handy container for region flags."
@@ -626,6 +635,7 @@ dRegions_Flag_Water-Spread:
   event_priority: 10
   flag_type: state
   flag_takeGroup: false
+  flag_defaultValue: allow
   flag_help: State flag controlling whether water will be able to spread in this region. Defaults to allow all. Use water-spreadblocks flag to specify blocks to check when spreading.
   script:
     - narrate "A handy container for region flags."
@@ -674,6 +684,7 @@ dRegions_Flag_Lava-Spread:
   event_priority: 10
   flag_type: state
   flag_takeGroup: false
+  flag_defaultValue: allow
   flag_help: State flag controlling whether lava will be able to spread in this region. Defaults to allow all. Use lava-spreadblocks flag to specify blocks to check when spreading.
   script:
     - narrate "A handy container for region flags."
@@ -722,6 +733,7 @@ dRegions_Flag_Mushroom-Spread:
   event_priority: 10
   flag_type: boolean
   flag_takeGroup: false
+  flag_defaultValue: true
   flag_help: Boolean flag controlling whether mushrooms will be able to spread in this region. Set to true or false. Defaults to true.
   script:
     - narrate "A handy container for region flags."
@@ -746,6 +758,7 @@ dRegions_Flag_Grass-Spread:
   event_priority: 10
   flag_type: boolean
   flag_takeGroup: false
+  flag_defaultValue: true
   flag_help: Boolean flag controlling whether grass will be able to spread in this region. Set to true or false. Defaults to true.
   script:
     - narrate "A handy container for region flags."
@@ -770,6 +783,7 @@ dRegions_Flag_Mycel-Spread:
   event_priority: 10
   flag_type: boolean
   flag_takeGroup: false
+  flag_defaultValue: true
   flag_help: Boolean flag controlling whether mycelium will be able to spread in this region. Set to true or false. Defaults to true.
   script:
     - narrate "A handy container for region flags."
@@ -794,6 +808,7 @@ dRegions_Flag_Lighter:
   event_priority: 0
   flag_type: state
   flag_takeGroup: true
+  flag_defaultValue: deny/nonmembers
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
@@ -826,6 +841,7 @@ dRegions_Flag_Hanging-Place:
   event_priority: 10
   flag_type: state
   flag_takeGroup: true
+  flag_defaultValue: allow/all
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
@@ -858,6 +874,7 @@ dRegions_Flag_Hanging-Break:
   event_priority: 10
   flag_type: state
   flag_takeGroup: true
+  flag_defaultValue: allow/all
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
@@ -890,6 +907,7 @@ dRegions_Flag_Entity-Break-Painting:
   event_priority: 10
   flag_type: boolean
   flag_takeGroup: false
+  flag_defaultValue: true
   flag_help: Boolean flag controlling whether mobs will be able to destroy paintings in this region. Set to true or false. Defaults to true.
   script:
     - narrate "A handy container for region flags."
@@ -914,6 +932,7 @@ dRegions_Flag_Entity-Break-ItemFrame:
   event_priority: 10
   flag_type: boolean
   flag_takeGroup: false
+  flag_defaultValue: true
   flag_help: Boolean flag controlling whether mobs will be able to destroy item frames in this region. Set to true or false. Defaults to true.
   script:
     - narrate "A handy container for region flags."
@@ -938,6 +957,7 @@ dRegions_Flag_Fire-Destroy:
   event_priority: 10
   flag_type: boolean
   flag_takeGroup: false
+  flag_defaultValue: true
   flag_help: Boolean flag controlling whether fire will be able to destroy blocks in this region. Set to true or false. Defaults to true.
   script:
     - narrate "A handy container for region flags."
@@ -962,6 +982,7 @@ dRegions_Flag_Enderman-Grief:
   event_priority: 10
   flag_type: boolean
   flag_takeGroup: false
+  flag_defaultValue: true
   flag_help: Boolean flag controlling whether enderman will be able to alter blocks in this region. Set to true or false. Defaults to true.
   script:
     - narrate "A handy container for region flags."
@@ -986,6 +1007,7 @@ dRegions_Flag_Zombie-Grief:
   event_priority: 10
   flag_type: boolean
   flag_takeGroup: false
+  flag_defaultValue: true
   flag_help: Boolean flag controlling whether zombies will be able to alter blocks in this region. Set to true or false. Defaults to true.
   script:
     - narrate "A handy container for region flags."
@@ -1010,6 +1032,7 @@ dRegions_Flag_Squid-Grief:
   event_priority: 10
   flag_type: boolean
   flag_takeGroup: false
+  flag_defaultValue: true
   flag_help: Boolean flag controlling whether squids will be able to alter blocks in this region. Set to true or false. Defaults to true.
   script:
     - narrate "A handy container for region flags."
@@ -1034,6 +1057,7 @@ dRegions_Flag_Sheep-Grief:
   event_priority: 10
   flag_type: boolean
   flag_takeGroup: false
+  flag_defaultValue: true
   flag_help: Boolean flag controlling whether sheep will be able to alter blocks in this region. Set to true or false. Defaults to true.
   script:
     - narrate "A handy container for region flags."
@@ -1058,6 +1082,7 @@ dRegions_Flag_Creeper-Grief:
   event_priority: 10
   flag_type: boolean
   flag_takeGroup: false
+  flag_defaultValue: true
   flag_help: Boolean flag controlling whether creeper explosions will alter blocks in this region. Set to true or false. Defaults to true.
   script:
     - narrate "A handy container for region flags."
@@ -1082,6 +1107,7 @@ dRegions_Flag_EnderDragon-Grief:
   event_priority: 10
   flag_type: boolean
   flag_takeGroup: false
+  flag_defaultValue: true
   flag_help: Boolean flag controlling whether enderdragon will alter blocks in this region. Set to true or false. Defaults to true.
   script:
     - narrate "A handy container for region flags."
@@ -1106,6 +1132,7 @@ dRegions_Flag_PrimedTNT-Grief:
   event_priority: 10
   flag_type: boolean
   flag_takeGroup: false
+  flag_defaultValue: true
   flag_help: Boolean flag controlling whether tnt explosions will alter blocks in this region. Set to true or false. Defaults to true.
   script:
     - narrate "A handy container for region flags."
@@ -1133,6 +1160,7 @@ dRegions_Flag_PVP:
   event_priority: 10
   flag_type: boolean
   flag_takeGroup: false
+  flag_defaultValue: true
   flag_help: Boolean flag controlling whether players can attack eachother in this region. Set to true or false. Defaults to true.
   script:
     - narrate "A handy container for region flags."
@@ -1160,6 +1188,7 @@ dRegions_Flag_Block-Place:
   event_priority: 10
   flag_type: state
   flag_takeGroup: true
+  flag_defaultValue: allow/all
   flag_help: State flag controlling whether players will be able to place blocks in this region. Defaults to allow all. Use block-placelist flag to specify block types. Takes the -g group switch.
   script:
     - narrate "A handy container for region flags."
@@ -1217,6 +1246,7 @@ dRegions_Flag_Block-Break:
   event_priority: 10
   flag_type: state
   flag_takeGroup: true
+  flag_defaultValue: allow/all
   flag_help: State flag controlling whether players will be able to break blocks in this region. Defaults to allow all. Use block-breaklist flag to specify block types. Takes the -g group switch.
   script:
     - narrate "A handy container for region flags."
@@ -1272,10 +1302,14 @@ dRegions_Flags_Processors:
 
   boolean:
     - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
-    - define suffix '<&pipe>%flag%<&rb>||allow<&gt>'
+    - define suffix '<&pipe>%flag%<&rb>||null<&gt>'
     - define InheritedFlags '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
     - foreach %InheritedFlags% {
-      - if <def[value].is[==].to[false]||false> {
+      - define flagVal '<def[value]>'
+      - if <def[flagVal].is[==].to[null]||true> {
+        - define flagVal '<def[FlagScript].yaml_key[flag_defaultValue]||allow>'
+        }
+      - if <def[flagVal].is[==].to[false]||false> {
         - inject <def[FlagScript]||null> p:event-cleanup instantly
         - determine cancelled
         }
@@ -1285,7 +1319,7 @@ dRegions_Flags_Processors:
     - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
     - define suffix '<&pipe>%flag-targetList%<&rb>||all<&gt>'
     - define InheritedTargets '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
-    - define suffix '<&pipe>%flag%<&rb>||allow<&gt>'
+    - define suffix '<&pipe>%flag%<&rb>||null<&gt>'
     - define InheritedFlags '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
     - foreach %InheritedFlags% {
       - define targetList '<def[InheritedTargets].get[%loop_index%].replace[, ].with[|].as_list||li@all>'
@@ -1294,7 +1328,7 @@ dRegions_Flags_Processors:
         }
       - define flagVal '<def[value]>'
       - if <def[flagVal].is[==].to[null]||true> {
-        - define flagVal 'allow'
+        - define flagVal '<def[FlagScript].yaml_key[flag_defaultValue]||allow>'
         }
 
       - if <def[flagVal].is[==].to[allow]||false> {
@@ -1327,7 +1361,7 @@ dRegions_Flags_Processors:
     - foreach %InheritedFlags% {
       - define flagObj '<def[value]>'
       - if <def[flagObj].is[==].to[null]||true> {
-        - define flagObj 'allow/all'
+        - define flagObj '<def[FlagScript].yaml_key[flag_defaultValue]||allow/all>'
         }
       - define flagVal '<def[flagObj].split[/].get[1]>'
       - define group '<def[flagObj].split[/].get[2]||all>'
@@ -1364,7 +1398,7 @@ dRegions_Flags_Processors:
         }
       - define flagObj '<def[value]>'
       - if <def[flagObj].is[==].to[null]||true> {
-        - define flagObj 'allow/all'
+        - define flagObj '<def[FlagScript].yaml_key[flag_defaultValue]||allow/all>'
         }
       - define flagVal '<def[flagObj].split[/].get[1]>'
       - define group '<def[flagObj].split[/].get[2]||all>'
