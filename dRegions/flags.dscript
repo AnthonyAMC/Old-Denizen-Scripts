@@ -808,7 +808,7 @@ dRegions_Flag_Lighter:
   event_priority: 0
   flag_type: state
   flag_takeGroup: true
-  flag_defaultValue: deny/nonmembers
+  flag_defaultValue: allow/all
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
@@ -1307,9 +1307,15 @@ dRegions_Flags_Processors:
     - foreach %InheritedFlags% {
       - define flagVal '<def[value]>'
       - if <def[flagVal].is[==].to[null]||true> {
-        - define flagVal '<def[FlagScript].yaml_key[flag_defaultValue]||allow>'
+        - if <def[loop_index].is[==].to[<def[InheritedFlags].size>]> {
+          - define flagVal '<def[FlagScript].yaml_key[flag_defaultValue]||true>'
+          }
+          else foreach next
         }
-      - if <def[flagVal].is[==].to[false]||false> {
+      - if <def[flagVal]||true> {
+        - foreach stop
+        }
+        else {
         - inject <def[FlagScript]||null> p:event-cleanup instantly
         - determine cancelled
         }
@@ -1328,7 +1334,10 @@ dRegions_Flags_Processors:
         }
       - define flagVal '<def[value]>'
       - if <def[flagVal].is[==].to[null]||true> {
-        - define flagVal '<def[FlagScript].yaml_key[flag_defaultValue]||allow>'
+        - if <def[loop_index].is[==].to[<def[InheritedFlags].size>]> {
+          - define flagVal '<def[FlagScript].yaml_key[flag_defaultValue]||allow>'
+          }
+          else foreach next
         }
 
       - if <def[flagVal].is[==].to[allow]||false> {
@@ -1337,7 +1346,9 @@ dRegions_Flags_Processors:
             - inject <def[FlagScript]||null> p:event-cleanup instantly
             - determine cancelled
             }
+            else foreach stop
           }
+          else foreach stop
         }
         else {
         - if <def[targetList].is[==].to[li@all]||true> {
@@ -1349,6 +1360,7 @@ dRegions_Flags_Processors:
             - inject <def[FlagScript]||null> p:event-cleanup instantly
             - determine cancelled
             }
+            else foreach stop
           }
         }
       }
@@ -1361,7 +1373,10 @@ dRegions_Flags_Processors:
     - foreach %InheritedFlags% {
       - define flagObj '<def[value]>'
       - if <def[flagObj].is[==].to[null]||true> {
-        - define flagObj '<def[FlagScript].yaml_key[flag_defaultValue]||allow/all>'
+        - if <def[loop_index].is[==].to[<def[InheritedFlags].size>]> {
+          - define flagObj '<def[FlagScript].yaml_key[flag_defaultValue]||allow/all>'
+          }
+          else foreach next
         }
       - define flagVal '<def[flagObj].split[/].get[1]>'
       - define group '<def[flagObj].split[/].get[2]||all>'
@@ -1375,12 +1390,14 @@ dRegions_Flags_Processors:
           - inject <def[FlagScript]||null> p:event-cleanup instantly
           - determine cancelled
           }
+          else foreach stop
         }
         else {
         - if <def[isGroup]> {
           - inject <def[FlagScript]||null> p:event-cleanup instantly
           - determine cancelled
           }
+          else foreach stop
         }
       }
 
@@ -1398,7 +1415,10 @@ dRegions_Flags_Processors:
         }
       - define flagObj '<def[value]>'
       - if <def[flagObj].is[==].to[null]||true> {
-        - define flagObj '<def[FlagScript].yaml_key[flag_defaultValue]||allow/all>'
+        - if <def[loop_index].is[==].to[<def[InheritedFlags].size>]> {
+          - define flagObj '<def[FlagScript].yaml_key[flag_defaultValue]||allow/all>'
+          }
+          else foreach next
         }
       - define flagVal '<def[flagObj].split[/].get[1]>'
       - define group '<def[flagObj].split[/].get[2]||all>'
@@ -1414,7 +1434,9 @@ dRegions_Flags_Processors:
               - inject <def[FlagScript]||null> p:event-cleanup instantly
               - determine cancelled
               }
+              else foreach stop
             }
+            else foreach stop
           }
           else {
           - inject <def[FlagScript]||null> p:event-cleanup instantly
@@ -1432,8 +1454,10 @@ dRegions_Flags_Processors:
               - inject <def[FlagScript]||null> p:event-cleanup instantly
               - determine cancelled
               }
+              else foreach stop
             }
           }
+          else foreach stop
         }
       }
 
