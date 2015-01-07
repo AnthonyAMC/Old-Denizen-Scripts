@@ -1063,6 +1063,33 @@ dRegions_Flag_PrimedTNT-Grief:
     - inject s@dRegions_Flags_Processors p:boolean
 
 
+dRegions_Flag_PVP:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>PVP<&4>]"
+  lore:
+  - <&5>Can players damage each other
+  event_hook: player_damage_player
+  event_priority: 10
+  flag_type: boolean
+  flag_takeGroup: false
+  flag_help: Boolean flag controlling whether players can attack eachother in this region. Set to true or false. Defaults to true.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event-cleanup:
+    - remove <c.projectile||li@>
+
+  event:
+    - define flag 'pvp'
+    - inject s@dRegions_Flags_Processors p:boolean
+
+
 dRegions_Flag_Block-Place:
   type: item
   debug: false
