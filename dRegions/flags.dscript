@@ -771,6 +771,30 @@ dRegions_Flag_Snow-FallBlocks:
     - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
 
+dRegions_Flag_Ice-Form:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Ice-Form<&4>]"
+  lore:
+  - <&5>Can water turn into ice
+  event_hook: blockForm-ice
+  event_priority: 10
+  flag_type: boolean
+  flag_defaultValue: true
+  flag_help: Boolean flag controlling whether water will be able to turn into ice in this region. Defaults to true.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event:
+    - define flag 'ice-form'
+    - inject s@dRegions_Flags_Processors p:boolean
+
+
 dRegions_Flag_Mushroom-Spread:
   type: item
   debug: false
