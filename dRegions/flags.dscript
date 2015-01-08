@@ -722,6 +722,55 @@ dRegions_Flag_Lava-SpreadBlocks:
     - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
 
+dRegions_Flag_Snow-Fall:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Snow-Fall<&4>]"
+  lore:
+  - <&5>Can Snow accumulate
+  event_hook: blockForm-snow
+  event_priority: 10
+  flag_type: state
+  flag_takeGroup: false
+  flag_defaultValue: allow
+  flag_help: State flag controlling whether snow will be able to accumulate on the ground in this region. Defaults to allow all. Use snow-fallblocks flag to specify blocks below the snow to check when forming.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event:
+    - define flag 'snow-fall'
+    - define flag-targetList 'snow-fallblocks'
+    - inject s@dRegions_Flags_Processors p:state-withTarget
+
+
+dRegions_Flag_Snow-FallBlocks:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Snow-Fall-BlockList<&4>]"
+  lore:
+  - <&5>List of blocks to check under snow
+  command_entryType: block
+  command_verifyEntry: <def[value].as_material.is_block.not||true>
+  flag_type: list
+  flag_takeGroup: false
+  flag_help: List flag used with snow-fall flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  command_handler:
+    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
+
+
 dRegions_Flag_Mushroom-Spread:
   type: item
   debug: false
