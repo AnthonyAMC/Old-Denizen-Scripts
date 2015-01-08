@@ -147,12 +147,13 @@ dRegions:
 
     on block forms:
     - define world '<c.location.world.name.to_lowercase>'
-    - define target '<c.location.material.bukkit_enum.to_lowercase||air>'
-    - define readPath 'blockform.<def[target]>'
+    - define mat '<c.material.bukkit_enum.to_lowercase>'
+    - define target '<c.location.sub[0,1,0].material.bukkit_enum.to_lowercase>'
+    - define readPath 'blockform.<def[mat]>'
     - inject instantly s@dRegions p:event_PreProc_Config
     - define cuboids '<c.location.cuboids>'
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
-    - define eventHooks 'blockForm-<def[target]>'
+    - define eventHooks 'blockForm-<def[mat]>'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
     on block fades:
