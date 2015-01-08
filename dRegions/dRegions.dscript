@@ -145,6 +145,26 @@ dRegions:
     - define eventHooks 'fire-destroyBlocks'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
+    on block forms:
+    - define world '<c.location.world.name.to_lowercase>'
+    - define target '<c.location.material.bukkit_enum.to_lowercase||air>'
+    - define readPath 'blockform.<def[target]>'
+    - inject instantly s@dRegions p:event_PreProc_Config
+    - define cuboids '<c.location.cuboids>'
+    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - define eventHooks 'blockForm-<def[target]>'
+    - inject instantly s@dRegions p:event_PreProc_RunEvent
+
+    on block fades:
+    - define world '<c.location.world.name.to_lowercase>'
+    - define target '<c.location.material.bukkit_enum.to_lowercase||air>'
+    - define readPath 'blockfade.<def[target]>'
+    - inject instantly s@dRegions p:event_PreProc_Config
+    - define cuboids '<c.location.cuboids>'
+    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - define eventHooks 'blockFade-<def[target]>'
+    - inject instantly s@dRegions p:event_PreProc_RunEvent
+
     on block spreads:
     - define world '<c.location.world.name.to_lowercase>'
     - define target '<c.location.material.bukkit_enum.to_lowercase>'
