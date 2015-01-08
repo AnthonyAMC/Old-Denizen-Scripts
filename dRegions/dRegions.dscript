@@ -3005,7 +3005,7 @@ dRegions_Configurations:
   type: yaml data
 
   config:
-    version: 0.23
+    version: 0.24
     regions:
       enable: true
       invincibility-removes-mobs: false
@@ -3055,6 +3055,13 @@ dRegions_Configurations:
         zombie: true
     entity-break-item_frame: true
     entity-break-painting: true
+    blockform:
+      ice: true
+      snow: true
+      snow-list: []
+    blockfade:
+      ice: true
+      snow: true
 #    auto-invincible: false
 #    protection:
 #      item-durability: true
