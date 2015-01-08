@@ -1177,6 +1177,41 @@ dRegions_Flag_PVP:
     - inject s@dRegions_Flags_Processors p:boolean
 
 
+dRegions_Flag_Notify-Enter:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Notify-Enter<&4>]"
+  lore:
+  - <&5>Send notification to marked players
+  event_hook: regionEnter
+  event_priority: 5
+  flag_type: boolean
+  flag_takeGroup: false
+  flag_defaultValue: false
+  flag_help: Boolean flag controlling whether notifications for entering this region. Set to true or false. Defaults to false.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event:
+    - define player <player>
+    - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
+    - define suffix '<&pipe>notify-enter<&rb>||null<&gt>'
+    - define msgList '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
+    - foreach %msgList% {
+      - if <def[value].is[==].to[true]||false> {
+        - foreach <server.list_online_players.filter[has_permission[dregions.notify]].include[<server.list_online_ops>].deduplicate> {
+          - run instantly s@dRegions_Msg 'def:<&5><&o><def[player].name> entered <def[orderedRegions].get[%loop_index%]> in %world%'
+          }
+        - foreach stop
+        }
+      }
+
+
 dRegions_Flag_Block-Place:
   type: item
   debug: false
