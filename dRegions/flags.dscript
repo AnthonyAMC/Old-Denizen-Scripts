@@ -795,6 +795,30 @@ dRegions_Flag_Ice-Form:
     - inject s@dRegions_Flags_Processors p:boolean
 
 
+dRegions_Flag_Ice-Melt:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Ice-Melt<&4>]"
+  lore:
+  - <&5>Can ice melt
+  event_hook: blockFade-ice
+  event_priority: 10
+  flag_type: boolean
+  flag_defaultValue: true
+  flag_help: Boolean flag controlling whether ice can melt in this region. Defaults to true.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event:
+    - define flag 'ice-melt'
+    - inject s@dRegions_Flags_Processors p:boolean
+
+
 dRegions_Flag_Mushroom-Spread:
   type: item
   debug: false
