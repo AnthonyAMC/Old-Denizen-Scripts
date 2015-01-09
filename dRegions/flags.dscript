@@ -1015,6 +1015,30 @@ dRegions_Flag_Soil-Dry:
     - inject s@dRegions_Flags_Processors p:boolean
 
 
+dRegions_Flag_Trample-Crops-Player:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Trample-Crops-Player<&4>]"
+  lore:
+  - <&5>Can players trample crops
+  event_hook: trample-crops-player
+  event_priority: 10
+  flag_type: boolean
+  flag_defaultValue: true
+  flag_help: Boolean flag controlling whether players can trample crops in this region. Defaults to true.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event:
+    - define flag 'trample-crops-player'
+    - inject s@dRegions_Flags_Processors p:boolean
+
+
 dRegions_Flag_Mushroom-Spread:
   type: item
   debug: false
