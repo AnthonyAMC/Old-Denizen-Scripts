@@ -576,6 +576,55 @@ dRegions_Flag_PVE-Moblist:
     - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
 
+dRegions_Flag_Entity-Explode:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Entity-Explode<&4>]"
+  lore:
+  - <&5>Can entities explode
+  event_hook: entity-explode
+  event_priority: 10
+  flag_type: state
+  flag_takeGroup: false
+  flag_defaultValue: allow
+  flag_help: State flag controlling whether entities will be able to explode in this region. Defaults to allow all. Use entity-explodelist flag to specify entities types.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event:
+    - define flag 'entity-explode'
+    - define flag-targetList 'entity-explodelist'
+    - inject s@dRegions_Flags_Processors p:state-withTarget
+
+
+dRegions_Flag_Entity-ExplodeList:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Entity-Explodelist<&4>]"
+  lore:
+  - <&5>List of mobs used by entity-explode flag
+  command_entryType: entity
+  command_verifyEntry: <el@val[creeper|ender_crystal|ender_dragon|primed_tnt|minecart_tnt|fireball|small_fireball|wither|wither_skull].as_list.contains[<def[value]>].not>
+  flag_type: list
+  flag_takeGroup: false
+  flag_help: List flag used with entity-explode flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of entities. Valid entities<&co> creeper, ender_crystal, ender_dragon, primed_tnt, minecart_tnt, fireball, small_fireball, wither, wither_skull
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  command_handler:
+    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
+
+
 dRegions_Flag_Fire-Spread:
   type: item
   debug: false
