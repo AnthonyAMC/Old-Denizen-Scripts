@@ -723,6 +723,55 @@ dRegions_Flag_Fire-SpreadBlocks:
     - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
 
+dRegions_Flag_Lightning-Strikes:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Lightning-Strikes<&4>]"
+  lore:
+  - <&5>Can lightning strike
+  event_hook: lightning-strikes
+  event_priority: 10
+  flag_type: state
+  flag_takeGroup: false
+  flag_defaultValue: allow
+  flag_help: State flag controlling whether lightning will be able to strike in this region. Defaults to allow all. Use lightning-strikeblocks flag to specify blocks to check when striking.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event:
+    - define flag 'lightning-strikes'
+    - define flag-targetList 'lightning-strikesblocks'
+    - inject s@dRegions_Flags_Processors p:state-withTarget
+
+
+dRegions_Flag_Lightning-StrikesBlocks:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Lightning-StrikesBlocks<&4>]"
+  lore:
+  - <&5>List of blocks involved in lightning strikes
+  command_entryType: block
+  command_verifyEntry: <def[value].as_material.is_block.not||true>
+  flag_type: list
+  flag_takeGroup: false
+  flag_help: List flag used with lightning-strike flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  command_handler:
+    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
+
+
 dRegions_Flag_Water-Spread:
   type: item
   debug: false
