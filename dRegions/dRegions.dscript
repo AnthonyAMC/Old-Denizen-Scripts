@@ -160,7 +160,7 @@ dRegions:
     - define world '<c.location.world.name.to_lowercase>'
     - define mat '<c.material.bukkit_enum.to_lowercase>'
     - define target '<c.location.sub[0,1,0].material.bukkit_enum.to_lowercase>'
-    - define readPath 'blockfade.<def[target]>'
+    - define readPath 'blockfade.<def[mat]>'
     - inject instantly s@dRegions p:event_PreProc_Config
     - define cuboids '<c.location.cuboids>'
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
@@ -229,6 +229,8 @@ dRegions:
 #    - inject instantly s@dRegions p:use_<c.item||null>
 #    - inject instantly s@dRegions p:playerClick_<c.type||null>
 
+#    on player stands on:
+#    - announce "Stand"
 
     on player enters bed:
     - define world '<player.world.name.to_lowercase>'
@@ -365,12 +367,18 @@ dRegions:
 
     on entity changes block:
     - define world '<c.location.world.name.to_lowercase>'
-    - define readPath 'entity.changeBlock'
-    - define target '<c.entity.entity_type||other>'
+    - if <c.old_material.bukkit_enum.is[==].to[soil]||false> {
+      - define readPath 'trample-crops.<c.entity.prefix||entity>'
+      - define eventHooks 'trample-crops-<c.entity.prefix||entity>'
+      }
+      else {
+      - define readPath 'entity.changeBlock'
+      - define target '<c.entity.entity_type||other>'
+      - define eventHooks 'entity-changeBlock'
+      }
     - inject instantly s@dRegions p:event_PreProc_Config
     - define cuboids '<c.location.cuboids>'
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
-    - define eventHooks 'entity-changeBlock'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
     on entity explodes:
@@ -3090,6 +3098,9 @@ dRegions_Configurations:
       snow: true
     lightning-strike: true
     lightning-strike-list: []
+    trample-crops:
+      player: true
+      entity: true
 #    auto-invincible: false
 #    protection:
 #      item-durability: true
