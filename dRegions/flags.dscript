@@ -991,6 +991,30 @@ dRegions_Flag_Snow-Melt:
     - inject s@dRegions_Flags_Processors p:boolean
 
 
+dRegions_Flag_Soil-Dry:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Soil-Dry<&4>]"
+  lore:
+  - <&5>Can soil dry up
+  event_hook: blockFade-soil
+  event_priority: 10
+  flag_type: boolean
+  flag_defaultValue: true
+  flag_help: Boolean flag controlling whether soil can dry in this region. Defaults to true.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event:
+    - define flag 'soil-dry'
+    - inject s@dRegions_Flags_Processors p:boolean
+
+
 dRegions_Flag_Mushroom-Spread:
   type: item
   debug: false
