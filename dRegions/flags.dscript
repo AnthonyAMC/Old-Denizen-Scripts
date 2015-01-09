@@ -474,6 +474,8 @@ dRegions_Flag_Mob-Spawn:
   display name: "<&4>[<&6>Mob-Spawn<&4>]"
   lore:
   - <&5>Can mobs Spawn
+  event_hook: ENTITY_Spawn
+  event_priority: 10
   flag_type: state
   flag_takeGroup: false
   flag_defaultValue: allow
@@ -621,7 +623,6 @@ dRegions_Flag_Fire-SpreadBlocks:
 
   command_handler:
     - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
-
 
 
 dRegions_Flag_Water-Spread:
