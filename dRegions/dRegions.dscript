@@ -274,6 +274,20 @@ dRegions:
     - define eventHooks 'fillBucket|build'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
+    on player drops item:
+    - define world '<player.world.name.to_lowercase>'
+    - define cuboids '<player.location.cuboids.include[<c.location.cuboids>].deduplicate>'
+    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - define eventHooks 'player-drop'
+    - inject instantly s@dRegions p:event_PreProc_RunEvent
+
+    on player picks up item:
+    - define world '<player.world.name.to_lowercase>'
+    - define cuboids '<player.location.cuboids.include[<c.location.cuboids>].deduplicate>'
+    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - define eventHooks 'player-pickup'
+    - inject instantly s@dRegions p:event_PreProc_RunEvent
+
     on player places hanging:
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<c.location.cuboids>'
