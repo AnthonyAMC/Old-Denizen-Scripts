@@ -220,6 +220,14 @@ dRegions:
 #    - inject instantly s@dRegions p:playerClick_<c.type||null>
 
 
+    on player enters bed:
+    - define world '<player.world.name.to_lowercase>'
+    - define cuboids '<c.location.cuboids>'
+    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - define eventHooks 'sleep'
+    - inject instantly s@dRegions p:event_PreProc_RunEvent
+
+
     on player enters notable cuboid:
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<c.cuboids>'
