@@ -4,8 +4,8 @@
 #
 #
 #   Authors: |Anthony|
-#   Version: 0.1
-#   dScript Version: 0.9.6-DEV_b60
+#   Version: 0.2
+#   dScript Version: 0.9.6-DEV_b65
 #
 #
 #   Dependencies:
@@ -333,11 +333,12 @@ dRegions:
 
     on entity changes block:
     - define world '<c.location.world.name.to_lowercase>'
-    - define readPath 'entity.changeBlocks.<c.entity.entity_type.to_lowercase||null>'
+    - define readPath 'entity.changeBlock'
+    - define target '<c.entity.entity_type||other>'
     - inject instantly s@dRegions p:event_PreProc_Config
     - define cuboids '<c.location.cuboids>'
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
-    - define eventHooks '<c.entity.entity_type.to_lowercase.replace[_]||null>-grief'
+    - define eventHooks 'entity-changeBlock'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
     on entity explodes:
@@ -347,7 +348,7 @@ dRegions:
     - inject instantly s@dRegions p:event_PreProc_Config
     - define cuboids '<c.location.cuboids>'
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
-    - define eventHooks '<c.entity.entity_type.to_lowercase.replace[_]||other>-explode-blocks|<c.entity.entity_type.to_lowercase.replace[_]||other>-explosion'
+    - define eventHooks 'entity-explode'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
     on entity breaks hanging:
@@ -2841,7 +2842,7 @@ dRegions_LineWrap:
           - define lines '<def[lines].include[%passtrim%]||<def[lines]>>'
           - define stringLen '<def[stringLen].sub[%brake%]>'
           }
-        - if <def[loop_index].is[MORE].than[5]> {
+        - if <def[loop_index].is[MORE].than[10]> {
           - while stop
           }
         }
@@ -3006,7 +3007,7 @@ dRegions_Configurations:
   type: yaml data
 
   config:
-    version: 0.24
+    version: 0.25
     regions:
       enable: true
       invincibility-removes-mobs: false
@@ -3042,12 +3043,8 @@ dRegions_Configurations:
       destroyBlocks: true
       destroyBlocks-list: []
     entity:
-      changeBlocks:
-        enderman: true
-        sheep: true
-        squid: true
-        snowman: true
-        zombie: true
+      changeBlocks: true
+      changeBlocks-list: []
       explode: true
       explode-list: []
     entity-break-item_frame: true
