@@ -342,11 +342,12 @@ dRegions:
 
     on entity explodes:
     - define world '<c.location.world.name.to_lowercase>'
-    - define readPath 'entity.changeBlocks.<c.entity.entity_type.to_lowercase||null>'
+    - define readPath 'entity.explode'
+    - define target '<c.entity.entity_type||other>'
     - inject instantly s@dRegions p:event_PreProc_Config
     - define cuboids '<c.location.cuboids>'
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
-    - define eventHooks '<c.entity.entity_type.to_lowercase.replace[_]||null>-explode-blocks|<c.entity.entity_type.to_lowercase.replace[_]||null>-explosion'
+    - define eventHooks '<c.entity.entity_type.to_lowercase.replace[_]||other>-explode-blocks|<c.entity.entity_type.to_lowercase.replace[_]||other>-explosion'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
     on entity breaks hanging:
@@ -3042,17 +3043,13 @@ dRegions_Configurations:
       destroyBlocks-list: []
     entity:
       changeBlocks:
-        creeper: true
-        ender_dragon: true
         enderman: true
-        ghast: true
-        primed_tnt: true
         sheep: true
         squid: true
         snowman: true
-        wither: true
-        wither_skull: true
         zombie: true
+      explode: true
+      explode-list: []
     entity-break-item_frame: true
     entity-break-painting: true
     blockform:
