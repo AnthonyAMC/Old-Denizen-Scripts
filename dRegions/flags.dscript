@@ -1039,6 +1039,30 @@ dRegions_Flag_Trample-Crops-Player:
     - inject s@dRegions_Flags_Processors p:boolean
 
 
+dRegions_Flag_Trample-Crops-Entity:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Trample-Crops-Entity<&4>]"
+  lore:
+  - <&5>Can entities trample crops
+  event_hook: trample-crops-entity
+  event_priority: 10
+  flag_type: boolean
+  flag_defaultValue: true
+  flag_help: Boolean flag controlling whether entities can trample crops in this region. Defaults to true.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event:
+    - define flag 'trample-crops-entity'
+    - inject s@dRegions_Flags_Processors p:boolean
+
+
 dRegions_Flag_Mushroom-Spread:
   type: item
   debug: false
