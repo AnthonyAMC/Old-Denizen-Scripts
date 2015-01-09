@@ -187,6 +187,16 @@ dRegions:
     - define eventHooks '<c.location.material.bukkit_enum.split[_].last>Spread'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
+    on lightning strikes:
+    - define world '<c.world.name.to_lowercase>'
+    - define target '<c.location.below.material.bukkit_enum.to_lowercase>'
+    - define readPath 'lightning-strike'
+    - inject instantly s@dRegions p:event_PreProc_Config
+    - define cuboids '<c.location.cuboids>'
+    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - define eventHooks 'lightning-strikes'
+    - inject instantly s@dRegions p:event_PreProc_RunEvent
+
     on block falls:
     - define world '<c.location.world.name.to_lowercase>'
     - define readPath 'physics.<c.location.material.bukkit_enum.to_lowercase||null>'
@@ -3078,6 +3088,8 @@ dRegions_Configurations:
     blockfade:
       ice: true
       snow: true
+    lightning-strike: true
+    lightning-strike-list: []
 #    auto-invincible: false
 #    protection:
 #      item-durability: true
