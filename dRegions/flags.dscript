@@ -1188,6 +1188,56 @@ dRegions_Flag_Leaf-Decay:
     - inject s@dRegions_Flags_Processors p:boolean
 
 
+dRegions_Flag_Falling-Sand:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Falling-Sand<&4>]"
+  lore:
+  - <&5>Can sand fall
+  event_hook: physics-sand
+  event_priority: 10
+  flag_type: boolean
+  flag_takeGroup: false
+  flag_defaultValue: true
+  flag_help: Boolean flag controlling whether sand will be able to fall in this region. Set to true or false. Defaults to true.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event:
+    - define flag 'falling-sand'
+    - inject s@dRegions_Flags_Processors p:boolean
+
+
+dRegions_Flag_Falling-Gravel:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Falling-Gravel<&4>]"
+  lore:
+  - <&5>Can gravel fall
+  event_hook: physics-gravel
+  event_priority: 10
+  flag_type: boolean
+  flag_takeGroup: false
+  flag_defaultValue: true
+  flag_help: Boolean flag controlling whether gravel will be able to fall in this region. Set to true or false. Defaults to true.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event:
+    - define flag 'falling-gravel'
+    - inject s@dRegions_Flags_Processors p:boolean
+
+
 dRegions_Flag_Lighter:
   type: item
   debug: false
