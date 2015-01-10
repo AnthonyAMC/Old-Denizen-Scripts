@@ -124,15 +124,14 @@ dRegions:
 #    - announce "<player.name||unknown>"
 
     on block ignites:
-#    - announce "ignite <context.cause||unknown>"
     - define world '<c.location.world.name.to_lowercase>'
     - define target '<c.location.material.bukkit_enum.to_lowercase>'
     - define readPath 'fire.<c.cause||spread>'
     - inject instantly s@dRegions p:event_PreProc_Config
     - define cuboids '<c.location.cuboids>'
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
-#    - define eventHooks 'fireFrom-<c.cause||spread>'
-    - define eventHooks '<t[<c.entity.is_player||false>]:fireFrom-FLINT_AND_STEEL||fireFrom-Spread>'
+#    - define eventHooks '<t[<c.entity.is_player||false>]:fireFrom-Lighter||fireSpread>'
+    - define eventHooks '<t[<c.cause.is[==].to[flint_and_steel]>]:fireFrom-Lighter||fireFrom-Spread>'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
     on block burns:
@@ -168,6 +167,7 @@ dRegions:
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
     on block spreads:
+#    - announce "spread <c.material.bukkit_enum> <c.location.material.bukkit_enum>"
     - define world '<c.location.world.name.to_lowercase>'
     - define target '<c.location.material.bukkit_enum.to_lowercase>'
     - define readPath 'spread.<c.material.bukkit_enum.split[_].last.to_lowercase||null>'
@@ -195,6 +195,15 @@ dRegions:
     - define cuboids '<c.location.cuboids>'
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'lightning-strikes'
+    - inject instantly s@dRegions p:event_PreProc_RunEvent
+
+    on leaves decay:
+    - define world '<c.location.world.name.to_lowercase>'
+    - define readPath 'leaf-decay'
+    - inject instantly s@dRegions p:event_PreProc_Config
+    - define cuboids '<c.location.cuboids>'
+    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - define eventHooks 'leaf-decay'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
     on block falls:
@@ -3047,7 +3056,7 @@ dRegions_Configurations:
   type: yaml data
 
   config:
-    version: 0.25
+    version: 0.26
     regions:
       enable: true
       invincibility-removes-mobs: false
@@ -3065,6 +3074,7 @@ dRegions_Configurations:
       mycel: true
       grass: true
       mushroom: true
+      vines: true
     physics:
       gravel: true
       sand: true
@@ -3101,6 +3111,7 @@ dRegions_Configurations:
     trample-crops:
       player: true
       entity: true
+    leaf-decay: true
 #    auto-invincible: false
 #    protection:
 #      item-durability: true
