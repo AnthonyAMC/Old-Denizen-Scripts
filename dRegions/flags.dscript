@@ -737,6 +737,55 @@ dRegions_Flag_Fire-SpreadBlocks:
 #    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
 
+dRegions_Flag_Fire-Destroy:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Fire-Destroy<&4>]"
+  lore:
+  - <&5>Can fire destroy blocks
+  event_hook: fire-destroyBlocks
+  event_priority: 10
+  flag_type: state
+  flag_takeGroup: false
+  flag_defaultValue: allow
+  flag_help: State flag controlling whether fire will be able to spread to and destroy blocks in this region. Defaults to allow all. Use fire-destroyblocks flag to specify blocks to check when spreading.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event:
+    - define flag 'fire-destroy'
+    - define flag-targetList 'fire-destroyblocks'
+    - inject s@dRegions_Flags_Processors p:state-withTarget
+
+
+dRegions_Flag_Fire-DestroyBlocks:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Fire-Destroy-BlockList<&4>]"
+  lore:
+  - <&5>List of blocks involved in fire-destroy
+  command_entryType: block
+  command_verifyEntry: <def[value].as_material.is_block.not||true>
+  flag_type: list
+  flag_takeGroup: false
+  flag_help: List flag used with fire-spread flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  command_handler:
+    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
+
+
 dRegions_Flag_Lightning-Strikes:
   type: item
   debug: false
@@ -1497,31 +1546,6 @@ dRegions_Flag_Entity-Break-ItemFrame:
 
   event:
     - define flag 'entity-break-itemframe'
-    - inject s@dRegions_Flags_Processors p:boolean
-
-
-dRegions_Flag_Fire-Destroy:
-  type: item
-  debug: false
-  material: i@paper
-  display name: "<&4>[<&6>Fire-Destroy<&4>]"
-  lore:
-  - <&5>Can Fire destroy blocks
-  event_hook: fire-destroyBlocks
-  event_priority: 10
-  flag_type: boolean
-  flag_takeGroup: false
-  flag_defaultValue: true
-  flag_help: Boolean flag controlling whether fire will be able to destroy blocks in this region. Set to true or false. Defaults to true.
-  script:
-    - narrate "A handy container for region flags."
-    - narrate "We<&sq>ll have subscripts for various tasks."
-
-  button_click:
-    - narrate "This will be useful when it comes time to make the GUI for region management."
-
-  event:
-    - define flag 'fire-destroy'
     - inject s@dRegions_Flags_Processors p:boolean
 
 
