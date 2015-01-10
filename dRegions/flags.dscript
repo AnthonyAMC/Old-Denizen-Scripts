@@ -1138,6 +1138,31 @@ dRegions_Flag_Mycel-Spread:
     - inject s@dRegions_Flags_Processors p:boolean
 
 
+dRegions_Flag_Vine-Growth:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Vine-Growth<&4>]"
+  lore:
+  - <&5>Can Vines grow
+  event_hook: VinesSpread
+  event_priority: 10
+  flag_type: boolean
+  flag_takeGroup: false
+  flag_defaultValue: true
+  flag_help: Boolean flag controlling whether vines will be able to grow in this region. Set to true or false. Defaults to true.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event:
+    - define flag 'vine-growth'
+    - inject s@dRegions_Flags_Processors p:boolean
+
+
 dRegions_Flag_Lighter:
   type: item
   debug: false
@@ -1145,7 +1170,7 @@ dRegions_Flag_Lighter:
   display name: "<&4>[<&6>Lighter<&4>]"
   lore:
   - <&5>Who can use the flint and steel a region
-  event_hook: fireFrom-FLINT_AND_STEEL
+  event_hook: fireFrom-Lighter
   event_priority: 0
   flag_type: state
   flag_takeGroup: true
