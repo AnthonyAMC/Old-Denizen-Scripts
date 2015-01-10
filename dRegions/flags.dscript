@@ -686,7 +686,8 @@ dRegions_Flag_Fire-Spread:
   flag_type: state
   flag_takeGroup: false
   flag_defaultValue: allow
-  flag_help: State flag controlling whether fire will be able to spread in this region. Defaults to allow all. Use fire-spreadblocks flag to specify blocks to check when spreading.
+#  flag_help: State flag controlling whether fire will be able to spread in this region. Defaults to allow all. Use fire-spreadblocks flag to specify blocks to check when spreading.
+  flag_help: This flag is temporarily disabled. Please use the fire-destroyblocks flag.
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
@@ -698,6 +699,13 @@ dRegions_Flag_Fire-Spread:
     - define flag 'fire-spread'
     - define flag-targetList 'fire-spreadblocks'
     - inject s@dRegions_Flags_Processors p:state-withTarget
+
+  command_handler:
+    - define lines '<proc[dRegions_LineWrap].context[<s@dRegions_Flag_%Flag%.yaml_key[flag_help]||<&c>%flag% flag requires a %type% value!>|45]>'
+    - foreach <def[lines]> {
+      - run instantly s@dRegions_Msg 'def:<&c><def[value]>'
+      }
+    - queue clear
 
 
 dRegions_Flag_Fire-SpreadBlocks:
@@ -711,7 +719,8 @@ dRegions_Flag_Fire-SpreadBlocks:
   command_verifyEntry: <def[value].as_material.is_block.not||true>
   flag_type: list
   flag_takeGroup: false
-  flag_help: List flag used with fire-spread flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks.
+#  flag_help: List flag used with fire-spread flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks.
+  flag_help: This flag is temporarily disabled. Please use the fire-destroyblocks flag.
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
@@ -720,7 +729,12 @@ dRegions_Flag_Fire-SpreadBlocks:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   command_handler:
-    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
+    - define lines '<proc[dRegions_LineWrap].context[<s@dRegions_Flag_%Flag%.yaml_key[flag_help]||<&c>%flag% flag requires a %type% value!>|45]>'
+    - foreach <def[lines]> {
+      - run instantly s@dRegions_Msg 'def:<&c><def[value]>'
+      }
+    - queue clear
+#    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
 
 dRegions_Flag_Lightning-Strikes:
