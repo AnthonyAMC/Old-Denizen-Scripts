@@ -206,15 +206,6 @@ dRegions:
     - define eventHooks 'leaf-decay'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
-    on block falls:
-    - define world '<c.location.world.name.to_lowercase>'
-    - define readPath 'physics.<c.location.material.bukkit_enum.to_lowercase||null>'
-    - inject instantly s@dRegions p:event_PreProc_Config
-#    - define cuboids '<c.location.cuboids>'
-#    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
-#    - define eventHooks 'blockPhysics'
-#    - inject instantly s@dRegions p:event_PreProc_RunEvent
-
     on portal created:
     - define world '<c.world.name.to_lowercase>'
     - define readPath 'portal.create'
@@ -376,7 +367,11 @@ dRegions:
 
     on entity changes block:
     - define world '<c.location.world.name.to_lowercase>'
-    - if <c.old_material.bukkit_enum.is[==].to[soil]||false> {
+    - if <c.entity.entity_type.is[==].to[falling_block]> {
+      - define readPath 'physics.<c.entity.fallingblock_material.bukkit_enum.to_lowercase>'
+      - define eventHooks 'physics-<c.entity.fallingblock_material.bukkit_enum.to_lowercase>'
+      }
+      else if <c.old_material.bukkit_enum.is[==].to[soil]||false> {
       - define readPath 'trample-crops.<c.entity.prefix||entity>'
       - define eventHooks 'trample-crops-<c.entity.prefix||entity>'
       }
