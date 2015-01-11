@@ -352,6 +352,14 @@ dRegions:
     - define eventHooks '<c.damager.prefix>_Target_<c.entity.prefix>|<c.damager.prefix>_Damage_<c.entity.prefix>'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
+    on entity dies:
+    - define world '<c.entity.world.name.to_lowercase>'
+    - define cuboids '<c.entity.location.cuboids>'
+    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - define target '<c.entity.entity_type>'
+    - define eventHooks '<c.entity.prefix>Dies'
+    - inject instantly s@dRegions p:event_PreProc_RunEvent
+
     on entity spawns:
     - define world '<c.entity.world.name.to_lowercase>'
     - define cuboids '<c.cuboids>'
