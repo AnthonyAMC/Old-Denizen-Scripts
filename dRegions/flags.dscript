@@ -1550,6 +1550,69 @@ dRegions_Flag_Player-Drops-OnDeath:
     - inject s@dRegions_Flags_Processors p:state-withGroup instantly
 
 
+dRegions_Flag_Player-KeepItems:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Player-KeepItems<&4>]"
+  lore:
+  - <&5>Can players keep items on death
+  event_hook: PlayerDies
+  event_priority: 10
+  flag_type: state
+  flag_takeGroup: true
+  flag_defaultValue: deny/all
+  flag_help: State flag controlling whether players will keep their items when they die in a region. Default is to deny all. Takes the -g group switch.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event:
+    - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
+    - define suffix '<&pipe>player-keepitems<&rb>||deny<&gt>'
+    - define InheritedFlags '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
+    - foreach %InheritedFlags% {
+      - define flagObj '<def[value]>'
+      - if <def[flagObj].is[==].to[null]||true> {
+        - if <def[loop_index].is[==].to[<def[InheritedFlags].size>]> {
+          - define flagObj 'deny/all'
+          }
+          else foreach next
+        }
+      - define flagVal '<def[flagObj].split[/].get[1]>'
+      - define group '<def[flagObj].split[/].get[2]||all>'
+      - define region '<def[orderedRegions].get[%loop_index%]>'
+      - define isOwner '<proc[dRegions_IsOwner].context[%region%|%world%|<player>]>'
+      - define isMember '<proc[dRegions_isMember].context[%region%|%world%|<player>]>'
+      - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]>'
+
+      - if <def[flagVal].is[==].to[allow]||false> {
+        - if <def[isGroup]> {
+          - run locally returnItems 'def:<player.inventory.list_contents.escaped>|<player.equipment.escaped>' delay:2t
+          - determine NO_DROPS_NO_XP
+          }
+          else foreach stop
+        }
+        else {
+        - if !<def[isGroup]> {
+          - run locally returnItems 'def:<player.inventory.list_contents.escaped>|<player.equipment.escaped>' delay:2t
+          - determine NO_DROPS_NO_XP
+          }
+          else foreach stop
+        }
+      }
+
+  returnItems:
+    - inventory clear
+    - run s@dRegions_Msg 'def:<&9>You died, but your inventory is safe!'
+    - inventory set 'd:<player.inventory>' 'o:<def[1].unescaped>'
+    - define equipment '<def[2].unescaped>'
+    - equip <player> 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>'
+
+
 dRegions_Flag_Player-Pickup:
   type: item
   debug: false
