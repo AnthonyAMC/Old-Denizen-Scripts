@@ -680,7 +680,7 @@ dRegions_Flag_Entity-Drops-OnDeath:
   material: i@paper
   display name: "<&4>[<&6>Entity-Drops-OnDeath<&4>]"
   lore:
-  - <&5>Who can drop items
+  - <&5>Can mobs drop items
   event_hook: EntityDies
   event_priority: 10
   flag_type: state
@@ -1520,6 +1520,34 @@ dRegions_Flag_Player-Drops:
       - define flag 'player-drops'
       - inject s@dRegions_Flags_Processors p:state-withGroup instantly
       }
+
+
+dRegions_Flag_Player-Drops-OnDeath:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Player-Drops-OnDeath<&4>]"
+  lore:
+  - <&5>Who can drop items when they die
+  event_hook: PlayerDies
+  event_priority: 20
+  flag_type: state
+  flag_takeGroup: true
+  flag_defaultValue: allow/all
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event-cleanup:
+    - determine NO_DROPS
+
+  event:
+    - define player <player>
+    - define flag 'player-drops-ondeath'
+    - inject s@dRegions_Flags_Processors p:state-withGroup instantly
 
 
 dRegions_Flag_Player-Pickup:
