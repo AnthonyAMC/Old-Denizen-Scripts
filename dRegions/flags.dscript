@@ -175,22 +175,23 @@ dRegions_Flag_Gamemode:
     - define gmList '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
     - foreach %gmList% {
       - if <def[value].is[!=].to[null]||false> {
+        - define region "<def[orderedRegions].get[<def[loop_index]>]>"
         - define gm '<def[value].split[/].get[1]||survival>'
-        - define group '<def[value].split[/].get[2]||members>'
-        - define isOwner '<proc[dRegions_IsOwner].context[<def[orderedRegions].get[%loop_index%]>|%world%|<player>]>'
-        - define isMember '<proc[dRegions_isMember].context[<def[orderedRegions].get[%loop_index%]>|%world%|<player>]>'
+        - define group '<def[value].split[/].get[2]||all>'
+        - define isOwner '<proc[dRegions_IsOwner].context[<def[region]>|%world%|<player>]>'
+        - define isMember '<proc[dRegions_isMember].context[<def[region]>|%world%|<player>]>'
 
         - if <proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]> {
           - if <def[isExit].exists> {
-            - if <player.flag[dRegions_PreviousGamemode].is[!=].to[<player.gamemode>]||false> {
-              - adjust <player> 'gamemode:<player.flag[dRegions_PreviousGamemode]||survival>'
+            - if <player.flag[dRegions_<def[world]>_<def[region]>_PreviousGamemode].is[!=].to[<player.gamemode>]||false> {
+              - adjust <player> 'gamemode:<player.flag[dRegions_<def[world]>_<def[region]>_PreviousGamemode]||survival>'
               - run instantly s@dRegions_Msg 'def:<&7><&o>Your gamemode has been updated.'
               }
-            - flag <player> 'dRegions_PreviousGamemode:!'
+            - flag <player> 'dRegions_<def[world]>_<def[region]>_PreviousGamemode:!'
             }
             else if <def[isEnter].exists> {
             - if <def[gm].is[!=].to[<player.gamemode>]> {
-              - flag <player> 'dRegions_PreviousGamemode:<player.gamemode>'
+              - flag <player> 'dRegions_<def[world]>_<def[region]>_PreviousGamemode:<player.gamemode>'
               - adjust <player> 'gamemode:%gm%'
               - run instantly s@dRegions_Msg 'def:<&7><&o>Your gamemode has been updated.'
               }
