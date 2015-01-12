@@ -2256,7 +2256,7 @@ dRegions_Commands:
       - queue clear
       }
     # Check if player owns parent
-    - if !<player.has_permission[dregions.admin]||<player.is_op||false>>{
+    - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
       - if <proc[dRegions_IsOwner].context[%parent%|%world%|<player>].not> {
         - run instantly s@dRegions_Msg 'def:<&c>You are not an owner of this region!'
         - queue clear
