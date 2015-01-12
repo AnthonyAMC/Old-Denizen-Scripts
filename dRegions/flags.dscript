@@ -332,7 +332,7 @@ dRegions_Flag_Build:
         - define flagVal 'deny/nonmembers'
         }
       - define flag '<def[flagVal].split[/].get[1]>'
-      - define group '<def[flagVal].split[/].get[2]||nonmembers>'
+      - define group '<def[flagVal].split[/].get[2]||<t[<def[flag].is[==].to[allow]>]:all||nonmembers>>'
       - define isOwner '<proc[dRegions_IsOwner].context[<def[orderedRegions].get[%loop_index%]>|%world%|<player>]>'
       - define isMember '<proc[dRegions_isMember].context[<def[orderedRegions].get[%loop_index%]>|%world%|<player>]>'
 
@@ -1994,7 +1994,7 @@ dRegions_Flags_Processors:
           else foreach next
         }
       - define flagVal '<def[flagObj].split[/].get[1]>'
-      - define group '<def[flagObj].split[/].get[2]||<def[FlagScript].yaml_key[flag_defaultValue].split[/].get[2]||all>>'
+      - define group '<def[flagObj].split[/].get[2]||<t[<def[flagObj].is[==].to[allow]>]:all||nonmembers>>'
       - define region '<def[orderedRegions].get[%loop_index%]>'
       - define isOwner '<proc[dRegions_IsOwner].context[%region%|%world%|<def[player]>]>'
       - define isMember '<proc[dRegions_isMember].context[%region%|%world%|<def[player]>]>'
@@ -2036,7 +2036,7 @@ dRegions_Flags_Processors:
           else foreach next
         }
       - define flagVal '<def[flagObj].split[/].get[1]>'
-      - define group '<def[flagObj].split[/].get[2]||<def[FlagScript].yaml_key[flag_defaultValue].split[/].get[2]||all>>'
+      - define group '<def[flagObj].split[/].get[2]||<t[<def[flagObj].is[==].to[allow]>]:all||nonmembers>>'
       - define region '<def[orderedRegions].get[%loop_index%]>'
       - define isOwner '<proc[dRegions_IsOwner].context[%region%|%world%|<def[player]>]>'
       - define isMember '<proc[dRegions_isMember].context[%region%|%world%|<def[player]>]>'
