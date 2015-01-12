@@ -249,7 +249,7 @@ dRegions_Flag_Inventory:
       - define region '<def[orderedRegions].get[%loop_index%]>'
       - if <def[value].is[!=].to[null]||false> {
         - define inv '<def[value].split[/].get[1]||unique>'
-        - define group '<def[value].split[/].get[2]||nonmembers>'
+        - define group '<def[value].split[/].get[2]||all>'
         - define isOwner '<proc[dRegions_IsOwner].context[%region%|%world%|<player>]>'
         - define isMember '<proc[dRegions_isMember].context[%region%|%world%|<player>]>'
 
