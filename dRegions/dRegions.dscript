@@ -366,6 +366,9 @@ dRegions:
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define target '<c.entity.entity_type>'
     - define eventHooks '<c.entity.prefix>_Spawn'
+# This could be handy later, but right now the entity spawns event is powered
+# by CretureSpawnEvent which only cares about living entities.
+#    - define eventHooks '<t[<c.entity.is_living>]:Mob_Spawn||Entity_Spawn>'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
     on entity enters portal:
@@ -472,7 +475,7 @@ dRegions:
   event_PreProc_OrderRegionsGlobal:
   # Reusable code block injected from events.
   # This pre-processor returns %orderedRegions% including the __global__ region.
-    - define dRegions '<def[cuboids].parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[split[_].get[3]].include[__global__].replace[li@].replace[|].with[,]||null>'
+    - define dRegions '<def[cuboids].parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[after[dregions_%world%_]].include[__global__].replace[li@].replace[|].with[,]||null>'
     - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|%dRegions%]||li@>'
 
 
@@ -481,7 +484,7 @@ dRegions:
   # This pre-processor returns %orderedRegions% excluding the __global__ region.
   # It stops processing if there are no regions present.
 #    - narrate "PreProcLoad"
-    - define dRegions '<def[cuboids].parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[split[_].get[3]].replace[li@].replace[|].with[,]||null>'
+    - define dRegions '<def[cuboids].parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[after[dregions_%world%_]].replace[li@].replace[|].with[,]||null>'
     - if <def[dRegions].is[==].to[null]||true> {
       - queue clear
       }
@@ -2021,7 +2024,7 @@ dRegions_Commands:
     # OK, we've validated all the user input, let's get the regions and apply filters
     - define regions li@
     - if <def[filterHere].exists> {
-      - define standingIn '<player.location.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[split[_].get[3]].replace[li@].replace[|].with[,]>'
+      - define standingIn '<player.location.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[after[dregions_%world%_]].replace[li@].replace[|].with[,]>'
       - define worldRegions '<proc[dRegions_HighestPriority].context[%world%|%standingIn%]||li@>'
       - if <def[worldRegions].is_empty||true> {
         - define worldRegions 'li@__global__'
@@ -2360,7 +2363,7 @@ dRegions_Commands:
     - define name '<def[name]||<c.args.get[2].escaped.to_lowercase||null>>'
     - if '<def[name].is[==].to[null]||true>' {
       - if <li@info|select.contains[%command%]> {
-        - define dRegions '<player.location.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[split[_].get[3]].replace[li@].replace[|].with[,]>'
+        - define dRegions '<player.location.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[after[dregions_%world%_]].replace[li@].replace[|].with[,]>'
         - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|%dRegions%]>'
         - if <def[orderedRegions].is_empty||true> {
           - define name '__global__'
