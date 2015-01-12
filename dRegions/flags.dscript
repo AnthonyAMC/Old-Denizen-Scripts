@@ -698,10 +698,7 @@ dRegions_Flag_Entity-Drops-OnDeath:
     - determine no_drops
 
   event:
-    - repeat 1 {
-      - if <c.entity.is_living.not> {
-        - repeat stop
-        }
+    - if <c.entity.is_living> {
       - define flag 'entity-drops-ondeath'
       - define flag-targetList 'entity-drops-ondeathlist'
       - inject s@dRegions_Flags_Processors p:state-withTarget
