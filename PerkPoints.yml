@@ -144,15 +144,14 @@ PerkPointUpdateConfig:
   updateConfig:
     - announce "<&b>PerkPoints<&co><&3> Updating packages.yml file..." to_console
     - inject s@PerkPointSystem loadYaml instantly
-    - define packList '<yaml[PerkPoints_packages].list_keys[packages]||null>'
-    - if <def[packlist].is[==].to[null]>
-      || <def[packlist].is_empty> queue stop
+    - define packList '<yaml[PerkPoints_packages].list_keys[packages]||li@>'
+    - if <def[packlist].is_empty||true> queue stop
     - foreach %packlist% {
       - if !<yaml[PerkPoints_packages].contains[packages.%value%.requirePermissions]> {
-        - yaml 'write:packages.%value%.requirePermissions' 'id:PerkPoints_packages'
+        - yaml set 'id:PerkPoints_packages' 'packages.%value%.requirePermissions:'
         }
       - if !<yaml[PerkPoints_packages].contains[packages.%value%.concurrentLimit]> {
-        - yaml 'write:packages.%value%.concurrentLimit' 'id:PerkPoints_packages'
+        - yaml set 'id:PerkPoints_packages' 'packages.%value%.concurrentLimit:'
         }
       }
     - yaml 'savefile:PerkPoints/packages.yml' 'id:PerkPoints_packages'
@@ -180,8 +179,7 @@ PerkPointSystem:
     on packs command:
     - determine passively fulfilled
     - define page '<c.args.get[1].abs.as_int||null>'
-    - if <s@PerkPointsGUI.is[!=].to[null]||false> run s@PerkPointsGUI 'p:listExe' 'def:%page%'
-      else inject listPackagesPaged locally
+    - run s@PerkPointsGUI 'p:listExe' 'def:%page%'
 
     on perk command:
     - inject locally commandHandler instantly
@@ -224,14 +222,14 @@ PerkPointSystem:
       - queue stop
       }
       else {
-      - yaml 'write:Offline_Cache.databases.%db%.status' 'value:connecting' 'id:SQLManager_Offline'
+      - yaml set 'id:SQLManager_Offline' 'Offline_Cache.databases.%db%.status:connecting'
       - yaml 'savefile:SQLManager/cache.yml' 'id:SQLManager_Offline'
       }
     - ^inject s@SQLManager
     - ^if <def[expireOnStartup]> {
       - inject locally checkAllExpired instantly
       }
-    - ^if <queue.exists[PerkPoints_ExpireCheck]> {
+    - ^if <queue.exists[PerkPoints_ExpireCheck]||true> {
       - announce "<&b>PerkPoints<&co><&3> Stopping Expiration Check..." to_console
       - queue queue:PerkPoints_ExpireCheck stop
       }
@@ -308,7 +306,7 @@ PerkPointSystem:
     - ^define expireCheck '<yaml[PerkPoints_config].read[config.General.ExpireCheck]||10m>'
 
   unload:
-    - ^if <queue.exists[PerkPoints_ExpireCheck]> {
+    - ^if <queue.exists[PerkPoints_ExpireCheck]||true> {
       - announce "<&b>PerkPoints<&co><&3> Stopping Expiration Check..." to_console
       - queue queue:PerkPoints_ExpireCheck stop
       }
@@ -455,7 +453,7 @@ PerkPointSystem:
       - define packList '<entry[packList].result||null>'
       - foreach %packList% {
         - define packInfo '<def[value].split[/]>'
-        - if <def[packInfo].is_empty> foreach next
+        - if <def[packInfo].is_empty||true> foreach next
         - define id '<def[packInfo].get[1]>'
         - define uuid '<def[packInfo].get[2]>'
         - define pack '<def[packInfo].get[3]>'
@@ -479,7 +477,7 @@ PerkPointSystem:
       - define packList '<entry[packList].result||null>'
       - foreach %packList% {
         - define packInfo '<def[value].split[/]>'
-        - if <def[packInfo].is_empty> foreach next
+        - if <def[packInfo].is_empty||true> foreach next
         - define id '<def[packInfo].get[1]>'
         - define pack '<def[packInfo].get[3]>'
         - define writePath 'packages.%pack%'
@@ -565,12 +563,11 @@ PerkPointSystem:
     - queue stop
 
   listServicesRegistered:
-    - define services '<yaml[PerkPoints_config].list_keys[config.Services].exclude[example|ExampleService]||null>'
+    - define services '<yaml[PerkPoints_config].list_keys[config.Services].exclude[example|ExampleService]||li@>'
     - define msgsHeaderTitle 'Registered Services'
     - inject locally msgsHeader instantly
     - inject locally msgsServiceListHeader instantly
-    - if <def[services].is[==].to[null]>
-      || <def[services].is_empty> {
+    - if <def[services].is_empty||true> {
       - narrate "<&5>|<&sp><&c>No services have been registered yet!"
       }
       else {
@@ -600,9 +597,9 @@ PerkPointSystem:
       - narrate "<&b>PerkPoints<&co> <&c>Tried setting invalid pointValue. Setting sane default 5"
       - define pointValue '5'
       }
-    - yaml 'write:config.Services.<def[service]>.name' 'value:%service%' 'id:PerkPoints_config'
-    - yaml 'write:config.Services.<def[service]>.points' 'value:%pointValue%' 'id:PerkPoints_config'
-    - yaml 'write:config.Services.<def[service]>.url' 'value:%url%' 'id:PerkPoints_config'
+    - yaml set 'id:PerkPoints_config' 'config.Services.<def[service]>.name:%service%'
+    - yaml set 'id:PerkPoints_config' 'config.Services.<def[service]>.points:%pointValue%'
+    - yaml set 'id:PerkPoints_config' 'config.Services.<def[service]>.url:%url%'
     - yaml 'savefile:PerkPoints/config.yml' 'id:PerkPoints_config'
     - narrate "<&b>PerkPoints<&co> <&a>Registed <&b><def[service].replace[-].with[.].unescaped><&a> to give <&b>%pointValue%<&a> <yaml[PerkPoints_config].read[config.General.Points]||Points>."
     - queue stop
@@ -824,9 +821,8 @@ PerkPointSystem:
 
     # Let's check if that option has sub-options. If it does, do sanity check
     # and define known data
-    - define subOptionsList '<yaml[%readID%].list_keys[%readPath%]||null>'
-    - if !<def[subOptionsList].is_empty>
-      && !<def[subOptionsList].is[==].to[null]> {
+    - define subOptionsList '<yaml[%readID%].list_keys[%readPath%]||li@>'
+    - if !<def[subOptionsList].is_empty||true> {
       - define subOption '<c.args.get[5].replace[.].with[-].escaped||null>'
       - if !<def[subOptionsList].contains_case_sensitive[%subOption%]> {
         - narrate "<&b>PerkPoints<&co> <&a>Available Sub Options"
@@ -874,7 +870,7 @@ PerkPointSystem:
         }
       }
       else {
-      - yaml 'write:%writePath%' 'value:%value%' 'id:%writeID%'
+      - yaml set '%writePath%:%value%' 'id:%writeID%'
       - narrate "<&b>PerkPoints<&co> <&b>Set <&a>'<tern[<def[subOption].exists>]:%option% <def[subOption]||null> || %option%>'<&b> value for <&a>%pack%<&a> package!"
       }
     - if <yaml.list.contains[%readID%]> yaml unload 'id:%readID%'
@@ -905,9 +901,8 @@ PerkPointSystem:
     - define msgsHeaderTitle 'Perk Packages List'
     - inject locally msgsHeader instantly
     - inject locally msgsPackageListHeader instantly
-    - define packList '<yaml[PerkPoints_packages].list_keys[packages].exclude[ExamplePackage]||null>'
-    - if <def[packList].is[==].to[null]>
-      || <def[packList].is_empty> {
+    - define packList '<yaml[PerkPoints_packages].list_keys[packages].exclude[ExamplePackage]||li@>'
+    - if <def[packList].is_empty||true> {
       - narrate "<&5>|<&sp><&f>No Perk Packs have been created yet!"
       }
       else {
@@ -946,7 +941,7 @@ PerkPointSystem:
     - if !<def[page].is[MATCHES].to[number]> {
       - define page '1'
       }
-    - define packList '<yaml[PerkPoints_packages].list_keys[packages].exclude[ExamplePackage]||null>'
+    - define packList '<yaml[PerkPoints_packages].list_keys[packages].exclude[ExamplePackage]||li@>'
 
     - if <player.has_permission[perkpoints.admin]> {
       - define pages '<def[packList].size.div[5].round_up>'
@@ -956,8 +951,7 @@ PerkPointSystem:
       - define msgsHeaderTitle 'Perk Packs List - Pg %page% of %pages%'
       - inject locally msgsHeader instantly
       - inject locally msgsPackageListHeader instantly
-      - if <def[packList].is[==].to[null]>
-        || <def[packList].is_empty> {
+      - if <def[packList].is_empty||true> {
         - narrate "<&5>|<&sp><&f>No Perk Packs have been created yet!"
         }
         else {
@@ -992,8 +986,7 @@ PerkPointSystem:
       - define msgsHeaderTitle 'Perk Packs List - Pg %page% of %pages%'
       - inject locally msgsHeader instantly
       - inject locally msgsPackageListHeader instantly
-      - if <def[packList].is[==].to[null]>
-        || <def[packList].is_empty> {
+      - if <def[packList].is_empty||true> {
         - narrate "<&5>|<&sp><&f>No Perk Packs have been created yet!"
         }
         else {
@@ -1024,18 +1017,16 @@ PerkPointSystem:
     - inject locally packageExists
     - define msgsHeaderTitle '%pack% Info'
     - inject locally msgsHeader instantly
-    - define optionsList '<yaml[%writeID%].list_keys[%writePath%]||null>'
-    - if <def[optionsList].is[==].to[null]>
-      || <def[optionsList].is_empty> {
+    - define optionsList '<yaml[%writeID%].list_keys[%writePath%]||li@>'
+    - if <def[optionsList].is_empty||true> {
       - narrate "<&5>|<&sp><&c>This package is misconfigured!"
       - inject locally msgsFooter instantly
       - queue stop
       }
     - foreach %optionsList% {
       - define option %value%
-      - define subOptionsList '<yaml[%writeID%].list_keys[%writePath%.%option%]||null>'
-      - if !<def[subOptionsList].is_empty>
-        && !<def[subOptionsList].is[==].to[null]> {
+      - define subOptionsList '<yaml[%writeID%].list_keys[%writePath%.%option%]||li@>'
+      - if !<def[subOptionsList].is_empty||true> {
         - narrate "<&5>|<&sp><&sp><&f>%option%<&co>"
         - foreach %subOptionsList% {
           - define subOption '%value%'
@@ -1071,15 +1062,14 @@ PerkPointSystem:
 
 
   checkPackageRequirements:
-    - define active '<yaml[%writeID%].read[%writePath%.active]||null>'
+    - define active '<yaml[%writeID%].read[%writePath%.active]||false>'
     - define price '<yaml[%writeID%].read[%writePath%.price]||null>'
     - define limit '<yaml[%writeID%].read[%writePath%.limit]||null>'
     - define concurrentLimit '<yaml[%writeID%].read[%writePath%.concurrentLimit]||null>'
     - define requirePermissions '<yaml[%writeID%].read[%writePath%.requirePermissions]||null>'
     - define prerequisites '<yaml[%writeID%].read[%writePath%.prerequisites]||null>'
     - define requiredInventorySpace '<yaml[%writeID%].read[%writePath%.requiredInventorySpace]||null>'
-    - if !<def[active]>
-      || <def[active].is[==].to[null]> {
+    - if !<def[active]> {
       - define fail 'true'
       - narrate "<&5>|<&sp> <&c>%pack% is disabled!"
       - announce "<&b>PerkPoints<&co> <&c>%pack% is disabled!" to_console
@@ -1735,7 +1725,7 @@ PerkPoints_SQLTables:
     - define sqlScriptName 'PerkPoints_SQLTables'
     - define sqlFile '<script.relative_filename>'
     - if <yaml.list.contains[%sqlScriptName%]> yaml unload 'id:%sqlScriptName%'
-    - yaml 'load:%sqlFile%' 'id:%sqlScriptName%'
+    - yaml 'load:%sqlFile%' fix_formatting 'id:%sqlScriptName%'
     - if !<yaml.list.contains[%sqlScriptName%]> {
       - announce "<&c>PerkPoints<&co><&b> An error occurred while loading %sqlScriptname%!" to_console
       - announce "<&b>PerkPoints<&co><&3> Aborting..." to_console
