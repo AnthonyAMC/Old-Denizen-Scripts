@@ -11,8 +11,8 @@
 #   dScript Version: 0.9.5-b1518                                               |
 #                                                                              |
 # ---------------------------------------------------------------------------- #
-# 
-# 
+#
+#
 # ABOUT:
 #
 #       Use SQLManager to build your default tables in an existing (empty)
@@ -32,11 +32,11 @@
 #
 #      Provides a Managed Restart system that integrates with the Offline
 #    Caching system. Avoids potential duplicate reconnection attempts!
-# 
+#
 # -------------
-# 
+#
 # USAGE:
-# 
+#
 #--- Intro:
 #
 #       To use the SQLManager in your script, you will need 2 main things.
@@ -86,22 +86,22 @@
 #            pointsearned: INT NOT NULL DEFAULT '0'
 #            pointsspent: INT NOT NULL DEFAULT '0'
 #            pointsbalance: INT NOT NULL DEFAULT '0'
-# 
+#
 #--- Generating the config.yml file
-# 
+#
 #       Your script must have a valid config.yml file for the SQLManager
 #     to know what to generate and how to connect. The config.yml file allows
 #     the end user to change the database and table names as needed. The example
 #     below shows the required information. Use the ConfigFileGenerator to
 #     ensure that the config.yml file is generated correctly.
 #     See the ConfigFileGenerator for usage instructions.
-# 
+#
 #    EXAMPLE:  Default Configurations Entry
-# 
+#
 #      'YourScript_Configurations':
 #        type: task
 #        debug: false
-#      
+#
 #        config:
 #          MySQL:
 #            connection:
@@ -116,7 +116,7 @@
 #            tables:
 #              SomeLogs: yourScript_logs
 #              AnotherTable: yourScript_custom_table_name
-# 
+#
 #--- Running the SQLManager
 #
 #       Now that you have your script setup to include all the prerequisite data
@@ -137,7 +137,7 @@
 #       %sqlScriptName% refers to the name of the script container that holds
 #     your table declarations. This YAML file must be loaded as %sqlScriptName%
 #
-# 
+#
 #    EXAMPLE:  run from an on server start event
 #      start:
 #        - define yamlName 'YourScript'
@@ -146,7 +146,7 @@
 #        - inject s@YourScript_SQLTables
 #        - inject s@SQLManager
 #
-# 
+#
 #--- Offline Caching System
 #
 #       SQLManager offers an offline caching system. This helps safeguard you
@@ -177,7 +177,7 @@
 #        - narrate "Database Offline!"
 #        }
 #
-# 
+#
 #--- Managed Restarts
 #
 #       SQLManager offers a Managed Restart system. This is intended to prevent
@@ -218,7 +218,7 @@
 #            - queue stop
 #            }
 #            else {
-#            - yaml 'write:Offline_Cache.databases.%db%.status' 'value:connecting' 'id:SQLManager_Offline'
+#            - yaml 'id:SQLManager_Offline' set 'Offline_Cache.databases.%db%.status:connecting'
 #            - yaml 'savefile:SQLManager/cache.yml' 'id:SQLManager_Offline'
 #            }
 #          - ^inject s@SQLManager
@@ -229,16 +229,16 @@
 #    You can restart your system from a command or any failure point you
 #    need by running the restart subscript with the appropriate definitions:
 #      - run s@SQLManager p:restart def:%yamlName%|%scriptName%|%db%
-# 
+#
 # -------------
-# 
+#
 # TODO - Future Feature Fluff:
-# 
+#
 #   - Automagic Table / Database updates
 #     - Checks your script to see if the table structure has changed and
 #       modifies existing tables if needed.
-# 
-# 
+#
+#
 #______________________________________________________________________________#
 
 
@@ -254,7 +254,7 @@ SQLManager:
     - ^inject locally sqlConnection
     - ^inject locally initTables
     - ^announce "<&b>SQLManager<&co><&a> %db% database loaded!" to_console
-    - ^if <queue.exists[%db%_HeartBeat]> {
+    - ^if <queue.exists[%db%_HeartBeat]||false> {
       - announce "<&b>SQLManager<&co><&3> Stopping %db% Connection Heartbeat..." to_console
       - queue queue:%db%_HeartBeat stop
       }
@@ -273,7 +273,7 @@ SQLManager:
       - define fail 'true'
       }
     - ^if !<def[scriptName].exists>
-      || <def[scriptName].as_script.is[==].to[null]> {
+      || <def[scriptName].as_script.is[==].to[null]||true> {
       - announce "<&b>SQLManager<&co><&c> You must define a valid scriptName before we proceed!" to_console
       - define fail 'true'
       }
@@ -410,8 +410,8 @@ SQLManager:
   # This finds all tables that need to be initialized and verifies that they are
   # defined in sqlScriptName and named in the user config.yml file.
     - ^announce "<&b>SQLManager<&co><&3> Initializing tables..." to_console
-    - ^define tables '<yaml[%sqlScriptName%].list_keys[%sqlScriptName%.tables]||null>'
-    - ^if <def[tables].is_empty> {
+    - ^define tables '<yaml[%sqlScriptName%].list_keys[%sqlScriptName%.tables]||li@>'
+    - ^if <def[tables].is_empty||true> {
       - announce "<&b>SQLManager<&co><&c> No Tables Exist!" to_console
       - announce "<&b>SQLManager<&co><&3> Please verify that you have created your table declarations for the <&b>%db%<&3> database as described in the Usage comments in <&b><script.relative_filename><&3>!" to_console
       - inject locally unload
@@ -452,8 +452,8 @@ SQLManager:
       }
 
   createTable:
-    - define columns '<yaml[%sqlScriptName%].list_keys[%sqlScriptName%.tables.%table%.columns]>'
-    - if <def[columns].is_empty> {
+    - define columns '<yaml[%sqlScriptName%].list_keys[%sqlScriptName%.tables.%table%.columns]||li@>'
+    - if <def[columns].is_empty||true> {
       - announce "<&b>SQLManager<&co><&c> No Columns Exist!" to_console
       - announce "<&b>SQLManager<&co><&3> Please verify that you have created your table declarations for the <&b>%db%<&3> database as described in the Usage comments in <&b><script.relative_filename><&3>!" to_console
       - inject locally unload
@@ -469,7 +469,7 @@ SQLManager:
     - sql id:%db% "update:CREATE table %tableName%(<def[dataList_%table%].comma_separated>);"
 
   unload:
-    - ^if <queue.exists[%db%_HeartBeat]> {
+    - ^if <queue.exists[%db%_HeartBeat]||false> {
       - announce "<&b>SQLManager<&co><&3> Stopping %db% Heartbeat..." to_console
       - queue queue:%db%_HeartBeat stop
       }
@@ -484,7 +484,7 @@ SQLManager:
     - ^announce "<&b>SQLManager<&co><&c> System disabled..." to_console
     - ^if <server.list_scripts.contains[<def[scriptName].as_script>]> {
       - inject s@%scriptName% p:unload
-      - yaml 'write:Offline_Cache.databases.%db%.status' 'value:offline' 'id:SQLManager_Offline'
+      - yaml set 'id:SQLManager_Offline' 'Offline_Cache.databases.%db%.status:offline'
       - yaml 'savefile:SQLManager/cache.yml' 'id:SQLManager_Offline'
       }
       else {
@@ -492,7 +492,7 @@ SQLManager:
       - announce "<&b>SQLManager<&co><&c> scriptName %scriptName% <server.list_scripts.contains[s@%scriptName%]>" to_console
       }
 
-  
+
   keepAlive:
   # Sends a dummy query to the db just to keep activity
     - ^define yamlName '<def[yamlName]||<def[1]||null>>'
@@ -528,7 +528,7 @@ SQLManager:
       - queue stop
       }
       else {
-      - yaml 'write:Offline_Cache.databases.%db%.status' 'value:connecting' 'id:SQLManager_Offline'
+      - yaml set 'id:SQLManager_Offline' 'Offline_Cache.databases.%db%.status:connecting'
       - yaml 'savefile:SQLManager/cache.yml' 'id:SQLManager_Offline'
       }
     - ^announce "<&b>SQLManager<&co> <&d>Restarting %yamlName% system..." to_console
@@ -556,16 +556,16 @@ SQLManager_ConnectionCheck:
 SQLManager_Offline:
   type: world
   speed: 0
-  debug: true
+  debug: false
 
   events:
     on server start:
     - inject locally loadFile instantly
-    - define databases '<yaml[SQLManager_Offline].list_keys[Offline_Cache.databases]||null>'
-    - if <def[databases].is[==].to[null]> || <def[databases].is_empty> queue stop
+    - define databases '<yaml[SQLManager_Offline].list_keys[Offline_Cache.databases]||li@>'
+    - if <def[databases].is_empty||true> queue stop
     - foreach %databases% {
       - define db %value%
-      - yaml 'write:Offline_Cache.databases.%db%.status' 'value:offline' 'id:SQLManager_Offline'
+      - yaml set 'id:SQLManager_Offline' 'Offline_Cache.databases.%db%.status:offline'
       }
 
 
@@ -605,7 +605,7 @@ SQLManager_Offline:
 
   createFile:
     - yaml create 'id:SQLManager_Offline'
-    - yaml 'write:Offline_Cache.NOTICE' 'value:DO NOT EDIT THIS FILE!' 'id:SQLManager_Offline'
+    - yaml set 'id:SQLManager_Offline' 'Offline_Cache.NOTICE:DO NOT EDIT THIS FILE!'
     - yaml 'savefile:SQLManager/cache.yml' 'id:SQLManager_Offline'
     - announce "<&b>SQLManager<&co><&a> Created <&b>cache.yml<&a>!" to_console
 
@@ -625,7 +625,7 @@ SQLManager_Offline:
         - define id <entry[id].result.get[1].split[/].get[1]||null>
         }
         else {
-        - yaml 'write:Offline_Cache.databases.%db%.status' 'value:offline' 'id:SQLManager_Offline'
+        - yaml set 'id:SQLManager_Offline' 'Offline_Cache.databases.%db%.status:offline'
         - yaml set Offline_Cache.databases.%db%.statements:->:<def[statement]> 'id:SQLManager_Offline'
         - yaml 'savefile:SQLManager/cache.yml' 'id:SQLManager_Offline'
         - announce "<&b>SQLManager<&co> <&c>Managed Connection Check failed for <&b>%db%<&c>!" to_console
@@ -637,17 +637,16 @@ SQLManager_Offline:
 
   processOfflineQueue:
     - ^announce "<&b>SQLManager<&co> <&3>Processing Offline Queue for <&b>%db%<&3>..." to_console
-    - ^define statements '<yaml[SQLManager_Offline].read[Offline_Cache.databases.%db%.statements]||null>'
-    - ^if <def[statements].is[==].to[null]> 
-      || <def[statements].is_empty> {
+    - ^define statements '<yaml[SQLManager_Offline].read[Offline_Cache.databases.%db%.statements]||li@>'
+    - ^if <def[statements].is_empty||true> {
       - if <proc[SQLManager_ConnectionCheck].context[%db%]> {
-        - yaml 'write:Offline_Cache.databases.%db%.status' 'value:online' 'id:SQLManager_Offline'
+        - yaml set 'id:SQLManager_Offline' 'Offline_Cache.databases.%db%.status:online'
         - yaml 'savefile:SQLManager/cache.yml' 'id:SQLManager_Offline'
         - announce "<&b>SQLManager<&co> <&d>%db% Now Online!" to_console
         - inject locally reloadfile instantly
         }
         else {
-        - yaml 'write:Offline_Cache.databases.%db%.status' 'value:offline' 'id:SQLManager_Offline'
+        - yaml set 'id:SQLManager_Offline' 'Offline_Cache.databases.%db%.status:offline'
         - announce "<&b>SQLManager<&co> <&c>Encountered an error while processing Offline queue for <&b>%db%<&c>!" to_console
         - announce "<&b>SQLManager<&co> <&c>Reverting <&b>%db%<&c> to offline mode..." to_console
         - run s@SQLManager p:restart def:%yamlName%|%scriptName%|%db%
@@ -663,7 +662,7 @@ SQLManager_Offline:
           - wait 1t
           }
           else {
-          - yaml 'write:Offline_Cache.databases.%db%.status' 'value:offline' 'id:SQLManager_Offline'
+          - yaml set 'id:SQLManager_Offline' 'Offline_Cache.databases.%db%.status:offline'
           - announce "<&b>SQLManager<&co> <&c>Encountered an error while processing Offline queue for <&b>%db%<&c>!" to_console
           - announce "<&b>SQLManager<&co> <&c>Reverting <&b>%db%<&c> to offline mode" to_console
           - run s@SQLManager p:restart def:%yamlName%|%scriptName%|%db%
@@ -674,10 +673,9 @@ SQLManager_Offline:
         - inject locally processOfflineQueue
         }
         else {
-        - yaml 'write:Offline_Cache.databases.%db%.status' 'value:offline' 'id:SQLManager_Offline'
+        - yaml set 'id:SQLManager_Offline' 'Offline_Cache.databases.%db%.status:offline'
         - announce "<&b>SQLManager<&co> <&c>Encountered an error while processing Offline queue for <&b>%db%<&c>!" to_console
         - announce "<&b>SQLManager<&co> <&c>Reverting <&b>%db%<&c> to offline mode" to_console
         - run s@SQLManager p:restart def:%yamlName%|%scriptName%|%db%
         }
       }
-
