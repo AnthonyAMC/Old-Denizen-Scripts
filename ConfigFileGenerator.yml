@@ -295,7 +295,7 @@ ConfigFileGenerator:
 
   singleEntry:
     - if <def[dryrun].is[==].to[false]> {
-      - yaml 'write:<def[writePath]>' 'value:<def[entry]>' 'id:<def[writeID]>'
+      - yaml set 'id:<def[writeID]>' '<def[writePath]>:<def[entry]>'
       }
     - if <def[dryrun].is[==].to[true]> || <def[verbose].is[==].to[true]> {
       - announce "<&b>ConfigFileGenerator<&co> <&a>Writing<&co> <&c>%writePath%<&co> <&e>%entry%" to_console
