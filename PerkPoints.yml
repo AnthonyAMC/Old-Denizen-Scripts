@@ -179,7 +179,12 @@ PerkPointSystem:
     on packs command:
     - determine passively fulfilled
     - define page '<c.args.get[1].abs.as_int||null>'
-    - run s@PerkPointsGUI 'p:listExe' 'def:%page%'
+    - if <s@PerkPointsGUI.is[!=].to[null]||false> {
+      - run s@PerkPointsGUI 'p:listExe' 'def:%page%'
+      }
+      else {
+      - inject listPackagesPaged locally
+      }
 
     on perk command:
     - inject locally commandHandler instantly
