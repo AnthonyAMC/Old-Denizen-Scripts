@@ -234,7 +234,7 @@ PerkPointSystem:
     - ^if <def[expireOnStartup]> {
       - inject locally checkAllExpired instantly
       }
-    - ^if <queue.exists[PerkPoints_ExpireCheck]||true> {
+    - ^if <queue.exists[PerkPoints_ExpireCheck]||false> {
       - announce "<&b>PerkPoints<&co><&3> Stopping Expiration Check..." to_console
       - queue queue:PerkPoints_ExpireCheck stop
       }
@@ -311,7 +311,7 @@ PerkPointSystem:
     - ^define expireCheck '<yaml[PerkPoints_config].read[config.General.ExpireCheck]||10m>'
 
   unload:
-    - ^if <queue.exists[PerkPoints_ExpireCheck]||true> {
+    - ^if <queue.exists[PerkPoints_ExpireCheck]||false> {
       - announce "<&b>PerkPoints<&co><&3> Stopping Expiration Check..." to_console
       - queue queue:PerkPoints_ExpireCheck stop
       }
