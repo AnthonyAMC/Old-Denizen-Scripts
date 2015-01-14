@@ -25,7 +25,7 @@
 #       Offers a connection check procedure script to easily check if the
 #    database is online before issuing any sql commands.
 #
-#       Manages an offline queue system. Using this method automatically cache
+#       Manages an offline queue system. Using this method automatically caches
 #    any update statements that are attempted while the database is offline.
 #    They will be automatically processed when your system is back online.
 #    See usage instructions below.
@@ -512,7 +512,7 @@ SQLManager:
     - ^define yamlName '<def[1]||null>'
     - ^define scriptName '<def[2]||null>'
     - ^define db '<def[3]||null>'
-    - ^define pass li@%yamlName%|%scriptName%|%db%
+    - ^define pass 'li@%yamlName%|%scriptName%|%db%'
     - ^if <def[pass].contains[null]> {
       - announce "<&b>SQLManager<&co> <&4>Restarting <tern[<def[yamlName].exists>]:<&a>%yamlName% || <&a>UNKNOWN SCRIPT> <&4>Failed!" to_console
       - announce "<&b>SQLManager<&co> <&4>Requisite data not found!" to_console
