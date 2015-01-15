@@ -519,6 +519,60 @@ dRegions_Flag_Mob-SpawnList:
     - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
 
+dRegions_Flag_EVE:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>EVE<&4>]"
+  lore:
+  - <&5>Can mobs be targeted
+  event_hook: ENTITY_Target_ENTITY
+  event_priority: 20
+  flag_type: state
+  flag_takeGroup: false
+  flag_defaultValue: allow
+  flag_help: State flag controlling whether mobs can be targeted for attack by other mobs in this region. Defaults to allow. Use eve-moblist flag to specify mob types.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event:
+    - define target '<def[defender].entity_type>'
+    - define flag 'eve'
+    - define flag-targetList 'eve-moblist'
+    - inject s@dRegions_Flags_Processors p:state-withTarget instantly
+
+  event-cleanup:
+    - remove <c.projectile||li@>
+    - attack <def[attacker]> target:cancel
+
+
+dRegions_Flag_EVE-Moblist:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>EVE-Moblist<&4>]"
+  lore:
+  - <&5>List of mobs used by eve flag
+  command_entryType: mob
+  command_verifyEntry: <def[value].is[matches].to[entity].not>
+  flag_type: list
+  flag_takeGroup: false
+  flag_help: List flag used with eve flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of mobs.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  command_handler:
+    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
+
+
 dRegions_Flag_PVE:
   type: item
   debug: false
