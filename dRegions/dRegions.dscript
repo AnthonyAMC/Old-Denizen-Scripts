@@ -3037,10 +3037,6 @@ dRegion_FlagTypeMatch:
       }
     - determine 'false'
 
-
-
-
-
 #
 #  END other utilities
 #--------------------------------------
@@ -3066,6 +3062,37 @@ dRegions_Author_Anthony:
   - <&9>           Click To Visit
 #
 #  END dRegions author banner items
+#--------------------------------------
+#
+#  dRegions Interaction Mapping
+#
+# Mapping what to do when interacting with blocks and items
+#
+dRegions_Map_Interactions:
+  type: yaml data
+
+  block:
+    chest: openContainer
+    ender_chest: openContainer
+    locked_chest: openContainer
+    trapped_chest: openContainer
+    jukebox: openContainer
+    dispenser: openContainer
+    furnace: openContainer
+    burning_furnace: openContainer
+    brewing_stand: openContainer
+    hopper: openContainer
+    dropper: openContainer
+    door: useObject
+    flower_pot: Build
+
+
+  item:
+    ink_sac:
+    gold_record: itemUse/jukebox
+
+#
+#  END dRegions Interaction Mapping
 #--------------------------------------
 
 
