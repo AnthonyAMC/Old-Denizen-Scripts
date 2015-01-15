@@ -208,7 +208,7 @@ dRegions_Flag_Gamemode:
 
 dRegions_Flag_Inventory:
   type: item
-  debug: true
+  debug: false
   material: i@paper
   display name: "<&4>[<&6>Inventory<&4>]"
   lore:
@@ -333,8 +333,8 @@ dRegions_Flag_Build:
         }
       - define flag '<def[flagVal].split[/].get[1]>'
       - define group '<def[flagVal].split[/].get[2]||<t[<def[flag].is[==].to[allow]>]:all||nonmembers>>'
-      - define isOwner '<proc[dRegions_IsOwner].context[<def[orderedRegions].get[%loop_index%]>|%world%|<player>]>'
-      - define isMember '<proc[dRegions_isMember].context[<def[orderedRegions].get[%loop_index%]>|%world%|<player>]>'
+      - define isOwner '<proc[dRegions_IsOwner].context[<def[region]>|%world%|<player>]>'
+      - define isMember '<proc[dRegions_isMember].context[<def[region]>|%world%|<player>]>'
 
       - if <def[flag].is[==].to[deny]||false> {
         - if <proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]> {
@@ -381,14 +381,14 @@ dRegions_Flag_Mob-Targeting:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - define player <c.target>
+#    - define player '<c.target>'
     - define flag 'mob-targeting'
     - define flag-targetList 'mob-target'
     - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup instantly
 
   event-cleanup:
     - remove <c.projectile||li@>
-    - attack <c.entity||li@> target:cancel
+    - attack <def[mob]> target:cancel
 
 
 dRegions_Flag_Mob-Target:
@@ -435,14 +435,14 @@ dRegions_Flag_Mob-Damage:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - define player <c.entity>
+#    - define player <c.entity>
     - define flag 'mob-damage'
     - define flag-targetList 'mob-damagelist'
     - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup instantly
 
   event-cleanup:
     - remove <c.projectile||li@>
-    - attack <c.damager||li@> target:cancel
+    - attack <def[mob]> target:cancel
 
 
 dRegions_Flag_Mob-Damagelist:
@@ -735,13 +735,13 @@ dRegions_Flag_Fire-Spread:
   display name: "<&4>[<&6>Fire-Spread<&4>]"
   lore:
   - <&5>Can fire spread
-#  event_hook: fireFrom-Spread
+  event_hook: fireFrom-Spread
   event_priority: 10
   flag_type: state
   flag_takeGroup: false
   flag_defaultValue: allow
-#  flag_help: State flag controlling whether fire will be able to spread in this region. Defaults to allow all. Use fire-spreadblocks flag to specify blocks to check when spreading.
-  flag_help: This flag is temporarily disabled. Please use the fire-destroyblocks flag.
+  flag_help: State flag controlling whether fire will be able to spread in this region. Defaults to allow all. Use fire-spreadblocks flag to specify blocks to check when spreading.
+#  flag_help: This flag is temporarily disabled. Please use the fire-destroyblocks flag.
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
@@ -754,12 +754,12 @@ dRegions_Flag_Fire-Spread:
     - define flag-targetList 'fire-spreadblocks'
     - inject s@dRegions_Flags_Processors p:state-withTarget
 
-  command_handler:
-    - define lines '<proc[dRegions_LineWrap].context[<s@dRegions_Flag_%Flag%.yaml_key[flag_help]||<&c>%flag% flag requires a %type% value!>|45]>'
-    - foreach <def[lines]> {
-      - run instantly s@dRegions_Msg 'def:<&c><def[value]>'
-      }
-    - queue clear
+#  command_handler:
+#    - define lines '<proc[dRegions_LineWrap].context[<s@dRegions_Flag_%Flag%.yaml_key[flag_help]||<&c>%flag% flag requires a %type% value!>|45]>'
+#    - foreach <def[lines]> {
+#      - run instantly s@dRegions_Msg 'def:<&c><def[value]>'
+#      }
+#    - queue clear
 
 
 dRegions_Flag_Fire-SpreadBlocks:
@@ -773,8 +773,8 @@ dRegions_Flag_Fire-SpreadBlocks:
   command_verifyEntry: <def[value].as_material.is_block.not||true>
   flag_type: list
   flag_takeGroup: false
-#  flag_help: List flag used with fire-spread flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks.
-  flag_help: This flag is temporarily disabled. Please use the fire-destroyblocks flag.
+  flag_help: List flag used with fire-spread flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks.
+#  flag_help: This flag is temporarily disabled. Please use the fire-destroyblocks flag.
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
@@ -783,12 +783,12 @@ dRegions_Flag_Fire-SpreadBlocks:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   command_handler:
-    - define lines '<proc[dRegions_LineWrap].context[<s@dRegions_Flag_%Flag%.yaml_key[flag_help]||<&c>%flag% flag requires a %type% value!>|45]>'
-    - foreach <def[lines]> {
-      - run instantly s@dRegions_Msg 'def:<&c><def[value]>'
-      }
-    - queue clear
-#    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
+#    - define lines '<proc[dRegions_LineWrap].context[<s@dRegions_Flag_%Flag%.yaml_key[flag_help]||<&c>%flag% flag requires a %type% value!>|45]>'
+#    - foreach <def[lines]> {
+#      - run instantly s@dRegions_Msg 'def:<&c><def[value]>'
+#      }
+#    - queue clear
+    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
 
 dRegions_Flag_Fire-Destroy:
