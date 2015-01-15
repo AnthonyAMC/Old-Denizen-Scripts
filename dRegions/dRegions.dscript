@@ -506,6 +506,10 @@ dRegions:
   # and drop the priority value from the list.
   # Now that we have the orderedEvents we can inject each FlagScript in order.
   #
+    - define eventHooks '<def[eventHooks].as_list.replace[null]||li@>'
+    - if <def[eventHooks].is_empty||true> {
+      - queue clear
+      }
     - define allFlagScripts '<server.list_scripts.filter[starts_with[s@dRegions_Flag_]]||li@>'
     - define Flags '<def[allFlagScripts].filter[yaml_key[event_hook].contains_any[%eventHooks%]]||li@>'
     - define eventPri '<def[Flags].parse[yaml_key[event_priority]]||li@>'
