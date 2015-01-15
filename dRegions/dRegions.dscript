@@ -232,6 +232,15 @@ dRegions:
 #    on player stands on:
 #    - announce "Stand"
 
+    on player right clicks block:
+    - define blockEvent '<s@dRegions_Map_Interactions.yaml_key[block.<c.location.material.bukkit_enum||air>]||null>'
+    - define itemEvent '<s@dRegions_Map_Interactions.yaml_key[item.<c.item.material.bukkit_enum||air>]||null>'
+    - define world '<player.world.name.to_lowercase>'
+    - define cuboids '<c.cuboids>'
+    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - define eventHooks '<def[blockEvent]>|<def[itemEvent]>'
+    - inject instantly s@dRegions p:event_PreProc_RunEvent
+
     on player enters bed:
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<c.location.cuboids>'
