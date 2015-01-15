@@ -381,14 +381,15 @@ dRegions_Flag_Mob-Targeting:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-#    - define player '<c.target>'
+    - define target '<def[attacker].entity_type>'
+    - define player '<def[defender]>'
     - define flag 'mob-targeting'
     - define flag-targetList 'mob-target'
     - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup instantly
 
   event-cleanup:
     - remove <c.projectile||li@>
-    - attack <def[mob]> target:cancel
+    - attack <def[attacker]> target:cancel
 
 
 dRegions_Flag_Mob-Target:
@@ -435,14 +436,15 @@ dRegions_Flag_Mob-Damage:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-#    - define player <c.entity>
+    - define target '<def[attacker].entity_type>'
+    - define player '<def[defender]>'
     - define flag 'mob-damage'
     - define flag-targetList 'mob-damagelist'
     - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup instantly
 
   event-cleanup:
     - remove <c.projectile||li@>
-    - attack <def[mob]> target:cancel
+    - attack <def[attacker]> target:cancel
 
 
 dRegions_Flag_Mob-Damagelist:
@@ -539,8 +541,8 @@ dRegions_Flag_PVE:
 
   event:
     - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
-      - define player <c.damager>
-      - define target '<c.entity.entity_type>'
+      - define player '<def[attacker]>'
+      - define target '<def[defender].entity_type>'
       - define flag 'pve'
       - define flag-targetList 'pve-moblist'
       - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup instantly
