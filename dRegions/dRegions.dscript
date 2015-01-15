@@ -340,19 +340,19 @@ dRegions:
     - define world '<c.entity.world.name.to_lowercase>'
     - define cuboids '<c.target.location.cuboids||li@>'
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
-    - define target '<c.entity.entity_type>'
-    - define mob '<c.entity>'
-    - define player '<c.target||null>'
+#    - define target '<c.entity.entity_type>'
+    - define attacker '<c.entity>'
+    - define defender '<c.target||null>'
     - define eventHooks '<c.entity.prefix>_Target_<c.target.prefix||null>'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
-
+# MUST FIX - Check out moving target to the flags since it's variable.
     on entity damages entity:
     - define world '<c.entity.world.name.to_lowercase>'
     - define cuboids '<c.entity.location.cuboids>'
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
-    - define target '<c.damager.entity_type>'
-    - define mob '<c.damager>'
-    - define player '<c.entity>'
+#    - define target '<c.damager.entity_type>'
+    - define attacker '<c.damager>'
+    - define defender '<c.entity>'
     - define eventHooks '<c.damager.prefix>_Target_<c.entity.prefix>|<c.damager.prefix>_Damage_<c.entity.prefix>'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
