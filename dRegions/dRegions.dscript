@@ -506,7 +506,7 @@ dRegions:
   # and drop the priority value from the list.
   # Now that we have the orderedEvents we can inject each FlagScript in order.
   #
-    - define eventHooks '<def[eventHooks].as_list.replace[null]||li@>'
+    - define eventHooks '<def[eventHooks].as_list.exclude[null]||li@>'
     - if <def[eventHooks].is_empty||true> {
       - queue clear
       }
