@@ -3072,6 +3072,7 @@ dRegions_Map_Interactions:
   type: yaml data
 
   block:
+# Containers
     chest: openContainer
     ender_chest: openContainer
     locked_chest: openContainer
@@ -3083,13 +3084,43 @@ dRegions_Map_Interactions:
     brewing_stand: openContainer
     hopper: openContainer
     dropper: openContainer
-    door: useObject
+# Doors
+    trap_door: openDoor
+    iron_trapdoor: openDoor
+    wooden_door: openDoor
+    iron_door_block: openDoor
+    spruce_door: openDoor
+    birch_door: openDoor
+    jungle_door: openDoor
+    dark_oak_door: openDoor
+    acacia_door: openDoor
+    fence_gate: openDoor
+    spruce_fence_gate: openDoor
+    birch_fence_gate: openDoor
+    jungle_fence_gate: openDoor
+    dark_oak_fence_gate: openDoor
+    acacia_fence_gate: openDoor
+# Switches
+    lever: useObject
+    wood_button: useObject
+    stone_button: useObject
+    wood_plate: useObject
+    stone_plate: useObject
+    iron_plate: useObject
+    gold_plate: useObject
+# Utility Blocks
+    workbench: useObject
+    enchantment_table: useObject
+    beacon: useObject
+    anvil: useObject
+
     flower_pot: Build
 
 
   item:
     ink_sac:
     gold_record: itemUse/jukebox
+    glass_bottle: itemUse/cauldron
 
 #
 #  END dRegions Interaction Mapping
