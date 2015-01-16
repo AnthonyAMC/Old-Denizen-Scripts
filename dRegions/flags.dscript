@@ -315,6 +315,8 @@ dRegions_Flag_Build:
   flag_type: state
   flag_help: By default, all members and owners can build in their regions. Setting this flag can over ride that behavior. Can be set to allow, deny, or none and accepts the -g group switch.
   flag_takeGroup: true
+  flag_defaultValue: deny/nonmembers
+  region_highestOnly: true
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
@@ -322,41 +324,19 @@ dRegions_Flag_Build:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
+  event-cleanup:
+    - if <player.has_flag[dRegions_Message_Cooldown].not> {
+      - flag player dRegions_Message_Cooldown duration:3s
+      - run instantly s@dRegions_Msg 'def:<&c><&o>You do not have permission to build in this region'
+      }
+
   event:
   # Build is handled differently than the other flags. It checks only the HIGHEST
   # priority region. It does inherit owners, members, and flags from parent regions.
     - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
-      - define region '<def[orderedRegions].get[1]>'
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|build]||null>'
-      - if <def[flagVal].is[==].to[null]||true> {
-        - define flagVal 'deny/nonmembers'
-        }
-      - define flag '<def[flagVal].split[/].get[1]>'
-      - define group '<def[flagVal].split[/].get[2]||<t[<def[flag].is[==].to[allow]>]:all||nonmembers>>'
-      - define isOwner '<proc[dRegions_IsOwner].context[<def[region]>|%world%|<player>]>'
-      - define isMember '<proc[dRegions_isMember].context[<def[region]>|%world%|<player>]>'
-
-      - if <def[flag].is[==].to[deny]||false> {
-        - if <proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]> {
-          - if <player.has_flag[dRegions_Message_Cooldown].not> {
-            - flag player dRegions_Message_Cooldown duration:3s
-            - run instantly s@dRegions_Msg 'def:<&c><&o>You do not have permission to build in this region'
-            }
-          - determine cancelled
-          - queue clear
-          }
-        }
-
-      - if <def[flag].is[==].to[allow]||false> {
-        - if <proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%].not> {
-          - if <player.has_flag[dRegions_Message_Cooldown].not> {
-            - flag player dRegions_Message_Cooldown duration:3s
-            - run instantly s@dRegions_Msg 'def:<&c><&o>You do not have permission to build in this region'
-            }
-          - determine cancelled
-          - queue clear
-          }
-        }
+      - define player <player>
+      - define flag 'build'
+      - inject s@dRegions_Flags_Processors p:state-withGroup instantly
       }
 
 
@@ -2096,6 +2076,7 @@ dRegions_Flag_Chest-Access:
   flag_type: state
   flag_takeGroup: true
   flag_defaultValue: deny/nonmembers
+  region_highestOnly: true
   flag_help: State flag controlling whether players will be able to open containers in this region. Defaults to deny nonmembers. Use chest-access-blocks flag to specify container blocks types. Takes the -g group switch.
   script:
     - narrate "A handy container for region flags."
