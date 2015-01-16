@@ -2116,7 +2116,7 @@ dRegions_Flag_Chest-Access:
   event-cleanup:
     - if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run instantly s@dRegions_Msg 'def:<&c><&o>You can not open <c.location.material.name> in this region!'
+      - run instantly s@dRegions_Msg 'def:<&c><&o>You can not open <c.location.material.name.replace[_].with[ ]>s in this region!'
       }
 
 
@@ -2127,7 +2127,7 @@ dRegions_Flag_Chest-Access-Blocks:
   display name: "<&4>[<&6>Chest-Access-Blocks<&4>]"
   lore:
   - <&5>List of blocks used by chest-access flag
-  command_entryType: block
+  command_entryType: container
   command_verifyEntry: <el@val[chest|ender_chest|locked_chest|trapped_chest|jukebox|dispenser|furnace|burning_furnace|brewing_stand|hopper|dropper].as_list.contains[<def[value]>].not>
   flag_type: list
   flag_takeGroup: false
@@ -2151,9 +2151,14 @@ dRegions_Flags_Processors:
   debug: false
 
   boolean:
-    - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
-    - define suffix '<&pipe>%flag%<&rb>||null<&gt>'
-    - define InheritedFlags '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
+    - if <def[FlagScript].yaml_key[region_highestOnly]||false> {
+      - define InheritedFlags '<proc[dRegions_GetInheritedFlag].context[%world%|<def[orderedRegions].get[1]>|%flag%].as_list||null>'
+      }
+      else {
+      - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
+      - define suffix '<&pipe>%flag%<&rb>||allow<&gt>'
+      - define InheritedFlags '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
+      }
     - foreach %InheritedFlags% {
       - define flagVal '<def[value]>'
       - if <def[flagVal].is[==].to[null]||true> {
@@ -2172,11 +2177,17 @@ dRegions_Flags_Processors:
       }
 
   state-withTarget:
-    - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
-    - define suffix '<&pipe>%flag-targetList%<&rb>||all<&gt>'
-    - define InheritedTargets '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
-    - define suffix '<&pipe>%flag%<&rb>||null<&gt>'
-    - define InheritedFlags '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
+    - if <def[FlagScript].yaml_key[region_highestOnly]||false> {
+      - define InheritedTargets '<proc[dRegions_GetInheritedFlag].context[%world%|<def[orderedRegions].get[1]>|%flag-targetList%].as_list||null>'
+      - define InheritedFlags '<proc[dRegions_GetInheritedFlag].context[%world%|<def[orderedRegions].get[1]>|%flag%].as_list||null>'
+      }
+      else {
+      - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
+      - define suffix '<&pipe>%flag-targetList%<&rb>||all<&gt>'
+      - define InheritedTargets '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
+      - define suffix '<&pipe>%flag%<&rb>||null<&gt>'
+      - define InheritedFlags '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
+      }
     - foreach %InheritedFlags% {
       - define targetList '<def[InheritedTargets].get[%loop_index%].replace[, ].with[|].as_list||li@all>'
       - if <def[targetList].is[==].to[li@null]> {
@@ -2217,9 +2228,14 @@ dRegions_Flags_Processors:
 
   state-withGroup:
     # requires %player% to be filled with a valid player object
-    - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
-    - define suffix '<&pipe>%flag%<&rb>||allow<&gt>'
-    - define InheritedFlags '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
+    - if <def[FlagScript].yaml_key[region_highestOnly]||false> {
+      - define InheritedFlags '<proc[dRegions_GetInheritedFlag].context[%world%|<def[orderedRegions].get[1]>|%flag%].as_list||null>'
+      }
+      else {
+      - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
+      - define suffix '<&pipe>%flag%<&rb>||allow<&gt>'
+      - define InheritedFlags '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
+      }
     - foreach %InheritedFlags% {
       - define flagObj '<def[value]>'
       - if <def[flagObj].is[==].to[null]||true> {
@@ -2253,11 +2269,17 @@ dRegions_Flags_Processors:
 
   state-withTarget-withGroup:
     # requires %player% to be filled with a valid player object
-    - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
-    - define suffix '<&pipe>%flag-targetList%<&rb>||all<&gt>'
-    - define InheritedTargets '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
-    - define suffix '<&pipe>%flag%<&rb>||allow<&gt>'
-    - define InheritedFlags '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
+    - if <def[FlagScript].yaml_key[region_highestOnly]||false> {
+      - define InheritedTargets '<proc[dRegions_GetInheritedFlag].context[%world%|<def[orderedRegions].get[1]>|%flag-targetList%].as_list||null>'
+      - define InheritedFlags '<proc[dRegions_GetInheritedFlag].context[%world%|<def[orderedRegions].get[1]>|%flag%].as_list||null>'
+      }
+      else {
+      - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
+      - define suffix '<&pipe>%flag-targetList%<&rb>||all<&gt>'
+      - define InheritedTargets '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
+      - define suffix '<&pipe>%flag%<&rb>||null<&gt>'
+      - define InheritedFlags '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
+      }
     - foreach %InheritedFlags% {
       - define targetList '<def[InheritedTargets].get[%loop_index%].replace[, ].with[|].as_list||li@all>'
       - if <def[targetList].is[==].to[li@null]> {
