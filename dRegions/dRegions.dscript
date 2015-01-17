@@ -229,8 +229,13 @@ dRegions:
 #    - inject instantly s@dRegions p:use_<c.item||null>
 #    - inject instantly s@dRegions p:playerClick_<c.type||null>
 
-#    on player stands on:
+    on player stands on:
 #    - announce "Stand"
+    - define world '<player.world.name.to_lowercase>'
+    - define cuboids '<c.cuboids>'
+    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - define eventHooks '<s@dRegions_Map_Interactions.yaml_key[block.<c.location.material.bukkit_enum||air>]||null>'
+    - inject instantly s@dRegions p:event_PreProc_RunEvent
 
     on player right clicks block:
     - define blockEvent '<s@dRegions_Map_Interactions.yaml_key[block.<c.location.material.bukkit_enum||air>]||null>'
@@ -247,7 +252,6 @@ dRegions:
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'sleep'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
-
 
     on player enters notable cuboid:
     - define world '<player.world.name.to_lowercase>'
@@ -349,17 +353,15 @@ dRegions:
     - define world '<c.entity.world.name.to_lowercase>'
     - define cuboids '<c.target.location.cuboids||li@>'
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
-#    - define target '<c.entity.entity_type>'
     - define attacker '<c.entity>'
     - define defender '<c.target||null>'
     - define eventHooks '<c.entity.prefix>_Target_<c.target.prefix||null>'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
-# MUST FIX - Check out moving target to the flags since it's variable.
+
     on entity damages entity:
     - define world '<c.entity.world.name.to_lowercase>'
     - define cuboids '<c.entity.location.cuboids>'
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
-#    - define target '<c.damager.entity_type>'
     - define attacker '<c.damager>'
     - define defender '<c.entity>'
     - define eventHooks '<c.damager.prefix>_Target_<c.entity.prefix>|<c.damager.prefix>_Damage_<c.entity.prefix>'
@@ -3101,26 +3103,33 @@ dRegions_Map_Interactions:
     dark_oak_fence_gate: openDoor
     acacia_fence_gate: openDoor
 # Switches
-    lever: useObject
-    wood_button: useObject
-    stone_button: useObject
-    wood_plate: useObject
-    stone_plate: useObject
-    iron_plate: useObject
-    gold_plate: useObject
+    lever: useSwitch
+    wood_button: useSwitch
+    stone_button: useSwitch
+    wood_plate: useSwitch
+    stone_plate: useSwitch
+    iron_plate: useSwitch
+    gold_plate: useSwitch
 # Utility Blocks
-    workbench: useObject
-    enchantment_table: useObject
-    beacon: useObject
-    anvil: useObject
-
+    workbench: useUtility
+    enchantment_table: useUtility
+    beacon: useUtility
+    anvil: useUtility
+    note_block: useUtility
+# Other blocks that change when clicked regardless of item in hand
     flower_pot: Build
+    cake_block: Build
+    diode_block_on: Build
+    diode_block_off: Build
+    redstone_comparator_off: Build
+    redstone_comparator_on: Build
 
 
   item:
     ink_sac:
-    gold_record: itemUse/jukebox
-    glass_bottle: itemUse/cauldron
+    gold_record: jukebox
+    glass_bottle: cauldron
+    flint_and_steel: tnt
 
 #
 #  END dRegions Interaction Mapping
