@@ -2243,6 +2243,66 @@ dRegions_Flag_Use-Switches-List:
     - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
 
+dRegions_Flag_Use-Utilities:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Use-Utilities<&4>]"
+  lore:
+  - <&5>Can players use utility blocks.
+  event_hook: useUtility
+  event_priority: 10
+  flag_type: state
+  flag_takeGroup: true
+  flag_defaultValue: deny/nonmembers
+  region_highestOnly: true
+  flag_help: State flag controlling whether players will be able to use utility blocks in this region. Defaults to deny nonmembers. Use use-utilities-blocks flag to specify utility blocks. Takes the -g group switch.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event:
+    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+      - define player <player>
+      - define target <c.location.material.bukkit_enum>
+      - define flag 'use-utilities'
+      - define flag-targetList 'use-utilities-blocks'
+      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup instantly
+      }
+
+  event-cleanup:
+    - if <player.has_flag[dRegions_Message_Cooldown].not> {
+      - flag player dRegions_Message_Cooldown duration:3s
+      - run instantly s@dRegions_Msg 'def:<&c><&o>You can not use <c.location.material.name.replace[_].with[ ]>s in this region!'
+      }
+
+
+dRegions_Flag_Use-Utilities-Blocks:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Use-Utilities-Blocks<&4>]"
+  lore:
+  - <&5>List of blocks used by use-utilities flag
+  command_entryType: container
+  command_verifyEntry: <el@val[workbench|enchantment_table|beacon|anvil|note_block].as_list.contains[<def[value]>].not>
+  flag_type: list
+  flag_takeGroup: false
+  flag_help: List flag used with use-utilities flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks. Valid utility blocks<&co> workbench, enchantment_table, beacon, anvil, and note_block.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  command_handler:
+    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
+
+
 
 ################################################################################
 
