@@ -2136,7 +2136,7 @@ dRegions_Flag_Door-Access:
   flag_type: state
   flag_takeGroup: true
   flag_defaultValue: allow/all
-  flag_help: State flag controlling whether players will be able to open doors in this region. Defaults to deny nonmembers. Use door-access-doors flag to specify door blocks types. Takes the -g group switch.
+  flag_help: State flag controlling whether players will be able to open doors in this region. Defaults to allow all. Use door-access-doors flag to specify door blocks types. Takes the -g group switch.
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
@@ -2172,6 +2172,66 @@ dRegions_Flag_Door-Access-Doors:
   flag_type: list
   flag_takeGroup: false
   flag_help: List flag used with door-access flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks. Valid door blocks<&co> trap_door, iron_trapdoor, wooden_door, iron_door_block, spruce_door, birch_door, jungle_door, dark_oak_door, acacia_door, fence_gate, spruce_fence_gate, birch_fence_gate, jungle_fence_gate, dark_oak_fence_gate, and acacia_fence_gate.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  command_handler:
+    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
+
+
+dRegions_Flag_Use-Switches:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Use-Switches<&4>]"
+  lore:
+  - <&5>Can players interact with switches.
+  event_hook: useSwitch
+  event_priority: 10
+  flag_type: state
+  flag_takeGroup: true
+  flag_defaultValue: deny/nonmembers
+  region_highestOnly: true
+  flag_help: State flag controlling whether players will be able to use switches in this region. Defaults to deny nonmembers. Use use-switches-list flag to specify switch block types. Takes the -g group switch.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event:
+    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+      - define player <player>
+      - define target <c.location.material.bukkit_enum>
+      - define flag 'use-switches'
+      - define flag-targetList 'use-switches-list'
+      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup instantly
+      }
+
+  event-cleanup:
+    - if <player.has_flag[dRegions_Message_Cooldown].not> {
+      - flag player dRegions_Message_Cooldown duration:3s
+      - run instantly s@dRegions_Msg 'def:<&c><&o>You can not use <c.location.material.name.replace[_].with[ ]>s in this region!'
+      }
+
+
+dRegions_Flag_Use-Switches-List:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Use-Switches-List<&4>]"
+  lore:
+  - <&5>List of switches used by use-switches flag
+  command_entryType: container
+  command_verifyEntry: <el@val[lever|wood_button|stone_button|wood_plate|stone_plate|iron_plate|gold_plate].as_list.contains[<def[value]>].not>
+  flag_type: list
+  flag_takeGroup: false
+  flag_help: List flag used with use-switches flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks. Valid switch blocks<&co> lever, wood_button, stone_button, wood_plate, stone_plate, iron_plate, and gold_plate.
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
