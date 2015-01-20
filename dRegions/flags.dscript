@@ -340,6 +340,41 @@ dRegions_Flag_Build:
       }
 
 
+dRegions_Flag_Vehicle-Place:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Vehicle-Place<&4>]"
+  lore:
+  - <&5>Who can place vehicles
+  event_hook: placeVehicle
+  event_priority: 10
+  flag_type: state
+  flag_help: Control who can place vehicles in a regions. Takes the -g group switch.
+  flag_takeGroup: true
+  flag_defaultValue: deny/nonmembers
+  region_highestOnly: true
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event-cleanup:
+    - if <player.has_flag[dRegions_Message_Cooldown].not> {
+      - flag player dRegions_Message_Cooldown duration:3s
+      - run instantly s@dRegions_Msg 'def:<&c><&o>You can not place <c.item.material.name.replace[_].with[ ]>s here.'
+      }
+
+  event:
+    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+      - define player <player>
+      - define flag 'Vehicle-Place'
+      - inject s@dRegions_Flags_Processors p:state-withGroup instantly
+      }
+
+
 dRegions_Flag_Mob-Targeting:
   type: item
   debug: false
@@ -640,7 +675,7 @@ dRegions_Flag_PVE:
     - remove <c.projectile||li@>
     - if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run instantly s@dRegions_Msg 'def:<&c><&o>You can not attack <def[target]> here!'
+      - run instantly s@dRegions_Msg 'def:<&c><&o>You can not attack <def[target].to_lowercase.replace[_].with[]>s here!'
       }
 
 
@@ -2109,10 +2144,10 @@ dRegions_Flag_Chest-Access-Blocks:
   lore:
   - <&5>List of blocks used by chest-access flag
   command_entryType: container
-  command_verifyEntry: <el@val[chest|ender_chest|locked_chest|trapped_chest|jukebox|dispenser|furnace|burning_furnace|brewing_stand|hopper|dropper].as_list.contains[<def[value]>].not>
+  command_verifyEntry: <el@val[chest|ender_chest|locked_chest|trapped_chest|dispenser|hopper|dropper].as_list.contains[<def[value]>].not>
   flag_type: list
   flag_takeGroup: false
-  flag_help: List flag used with chest-access flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks. Valid container blocks<&co> chest, ender_chest, locked_chest, trapped_chest, jukebox, dispenser, furnace, burning_furnace, brewing_stand, hopper, and dropper.
+  flag_help: List flag used with chest-access flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks. Valid container blocks<&co> chest, ender_chest, locked_chest, trapped_chest, dispenser, hopper, and dropper.
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
@@ -2288,10 +2323,10 @@ dRegions_Flag_Use-Utilities-Blocks:
   lore:
   - <&5>List of blocks used by use-utilities flag
   command_entryType: container
-  command_verifyEntry: <el@val[workbench|enchantment_table|beacon|anvil|note_block].as_list.contains[<def[value]>].not>
+  command_verifyEntry: <el@val[workbench|furnace|burning_furnace|anvil|cauldron|brewing_stand|enchantment_table|note_block|jukebox|beacon].as_list.contains[<def[value]>].not>
   flag_type: list
   flag_takeGroup: false
-  flag_help: List flag used with use-utilities flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks. Valid utility blocks<&co> workbench, enchantment_table, beacon, anvil, and note_block.
+  flag_help: List flag used with use-utilities flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks. Valid utility blocks<&co> workbench, furnace, burning_furnace, anvil, brewing_stand, cauldron, enchantment_table, note_block, jukebox, and beacon.
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
