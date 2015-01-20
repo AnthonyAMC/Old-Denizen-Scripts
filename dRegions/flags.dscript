@@ -350,7 +350,7 @@ dRegions_Flag_Vehicle-Place:
   event_hook: placeVehicle
   event_priority: 10
   flag_type: state
-  flag_help: Control who can place vehicles in a regions. Takes the -g group switch.
+  flag_help: Control who can place vehicles in a region. Takes the -g group switch.
   flag_takeGroup: true
   flag_defaultValue: deny/nonmembers
   region_highestOnly: true
@@ -370,7 +370,7 @@ dRegions_Flag_Vehicle-Place:
   event:
     - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
       - define player <player>
-      - define flag 'Vehicle-Place'
+      - define flag 'vehicle-place'
       - inject s@dRegions_Flags_Processors p:state-withGroup instantly
       }
 
@@ -385,7 +385,7 @@ dRegions_Flag_Vehicle-Destroy:
   event_hook: destroyVehicle
   event_priority: 10
   flag_type: state
-  flag_help: Control who can destroy vehicles in a regions. Takes the -g group switch.
+  flag_help: Control who can destroy vehicles in a region. Takes the -g group switch.
   flag_takeGroup: true
   flag_defaultValue: deny/nonmembers
   region_highestOnly: true
@@ -405,7 +405,42 @@ dRegions_Flag_Vehicle-Destroy:
   event:
     - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
       - define player <player>
-      - define flag 'Vehicle-Destroy'
+      - define flag 'vehicle-destroy'
+      - inject s@dRegions_Flags_Processors p:state-withGroup instantly
+      }
+
+
+dRegions_Flag_Send-Chat:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Send-Chat<&4>]"
+  lore:
+  - <&5>Who can chat
+  event_hook: sendChat
+  event_priority: 10
+  flag_type: state
+  flag_help: Control who can send chat in a region. Takes the -g group switch.
+  flag_takeGroup: true
+  flag_defaultValue: allow/all
+  region_highestOnly: true
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event-cleanup:
+    - if <player.has_flag[dRegions_Message_Cooldown].not> {
+      - flag player dRegions_Message_Cooldown duration:3s
+      - run instantly s@dRegions_Msg 'def:<&c><&o>You can not chat here.'
+      }
+
+  event:
+    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+      - define player <player>
+      - define flag 'send-chat'
       - inject s@dRegions_Flags_Processors p:state-withGroup instantly
       }
 
