@@ -230,20 +230,36 @@ dRegions:
 #    - inject instantly s@dRegions p:playerClick_<c.type||null>
 
     on player stands on:
-#    - announce "Stand"
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<c.cuboids>'
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks '<s@dRegions_Map_Interactions.yaml_key[block.<c.location.material.bukkit_enum||air>]||null>'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
-    on player right clicks block:
-    - define blockEvent '<s@dRegions_Map_Interactions.yaml_key[block.<c.location.material.bukkit_enum||air>]||null>'
-    - define itemEvent '<s@dRegions_Map_Interactions.yaml_key[item.<c.item.material.bukkit_enum||air>]||null>'
+    on player right clicks block with m@boat:
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<c.cuboids>'
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
-    - define eventHooks '<def[blockEvent]>|<def[itemEvent]>'
+    - define eventHooks 'placeVehicle'
+    - inject instantly s@dRegions p:event_PreProc_RunEvent
+
+    on player right clicks:
+    - define blockEvent '<s@dRegions_Map_Interactions.yaml_key[block.<c.location.material.bukkit_enum||air>]||null>'
+    - define world '<player.world.name.to_lowercase>'
+    - define cuboids '<c.cuboids||<player.location.cursor_on[5].cuboids>>'
+    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - if <c.item.material.name.is[==].to[air]||true> {
+      - define eventHooks '<def[blockEvent]>'
+      }
+      else {
+      - define eventObj '<s@dRegions_Map_Interactions.yaml_key[block_withItem.<c.location.material.bukkit_enum||<player.location.cursor_on[5].material.bukkit_enum>>]||li@>'
+      - if <def[eventObj].split[/].get[2].as_list.contains[<c.item.material.bukkit_enum>]||false> {
+        - define eventHooks '<def[blockEvent]>|<def[eventObj].split[/].get[1]||null>'
+        }
+        else {
+        - define eventHooks '<def[blockEvent]>'
+        }
+      }
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
     on player enters bed:
@@ -634,6 +650,7 @@ dRegions:
       - yaml 'load:dRegions/%file%.yml' 'id:dRegions_%world%_inventories'
       }
     - announce "<&b>dRegions<&co><&a> System config files Loaded!" to_console
+
 
   reloadYaml:
   # A simpler reload
@@ -3079,11 +3096,7 @@ dRegions_Map_Interactions:
     ender_chest: openContainer
     locked_chest: openContainer
     trapped_chest: openContainer
-    jukebox: openContainer
     dispenser: openContainer
-    furnace: openContainer
-    burning_furnace: openContainer
-    brewing_stand: openContainer
     hopper: openContainer
     dropper: openContainer
 # Doors
@@ -3112,10 +3125,16 @@ dRegions_Map_Interactions:
     gold_plate: useSwitch
 # Utility Blocks
     workbench: useUtility
+    furnace: useUtility
+    burning_furnace: useUtility
+    brewing_stand: useUtility
     enchantment_table: useUtility
-    beacon: useUtility
     anvil: useUtility
+    beacon: useUtility
+#    jukebox: useUtility
     note_block: useUtility
+#    cauldron: useUtility
+#    tnt: useUtility
 # Other blocks that change when clicked regardless of item in hand
     flower_pot: Build
     cake_block: Build
@@ -3124,6 +3143,16 @@ dRegions_Map_Interactions:
     redstone_comparator_off: Build
     redstone_comparator_on: Build
 
+  block_withItem:
+    jukebox: useUtility/gold_record|green_record|record_3|record_4|record_5|record_6|record_7|record_8|record_9|record_10|record_11|record_12
+    cauldron: useUtility/bucket|water_bucket|glass_bottle
+    tnt: useUtility/flint_and_steel
+    activator_rail: placeVehicle/minecart|storage_minecart|powered_minecart|explosive_minecart|hopper_minecart|command_minecart
+    detector_rail: placeVehicle/minecart|storage_minecart|powered_minecart|explosive_minecart|hopper_minecart|command_minecart
+    powered_rail: placeVehicle/minecart|storage_minecart|powered_minecart|explosive_minecart|hopper_minecart|command_minecart
+    rails: placeVehicle/minecart|storage_minecart|powered_minecart|explosive_minecart|hopper_minecart|command_minecart
+    stationary_water: placeVehicle/boat
+    water: placeVehicle/boat
 
   item:
     ink_sac:
