@@ -375,6 +375,41 @@ dRegions_Flag_Vehicle-Place:
       }
 
 
+dRegions_Flag_Vehicle-Destroy:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Vehicle-Destroy<&4>]"
+  lore:
+  - <&5>Who can destroy vehicles
+  event_hook: destroyVehicle
+  event_priority: 10
+  flag_type: state
+  flag_help: Control who can destroy vehicles in a regions. Takes the -g group switch.
+  flag_takeGroup: true
+  flag_defaultValue: deny/nonmembers
+  region_highestOnly: true
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event-cleanup:
+    - if <player.has_flag[dRegions_Message_Cooldown].not> {
+      - flag player dRegions_Message_Cooldown duration:3s
+      - run instantly s@dRegions_Msg 'def:<&c><&o>You can not break <c.vehicle.entity_type.to_lowercase.replace[_].with[ ]>s here.'
+      }
+
+  event:
+    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+      - define player <player>
+      - define flag 'Vehicle-Destroy'
+      - inject s@dRegions_Flags_Processors p:state-withGroup instantly
+      }
+
+
 dRegions_Flag_Mob-Targeting:
   type: item
   debug: false
