@@ -229,6 +229,13 @@ dRegions:
 #    - inject instantly s@dRegions p:use_<c.item||null>
 #    - inject instantly s@dRegions p:playerClick_<c.type||null>
 
+    on player destroys vehicle:
+    - define world '<player.world.name.to_lowercase>'
+    - define cuboids '<c.vehicle.location.cuboids>'
+    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - define eventHooks 'destroyVehicle'
+    - inject instantly s@dRegions p:event_PreProc_RunEvent
+
     on player stands on:
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<c.cuboids>'
