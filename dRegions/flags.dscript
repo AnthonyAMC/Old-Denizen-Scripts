@@ -1987,6 +1987,70 @@ dRegions_Flag_PVP:
     - inject s@dRegions_Flags_Processors p:boolean
 
 
+dRegions_Flag_Potion-Throw:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Potion-Throw<&4>]"
+  lore:
+  - <&5>Can potions be thrown in this region
+  event_hook: throwPotion
+  event_priority: 10
+  flag_type: boolean
+  flag_takeGroup: false
+  flag_defaultValue: true
+  flag_help: Boolean flag controlling whether potions can be thrown and broken in this region. Set to true or false. Defaults to true.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event-cleanup:
+    - if <player.has_flag[dRegions_Message_Cooldown].not||false> {
+      - flag player dRegions_Message_Cooldown duration:3s
+      - run instantly s@dRegions_Msg 'def:<&c><&o>You can not throw potions here.'
+      }
+
+  event:
+    - define flag 'potion-throw'
+    - inject s@dRegions_Flags_Processors p:boolean
+
+
+dRegions_Flag_Potion-Drink:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Potion-Drink<&4>]"
+  lore:
+  - <&5>Who can drink potions
+  event_hook: drinkPotion
+  event_priority: 10
+  flag_type: state
+  flag_takeGroup: true
+  flag_defaultValue: allow/all
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event-cleanup:
+    - if <player.has_flag[dRegions_Message_Cooldown].not> {
+      - flag player dRegions_Message_Cooldown duration:3s
+      - run instantly s@dRegions_Msg 'def:<&c><&o>You can not drink potions here.'
+      }
+
+  event:
+    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+      - define player <player>
+      - define flag 'potion-drink'
+      - inject s@dRegions_Flags_Processors p:state-withGroup instantly
+      }
+
+
 dRegions_Flag_Notify-Enter:
   type: item
   debug: false
