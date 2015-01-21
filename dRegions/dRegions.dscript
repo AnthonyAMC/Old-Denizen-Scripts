@@ -210,6 +210,17 @@ dRegions:
     - define world '<c.world.name.to_lowercase>'
     - define readPath 'portal.create'
     - inject instantly s@dRegions p:event_PreProc_Config
+
+    on potion splash:
+    # This will cancel the splash if any entity is in a protected region!
+    - define world '<c.location.world.name.to_lowercase>'
+    - foreach <c.entities||li@> {
+      - define cuboids '<def[value].location.cuboids>'
+      - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+      - define eventHooks 'throwPotion'
+      - inject instantly s@dRegions p:event_PreProc_RunEvent
+      }
+
 #
 #  END World Events
 ##################################################
@@ -255,6 +266,21 @@ dRegions:
     - define cuboids '<c.cuboids>'
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'placeVehicle'
+    - inject instantly s@dRegions p:event_PreProc_RunEvent
+
+    on player right clicks with i@potion:
+    - if !<c.item.potion_effect.is_splash||false> queue clear
+    - define world '<player.world.name.to_lowercase>'
+    - define cuboids '<player.location.cuboids>'
+    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - define eventHooks 'throwPotion'
+    - inject instantly s@dRegions p:event_PreProc_RunEvent
+
+    on player consumes i@potion:
+    - define world '<player.world.name.to_lowercase>'
+    - define cuboids '<player.location.cuboids>'
+    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - define eventHooks 'drinkPotion'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
     on player right clicks:
