@@ -283,6 +283,13 @@ dRegions:
     - define eventHooks 'drinkPotion'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
+    on player right clicks block with m@armor_stand:
+    - define world '<player.world.name.to_lowercase>'
+    - define cuboids '<c.cuboids>'
+    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - define eventHooks 'Build'
+    - inject instantly s@dRegions p:event_PreProc_RunEvent
+
     on player right clicks:
     - define blockEvent '<s@dRegions_Map_Interactions.yaml_key[block.<c.location.material.bukkit_enum||air>]||null>'
     - define world '<player.world.name.to_lowercase>'
@@ -420,7 +427,7 @@ dRegions:
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define attacker '<c.damager>'
     - define defender '<c.entity>'
-    - define eventHooks '<c.damager.prefix>_Target_<c.entity.prefix>|<c.damager.prefix>_Damage_<c.entity.prefix>'
+    - define eventHooks '<tern[<c.entity.entity_type.is[==].to[armor_stand]>]:<tern[<c.damager.prefix.is[==].to[player]>]:Build||Entity_Target_Entity|Entity_Damage_Entity>||<c.damager.prefix>_Target_<c.entity.prefix>|<c.damager.prefix>_Damage_<c.entity.prefix>>'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
     on entity dies:
