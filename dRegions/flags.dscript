@@ -2009,7 +2009,7 @@ dRegions_Flag_Notify-Enter:
     - define suffix '<&pipe>notify-enter<&rb>||null<&gt>'
     - define msgList '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
     - foreach %msgList% {
-      - if <def[value].is[!=].to[null]||false> {
+      - if <def[value].is[==].to[true]||false> {
         - foreach <server.list_online_players.filter[has_permission[dregions.notify]].include[<server.list_online_ops>].deduplicate> {
           - run instantly player:%value% s@dRegions_Msg 'def:<&5><&o><def[player].name> entered <def[orderedRegions].get[%loop_index%]> in %world%'
           }
@@ -2044,7 +2044,7 @@ dRegions_Flag_Notify-Exit:
     - define suffix '<&pipe>notify-exit<&rb>||null<&gt>'
     - define msgList '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
     - foreach %msgList% {
-      - if <def[value].is[!=].to[null]||false> {
+      - if <def[value].is[==].to[true]||false> {
         - foreach <server.list_online_players.filter[has_permission[dregions.notify]].include[<server.list_online_ops>].deduplicate> {
           - run instantly player:%value% s@dRegions_Msg 'def:<&d><&o><def[player].name> left <def[orderedRegions].get[%loop_index%]> in %world%'
           }
