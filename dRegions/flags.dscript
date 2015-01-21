@@ -1977,6 +1977,10 @@ dRegions_Flag_PVP:
 
   event-cleanup:
     - remove <c.projectile||li@>
+    - if <player.has_flag[dRegions_Message_Cooldown].not> {
+      - flag player dRegions_Message_Cooldown duration:3s
+      - run instantly s@dRegions_Msg 'def:<&c><&o>You are in a no PVP zone.'
+      }
 
   event:
     - define flag 'pvp'
