@@ -421,13 +421,28 @@ dRegions:
     - define eventHooks '<c.entity.prefix>_Target_<c.target.prefix||null>'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
+#    on entity damaged:
+#    - define world '<c.entity.world.name.to_lowercase>'
+#    - define cuboids '<c.entity.location.cuboids>'
+#    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+#    - define attacker '<c.damager>'
+#    - define defender '<c.entity>'
+#    - define eventHooks '<tern[<c.entity.entity_type.is[==].to[armor_stand]>]:<tern[<c.damager.prefix.is[==].to[player]>]:Build||Entity_Target_Entity|Entity_Damage_Entity>||<c.damager.prefix>_Target_<c.entity.prefix>|<c.damager.prefix>_Damage_<c.entity.prefix>>'
+#    - inject instantly s@dRegions p:event_PreProc_RunEvent
+
     on entity damages entity:
     - define world '<c.entity.world.name.to_lowercase>'
     - define cuboids '<c.entity.location.cuboids>'
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define attacker '<c.damager>'
     - define defender '<c.entity>'
-    - define eventHooks '<tern[<c.entity.entity_type.is[==].to[armor_stand]>]:<tern[<c.damager.prefix.is[==].to[player]>]:Build||Entity_Target_Entity|Entity_Damage_Entity>||<c.damager.prefix>_Target_<c.entity.prefix>|<c.damager.prefix>_Damage_<c.entity.prefix>>'
+    - if <c.cause.is[==].to[entity_explosion]> {
+      - define target '<def[attacker].entity_type||other>'
+      - define eventHooks 'entity-explode|Entity_Target_Entity|Entity_Damage_Entity'
+      }
+      else {
+      - define eventHooks '<tern[<c.entity.entity_type.is[==].to[armor_stand]>]:<tern[<c.damager.prefix.is[==].to[player]>]:Build||Entity_Target_Entity|Entity_Damage_Entity>||<c.damager.prefix>_Target_<c.entity.prefix>|<c.damager.prefix>_Damage_<c.entity.prefix>>'
+      }
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
     on entity dies:
@@ -477,6 +492,7 @@ dRegions:
     on entity explodes:
     - define world '<c.location.world.name.to_lowercase>'
     - define readPath 'entity.explode'
+    - define attacker '<c.entity>'
     - define target '<c.entity.entity_type||other>'
     - inject instantly s@dRegions p:event_PreProc_Config
     - define cuboids '<c.location.cuboids>'

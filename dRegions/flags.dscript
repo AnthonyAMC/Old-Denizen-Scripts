@@ -745,7 +745,7 @@ dRegions_Flag_PVE:
     - remove <c.projectile||li@>
     - if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run instantly s@dRegions_Msg 'def:<&c><&o>You can not attack <def[target].to_lowercase.replace[_].with[]>s here!'
+      - run instantly s@dRegions_Msg 'def:<&c><&o>You can not attack <def[target].to_lowercase.replace[_].with[ ]>s here!'
       }
 
 
@@ -791,6 +791,12 @@ dRegions_Flag_Entity-Explode:
 
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event-cleanup:
+    - determine passively cancelled
+    - foreach <def[attacker].location.find.entities.within[5].exclude[<def[attacker]>]> {
+      - adjust <def[value]> 'velocity:l@0,0,0,<def[world]>'
+      }
 
   event:
     - define flag 'entity-explode'
