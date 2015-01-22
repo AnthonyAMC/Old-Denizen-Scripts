@@ -2406,7 +2406,7 @@ dRegions_Flag_Use-Switches-List:
   display name: "<&4>[<&6>Use-Switches-List<&4>]"
   lore:
   - <&5>List of switches used by use-switches flag
-  command_entryType: container
+  command_entryType: switch
   command_verifyEntry: <el@val[lever|wood_button|stone_button|wood_plate|stone_plate|iron_plate|gold_plate].as_list.contains[<def[value]>].not>
   flag_type: list
   flag_takeGroup: false
@@ -2466,7 +2466,7 @@ dRegions_Flag_Use-Utilities-Blocks:
   display name: "<&4>[<&6>Use-Utilities-Blocks<&4>]"
   lore:
   - <&5>List of blocks used by use-utilities flag
-  command_entryType: container
+  command_entryType: utility
   command_verifyEntry: <el@val[workbench|furnace|burning_furnace|anvil|cauldron|brewing_stand|enchantment_table|note_block|jukebox|beacon].as_list.contains[<def[value]>].not>
   flag_type: list
   flag_takeGroup: false
@@ -2503,14 +2503,16 @@ dRegions_Flag_Player-Damage:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
+  event-cleanup:
+    - flag player dRegions_cancelDamage_<c.cause> duration:1s
+    - adjust <player> 'fire_time:0'
+
   event:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
-      - define player <player>
-      - define target <c.cause>
-      - define flag 'player-damage'
-      - define flag-targetList 'player-damage-types'
-      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup instantly
-      }
+    - define player <player>
+    - define target <c.cause>
+    - define flag 'player-damage'
+    - define flag-targetList 'player-damage-types'
+    - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup instantly
 
 
 dRegions_Flag_Player-Damage-Types:

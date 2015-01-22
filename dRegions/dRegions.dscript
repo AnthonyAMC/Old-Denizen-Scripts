@@ -412,6 +412,10 @@ dRegions:
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
     on player damaged:
+    - if <player.has_flag[dRegions_cancelDamage_<c.cause>]||false> {
+      - adjust <player> 'fire_time:0'
+      - determine cancelled
+      }
     - define world '<c.entity.world.name.to_lowercase>'
     - define cuboids '<c.entity.location.cuboids>'
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
