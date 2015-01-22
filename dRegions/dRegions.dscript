@@ -261,14 +261,14 @@ dRegions:
     - define eventHooks '<s@dRegions_Map_Interactions.yaml_key[block.<c.location.material.bukkit_enum||air>]||null>'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
-    on player right clicks block with m@boat:
+    on player right clicks block with boat:
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<c.cuboids>'
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'placeVehicle'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
-    on player right clicks with i@potion:
+    on player right clicks with potion:
     - if !<c.item.potion_effect.is_splash||false> queue clear
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<player.location.cuboids>'
@@ -276,14 +276,14 @@ dRegions:
     - define eventHooks 'throwPotion'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
-    on player consumes i@potion:
+    on player consumes potion:
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<player.location.cuboids>'
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'drinkPotion'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
-    on player right clicks block with m@armor_stand:
+    on player right clicks block with armor_stand:
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<c.cuboids>'
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
@@ -383,6 +383,13 @@ dRegions:
     - define eventHooks 'hangingPlace|build'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
+    on player right clicks at armor_stand:
+    - define world '<player.world.name.to_lowercase>'
+    - define cuboids '<c.entity.location.cuboids>'
+    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - define eventHooks 'build'
+    - inject instantly s@dRegions p:event_PreProc_RunEvent
+
     on player right clicks item_frame:
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<c.entity.location.cuboids>'
@@ -421,14 +428,12 @@ dRegions:
     - define eventHooks '<c.entity.prefix>_Target_<c.target.prefix||null>'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
-#    on entity damaged:
-#    - define world '<c.entity.world.name.to_lowercase>'
-#    - define cuboids '<c.entity.location.cuboids>'
-#    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
-#    - define attacker '<c.damager>'
-#    - define defender '<c.entity>'
-#    - define eventHooks '<tern[<c.entity.entity_type.is[==].to[armor_stand]>]:<tern[<c.damager.prefix.is[==].to[player]>]:Build||Entity_Target_Entity|Entity_Damage_Entity>||<c.damager.prefix>_Target_<c.entity.prefix>|<c.damager.prefix>_Damage_<c.entity.prefix>>'
-#    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    on entity damaged by block_explosion:
+    - define world '<c.entity.world.name.to_lowercase>'
+    - define cuboids '<c.entity.location.cuboids>'
+    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - define eventHooks 'entity-explode'
+    - inject instantly s@dRegions p:event_PreProc_RunEvent
 
     on entity damages entity:
     - define world '<c.entity.world.name.to_lowercase>'
