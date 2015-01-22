@@ -411,6 +411,13 @@ dRegions:
     - define eventHooks 'bonemeal|build'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
+    on player damaged:
+    - define world '<c.entity.world.name.to_lowercase>'
+    - define cuboids '<c.entity.location.cuboids>'
+    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - define eventHooks 'playerDamaged'
+    - inject instantly s@dRegions p:event_PreProc_RunEvent
+
 
 #
 #  END Player Events

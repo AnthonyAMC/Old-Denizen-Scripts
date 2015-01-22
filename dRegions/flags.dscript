@@ -2482,6 +2482,60 @@ dRegions_Flag_Use-Utilities-Blocks:
     - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
 
+dRegions_Flag_Player-Damage:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Player-Damage<&4>]"
+  lore:
+  - <&5>Can players take damage.
+  event_hook: playerDamaged
+  event_priority: 10
+  flag_type: state
+  flag_takeGroup: true
+  flag_defaultValue: allow/all
+  region_highestOnly: true
+  flag_help: State flag controlling whether players will take damage in this region. Defaults to allow all. Use player-damage-types flag to specify damage types. Takes the -g group switch.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event:
+    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+      - define player <player>
+      - define target <c.cause>
+      - define flag 'player-damage'
+      - define flag-targetList 'player-damage-types'
+      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup instantly
+      }
+
+
+dRegions_Flag_Player-Damage-Types:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Player-Damage-Types<&4>]"
+  lore:
+  - <&5>List of damage types used by player-damage flag
+  command_entryType: cause
+  command_verifyEntry: <el@val[BLOCK_EXPLOSION|CONTACT|CUSTOM|DROWNING|ENTITY_ATTACK|ENTITY_EXPLOSION|FALL|FALLING_BLOCK|FIRE|FIRE_TICK|LAVA|LIGHTNING|MAGIC|MELTING|POISON|PROJECTILE|STARVATION|SUFFOCATION|SUICIDE|THORNS|VOID|WITHER].as_list.contains[<def[value]>].not>
+  flag_type: list
+  flag_takeGroup: false
+  flag_help: List flag used with use-utilities flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of damage types. Valid damage types<&co> block_explosion, contact, custom, drowning, entity_attack, entity_explosion, fall, falling_block, fire, fire_tick, lava, lightning, magic, melting, poison, projectile, starvation, suffocation, suicide, thorns, void, and wither.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  command_handler:
+    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
+
+
 
 ################################################################################
 
