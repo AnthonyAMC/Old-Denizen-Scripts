@@ -3289,6 +3289,7 @@ dRegions_Map_Interactions:
     rails: placeVehicle/minecart|storage_minecart|powered_minecart|explosive_minecart|hopper_minecart|command_minecart
     stationary_water: placeVehicle/boat
     water: placeVehicle/boat
+    mob_spawner: Build/monster_egg
 
   item:
     ink_sac:
