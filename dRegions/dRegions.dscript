@@ -221,6 +221,33 @@ dRegions:
       - inject instantly s@dRegions p:event_PreProc_RunEvent
       }
 
+# This is waiting for <c.direction> to be added to denizen
+#    on piston extends:
+#    - define world '<c.location.world.name.to_lowercase>'
+#    - define cuboids '<c.location.cuboids>'
+#    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+#    - define pistonCuboid '<def[orderedRegions].get[1]>'
+#    - define lastBlock '<tern[<c.length.is[==].to[0]||true>]:<proc[dRegions_getRelativeLocation].context[<c.location>|<c.direction>|1]>||<proc[dRegions_getRelativeLocation].context[<c.blocks.last>|<c.direction>|1]>>'
+#    - foreach <def[blocks].include[<def[lastBlock]>]> {
+#      - define cuboids <def[value].cuboids>
+#      - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+#      - if <def[pistonCuboid].is[!=].to[<def[orderedRegions].get[1]>]> determine cancelled
+#      }
+
+# This won't function until there is a <context.is_sticky>
+#    on piston retracts:
+#    - if !<c.is_sticky> queue clear
+#    - define world '<c.location.world.name.to_lowercase>'
+#    - define cuboids '<c.location.cuboids>'
+#    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+#    - define pistonCuboid '<def[orderedRegions].get[1]>'
+#    - foreach <c.blocks> {
+#      - define cuboids '<def[value].cuboids>'
+#      - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+#      - if <def[pistonCuboid].is[!=].to[<def[orderedRegions].get[1]>]> determine cancelled
+#      }
+
+
 #
 #  END World Events
 ##################################################
@@ -2994,6 +3021,33 @@ dRegions_GetInheritedFlag:
       - define return '<yaml[dRegions_%world%_regions].read[regions.%thisRegion%.flags.%flag%]||null>'
       }
     - determine '<def[return]||null>'
+
+
+dRegions_getRelativeLocation:
+  # A procedure script to get a location relative to another location.
+  # Specify the direction as   n s e w u d
+  # <proc[dRegions_getRelativeLocation].context[location|direction|distance]>
+  type: procedure
+  definitions: l|d|n
+  debug: false
+
+  n_math: sub
+  n_coord: '0,0,<def[n]>'
+  s_math: add
+  s_coord: '0,0,<def[n]>'
+  w_math: sub
+  w_coord: '<def[n]>,0,0'
+  e_math: add
+  e_coord: '<def[n]>,0,0'
+  d_math: sub
+  d_coord: '0,<def[n]>,0'
+  u_math: add
+  u_coord: '0,<def[n]>,0'
+
+  script:
+    - define math '<script.yaml_key[%d%_math]>'
+    - define coord '<script.yaml_key[%d%_coord]>'
+    - determine "<def[l].as_location.%math%[%coord%]>"
 
 
 dRegions_LineWrap:
