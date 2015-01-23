@@ -179,6 +179,9 @@ dRegions:
 
     on liquid spreads:
     - define world '<c.location.world.name.to_lowercase>'
+    - define oldLoc '<proc[dRegions_HighestPriority].context[%world%|<c.location.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[after[dregions_%world%_]].include[__global__].replace[li@].replace[|].with[,]||null>]||li@>'
+    - define newLoc '<proc[dRegions_HighestPriority].context[%world%|<c.destination.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[after[dregions_%world%_]].include[__global__].replace[li@].replace[|].with[,]||null>]||li@>'
+    - if <def[oldLoc].get[1].is[!=].to[<def[newLoc].get[1]>]> determine cancelled
     - define target '<c.destination.material.bukkit_enum.to_lowercase>'
     - define readPath 'spread.<c.location.material.bukkit_enum.split[_].last.to_lowercase||null>'
     - inject instantly s@dRegions p:event_PreProc_Config
