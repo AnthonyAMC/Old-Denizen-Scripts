@@ -442,16 +442,24 @@ dRegions:
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
     on player damaged:
+    - if <player.has_permission[dregions.invincible]||false> || <player.has_permission[dregions.invincible.<c.cause>]||false> {
+      - adjust <player> 'fire_time:0'
+      - determine cancelled
+      }
     - if <player.has_flag[dRegions_cancelDamage_<c.cause>]||false> {
       - adjust <player> 'fire_time:0'
       - determine cancelled
       }
     - define world '<c.entity.world.name.to_lowercase>'
+    - define target '<c.cause>'
+    - define readPath 'player-damage'
+    - inject instantly s@dRegions p:event_PreProc_Config
     - define cuboids '<c.entity.location.cuboids>'
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'playerDamaged'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
+    - define world '<c.world.name.to_lowercase>'
 
 #
 #  END Player Events
@@ -1570,7 +1578,9 @@ dRegions_Commands:
         }
       }
     # Automatically add the player that defined the region as the owner
-#    - if <def[ownerPlayers].contains[<player.uuid>].not||false> define ownerPlayers '<def[ownerPlayers].include[<player.uuid>]||%ownerPlayers%>'
+    - if <yaml[dregions_global_config].read[config.regions.ownerOnDefine].is[==].to[true]||false> {
+      - if <def[ownerPlayers].contains[<player.uuid>].not||false> define ownerPlayers '<def[ownerPlayers].include[<player.uuid>]||%ownerPlayers%>'
+      }
     # Create the region
     - inject s@dRegions p:createRegionEntry instantly
     - run instantly s@dRegions_Msg 'def:<&7><&o>Created %name% in %world%'
@@ -3321,11 +3331,12 @@ dRegions_Configurations:
   type: yaml data
 
   config:
-    version: 0.26
+    version: 0.27
     regions:
       enable: true
       invincibility-removes-mobs: false
       wand: dWE_Wand
+      ownerOnDefine: false
       claim:
         max-volume: 0
         only-inside-existing-regions: true
@@ -3377,47 +3388,14 @@ dRegions_Configurations:
       player: true
       entity: true
     leaf-decay: true
+    player-damage: true
+    player-damage-list: []
 #    auto-invincible: false
 #    protection:
 #      item-durability: true
 #      remove-infinite-stacks: false
 #      disable-xp-orb-drops: false
 #      disable-obsidian-generators: true
-#    ignition:
-#      block-tnt: false
-#      block-tnt-block-damage: false
-#      block-lighter: false
-#    mobs:
-#      block-creeper-explosions: false
-#      block-creeper-block-damage: false
-#      block-wither-explosions: false
-#      block-wither-block-damage: false
-#      block-wither-skull-explosions: false
-#      block-wither-skull-block-damage: false
-#      block-enderdragon-block-damage: false
-#      block-fireball-explosions: false
-#      block-fireball-block-damage: false
-#      disable-enderman-griefing: false
-#      block-painting-destroy: false
-#      block-item-frame-destroy: false
-#      block-creature-spawn: []
-#    player-damage:
-#      disable-fall-damage: false
-#      disable-lava-damage: false
-#      disable-fire-damage: false
-#      disable-lightning-damage: false
-#      disable-drowning-damage: false
-#      disable-suffocation-damage: false
-#      disable-contact-damage: false
-#      teleport-on-suffocation: false
-#      disable-void-damage: false
-#      teleport-on-void-falling: false
-#      disable-explosion-damage: false
-#      disable-mob-damage: false
-#      disable-death-messages: false
-#    crops:
-#      disable-creature-trampling: false
-#      disable-player-trampling: false
 #    weather:
 #      prevent-lightning-strike-blocks: []
 #      disable-lightning-strike-fire: false
@@ -3427,15 +3405,6 @@ dRegions_Configurations:
 #      disable-powered-creepers: false
 #      always-raining: false
 #      always-thundering: false
-#    dynamics:
-#      disable-mushroom-spread: false
-#      disable-ice-melting: false
-#      disable-snow-melting: false
-#      disable-snow-formation: false
-#      disable-ice-formation: false
-#      disable-leaf-decay: false
-#      disable-grass-growth: false
-#      disable-mycelium-spread: false
 
   regions:
     __global__:
