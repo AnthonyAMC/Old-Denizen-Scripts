@@ -331,6 +331,20 @@ dRegions:
     - define eventHooks 'Build'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
+    on player right clicks block with monster_egg:
+    - define world '<player.world.name.to_lowercase>'
+    - define cuboids '<c.cuboids>'
+    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - define eventHooks 'Build'
+    - inject instantly s@dRegions p:event_PreProc_RunEvent
+
+    on player throws hatching egg:
+    - define world '<player.world.name.to_lowercase>'
+    - define cuboids '<c.egg.location.cuboids>'
+    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - define eventHooks 'Build'
+    - inject instantly s@dRegions p:event_PreProc_RunEvent
+
     on player right clicks:
     - define blockEvent '<s@dRegions_Map_Interactions.yaml_key[block.<c.location.material.bukkit_enum||air>]||null>'
     - define world '<player.world.name.to_lowercase>'
