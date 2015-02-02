@@ -39,6 +39,10 @@ dRegions_Flag_Entry:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event-cleanup:
+    - if <player.is_inside_vehicle||false> {
+      - define vehicle '<player.get_vehicle>'
+      - run locally vehicle 'def:<def[vehicle]>|<c.from>' delay:1t
+      }
     - if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
       - run instantly s@dRegions_Msg 'def:<&c><&o>You do not have permission to enter this region'
@@ -50,6 +54,12 @@ dRegions_Flag_Entry:
       - define flag 'entry'
       - inject s@dRegions_Flags_Processors p:state-withGroup instantly
       }
+
+  vehicle:
+    - ^adjust <def[1]> 'velocity:l@0,0,0,<def[1].world>'
+    - ^mount cancel <player>|<def[1]>
+    - ^wait 20t
+    - ^teleport '<def[1]>' '<t[<def[1].is_living>]:<player.location>||<def[2].above>>'
 
 
 dRegions_Flag_Greeting:
@@ -106,6 +116,10 @@ dRegions_Flag_Exit:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event-cleanup:
+    - if <player.is_inside_vehicle||false> {
+      - define vehicle '<player.get_vehicle>'
+      - run locally vehicle 'def:<def[vehicle]>|<c.from>' delay:1t
+      }
     - if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
       - run instantly s@dRegions_Msg 'def:<&c><&o>You do not have permission to exit this region'
@@ -117,6 +131,12 @@ dRegions_Flag_Exit:
       - define flag 'exit'
       - inject s@dRegions_Flags_Processors p:state-withGroup instantly
       }
+
+  vehicle:
+    - ^adjust <def[1]> 'velocity:l@0,0,0,<def[1].world>'
+    - ^mount cancel <player>|<def[1]>
+    - ^wait 20t
+    - ^teleport '<def[1]>' '<t[<def[1].is_living>]:<player.location>||<def[2].above>>'
 
 
 dRegions_Flag_Farewell:
