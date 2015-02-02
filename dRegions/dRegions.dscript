@@ -236,10 +236,10 @@ dRegions:
       }
 
 # This is waiting for <c.direction> to be added to denizen
-#    on piston extends:
-#    - define world '<c.location.world.name.to_lowercase>'
-#    - define cuboids '<c.location.cuboids>'
-#    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    on piston extends:
+    - define world '<c.location.world.name.to_lowercase>'
+    - define cuboids '<c.location.cuboids>'
+    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
 #    - define pistonCuboid '<def[orderedRegions].get[1]>'
 #    - define lastBlock '<tern[<c.length.is[==].to[0]||true>]:<proc[dRegions_getRelativeLocation].context[<c.location>|<c.direction>|1]>||<proc[dRegions_getRelativeLocation].context[<c.blocks.last>|<c.direction>|1]>>'
 #    - foreach <def[blocks].include[<def[lastBlock]>]> {
@@ -247,19 +247,23 @@ dRegions:
 #      - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
 #      - if <def[pistonCuboid].is[!=].to[<def[orderedRegions].get[1]>]> determine cancelled
 #      }
+    - define eventHooks 'pistons'
+    - inject instantly s@dRegions p:event_PreProc_RunEvent
 
 # This won't function until there is a <context.is_sticky>
-#    on piston retracts:
+    on piston retracts:
 #    - if !<c.is_sticky> queue clear
-#    - define world '<c.location.world.name.to_lowercase>'
-#    - define cuboids '<c.location.cuboids>'
-#    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - define world '<c.location.world.name.to_lowercase>'
+    - define cuboids '<c.location.cuboids>'
+    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
 #    - define pistonCuboid '<def[orderedRegions].get[1]>'
 #    - foreach <c.blocks> {
 #      - define cuboids '<def[value].cuboids>'
 #      - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
 #      - if <def[pistonCuboid].is[!=].to[<def[orderedRegions].get[1]>]> determine cancelled
 #      }
+    - define eventHooks 'pistons'
+    - inject instantly s@dRegions p:event_PreProc_RunEvent
 
 
 #
