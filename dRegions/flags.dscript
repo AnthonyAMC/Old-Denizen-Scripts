@@ -56,9 +56,16 @@ dRegions_Flag_Entry:
       }
 
   vehicle:
-    - ^adjust <def[1]> 'velocity:l@0,0,0,<def[1].world>'
+    - ^if <player.has_flag[dRegions_regionKick]> {
+      - queue clear
+      }
+      else {
+      - flag <player> dRegions_regionKick d:5t
+      }
     - ^mount cancel <player>|<def[1]>
+    - ^teleport '<player>' '<def[2].above>'
     - ^wait 20t
+    - ^adjust <def[1]> 'velocity:l@0,0,0,<def[1].world>'
     - ^teleport '<def[1]>' '<t[<def[1].is_living>]:<player.location>||<def[2].above>>'
 
 
@@ -133,9 +140,16 @@ dRegions_Flag_Exit:
       }
 
   vehicle:
-    - ^adjust <def[1]> 'velocity:l@0,0,0,<def[1].world>'
+    - ^if <player.has_flag[dRegions_regionKick]> {
+      - queue clear
+      }
+      else {
+      - flag <player> dRegions_regionKick d:5t
+      }
     - ^mount cancel <player>|<def[1]>
+    - ^teleport '<player>' '<def[2].above>'
     - ^wait 20t
+    - ^adjust <def[1]> 'velocity:l@0,0,0,<def[1].world>'
     - ^teleport '<def[1]>' '<t[<def[1].is_living>]:<player.location>||<def[2].above>>'
 
 
