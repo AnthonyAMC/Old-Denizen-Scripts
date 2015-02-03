@@ -500,8 +500,6 @@ dRegions:
     - define eventHooks 'playerDamaged'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
-    - define world '<c.world.name.to_lowercase>'
-
 #
 #  END Player Events
 ##################################################
