@@ -2697,21 +2697,36 @@ dRegions_Flag_Heal-Amount:
       - define cuboids '<player.location.cuboids>'
       - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
       - if <def[orderedRegions].get[1].is[==].to[<def[1]>]> {
-        - if <def[2].is[MORE].than[0]> {
-          - if <player.health.is[LESS].than[<def[4]>]> {
-            - heal '<def[2]>' '<player>'
+        - if <def[3].is[OR_LESS].than[0]> {
+          - if <def[2].is[MORE].than[0]> {
+            - if <player.food_level.is[LESS].than[<def[4]>]> {
+              - adjust <player> 'health:<def[4]>'
+              }
             }
+            else {
+            - if <player.food_level.is[MORE].than[<def[5]>]> {
+              - adjust <player> 'health:<def[5]>'
+              }
+            }
+          - wait 1s
           }
           else {
-          - if <player.health.is[MORE].than[<def[5]>]> {
-            - hurt '<def[2].abs>' '<player>'
+          - if <def[2].is[MORE].than[0]> {
+            - if <player.food_level.is[LESS].than[<def[4]>]> {
+              - adjust <player> 'health:<player.health.add[<def[2]>]>'
+              }
             }
+            else {
+            - if <player.health.is[MORE].than[<def[5]>]> {
+              - adjust <player> 'health:<player.health.add[<def[2]>]>'
+              }
+            }
+          - wait <def[3].as_duration>
           }
         }
         else {
         - queue clear
         }
-      - wait <def[3].as_duration>
       }
 
 
@@ -2783,6 +2798,153 @@ dRegions_Flag_Heal-Min:
   command_handler:
     - if <def[flagValue].is[LESS].than[0]> {
       - run instantly s@dRegions_Msg 'def:<&c>Must be a value greater than 0!'
+      - queue clear
+      }
+
+
+dRegions_Flag_Feed-Amount:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Feed-Amount<&4>]"
+  lore:
+  - <&5>The amount to feed or starve.
+  event_hook: regionEnter
+  event_priority: 10
+  flag_type: number
+  flag_help: Set the amount to feed or starve a player while inside a region. Defaults to no effect. Positive numbers will feed players, negative numbers will starve players.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event:
+    - define region '<def[orderedRegions].get[1]>'
+    - define feedAmount '<proc[dRegions_GetInheritedFlag].context[<def[world]>|<def[region]>|feed-amount]||null>'
+    - if <def[feedAmount].is[!=].to[null]||true> {
+      - define feedDelay '<proc[dRegions_GetInheritedFlag].context[<def[world]>|<def[region]>|feed-delay]||null>'
+      - if <def[feedDelay].is[==].to[null]||true> define feedDelay '5'
+      - define feedMax '<proc[dRegions_GetInheritedFlag].context[<def[world]>|<def[region]>|feed-max]||null>'
+      - if <def[feedMax].is[==].to[null]||true> define feedMax '20'
+      - define feedMin '<proc[dRegions_GetInheritedFlag].context[<def[world]>|<def[region]>|feed-min]||null>'
+      - if <def[feedMin].is[==].to[null]||true> define feedMin '0'
+      - if <queue.exists[dRegions_Feed_<player.name>]> queue q@dRegions_Feed_<player.name> clear
+      - run locally feedTask def:<def[region]>|<def[feedAmount]>|<def[feedDelay]>|<def[feedMax]>|<def[feedMin]> id:dRegions_Feed_<player.name>
+      }
+
+  feedTask:
+    - while <player.is_online> {
+      - define world '<player.world.name.to_lowercase>'
+      - define cuboids '<player.location.cuboids>'
+      - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+      - if <def[orderedRegions].get[1].is[==].to[<def[1]>]> {
+        - if <def[3].is[OR_LESS].than[0]> {
+          - if <def[2].is[MORE].than[0]> {
+            - if <player.food_level.is[LESS].than[<def[4]>]> {
+              - adjust <player> 'food_level:<def[4]>'
+              - adjust <player> 'saturation:<player.food_level>'
+              }
+            }
+            else {
+            - if <player.food_level.is[MORE].than[<def[5]>]> {
+              - adjust <player> 'food_level:<def[5]>'
+              - adjust <player> 'saturation:<player.food_level>'
+              }
+            }
+          - wait 1s
+          }
+          else {
+          - if <def[2].is[MORE].than[0]> {
+            - if <player.food_level.is[LESS].than[<def[4]>]> {
+              - adjust <player> 'food_level:<player.food_level.add[<def[2]>]>'
+              - adjust <player> 'saturation:<player.food_level>'
+              }
+            }
+            else {
+            - if <player.health.is[MORE].than[<def[5]>]> {
+              - adjust <player> 'food_level:<player.food_level.add[<def[2]>]>'
+              - adjust <player> 'saturation:<player.food_level>'
+              }
+            }
+          - wait <def[3].as_duration>
+          }
+        }
+        else {
+        - queue clear
+        }
+      }
+
+
+dRegions_Flag_Feed-Delay:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Feed-Delay<&4>]"
+  lore:
+  - <&5>The duration between feed intervals
+  flag_type: number
+  flag_takeGroup: false
+  flag_help: Set the time in seconds between feed intervals. Defaults to 5 seconds.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  command_handler:
+    - if <def[flagValue].is[LESS].than[0]> {
+      - run instantly s@dRegions_Msg 'def:<&c>Can not specify negative time!'
+      - queue clear
+      }
+
+
+dRegions_Flag_Feed-Max:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Feed-Max<&4>]"
+  lore:
+  - <&5>Max health for feed flag.
+  flag_type: number
+  flag_takeGroup: false
+  flag_help: Set the max food level that the feed-amount flag will bring a player to. Defaults to 20.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  command_handler:
+    - if !<def[flagValue].is[MORE].than[0]> {
+      - run instantly s@dRegions_Msg 'def:<&c>Must be a value greater than 0!'
+      - queue clear
+      }
+
+
+dRegions_Flag_Feed-Min:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Feed-Min<&4>]"
+  lore:
+  - <&5>Minimum food level for feed-amount flag
+  flag_type: number
+  flag_takeGroup: false
+  flag_help: Set the min food level that the feed-amount flag will bring a player to. Defaults to 0.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  command_handler:
+    - if <def[flagValue].is[LESS].than[0]> {
+      - run instantly s@dRegions_Msg 'def:<&c>Can not set to a negative number!'
       - queue clear
       }
 
