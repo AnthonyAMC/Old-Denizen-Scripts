@@ -386,20 +386,20 @@ dRegions:
     on player enters notable cuboid:
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<c.cuboids.unescaped>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegions
+    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define isEnter ''
     - define eventHooks 'regionEnter|regionToggle'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
     on player exits notable cuboid:
-    - event 'player enters notable cuboid' 'context:cuboids|<c.to.cuboids.escaped>|from|<c.from>|to|<c.to>' save:enter
-    - if <entry[enter].determinations.get[1].is[==].to[cancelled]> determine cancelled
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<c.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegions
+    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define isExit ''
     - define eventHooks 'regionExit|regionToggle'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - event 'player enters notable cuboid' 'context:cuboids|<c.to.cuboids.escaped>|from|<c.from>|to|<c.to>' save:enter
+    - if <entry[enter].determinations.get[1].is[==].to[cancelled]||false> determine cancelled
 
     on player breaks block:
     - define world '<player.world.name.to_lowercase>'

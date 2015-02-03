@@ -2659,6 +2659,119 @@ dRegions_Flag_Commands-List:
     - inject instantly s@dRegions_Flags_CommandProcessors p:command_stringList
 
 
+dRegions_Flag_Heal-Amount:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Heal-Amount<&4>]"
+  lore:
+  - <&5>The amount to heal or harm.
+  event_hook: regionEnter
+  event_priority: 10
+  flag_type: number
+  flag_help: Set the amount to heal or hurt a player while inside a region. Defaults to no effect.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event:
+    - define region '<def[orderedRegions].get[1]>'
+    - define healAmount '<proc[dRegions_GetInheritedFlag].context[<def[world]>|<def[region]>|heal-amount]||null>'
+    - if <def[healAmount].is[!=].to[null]||true> {
+      - define healDelay '<proc[dRegions_GetInheritedFlag].context[<def[world]>|<def[region]>|heal-delay]||null>'
+      - if <def[healDelay].is[==].to[null]||true> define healDelay '5'
+      - define healMax '<proc[dRegions_GetInheritedFlag].context[<def[world]>|<def[region]>|heal-max]||null>'
+      - if <def[healMax].is[==].to[null]||true> define healMax '20'
+      - define healMin '<proc[dRegions_GetInheritedFlag].context[<def[world]>|<def[region]>|heal-min]||null>'
+      - if <def[healMin].is[==].to[null]||true> define healMin '0'
+      - if <queue.exists[dRegions_Heal_<player.name>]> queue q@dRegions_Heal_<player.name> clear
+      - run locally healTask def:<def[region]>|<def[healAmount]>|<def[healDelay]>|<def[healMax]>|<def[healMin]> id:dRegions_Heal_<player.name>
+      }
+
+  healTask:
+    - while <player.is_online> {
+      - define world '<player.world.name.to_lowercase>'
+      - define cuboids '<player.location.cuboids>'
+      - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+      - if <def[orderedRegions].get[1].is[==].to[<def[1]>]> {
+        - if <def[2].is[MORE].than[0]> {
+          - if <player.health.is[LESS].than[<def[4]>]> {
+            - heal '<def[2]>' '<player>'
+            }
+          }
+          else {
+          - if <player.health.is[MORE].than[<def[5]>]> {
+            - hurt '<def[2].abs>' '<player>'
+            }
+          }
+        }
+        else {
+        - queue clear
+        }
+      - wait <def[3].as_duration>
+      }
+
+
+dRegions_Flag_Heal-Delay:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Heal-Delay<&4>]"
+  lore:
+  - <&5>The duration between heal intervals
+  flag_type: number
+  flag_takeGroup: false
+  flag_help: Set the time in seconds between heal intervals. Defaults to 5 seconds.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+
+dRegions_Flag_Heal-Max:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Heal-Max<&4>]"
+  lore:
+  - <&5>Max health for heal flag.
+  flag_type: number
+  flag_takeGroup: false
+  flag_help: Set the max health that the heal flag will heal a player to. Defaults to 20.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+
+dRegions_Flag_Heal-Min:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Heal-Min<&4>]"
+  lore:
+  - <&5>Minimum health for heal flag
+  flag_type: number
+  flag_takeGroup: false
+  flag_help: Set the min health that the heal flag will heal a player to. Defaults to 0.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+
+
+
+
 
 ################################################################################
 
