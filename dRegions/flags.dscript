@@ -2669,7 +2669,7 @@ dRegions_Flag_Heal-Amount:
   event_hook: regionEnter
   event_priority: 10
   flag_type: number
-  flag_help: Set the amount to heal or hurt a player while inside a region. Defaults to no effect.
+  flag_help: Set the amount to heal or hurt a player while inside a region. Defaults to no effect. Positive number will heal players, negative numbers will damage players.
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
@@ -2732,6 +2732,12 @@ dRegions_Flag_Heal-Delay:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
+  command_handler:
+    - if <def[flagValue].is[LESS].than[0]> {
+      - run instantly s@dRegions_Msg 'def:<&c>Must be a value greater than 0!'
+      - queue clear
+      }
+
 
 dRegions_Flag_Heal-Max:
   type: item
@@ -2750,6 +2756,12 @@ dRegions_Flag_Heal-Max:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
+  command_handler:
+    - if <def[flagValue].is[LESS].than[0]> {
+      - run instantly s@dRegions_Msg 'def:<&c>Must be a value greater than 0!'
+      - queue clear
+      }
+
 
 dRegions_Flag_Heal-Min:
   type: item
@@ -2767,6 +2779,12 @@ dRegions_Flag_Heal-Min:
 
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  command_handler:
+    - if <def[flagValue].is[LESS].than[0]> {
+      - run instantly s@dRegions_Msg 'def:<&c>Must be a value greater than 0!'
+      - queue clear
+      }
 
 
 
