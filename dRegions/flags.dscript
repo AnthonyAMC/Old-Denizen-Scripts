@@ -2705,6 +2705,7 @@ dRegions_Flag_Heal-Amount:
             }
             else {
             - if <player.food_level.is[MORE].than[<def[5]>]> {
+              - animate <player> animation:hurt
               - adjust <player> 'health:<def[5]>'
               }
             }
@@ -2718,6 +2719,7 @@ dRegions_Flag_Heal-Amount:
             }
             else {
             - if <player.health.is[MORE].than[<def[5]>]> {
+              - animate <player> animation:hurt
               - adjust <player> 'health:<player.health.add[<def[2]>]>'
               }
             }
@@ -2749,7 +2751,7 @@ dRegions_Flag_Heal-Delay:
 
   command_handler:
     - if <def[flagValue].is[LESS].than[0]> {
-      - run instantly s@dRegions_Msg 'def:<&c>Must be a value greater than 0!'
+      - run instantly s@dRegions_Msg 'def:<&c>Can not specify negative time!'
       - queue clear
       }
 
@@ -2772,7 +2774,7 @@ dRegions_Flag_Heal-Max:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   command_handler:
-    - if <def[flagValue].is[LESS].than[0]> {
+    - if !<def[flagValue].is[MORE].than[0]> {
       - run instantly s@dRegions_Msg 'def:<&c>Must be a value greater than 0!'
       - queue clear
       }
@@ -2797,7 +2799,7 @@ dRegions_Flag_Heal-Min:
 
   command_handler:
     - if <def[flagValue].is[LESS].than[0]> {
-      - run instantly s@dRegions_Msg 'def:<&c>Must be a value greater than 0!'
+      - run instantly s@dRegions_Msg 'def:<&c>Can not set to a negative number!'
       - queue clear
       }
 
@@ -2849,6 +2851,7 @@ dRegions_Flag_Feed-Amount:
             }
             else {
             - if <player.food_level.is[MORE].than[<def[5]>]> {
+              - animate <player> animation:hurt
               - adjust <player> 'food_level:<def[5]>'
               - adjust <player> 'saturation:<player.food_level>'
               }
@@ -2864,6 +2867,7 @@ dRegions_Flag_Feed-Amount:
             }
             else {
             - if <player.health.is[MORE].than[<def[5]>]> {
+              - animate <player> animation:hurt
               - adjust <player> 'food_level:<player.food_level.add[<def[2]>]>'
               - adjust <player> 'saturation:<player.food_level>'
               }
