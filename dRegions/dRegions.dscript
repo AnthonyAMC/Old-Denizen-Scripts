@@ -5,7 +5,7 @@
 #
 #   Authors: |Anthony|
 #   Version: 0.2
-#   dScript Version: 0.9.6-DEV_b65
+#   dScript Version: 0.9.6-DEV_b125
 #
 #
 #   Dependencies:
@@ -506,6 +506,14 @@ dRegions:
     - define cuboids '<c.entity.location.cuboids>'
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'playerDamaged'
+    - inject instantly s@dRegions p:event_PreProc_RunEvent
+
+    on player teleports:
+    - if <c.cause.is[!=].to[ender_pearl]> queue clear
+    - define world '<player.world.name.to_lowercase>'
+    - define cuboids '<c.origin.cuboids.include[<c.destination.cuboids>].deduplicate>'
+    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - define eventHooks 'enderPearl'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
 #
