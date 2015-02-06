@@ -183,6 +183,55 @@ dRegions_Flag_Farewell:
       }
 
 
+dRegions_Flag_Spawn:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Spawn<&4>]"
+  lore:
+  - <&5>Region spawn point.
+  event_hook: playerDies
+  event_priority: 5
+  flag_type: location
+  flag_takeGroup: true
+  flag_help: Set the location players will respawn at if they die in this region. Default is to have no effect so normal respawn mechanics will apply. Takes the -g group switch. Specify the value as `here` to use your current location, or specify a valid location in the `x,y,z,world` format.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  command_handler:
+    - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
+      - if <proc[dRegions_RegionOverlaps].context[<def[flagValue]>/<def[flagValue]>|%region%|%world%|<player>]> {
+        - run instantly s@dRegions_Msg 'def:<&c>You can not use that location!'
+        - queue clear
+        }
+      }
+
+  event:
+    - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
+    - define suffix '<&pipe>spawn<&rb>||null<&gt>'
+    - define spawnLocs '<parse:<def[orderedRegions].parse[replace[regex:^()].with[<def[prefix]>]].parse[replace[regex:()$].with[<def[suffix]>]]>>'
+    - foreach <def[spawnLocs]||li@> {
+      - if <def[value].is[!=].to[null]||false> {
+        - define spawnLoc '<def[value].split[/].get[1]>'
+        - define group '<def[value].split[/].get[2]||all>'
+        - define region '<def[orderedRegions].get[%loop_index%]>'
+        - define isOwner '<proc[dRegions_IsOwner].context[%region%|%world%|<player>]>'
+        - define isMember '<proc[dRegions_isMember].context[%region%|%world%|<player>]>'
+        - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]>'
+
+        - if <def[isGroup]> {
+          - adjust <player> 'location:<def[spawnLoc].as_location>'
+          - flag <player> 'dRegions_Respawn:<def[spawnLoc].as_location>'
+          - foreach stop
+          }
+        }
+      }
+
+
 dRegions_Flag_Gamemode:
   type: item
   debug: false
