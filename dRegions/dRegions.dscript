@@ -1620,7 +1620,7 @@ dRegions_Commands:
       }
     # Check for overlapping regions
     - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
-      - if <proc[dRegions_RegionOverlaps].context[<def[selectedCuboid].replace[cu@].replace[|].with[/]>|%name%|%world%|<player>]> {
+      - if <proc[dRegions_RegionOverlaps].context[<def[selectedCuboid].replace[cu@].replace[|].with[/]>|%world%|<player>]> {
         - run instantly s@dRegions_Msg 'def:<&c>Region selection contains unowned regions!'
         - queue clear
         }
@@ -1675,7 +1675,7 @@ dRegions_Commands:
       }
     # Check for overlapping regions
     - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
-      - if <proc[dRegions_RegionOverlaps].context[<def[selectedCuboid].replace[cu@].replace[|].with[/]>|%name%|%world%|<player>]> {
+      - if <proc[dRegions_RegionOverlaps].context[<def[selectedCuboid].replace[cu@].replace[|].with[/]>|%world%|<player>]> {
         - run instantly s@dRegions_Msg 'def:<&c>Region selection contains unowned regions!'
         - queue clear
         }
@@ -1802,7 +1802,7 @@ dRegions_Commands:
       }
     # Check for overlapping regions
     - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
-      - if <proc[dRegions_RegionOverlaps].context[<def[selectedCuboid].replace[cu@].replace[|].with[/]>|%name%|%world%|<player>]> {
+      - if <proc[dRegions_RegionOverlaps].context[<def[selectedCuboid].replace[cu@].replace[|].with[/]>|%world%|<player>]> {
         - run instantly s@dRegions_Msg 'def:<&c>Region selection contains unowned regions!'
         - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
           - queue clear
@@ -3027,9 +3027,12 @@ dRegions_HighestPriority:
 dRegions_RegionOverlaps:
   # A procedure script to check if a region overlaps other (un)owned regions
   # <proc[dRegions_RegionOverlaps].context[<def[selectedCuboid].replace[cu@].replace[|].with[/]>|%name%|%world%|<player>]>
-  # NOTE: We have the ability to return %overlaps% and %unowned% if we want
+  # NOTE: If for some reason the selected cuboid overlaps an unowned region that is a lower priority than
+  # a region that the player does own and is completely within, it will not be considered as an overlap!
+  #  - But why would there be a lower priority region inside a higher priority region... that's not
+  #    how priorities should be used!
   type: procedure
-  definitions: selectedCuboid|region|world|player
+  definitions: selectedCuboid|world|player
   debug: false
 
   script:
@@ -3038,7 +3041,6 @@ dRegions_RegionOverlaps:
     - define notables '<def[regions].parse[replace[regex:^()].with[cu@dregions_%world%_]].filter[as_cuboid.is[!=].to[null]]||li@>'
     - define overlaps '<def[notables].filter[intersects[<def[selectedCuboid]>]].parse[replace[cu@dregions_%world%_]]||li@>'
     - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|<def[overlaps].replace[li@].replace[|].with[,]>]||li@>'
-    - define overlapping 'li@'
     - foreach <def[orderedRegions]> {
       - if <proc[dRegions_IsOwner].context[%value%|%world%|<player>].not> {
         - determine true
@@ -3047,10 +3049,9 @@ dRegions_RegionOverlaps:
 #      - if <def[selectedCuboid].is_within[<def[value].replace[regex:^()].with[cu@dregions_%world%_]>]> {
         - determine false
         }
-        else {
-        - define overlapping '<def[overlapping].include[<def[value]>]>'
-        }
       }
+    # By this point, we've determined that the player either owns all the regions at this cuboid location
+    # or that the new cuboid is completely within a region that he does own.
     - determine false
 
 

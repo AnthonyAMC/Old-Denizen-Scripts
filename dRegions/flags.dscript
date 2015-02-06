@@ -204,7 +204,7 @@ dRegions_Flag_Spawn:
 
   command_handler:
     - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
-      - if <proc[dRegions_RegionOverlaps].context[<def[flagValue]>/<def[flagValue]>|%region%|%world%|<player>]> {
+      - if <proc[dRegions_RegionOverlaps].context[<def[flagValue]>/<def[flagValue]>|%world%|<player>]> {
         - run instantly s@dRegions_Msg 'def:<&c>You can not use that location!'
         - queue clear
         }
