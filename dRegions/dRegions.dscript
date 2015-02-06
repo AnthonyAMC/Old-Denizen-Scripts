@@ -3030,7 +3030,7 @@ dRegions_RegionOverlaps:
   # NOTE: We have the ability to return %overlaps% and %unowned% if we want
   type: procedure
   definitions: selectedCuboid|region|world|player
-  debug: true
+  debug: false
 
   script:
     - define selectedCuboid '<def[selectedCuboid].split[/].as_cuboid>'
