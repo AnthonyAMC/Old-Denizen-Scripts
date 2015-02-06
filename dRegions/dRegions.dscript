@@ -3030,21 +3030,28 @@ dRegions_RegionOverlaps:
   # NOTE: We have the ability to return %overlaps% and %unowned% if we want
   type: procedure
   definitions: selectedCuboid|region|world|player
-  debug: false
+  debug: true
 
   script:
+    - define selectedCuboid '<def[selectedCuboid].split[/].as_cuboid>'
     - define regions '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__]||li@>'
     - define notables '<def[regions].parse[replace[regex:^()].with[cu@dregions_%world%_]].filter[as_cuboid.is[!=].to[null]]||li@>'
-    - define overlaps '<def[notables].filter[intersects[<def[selectedCuboid].split[/].as_cuboid>]].parse[replace[cu@dregions_%world%_]]||li@>'
-#    - define unowned '<def[overlaps].filter[<proc[dRegions_IsOwner].context[%region%|%world%|<player>].not>]||li@>'
-    - define unowned li@
-    - foreach %overlaps% {
+    - define overlaps '<def[notables].filter[intersects[<def[selectedCuboid]>]].parse[replace[cu@dregions_%world%_]]||li@>'
+    - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|<def[overlaps].replace[li@].replace[|].with[,]>]||li@>'
+    - define overlapping 'li@'
+    - foreach <def[orderedRegions]> {
       - if <proc[dRegions_IsOwner].context[%value%|%world%|<player>].not> {
-        - define unowned '<def[unowned].include[%value%]||%unowned%>'
+        - determine true
+        }
+      - if <proc[dRegions_CuboidIsWithinCuboid].context[<def[selectedCuboid].replace[cu@].replace[|].with[/]>|<def[value].replace[regex:^()].with[cu@dregions_%world%_].as_cuboid.full.replace[cu@].replace[|].with[/]>]> {
+#      - if <def[selectedCuboid].is_within[<def[value].replace[regex:^()].with[cu@dregions_%world%_]>]> {
+        - determine false
+        }
+        else {
+        - define overlapping '<def[overlapping].include[<def[value]>]>'
         }
       }
-    - if <def[unowned].is_empty.not||true> determine true
-      else determine false
+    - determine false
 
 
 dRegions_PlayerMatchRegionGroup:
@@ -3079,6 +3086,30 @@ dRegions_PlayerMatchRegionGroup:
       - determine true
       }
     - determine false
+
+
+dRegions_CuboidIsWithinCuboid:
+  # Checks if one cuboid is completely within another cuboid
+  # <proc[dRegions_CuboidIsWithinCuboid].context[inner|outer]>
+  type: procedure
+  definitions: inner|outer
+  debug: false
+
+  script:
+    - define innerCuboid '<def[inner].split[/].as_cuboid>'
+    - define outerCuboid '<def[outer].split[/].as_cuboid>'
+
+    - if <def[innerCuboid].min.x.is[OR_MORE].than[<def[outerCuboid].min.x>]>
+      && <def[innerCuboid].min.y.is[OR_MORE].than[<def[outerCuboid].min.y>]>
+      && <def[innerCuboid].min.z.is[OR_MORE].than[<def[outerCuboid].min.z>]>
+      && <def[innerCuboid].max.x.is[OR_LESS].than[<def[outerCuboid].max.x>]>
+      && <def[innerCuboid].max.y.is[OR_LESS].than[<def[outerCuboid].max.y>]>
+      && <def[innerCuboid].max.z.is[OR_LESS].than[<def[outerCuboid].max.z>]> {
+      - determine true
+      }
+      else {
+      - determine false
+      }
 
 
 dRegions_GetInheritedFlag:
