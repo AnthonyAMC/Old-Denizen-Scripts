@@ -509,12 +509,19 @@ dRegions:
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
     on player teleports:
-    - if <c.cause.is[!=].to[ender_pearl]> queue clear
+    - if <c.cause.is[!=].to[ender_pearl]||true> queue clear
+    - narrate "FIX PLAYER TELEPORTS EVENT IN DREGIONS"
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<c.origin.cuboids.include[<c.destination.cuboids>].deduplicate>'
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'enderPearl'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
+
+    on player respawns:
+    - if <player.has_flag[dRegions_Respawn]> {
+      - determine passively '<player.flag[dRegions_Respawn].as_location>'
+      - flag <player> 'dRegions_Respawn:!'
+      }
 
 #
 #  END Player Events
@@ -2354,6 +2361,11 @@ dRegions_Commands:
     - define flagValue '<def[args].get[3].to[<def[args].size>].space_separated.escaped||null>'
     - if <def[flagValue].is[!=].to[null]||true> {
       - define type "<s@dRegions_Flag_%flag%.yaml_key[flag_type]||null>"
+      - if <def[type].is[==].to[location]> {
+        - if <def[flagValue].is[==].to[here]||true> {
+          - define flagValue '<player.location.simple>'
+          }
+        }
       - define typeMatch '<proc[dRegion_FlagTypeMatch].context[%flagValue%|%flag%]>'
       - if !<def[TypeMatch]> {
         - define lines '<proc[dRegions_LineWrap].context[<s@dRegions_Flag_%Flag%.yaml_key[flag_help]||<&c>%flag% flag requires a %type% value!>|45]>'
@@ -3022,7 +3034,7 @@ dRegions_RegionOverlaps:
 
   script:
     - define regions '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__]||li@>'
-    - define notables '<def[regions].parse[replace[regex:^()].with[cu@dregions_%world%_]].filter[as_cuboid.is[!=].to[null]||false]||li@>'
+    - define notables '<def[regions].parse[replace[regex:^()].with[cu@dregions_%world%_]].filter[as_cuboid.is[!=].to[null]]||li@>'
     - define overlaps '<def[notables].filter[intersects[<def[selectedCuboid].split[/].as_cuboid>]].parse[replace[cu@dregions_%world%_]]||li@>'
 #    - define unowned '<def[overlaps].filter[<proc[dRegions_IsOwner].context[%region%|%world%|<player>].not>]||li@>'
     - define unowned li@
