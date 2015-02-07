@@ -510,7 +510,6 @@ dRegions:
 
     on player teleports:
     - if <c.cause.is[!=].to[ender_pearl]||true> queue clear
-    - narrate "FIX PLAYER TELEPORTS EVENT IN DREGIONS"
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<c.origin.cuboids.include[<c.destination.cuboids>].deduplicate>'
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
@@ -3000,10 +2999,11 @@ dRegions_RegionExists:
     - if <def[region].is[==].to[__global__]> {
       - determine true
       }
-    - define notables '<cu@dregions_%world%_%region%.as_cuboid.is[!=].to[null].not||true>'
+#    - define notables '<cu@dregions_%world%_%region%.is[!=].to[null].not||true>'
+    - define notables '<server.list_notables[cuboids].contains[cu@dregions_%world%_%region%].not||true>'
     - define regions '<yaml[dRegions_%world%_regions].contains[regions.%region%].not||true>'
-    - if %notables% && %regions% determine false
-      else if %notables% || %regions% determine orphan
+    - if <def[notables]> && <def[regions]> determine false
+      else if <def[notables]> || <def[regions]> determine orphan
       else determine true
 
 
@@ -3045,8 +3045,8 @@ dRegions_RegionOverlaps:
       - if <proc[dRegions_IsOwner].context[%value%|%world%|<player>].not> {
         - determine true
         }
-      - if <proc[dRegions_CuboidIsWithinCuboid].context[<def[selectedCuboid].replace[cu@].replace[|].with[/]>|<def[value].replace[regex:^()].with[cu@dregions_%world%_].as_cuboid.full.replace[cu@].replace[|].with[/]>]> {
-#      - if <def[selectedCuboid].is_within[<def[value].replace[regex:^()].with[cu@dregions_%world%_]>]> {
+#      - if <proc[dRegions_CuboidIsWithinCuboid].context[<def[selectedCuboid].replace[cu@].replace[|].with[/]>|<def[value].replace[regex:^()].with[cu@dregions_%world%_].as_cuboid.full.replace[cu@].replace[|].with[/]>]> {
+     - if <def[selectedCuboid].is_within[<def[value].replace[regex:^()].with[cu@dregions_%world%_].as_cuboid>]> {
         - determine false
         }
       }
