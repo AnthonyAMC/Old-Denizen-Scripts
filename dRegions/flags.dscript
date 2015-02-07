@@ -2930,6 +2930,10 @@ dRegions_Flag_Feed-Amount:
       - define cuboids '<player.location.cuboids>'
       - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
       - if <def[orderedRegions].get[1].is[==].to[<def[1]>]> {
+        - if <player.gamemode.id.is[==].to[1]> {
+          - wait 1s
+          - while next
+          }
         - if <def[3].is[OR_LESS].than[0]> {
           - if <def[2].is[MORE].than[0]> {
             - if <player.food_level.is[LESS].than[<def[4]>]> {
@@ -2945,23 +2949,24 @@ dRegions_Flag_Feed-Amount:
               }
             }
           - wait 1s
+          - while next
+          }
+        - if <def[2].is[MORE].than[0]> {
+          - if <player.food_level.is[LESS].than[<def[4]>]> {
+            - define newFood '<player.food_level.add[<def[2]>]>'
+            - adjust <player> 'food_level:<tern[<def[newFood].is[MORE].than[<def[4]>]>]:<def[4]>||<def[newFood]>>'
+            - adjust <player> 'saturation:<player.food_level>'
+            }
           }
           else {
-          - if <def[2].is[MORE].than[0]> {
-            - if <player.food_level.is[LESS].than[<def[4]>]> {
-              - adjust <player> 'food_level:<player.food_level.add[<def[2]>]>'
-              - adjust <player> 'saturation:<player.food_level>'
-              }
+          - if <player.health.is[MORE].than[<def[5]>]> {
+            - define newFood '<player.food_level.add[<def[2]>]>'
+            - adjust <player> 'food_level:<tern[<def[newFood].is[LESS].than[<def[5]>]>]:<def[5]>||<def[newFood]>>'
+            - adjust <player> 'saturation:<player.food_level>'
+            - animate <player> animation:hurt
             }
-            else {
-            - if <player.health.is[MORE].than[<def[5]>]> {
-              - animate <player> animation:hurt
-              - adjust <player> 'food_level:<player.food_level.add[<def[2]>]>'
-              - adjust <player> 'saturation:<player.food_level>'
-              }
-            }
-          - wait <def[3].as_duration>
           }
+        - wait <def[3].as_duration>
         }
         else {
         - queue clear
