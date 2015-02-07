@@ -3046,7 +3046,7 @@ dRegions_RegionOverlaps:
         - determine true
         }
 #      - if <proc[dRegions_CuboidIsWithinCuboid].context[<def[selectedCuboid].replace[cu@].replace[|].with[/]>|<def[value].replace[regex:^()].with[cu@dregions_%world%_].as_cuboid.full.replace[cu@].replace[|].with[/]>]> {
-     - if <def[selectedCuboid].is_within[<def[value].replace[regex:^()].with[cu@dregions_%world%_].as_cuboid>]> {
+      - if <def[selectedCuboid].is_within[<def[value].replace[regex:^()].with[cu@dregions_%world%_].as_cuboid>]> {
         - determine false
         }
       }
