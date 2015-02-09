@@ -601,6 +601,8 @@ dRegions:
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
     on entity forms block:
+#    - if <c.entity.has_flag[dRegions_NoGrief]> determine cancelled
+    - if <server.flag[dRegions_EntityGrief].as_list.contains[<c.entity.uuid>]||false> determine cancelled
     - define world '<c.location.world.name.to_lowercase>'
     - define readPath 'entity.changeBlock'
     - define target '<c.entity.entity_type||other>'

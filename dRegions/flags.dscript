@@ -930,6 +930,9 @@ dRegions_Flag_Entity-Grief:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
+  event-cleanup:
+    - flag server dRegions_EntityGrief:->:<c.entity.uuid> duration:2s
+
   event:
     - define flag 'entity-grief'
     - define flag-targetList 'entity-grieflist'
