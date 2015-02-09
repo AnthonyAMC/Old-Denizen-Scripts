@@ -117,9 +117,7 @@ dRegions:
     - run locally loadYaml instantly
 
     on script reload:
-    - if <yaml.list.contains[dRegions_global_config]||false> {
-      - run locally start instantly
-      }
+    - run locally start instantly
 
 
     on command:
