@@ -1196,6 +1196,9 @@ dRegions_Flag_Water-Spread:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
+  event_cleanup:
+    - announce "Water Spread time <server.current_time_millis.sub_int[<queue.start_time>]>"
+
   event:
     - define flag 'water-spread'
     - define flag-targetList 'water-spreadblocks'
@@ -1708,7 +1711,7 @@ dRegions_Flag_Bucket-Fill:
   lore:
   - <&5>Who can fill a bucket in a region
   event_hook: fillBucket
-  event_priority: 0
+  event_priority: 10
   flag_type: state
   flag_takeGroup: true
   flag_defaultValue: allow/all
@@ -1741,7 +1744,7 @@ dRegions_Flag_Bucket-Empty:
   lore:
   - <&5>Who can fill a bucket in a region
   event_hook: emptyBucket
-  event_priority: 0
+  event_priority: 10
   flag_type: state
   flag_takeGroup: true
   flag_defaultValue: allow/all
