@@ -3021,7 +3021,7 @@ dRegions_HighestPriority:
 
   script:
     - define regions '<def[regions].split[,]||li@>'
-    - define priList '<parse:<def[regions].parse[replace[regex:^()].with[<&lt>yaml<&lb>dRegions_%world%_regions<&rb>.read<&lb>regions.]].parse[replace[regex:()$].with[.priority<&rb>||0<&gt>]]>>'
+    - define priList '<parse:<def[regions].parse[replace[regex:^].with[<&lt>yaml<&lb>dRegions_%world%_regions<&rb>.read<&lb>regions.]].parse[replace[regex:$].with[.priority<&rb>||0<&gt>]]>>'
     - define regionPri 'li@'
     - foreach <def[regions]> {
       - define regionPri '<def[regionPri].include[<def[priList].get[%loop_index%]>/%value%]>'
