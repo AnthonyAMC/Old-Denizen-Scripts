@@ -670,7 +670,7 @@ dRegions:
       - define targetList '<yaml[dRegions_%value%_config].read[config.%readPath%-list]||li@>'
       - if <def[settingValue]||true> {
         - if !<def[targetList].is_empty||true>
-          && !<def[targetList].contains[<def[target]>]||true> {
+          && !<def[targetList].contains[<def[target]||all>]||true> {
           - determine CANCELLED
           }
         }
