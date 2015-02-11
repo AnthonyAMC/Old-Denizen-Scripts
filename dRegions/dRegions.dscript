@@ -141,7 +141,6 @@ dRegions:
     - inject instantly s@dRegions p:event_PreProc_Config
     - define cuboids '<c.location.cuboids>'
     - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
-#    - define eventHooks '<t[<c.entity.is_player||false>]:fireFrom-Lighter||fireSpread>'
     - define eventHooks '<t[<c.cause.is[==].to[flint_and_steel]>]:fireFrom-Lighter||fireFrom-Spread>'
     - inject instantly s@dRegions p:event_PreProc_RunEvent
 
@@ -670,20 +669,15 @@ dRegions:
       - define settingValue '<yaml[dRegions_%value%_config].read[config.%readPath%]||true>'
       - define targetList '<yaml[dRegions_%value%_config].read[config.%readPath%-list]||li@>'
       - if <def[settingValue]||true> {
-        - if !<def[targetList].is_empty||true> {
-          - if !<def[targetList].contains[<def[target]>]||true> {
-            - determine CANCELLED
-            }
+        - if !<def[targetList].is_empty||true>
+          && !<def[targetList].contains[<def[target]>]||true> {
+          - determine CANCELLED
           }
         }
         else {
-        - if <def[targetList].is_empty||true> {
+        - if <def[targetList].is_empty||true>
+          || <def[targetList].contains[<def[target]||all>]||false> {
           - determine CANCELLED
-          }
-          else {
-          - if <def[targetList].contains[<def[target]>]||false> {
-            - determine CANCELLED
-            }
           }
         }
       }
@@ -719,7 +713,7 @@ dRegions:
   # and drop the priority value from the list.
   # Now that we have the orderedEvents we can inject each FlagScript in order.
   #
-    - define eventHooks '<def[eventHooks].as_list.exclude[null]||li@>'
+    - define eventHooks '<def[eventHooks].as_list.filter[contains_any[null].not]||li@>'
     - if <def[eventHooks].is_empty||true> {
       - queue clear
       }

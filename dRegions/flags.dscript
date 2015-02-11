@@ -2641,7 +2641,7 @@ dRegions_Flag_Player-Damage:
   flag_type: state
   flag_takeGroup: true
   flag_defaultValue: allow/all
-  region_highestOnly: true
+  region_highestOnly: false
   flag_help: State flag controlling whether players will take damage in this region. Defaults to allow all. Use player-damage-types flag to specify damage types. Takes the -g group switch.
   script:
     - narrate "A handy container for region flags."
@@ -3079,6 +3079,7 @@ dRegions_Flags_Processors:
           }
           else foreach next
         }
+
       - if <def[flagVal]||true> {
         - foreach stop
         }
@@ -3112,30 +3113,28 @@ dRegions_Flags_Processors:
           }
           else foreach next
         }
-
+# If the flag is set to allow, cancel the event as needed or stop the foreach
       - if <def[flagVal].is[==].to[allow]||false> {
-        - if <def[targetList].is[!=].to[li@all]||true> {
-          - if !<def[targetList].contains[<def[target]>]||false> {
-            - inject <def[FlagScript]||null> p:event-cleanup instantly
-            - determine cancelled
-            }
-            else foreach stop
-          }
-          else foreach stop
-        }
-        else {
         - if <def[targetList].is[==].to[li@all]||true> {
+          - foreach stop
+          }
+        - if !<def[targetList].contains[<def[target]>]||false> {
           - inject <def[FlagScript]||null> p:event-cleanup instantly
           - determine cancelled
           }
-          else {
-          - if <def[targetList].contains[<def[target]>]||false> {
-            - inject <def[FlagScript]||null> p:event-cleanup instantly
-            - determine cancelled
-            }
-            else foreach stop
-          }
+          else foreach stop
         }
+# Must be a deny flag
+      - if <def[targetList].is[==].to[li@all]||true> {
+        - inject <def[FlagScript]||null> p:event-cleanup instantly
+        - determine cancelled
+        }
+# Cancel the event if the target matches the list, otherwise it's not a denied target.
+      - if <def[targetList].contains[<def[target]>]||false> {
+        - inject <def[FlagScript]||null> p:event-cleanup instantly
+        - determine cancelled
+        }
+        else foreach stop
       }
 
   state-withGroup:
@@ -3170,13 +3169,12 @@ dRegions_Flags_Processors:
           }
           else foreach stop
         }
-        else {
-        - if <def[isGroup]> {
-          - inject <def[FlagScript]||null> p:event-cleanup instantly
-          - determine cancelled
-          }
-          else foreach stop
+# Must be a deny flag
+      - if <def[isGroup]> {
+        - inject <def[FlagScript]||null> p:event-cleanup instantly
+        - determine cancelled
         }
+        else foreach stop
       }
 
   state-withTarget-withGroup:
@@ -3212,37 +3210,27 @@ dRegions_Flags_Processors:
       - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]>'
 
       - if <def[flagVal].is[==].to[allow]||false> {
-        - if <def[isGroup]> {
-          - if <def[targetList].is[!=].to[li@all]||true> {
-            - if !<def[targetList].contains[<def[target]>]||false> {
-              - inject <def[FlagScript]||null> p:event-cleanup instantly
-              - determine cancelled
-              }
-              else foreach stop
-            }
-            else foreach stop
-          }
-          else {
+        - if !<def[isGroup]> {
           - inject <def[FlagScript]||null> p:event-cleanup instantly
           - determine cancelled
           }
-        }
-        else {
-        - if <def[isGroup]> {
-          - if <def[targetList].is[==].to[li@all]||true> {
-            - inject <def[FlagScript]||null> p:event-cleanup instantly
-            - determine cancelled
-            }
-            else {
-            - if <def[targetList].contains[<def[target]>]||false> {
-              - inject <def[FlagScript]||null> p:event-cleanup instantly
-              - determine cancelled
-              }
-              else foreach stop
-            }
+        - if <def[targetList].is[==].to[li@all]||true>
+          || <def[targetList].contains[<def[target]>]||false> {
+          - foreach stop
           }
-          else foreach stop
+        - inject <def[FlagScript]||null> p:event-cleanup instantly
+        - determine cancelled
         }
+# Must be a deny flag
+      - if !<def[isGroup]> {
+        - foreach stop
+        }
+      - if <def[targetList].is[==].to[li@all]||true>
+        || <def[targetList].contains[<def[target]>]||false> {
+        - inject <def[FlagScript]||null> p:event-cleanup instantly
+        - determine cancelled
+        }
+        else foreach stop
       }
 
 
