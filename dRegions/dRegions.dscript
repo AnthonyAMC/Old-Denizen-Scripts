@@ -669,14 +669,17 @@ dRegions:
       - define settingValue '<yaml[dRegions_%value%_config].read[config.%readPath%]||true>'
       - define targetList '<yaml[dRegions_%value%_config].read[config.%readPath%-list]||li@>'
       - if <def[settingValue]||true> {
-        - if !<def[targetList].is_empty||true>
-          && !<def[targetList].contains[<def[target]||all>]||true> {
-          - determine CANCELLED
+        - if !<def[targetList].is_empty||true> {
+          - if !<def[targetList].contains[<def[target]||all>]||true> {
+            - determine CANCELLED
+            }
           }
         }
-        else {
-        - if <def[targetList].is_empty||true>
-          || <def[targetList].contains[<def[target]||all>]||false> {
+      - if !<def[settingValue]||true> {
+        - if <def[targetList].is_empty||true> {
+          - determine CANCELLED
+          }
+        - if <def[targetList].contains[<def[target]||all>]||false> {
           - determine CANCELLED
           }
         }
@@ -1177,7 +1180,7 @@ dRegions_Commands:
         }
       - if <def[spaces].is[==].to[0]> define result '<def[regions].parse[replace[regex:^].with[select ]]>'
         else if <def[spaces].is[==].to[1]> {
-        - define result '<def[regions].filter[starts_with[<c.args.get[2].escaped>]]||li@>'
+        - define result '<def[regions].filter[starts_with[<c.args.get[2].escaped||null>]]||li@>'
         - if <def[result].is_empty||true> define result '%regions%'
         }
         else define result 'li@'
@@ -1188,6 +1191,7 @@ dRegions_Commands:
   # /drg info [ID] -w world
     - if <player.has_permission[dregions.info]||<player.is_op||false>> {
       - define spaces '<c.raw_args.to_list.count[ ]||0>'
+      - narrate "<c.args.find[-w].add[1].as_int> <c.args.get[1]>"
       - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name.to_lowercase||<player.world.name.to_lowercase||null>>'
       - define regions '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__].alphanumeric||li@>'
       - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
@@ -1197,7 +1201,7 @@ dRegions_Commands:
         }
       - if <def[spaces].is[==].to[0]> define result '<def[regions].parse[replace[regex:^].with[info ]]>'
         else if <def[spaces].is[==].to[1]> {
-        - define result '<def[regions].filter[starts_with[<c.args.get[2].escaped>]]||li@>'
+        - define result '<def[regions].filter[starts_with[<c.args.get[2].escaped||null>]]||li@>'
         - if <def[result].is_empty||true> define result '%regions%'
         }
         else define result 'li@'
@@ -1217,7 +1221,7 @@ dRegions_Commands:
         }
       - if <def[spaces].is[==].to[0]> define result '<def[regions].parse[replace[regex:^].with[addowner ]]>'
         else if <def[spaces].is[==].to[1]> {
-        - define result '<def[regions].filter[starts_with[<c.args.get[2].escaped>]]||li@>'
+        - define result '<def[regions].filter[starts_with[<c.args.get[2].escaped||null>]]||li@>'
         - if <def[result].is_empty||true> define result '%regions%'
         }
         else if <def[spaces].is[OR_MORE].than[2]> {
@@ -1762,7 +1766,7 @@ dRegions_Commands:
             }
           }
         }
-      - define cuboids '<def[playerWorldRegions].parse[replace[regex:^()].with[cu@dregions_%world%_]].filter[as_cuboid.is[!=].to[null]||false]||li@>'
+      - define cuboids '<def[playerWorldRegions].parse[replace[regex:^].with[cu@dregions_%world%_]].filter[as_cuboid.is[!=].to[null]||false]||li@>'
       - foreach %cuboids% {
         - if <def[pos1].as_location.is_within[%value%]>
           && <def[pos2].as_location.is_within[%value%]> {
@@ -1886,7 +1890,7 @@ dRegions_Commands:
       - narrate "<&5><el@val[|].pad_right[3]><&7>Owners<&co> <&c>none"
       }
       else {
-      - define ownerList '<def[ownerPlayers].parse[as_player.name].include[<def[ownerGroups].parse[replace[regex:^()].with[<&b>]]||>].comma_separated>'
+      - define ownerList '<def[ownerPlayers].parse[as_player.name].include[<def[ownerGroups].parse[replace[regex:^].with[<&b>]]||>].comma_separated>'
       - define lines '<proc[dRegions_LineWrap].context[Owners, <def[ownerList]>|45]>'
       - narrate "<&5><el@val[|].pad_right[3]><&7><def[lines].get[1].split[, ].get[1]><&co>  <&f><def[lines].get[1].split[, ].remove[1].comma_separated>"
       - foreach <def[lines].remove[1]> {
@@ -1898,7 +1902,7 @@ dRegions_Commands:
       - narrate "<&5><el@val[|].pad_right[3]><&7>Members<&co> <&c>none"
       }
       else {
-      - define memberList '<def[memberPlayers].parse[as_player.name].include[<def[memberGroups].parse[replace[regex:^()].with[<&b>]]||>].comma_separated>'
+      - define memberList '<def[memberPlayers].parse[as_player.name].include[<def[memberGroups].parse[replace[regex:^].with[<&b>]]||>].comma_separated>'
       - define lines '<proc[dRegions_LineWrap].context[Members, <def[memberList]>|45]>'
       - narrate "<&5><el@val[|].pad_right[3]><&7><def[lines].get[1].split[, ].get[1]><&co>  <&f><def[lines].get[1].split[, ].remove[1].comma_separated>"
       - foreach <def[lines].remove[1]> {
@@ -2925,15 +2929,15 @@ dRegions_IsOwner:
     - define thisRegion '<def[region]>'
     - while <def[return].is[==].to[null]||false> {
       - define thisRegion '<yaml[dRegions_%world%_regions].read[regions.%thisRegion%.parent]||null>'
-      - if <def[thisRegion].is[==].to[null]||false>
-        || <def[loop_index].is[MORE].than[25]||false> {
+      - if <def[thisRegion].is[==].to[null]||false> {
         - while stop
         }
       - define players '<yaml[dRegions_%world%_regions].read[regions.%thisRegion%.owners.players]||li@>'
       - define groups '<yaml[dRegions_%world%_regions].read[regions.%thisRegion%.owners.groups]||li@>'
-      - if <def[players].contains[<def[playerUUID]>].not||false>
-        && <def[groups].contains_any[<def[playerGroups]>].not||false> {
-        - define return 'null'
+      - if <def[players].contains[<def[playerUUID]>].not||false> {
+        - if <def[groups].contains_any[<def[playerGroups]>].not||false> {
+          - define return 'null'
+          }
         }
         else {
         - determine 'true'
@@ -2970,15 +2974,15 @@ dRegions_IsMember:
     - define thisRegion '<def[region]>'
     - while <def[return].is[==].to[null]||false> {
       - define thisRegion '<yaml[dRegions_%world%_regions].read[regions.%thisRegion%.parent]||null>'
-      - if <def[thisRegion].is[==].to[null]||false>
-        || <def[loop_index].is[MORE].than[25]||false> {
+      - if <def[thisRegion].is[==].to[null]||false> {
         - while stop
         }
       - define players '<yaml[dRegions_%world%_regions].read[regions.%thisRegion%.members.players]||li@>'
       - define groups '<yaml[dRegions_%world%_regions].read[regions.%thisRegion%.members.groups]||li@>'
-      - if <def[players].contains[<def[playerUUID]>].not||false>
-        && <def[groups].contains_any[<def[playerGroups]>].not||false> {
-        - define return 'null'
+      - if <def[players].contains[<def[playerUUID]>].not||false> {
+        - if <def[groups].contains_any[<def[playerGroups]>].not||false> {
+          - define return 'null'
+          }
         }
         else {
         - determine 'true'
@@ -3037,15 +3041,15 @@ dRegions_RegionOverlaps:
   script:
     - define selectedCuboid '<def[selectedCuboid].split[/].as_cuboid>'
     - define regions '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__]||li@>'
-    - define notables '<def[regions].parse[replace[regex:^()].with[cu@dregions_%world%_]].filter[as_cuboid.is[!=].to[null]]||li@>'
+    - define notables '<def[regions].parse[replace[regex:^].with[cu@dregions_%world%_]].filter[as_cuboid.is[!=].to[null]]||li@>'
     - define overlaps '<def[notables].filter[intersects[<def[selectedCuboid]>]].parse[replace[cu@dregions_%world%_]]||li@>'
     - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|<def[overlaps].replace[li@].replace[|].with[,]>]||li@>'
     - foreach <def[orderedRegions]> {
       - if <proc[dRegions_IsOwner].context[%value%|%world%|<player>].not> {
         - determine true
         }
-#      - if <proc[dRegions_CuboidIsWithinCuboid].context[<def[selectedCuboid].replace[cu@].replace[|].with[/]>|<def[value].replace[regex:^()].with[cu@dregions_%world%_].as_cuboid.full.replace[cu@].replace[|].with[/]>]> {
-      - if <def[selectedCuboid].is_within[<def[value].replace[regex:^()].with[cu@dregions_%world%_].as_cuboid>]> {
+#      - if <proc[dRegions_CuboidIsWithinCuboid].context[<def[selectedCuboid].replace[cu@].replace[|].with[/]>|<def[value].replace[regex:^].with[cu@dregions_%world%_].as_cuboid.full.replace[cu@].replace[|].with[/]>]> {
+      - if <def[selectedCuboid].is_within[<def[value].replace[regex:^].with[cu@dregions_%world%_].as_cuboid>]> {
         - determine false
         }
       }
@@ -3066,21 +3070,25 @@ dRegions_PlayerMatchRegionGroup:
       - if <def[isMember].not> && <def[isOwner].not> {
         - determine true
         }
+        else determine false
       }
     - if <def[group].is[==].to[owners]> {
       - if <def[isOwner]> {
         - determine true
         }
+        else determine false
       }
     - if <def[group].is[==].to[nonowners]> {
       - if <def[isOwner].not> {
         - determine true
         }
+        else determine false
       }
     - if <def[group].is[==].to[members]> {
       - if <def[isMember]> {
         - determine true
         }
+        else determine false
       }
     - if <def[group].is[==].to[all]> {
       - determine true
@@ -3125,8 +3133,7 @@ dRegions_GetInheritedFlag:
     - define thisRegion '<def[region]>'
     - while <def[return].is[==].to[null]||false> {
       - define thisRegion '<yaml[dRegions_%world%_regions].read[regions.%thisRegion%.parent]||null>'
-      - if <def[thisRegion].is[==].to[null]||false>
-        || <def[loop_index].is[MORE].than[25]||false> {
+      - if <def[thisRegion].is[==].to[null]||false> {
         - while stop
         }
       - define return '<yaml[dRegions_%world%_regions].read[regions.%thisRegion%.flags.%flag%]||null>'
