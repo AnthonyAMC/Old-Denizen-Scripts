@@ -3063,325 +3063,154 @@ dRegions_Flags_Processors:
   debug: false
 
   boolean:
-    - if <def[FlagScript].yaml_key[region_highestOnly]||false> {
-      - define InheritedFlags '<proc[dRegions_GetInheritedFlag].context[%world%|<def[orderedRegions].get[1]>|%flag%].as_list||null>'
-      }
-      else {
-      - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
-      - define suffix '<&pipe>%flag%<&rb>||allow<&gt>'
-      - define InheritedFlags '<parse:<def[orderedRegions].parse[replace[regex:^].with[<def[prefix]>]].parse[replace[regex:$].with[<def[suffix]>]]>>'
-      }
-    - foreach %InheritedFlags% {
-      - define flagVal '<def[value]>'
+    - define List '<tern[<def[FlagScript].yaml_key[region_highestOnly]||false>]:<def[orderedRegions].get[1].as_list>||<def[orderedRegions]>>'
+    - foreach <def[List]> {
+      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|%flag%]||null>'
       - if <def[flagVal].is[==].to[null]||true> {
-        - if <def[loop_index].is[==].to[<def[InheritedFlags].size>]> {
+        - if <def[loop_index].is[==].to[<def[List].size>]> {
           - define flagVal '<def[FlagScript].yaml_key[flag_defaultValue]||true>'
           }
           else foreach next
         }
-
-      - if <def[flagVal]||true> {
-        - foreach stop
-        }
-        else {
-        - inject <def[FlagScript]||null> p:event-cleanup instantly
-        - determine cancelled
-        }
+      - foreach stop
       }
 
-#  state-withTarget:
-#    - if <def[FlagScript].yaml_key[region_highestOnly]||false> {
-#      - define InheritedTargets '<proc[dRegions_GetInheritedFlag].context[%world%|<def[orderedRegions].get[1]>|%flag-targetList%].as_list||null>'
-#      - define InheritedFlags '<proc[dRegions_GetInheritedFlag].context[%world%|<def[orderedRegions].get[1]>|%flag%].as_list||null>'
-#      }
-#      else {
-#      - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
-#      - define suffix '<&pipe>%flag-targetList%<&rb>||all<&gt>'
-#      - define InheritedTargets '<parse:<def[orderedRegions].parse[replace[regex:^].with[<def[prefix]>]].parse[replace[regex:$].with[<def[suffix]>]]>>'
-#      - define suffix '<&pipe>%flag%<&rb>||null<&gt>'
-#      - define InheritedFlags '<parse:<def[orderedRegions].parse[replace[regex:^].with[<def[prefix]>]].parse[replace[regex:$].with[<def[suffix]>]]>>'
-#      }
-#    - foreach %InheritedFlags% {
-#      - define targetList '<def[InheritedTargets].get[%loop_index%].replace[, ].with[|].as_list||li@all>'
-#      - if <def[targetList].is[==].to[li@null]> {
-#        - define targetList 'li@all'
-#        }
-#      - define flagVal '<def[value]>'
-#      - if <def[flagVal].is[==].to[null]||true> {
-#        - if <def[loop_index].is[==].to[<def[InheritedFlags].size>]> {
-#          - define flagVal '<def[FlagScript].yaml_key[flag_defaultValue]||allow>'
-#          }
-#          else foreach next
-#        }
-## If the flag is set to allow, cancel the event as needed or stop the foreach
-#      - if <def[flagVal].is[==].to[allow]||false> {
-#        - if <def[targetList].is[==].to[li@all]||true> {
-#          - foreach stop
-#          }
-#        - if !<def[targetList].contains[<def[target]>]||false> {
-#          - inject <def[FlagScript]||null> p:event-cleanup instantly
-#          - determine cancelled
-#          }
-#          else foreach stop
-#        }
-## Must be a deny flag
-#      - if <def[targetList].is[==].to[li@all]||true> {
-#        - inject <def[FlagScript]||null> p:event-cleanup instantly
-#        - determine cancelled
-#        }
-## Cancel the event if the target matches the list, otherwise it's not a denied target.
-#      - if <def[targetList].contains[<def[target]>]||false> {
-#        - inject <def[FlagScript]||null> p:event-cleanup instantly
-#        - determine cancelled
-#        }
-#        else foreach stop
-#      }
-
-#  state-withGroup:
-#    # requires %player% to be filled with a valid player object
-#    - if <def[FlagScript].yaml_key[region_highestOnly]||false> {
-#      - define InheritedFlags '<proc[dRegions_GetInheritedFlag].context[%world%|<def[orderedRegions].get[1]>|%flag%].as_list||null>'
-#      }
-#      else {
-#      - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
-#      - define suffix '<&pipe>%flag%<&rb>||allow<&gt>'
-#      - define InheritedFlags '<parse:<def[orderedRegions].parse[replace[regex:^].with[<def[prefix]>]].parse[replace[regex:$].with[<def[suffix]>]]>>'
-#      }
-#    - foreach %InheritedFlags% {
-#      - define flagObj '<def[value]>'
-#      - if <def[flagObj].is[==].to[null]||true> {
-#        - if <def[loop_index].is[==].to[<def[InheritedFlags].size>]> {
-#          - define flagObj '<def[FlagScript].yaml_key[flag_defaultValue]||allow/all>'
-#          }
-#          else foreach next
-#        }
-#      - define flagVal '<def[flagObj].split[/].get[1]>'
-#      - define group '<def[flagObj].split[/].get[2]||<t[<def[flagVal].is[==].to[allow]>]:all||nonmembers>>'
-#      - define region '<def[orderedRegions].get[%loop_index%]>'
-#      - define isOwner '<proc[dRegions_IsOwner].context[%region%|%world%|<def[player]>]>'
-#      - define isMember '<proc[dRegions_isMember].context[%region%|%world%|<def[player]>]>'
-#      - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]>'
-
-#      - if <def[flagVal].is[==].to[allow]||false> {
-#        - if !<def[isGroup]> {
-#          - inject <def[FlagScript]||null> p:event-cleanup instantly
-#          - determine cancelled
-#          }
-#          else foreach stop
-#        }
-## Must be a deny flag
-#      - if <def[isGroup]> {
-#        - inject <def[FlagScript]||null> p:event-cleanup instantly
-#        - determine cancelled
-#        }
-#        else foreach stop
-#      }
-
-#  state-withTarget-withGroup:
-#    # requires %player% to be filled with a valid player object
-#    - if <def[FlagScript].yaml_key[region_highestOnly]||false> {
-#      - define InheritedTargets '<proc[dRegions_GetInheritedFlag].context[%world%|<def[orderedRegions].get[1]>|%flag-targetList%].as_list||null>'
-#      - define InheritedFlags '<proc[dRegions_GetInheritedFlag].context[%world%|<def[orderedRegions].get[1]>|%flag%].as_list||null>'
-#      }
-#      else {
-#      - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
-#      - define suffix '<&pipe>%flag-targetList%<&rb>||all<&gt>'
-#      - define InheritedTargets '<parse:<def[orderedRegions].parse[replace[regex:^].with[<def[prefix]>]].parse[replace[regex:$].with[<def[suffix]>]]>>'
-#      - define suffix '<&pipe>%flag%<&rb>||null<&gt>'
-#      - define InheritedFlags '<parse:<def[orderedRegions].parse[replace[regex:^].with[<def[prefix]>]].parse[replace[regex:$].with[<def[suffix]>]]>>'
-#      }
-#    - foreach %InheritedFlags% {
-#      - define targetList '<def[InheritedTargets].get[%loop_index%].replace[, ].with[|].as_list||li@all>'
-#      - if <def[targetList].is[==].to[li@null]> {
-#        - define targetList 'li@all'
-#        }
-#      - define flagObj '<def[value]>'
-#      - if <def[flagObj].is[==].to[null]||true> {
-#        - if <def[loop_index].is[==].to[<def[InheritedFlags].size>]> {
-#          - define flagObj '<def[FlagScript].yaml_key[flag_defaultValue]||allow/all>'
-#          }
-#          else foreach next
-#        }
-#      - define flagVal '<def[flagObj].split[/].get[1]>'
-#      - define group '<def[flagObj].split[/].get[2]||<t[<def[flagVal].is[==].to[allow]>]:all||nonmembers>>'
-#      - define region '<def[orderedRegions].get[%loop_index%]>'
-#      - define isOwner '<proc[dRegions_IsOwner].context[%region%|%world%|<def[player]>]>'
-#      - define isMember '<proc[dRegions_isMember].context[%region%|%world%|<def[player]>]>'
-#      - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]>'
-
-#      - if <def[flagVal].is[==].to[allow]||false> {
-#        - if !<def[isGroup]> {
-#          - inject <def[FlagScript]||null> p:event-cleanup instantly
-#          - determine cancelled
-#          }
-#        - if <def[targetList].is[==].to[li@all]||true>
-#          || <def[targetList].contains[<def[target]>]||false> {
-#          - foreach stop
-#          }
-#        - inject <def[FlagScript]||null> p:event-cleanup instantly
-#        - determine cancelled
-#        }
-## Must be a deny flag
-#      - if !<def[isGroup]> {
-#        - foreach stop
-#        }
-#      - if <def[targetList].is[==].to[li@all]||true>
-#        || <def[targetList].contains[<def[target]>]||false> {
-#        - inject <def[FlagScript]||null> p:event-cleanup instantly
-#        - determine cancelled
-#        }
-#        else foreach stop
-#      }
+    - if <def[flagVal]||true> {
+      - foreach stop
+      }
+      else {
+      - inject <def[FlagScript]||null> p:event-cleanup instantly
+      - determine cancelled
+      }
 
 
   state-withTarget:
-    - if <def[FlagScript].yaml_key[region_highestOnly]||false> {
-      - define InheritedTargets '<proc[dRegions_GetInheritedFlag].context[%world%|<def[orderedRegions].get[1]>|%flag-targetList%].as_list||null>'
-      - define InheritedFlags '<proc[dRegions_GetInheritedFlag].context[%world%|<def[orderedRegions].get[1]>|%flag%].as_list||null>'
-      }
-      else {
-      - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
-      - define suffix '<&pipe>%flag-targetList%<&rb>||all<&gt>'
-      - define InheritedTargets '<parse:<def[orderedRegions].parse[replace[regex:^].with[<def[prefix]>]].parse[replace[regex:$].with[<def[suffix]>]]>>'
-      - define suffix '<&pipe>%flag%<&rb>||null<&gt>'
-      - define InheritedFlags '<parse:<def[orderedRegions].parse[replace[regex:^].with[<def[prefix]>]].parse[replace[regex:$].with[<def[suffix]>]]>>'
-      }
-    - foreach %InheritedFlags% {
-      - define targetList '<def[InheritedTargets].get[%loop_index%].replace[, ].with[|].as_list||li@all>'
+    - define List '<tern[<def[FlagScript].yaml_key[region_highestOnly]||false>]:<def[orderedRegions].get[1].as_list>||%orderedRegions%>'
+    - foreach %List% {
+      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|%flag%]||null>'
+      - if <def[flagVal].is[==].to[null]||true> {
+        - if <def[loop_index].is[==].to[<def[List].size>]> {
+          - define flagVal '<def[FlagScript].yaml_key[flag_defaultValue]||allow>'
+          }
+          else foreach next
+        }
+      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|%flag-targetList%].replace[, ].with[|].as_list||li@all>'
       - if <def[targetList].is[==].to[li@null]> {
         - define targetList 'li@all'
         }
-      - define flagVal '<def[value]>'
-      - if <def[flagVal].is[==].to[null]||true> {
-        - if <def[loop_index].is[==].to[<def[InheritedFlags].size>]> {
-          - define flagVal '<def[FlagScript].yaml_key[flag_defaultValue]||allow>'
-          }
-        }
-        else foreach stop
+      - foreach stop
       }
 # If the flag is set to allow, cancel the event as needed
     - if <def[flagVal].is[==].to[allow]||false> {
       - if <def[targetList].is[!=].to[li@all]||true> {
-        - if !<def[targetList].contains[<def[target]>]||false> {
+        - if !<def[targetList].contains[%target%]||false> {
           - inject <def[FlagScript]||null> p:event-cleanup instantly
           - determine cancelled
           }
         }
+      - foreach next
       }
 # Must be a deny flag
 #    - if <def[flagVal].is[==].to[deny]||false> {
-      else {
-      - if <def[targetList].is[==].to[li@all]||true> {
-        - inject <def[FlagScript]||null> p:event-cleanup instantly
-        - determine cancelled
-        }
-# Cancel the event if the target matches the list, otherwise it's not a denied target.
-      - if <def[targetList].contains[<def[target]>]||false> {
-        - inject <def[FlagScript]||null> p:event-cleanup instantly
-        - determine cancelled
-        }
+#      else {
+    - if <def[targetList].is[==].to[li@all]||true> {
+      - inject <def[FlagScript]||null> p:event-cleanup instantly
+      - determine cancelled
       }
+# Cancel the event if the target matches the list, otherwise it's not a denied target.
+    - if <def[targetList].contains[%target%]||false> {
+      - inject <def[FlagScript]||null> p:event-cleanup instantly
+      - determine cancelled
+      }
+#      }
 
   state-withGroup:
-    # requires %player% to be filled with a valid player object
-    - if <def[FlagScript].yaml_key[region_highestOnly]||false> {
-      - define InheritedFlags '<proc[dRegions_GetInheritedFlag].context[%world%|<def[orderedRegions].get[1]>|%flag%].as_list||null>'
-      }
-      else {
-      - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
-      - define suffix '<&pipe>%flag%<&rb>||allow<&gt>'
-      - define InheritedFlags '<parse:<def[orderedRegions].parse[replace[regex:^].with[<def[prefix]>]].parse[replace[regex:$].with[<def[suffix]>]]>>'
-      }
-    - foreach %InheritedFlags% {
-      - define flagObj '<def[value]>'
+    - define List '<tern[<def[FlagScript].yaml_key[region_highestOnly]||false>]:<def[orderedRegions].get[1].as_list>||%orderedRegions%>'
+    - foreach %List% {
+      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|%flag%]||null>'
       - if <def[flagObj].is[==].to[null]||true> {
-        - if <def[loop_index].is[==].to[<def[InheritedFlags].size>]> {
+        - if <def[loop_index].is[==].to[<def[List].size>]> {
           - define flagObj '<def[FlagScript].yaml_key[flag_defaultValue]||allow/all>'
           }
+          else foreach next
         }
-        else foreach stop
+      - define region '<def[value]>'
+      - foreach stop
       }
     - define flagVal '<def[flagObj].split[/].get[1]>'
     - define group '<def[flagObj].split[/].get[2]||<t[<def[flagVal].is[==].to[allow]>]:all||nonmembers>>'
-    - define region '<def[orderedRegions].get[%loop_index%]>'
-    - define isOwner '<proc[dRegions_IsOwner].context[%region%|%world%|<def[player]>]>'
-    - define isMember '<proc[dRegions_isMember].context[%region%|%world%|<def[player]>]>'
+#    - define region '<def[orderedRegions].get[%loop_index%]>'
+    - define isOwner '<proc[dRegions_IsOwner].context[%region%|%world%|%player%]>'
+    - define isMember '<proc[dRegions_isMember].context[%region%|%world%|%player%]>'
     - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]>'
 
     - if <def[flagVal].is[==].to[allow]||false> {
-      - if !<def[isGroup]> {
+      - if !%isGroup% {
         - inject <def[FlagScript]||null> p:event-cleanup instantly
         - determine cancelled
         }
+      - foreach next
       }
 # Must be a deny flag
 #    - if <def[flagVal].is[==].to[deny]||false> {
-      else {
-      - if <def[isGroup]> {
-        - inject <def[FlagScript]||null> p:event-cleanup instantly
-        - determine cancelled
-        }
+#      else {
+    - if %isGroup% {
+      - inject <def[FlagScript]||null> p:event-cleanup instantly
+      - determine cancelled
       }
+#      }
 
   state-withTarget-withGroup:
-    # requires %player% to be filled with a valid player object
-    - if <def[FlagScript].yaml_key[region_highestOnly]||false> {
-      - define InheritedTargets '<proc[dRegions_GetInheritedFlag].context[%world%|<def[orderedRegions].get[1]>|%flag-targetList%].as_list||null>'
-      - define InheritedFlags '<proc[dRegions_GetInheritedFlag].context[%world%|<def[orderedRegions].get[1]>|%flag%].as_list||null>'
-      }
-      else {
-      - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
-      - define suffix '<&pipe>%flag-targetList%<&rb>||all<&gt>'
-      - define InheritedTargets '<parse:<def[orderedRegions].parse[replace[regex:^].with[<def[prefix]>]].parse[replace[regex:$].with[<def[suffix]>]]>>'
-      - define suffix '<&pipe>%flag%<&rb>||null<&gt>'
-      - define InheritedFlags '<parse:<def[orderedRegions].parse[replace[regex:^].with[<def[prefix]>]].parse[replace[regex:$].with[<def[suffix]>]]>>'
-      }
-    - foreach %InheritedFlags% {
-      - define targetList '<def[InheritedTargets].get[%loop_index%].replace[, ].with[|].as_list||li@all>'
+    - define List '<tern[<def[FlagScript].yaml_key[region_highestOnly]||false>]:<def[orderedRegions].get[1].as_list>||%orderedRegions%>'
+    - foreach <def[List]> {
+      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|%flag%]||null>'
+      - if <def[flagObj].is[==].to[null]||true> {
+        - if <def[loop_index].is[==].to[<def[List].size>]> {
+          - define flagObj '<def[FlagScript].yaml_key[flag_defaultValue]||allow/all>'
+          }
+          else foreach next
+        }
+      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|%flag-targetList%].replace[, ].with[|].as_list||li@all>'
       - if <def[targetList].is[==].to[li@null]> {
         - define targetList 'li@all'
         }
-      - define flagObj '<def[value]>'
-      - if <def[flagObj].is[==].to[null]||true> {
-        - if <def[loop_index].is[==].to[<def[InheritedFlags].size>]> {
-          - define flagObj '<def[FlagScript].yaml_key[flag_defaultValue]||allow/all>'
-          }
-        }
-        else foreach stop
+      - define region '<def[value]>'
+      - foreach stop
       }
     - define flagVal '<def[flagObj].split[/].get[1]>'
     - define group '<def[flagObj].split[/].get[2]||<t[<def[flagVal].is[==].to[allow]>]:all||nonmembers>>'
-    - define region '<def[orderedRegions].get[%loop_index%]>'
-    - define isOwner '<proc[dRegions_IsOwner].context[%region%|%world%|<def[player]>]>'
-    - define isMember '<proc[dRegions_isMember].context[%region%|%world%|<def[player]>]>'
+#    - define region '<def[orderedRegions].get[%loop_index%]>'
+    - define isOwner '<proc[dRegions_IsOwner].context[%region%|%world%|%player%]>'
+    - define isMember '<proc[dRegions_isMember].context[%region%|%world%|%player%]>'
     - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]>'
 
     - if <def[flagVal].is[==].to[allow]||false> {
-      - if !<def[isGroup]> {
+      - if !%isGroup% {
         - inject <def[FlagScript]||null> p:event-cleanup instantly
         - determine cancelled
         }
       - if <def[targetList].is[!=].to[li@all]||true> {
-        - if !<def[targetList].contains[<def[target]>]||false> {
+        - if !<def[targetList].contains[%target%]||false> {
           - inject <def[FlagScript]||null> p:event-cleanup instantly
           - determine cancelled
           }
         }
+      - foreach next
       }
 # Must be a deny flag
 #    - if <def[flagVal].is[==].to[deny]||false> {
-      else {
-      - if <def[isGroup]> {
-        - if <def[targetList].is[==].to[li@all]||true> {
-          - inject <def[FlagScript]||null> p:event-cleanup instantly
-          - determine cancelled
-          }
-        - if <def[targetList].contains[<def[target]>]||false> {
-          - inject <def[FlagScript]||null> p:event-cleanup instantly
-          - determine cancelled
-          }
+#      else {
+    - if %isGroup% {
+      - if <def[targetList].is[==].to[li@all]||true> {
+        - inject <def[FlagScript]||null> p:event-cleanup instantly
+        - determine cancelled
+        }
+      - if <def[targetList].contains[%target%]||false> {
+        - inject <def[FlagScript]||null> p:event-cleanup instantly
+        - determine cancelled
         }
       }
+#      }
 
 
   state-withTargetString-withGroup:

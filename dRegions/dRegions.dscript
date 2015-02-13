@@ -727,7 +727,7 @@ dRegions:
       - define eventList '<def[eventList].include[<def[eventPri].get[%loop_index%]>/%value%]>'
       }
     - define orderedEvents '<def[eventList].alphanumeric.parse[split[/].get[2]]||li@>'
-    - foreach <def[orderedEvents]> {
+    - foreach %orderedEvents% {
       - define FlagScript '%value%'
       - inject %value% p:event
       }
@@ -2918,15 +2918,15 @@ dRegions_IsOwner:
     - define playerGroups '<def[player].groups||li@>'
     - define players '<yaml[dRegions_%world%_regions].read[regions.%region%.owners.players]||li@>'
     - define groups '<yaml[dRegions_%world%_regions].read[regions.%region%.owners.groups]||li@>'
-    - if <def[players].contains[<def[playerUUID]>].not||false>
-      && <def[groups].contains_any[<def[playerGroups]>].not||false> {
+    - if <def[players].contains[%playerUUID%].not||false>
+      && <def[groups].contains_any[%playerGroups%].not||false> {
       - define return 'null'
       }
       else {
       - determine 'true'
       }
 
-    - define thisRegion '<def[region]>'
+    - define thisRegion '%region%'
     - while <def[return].is[==].to[null]||false> {
       - define thisRegion '<yaml[dRegions_%world%_regions].read[regions.%thisRegion%.parent]||null>'
       - if <def[thisRegion].is[==].to[null]||false> {
@@ -2934,8 +2934,8 @@ dRegions_IsOwner:
         }
       - define players '<yaml[dRegions_%world%_regions].read[regions.%thisRegion%.owners.players]||li@>'
       - define groups '<yaml[dRegions_%world%_regions].read[regions.%thisRegion%.owners.groups]||li@>'
-      - if <def[players].contains[<def[playerUUID]>].not||false> {
-        - if <def[groups].contains_any[<def[playerGroups]>].not||false> {
+      - if <def[players].contains[%playerUUID%].not||false> {
+        - if <def[groups].contains_any[%playerGroups%].not||false> {
           - define return 'null'
           }
         }
@@ -2963,15 +2963,15 @@ dRegions_IsMember:
     - define playerGroups '<def[player].groups||li@>'
     - define players '<yaml[dRegions_%world%_regions].read[regions.%region%.members.players]||li@>'
     - define groups '<yaml[dRegions_%world%_regions].read[regions.%region%.members.groups]||li@>'
-    - if <def[players].contains[<def[playerUUID]>].not||false>
-      && <def[groups].contains_any[<def[playerGroups]>].not||false> {
+    - if <def[players].contains[%playerUUID%].not||false>
+      && <def[groups].contains_any[%playerGroups%].not||false> {
       - define return 'null'
       }
       else {
       - determine 'true'
       }
 
-    - define thisRegion '<def[region]>'
+    - define thisRegion '%region%'
     - while <def[return].is[==].to[null]||false> {
       - define thisRegion '<yaml[dRegions_%world%_regions].read[regions.%thisRegion%.parent]||null>'
       - if <def[thisRegion].is[==].to[null]||false> {
@@ -2979,8 +2979,8 @@ dRegions_IsMember:
         }
       - define players '<yaml[dRegions_%world%_regions].read[regions.%thisRegion%.members.players]||li@>'
       - define groups '<yaml[dRegions_%world%_regions].read[regions.%thisRegion%.members.groups]||li@>'
-      - if <def[players].contains[<def[playerUUID]>].not||false> {
-        - if <def[groups].contains_any[<def[playerGroups]>].not||false> {
+      - if <def[players].contains[%playerUUID%].not||false> {
+        - if <def[groups].contains_any[%playerGroups%].not||false> {
           - define return 'null'
           }
         }
@@ -3019,10 +3019,9 @@ dRegions_HighestPriority:
 
   script:
     - define regions '<def[regions].split[,]||li@>'
-    - define priList '<parse:<def[regions].parse[replace[regex:^].with[<&lt>yaml<&lb>dRegions_%world%_regions<&rb>.read<&lb>regions.]].parse[replace[regex:$].with[.priority<&rb>||0<&gt>]]>>'
     - define regionPri 'li@'
-    - foreach <def[regions]> {
-      - define regionPri '<def[regionPri].include[<def[priList].get[%loop_index%]>/%value%]>'
+    - foreach %regions% {
+      - define regionPri '<def[regionPri].include[<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%]>'
       }
     - determine '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
 
@@ -3066,31 +3065,31 @@ dRegions_PlayerMatchRegionGroup:
   debug: false
 
   script:
-    - if <def[group].is[==].to[nonmembers]> {
-      - if <def[isMember].not> && <def[isOwner].not> {
+    - if %group% == nonmembers {
+      - if !%isMember && !%isOwner% {
         - determine true
         }
-        else determine false
+      - determine false
       }
-    - if <def[group].is[==].to[owners]> {
-      - if <def[isOwner]> {
+    - if %group% == owners {
+      - if %isOwner% {
         - determine true
         }
-        else determine false
+      - determine false
       }
-    - if <def[group].is[==].to[nonowners]> {
-      - if <def[isOwner].not> {
+    - if %group% == nonowners {
+      - if !%isOwner% {
         - determine true
         }
-        else determine false
+      - determine false
       }
-    - if <def[group].is[==].to[members]> {
-      - if <def[isMember]> {
+    - if %group% == members {
+      - if %isMember% {
         - determine true
         }
-        else determine false
+      - determine false
       }
-    - if <def[group].is[==].to[all]> {
+    - if %group% == all {
       - determine true
       }
     - determine false
@@ -3130,7 +3129,7 @@ dRegions_GetInheritedFlag:
 
   script:
     - define return '<yaml[dRegions_%world%_regions].read[regions.%region%.flags.%flag%]||null>'
-    - define thisRegion '<def[region]>'
+    - define thisRegion '%region%'
     - while <def[return].is[==].to[null]||false> {
       - define thisRegion '<yaml[dRegions_%world%_regions].read[regions.%thisRegion%.parent]||null>'
       - if <def[thisRegion].is[==].to[null]||false> {
@@ -3138,7 +3137,7 @@ dRegions_GetInheritedFlag:
         }
       - define return '<yaml[dRegions_%world%_regions].read[regions.%thisRegion%.flags.%flag%]||null>'
       }
-    - determine '<def[return]||null>'
+    - determine '%return%'
 
 
 dRegions_getRelativeLocation:
