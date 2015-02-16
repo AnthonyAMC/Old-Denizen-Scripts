@@ -103,6 +103,7 @@
 #
 dRegions:
   type: world
+  speed: 0
   debug: false
   events:
 ##################################################
@@ -125,9 +126,9 @@ dRegions:
     - define world '<player.world.name.to_lowercase>'
     - define target '<c.command.to_lowercase> <c.raw_args.to_lowercase>'
     - define cuboids '<c.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'playerCommand'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
 
 #    on structure grows:
@@ -138,127 +139,288 @@ dRegions:
     - define world '<c.location.world.name.to_lowercase>'
     - define target '<c.location.material.bukkit_enum.to_lowercase>'
     - define readPath 'fire.<c.cause||spread>'
-    - inject instantly s@dRegions p:event_PreProc_Config
+    - inject s@dRegions p:event_PreProc_Config
     - define cuboids '<c.location.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks '<t[<c.cause.is[==].to[flint_and_steel]>]:fireFrom-Lighter||fireFrom-Spread>'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on block burns:
     - define world '<c.location.world.name.to_lowercase>'
     - define target '<c.location.material.bukkit_enum.to_lowercase>'
     - define readPath 'fire.destroyBlocks'
-    - inject instantly s@dRegions p:event_PreProc_Config
+    - inject s@dRegions p:event_PreProc_Config
     - define cuboids '<c.location.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'fire-destroyBlocks'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on block forms:
+    - if <server.flag[dRegions_LocationGrief].contains[<c.location.simple>]||false> {
+      - determine cancelled
+      }
     - define world '<c.location.world.name.to_lowercase>'
     - define mat '<c.material.bukkit_enum.to_lowercase>'
     - define target '<c.location.sub[0,1,0].material.bukkit_enum.to_lowercase>'
     - define readPath 'blockform.<def[mat]>'
-    - inject instantly s@dRegions p:event_PreProc_Config
+    - inject s@dRegions p:event_PreProc_Config
     - define cuboids '<c.location.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'blockForm-<def[mat]>'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on block fades:
     - define world '<c.location.world.name.to_lowercase>'
     - define mat '<c.material.bukkit_enum.to_lowercase>'
     - define target '<c.location.sub[0,1,0].material.bukkit_enum.to_lowercase>'
     - define readPath 'blockfade.<def[mat]>'
-    - inject instantly s@dRegions p:event_PreProc_Config
+    - inject s@dRegions p:event_PreProc_Config
     - define cuboids '<c.location.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'blockFade-<def[mat]>'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on block spreads:
 #    - announce "spread <c.material.bukkit_enum> <c.location.material.bukkit_enum>"
     - define world '<c.location.world.name.to_lowercase>'
     - define target '<c.location.material.bukkit_enum.to_lowercase>'
     - define readPath 'spread.<c.material.bukkit_enum.split[_].last.to_lowercase||null>'
-    - inject instantly s@dRegions p:event_PreProc_Config
+    - inject s@dRegions p:event_PreProc_Config
     - define cuboids '<c.location.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks '<c.material.bukkit_enum.split[_].last>Spread'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
+
+#    on water spreads:
+#    - define world '<c.location.world.name.to_lowercase>'
+#    - define oldLoc '<proc[dRegions_HighestPriority].context[%world%|<c.location.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[after[dregions_%world%_]].include[__global__].replace[li@].replace[|].with[,]||null>].get[1]||li@>'
+#    - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|<c.destination.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[after[dregions_%world%_]].include[__global__].replace[li@].replace[|].with[,]||null>]||li@>'
+#    - if %oldLoc% != <def[orderedRegions].get[1]> determine cancelled
+#    - define target '<c.destination.material.bukkit_enum.to_lowercase>'
+#    - define readPath 'spread.water'
+#    - inject s@dRegions p:event_PreProc_Config
+#    - define eventHooks 'WaterSpread'
+#    - inject s@dRegions_Flag_Water-Spread p:event
+
+#    on stationary_water spreads:
+#    - define world '<c.location.world.name.to_lowercase>'
+#    - define oldLoc '<proc[dRegions_HighestPriority].context[%world%|<c.location.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[after[dregions_%world%_]].include[__global__].replace[li@].replace[|].with[,]||null>].get[1]||li@>'
+#    - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|<c.destination.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[after[dregions_%world%_]].include[__global__].replace[li@].replace[|].with[,]||null>]||li@>'
+#    - if %oldLoc% != <def[orderedRegions].get[1]> determine cancelled
+#    - define target '<c.destination.material.bukkit_enum.to_lowercase>'
+#    - define readPath 'spread.water'
+#    - inject s@dRegions p:event_PreProc_Config
+#    - define eventHooks 'WaterSpread'
+#    - inject s@dRegions_Flag_Water-Spread p:event
+
+#    on lava spreads:
+#    - define world '<c.location.world.name.to_lowercase>'
+#    - define oldLoc '<proc[dRegions_HighestPriority].context[%world%|<c.location.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[after[dregions_%world%_]].include[__global__].replace[li@].replace[|].with[,]||null>].get[1]||li@>'
+#    - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|<c.destination.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[after[dregions_%world%_]].include[__global__].replace[li@].replace[|].with[,]||null>]||li@>'
+#    - if %oldLoc% != <def[orderedRegions].get[1]> determine cancelled
+#    - define target '<c.destination.material.bukkit_enum.to_lowercase>'
+#    - define readPath 'spread.lava'
+#    - inject s@dRegions p:event_PreProc_Config
+#    - define eventHooks 'LavaSpread'
+#    - inject s@dRegions_Flag_Lava-Spread p:event
+
+#    on stationary_lava spreads:
+#    - define world '<c.location.world.name.to_lowercase>'
+#    - define oldLoc '<proc[dRegions_HighestPriority].context[%world%|<c.location.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[after[dregions_%world%_]].include[__global__].replace[li@].replace[|].with[,]||null>].get[1]||li@>'
+#    - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|<c.destination.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[after[dregions_%world%_]].include[__global__].replace[li@].replace[|].with[,]||null>]||li@>'
+#    - if %oldLoc% != <def[orderedRegions].get[1]> determine cancelled
+#    - define target '<c.destination.material.bukkit_enum.to_lowercase>'
+#    - define readPath 'spread.lava'
+#    - inject s@dRegions p:event_PreProc_Config
+#    - define eventHooks 'LavaSpread'
+#    - inject s@dRegions_Flag_Lava-Spread p:event
+
+#    on liquid spreads:
+##    - if '<c.location.material.name>,<c.location.material.data>' == '<c.destination.material.name>,<c.destination.material.data>' {
+###      - narrate "Identical Water Spread" targets:p@Nilsentience
+##      - determine cancelled
+##      }
+#    - define world '<c.location.world.name.to_lowercase>'
+#    - define oldLoc '<proc[dRegions_HighestPriority].context[%world%|<c.location.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[after[dregions_%world%_]].include[__global__].replace[li@].replace[|].with[,]||null>].get[1]||li@>'
+#    - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|<c.destination.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[after[dregions_%world%_]].include[__global__].replace[li@].replace[|].with[,]||null>]||li@>'
+#    - if %oldLoc% != <def[orderedRegions].get[1]> determine cancelled
+#    - define target '<c.destination.material.bukkit_enum.to_lowercase>'
+#    - define readPath 'spread.<c.location.material.bukkit_enum.split[_].last.to_lowercase||null>'
+#    - inject s@dRegions p:event_PreProc_Config
+#    - define eventHooks '<c.location.material.bukkit_enum.split[_].last>Spread'
+#    - inject s@dRegions p:event_PreProc_RunEvent
 
     on liquid spreads:
+    - define mat '<c.location.material.bukkit_enum.split[_].last.to_lowercase'
     - define world '<c.location.world.name.to_lowercase>'
-    - define oldLoc '<proc[dRegions_HighestPriority].context[%world%|<c.location.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[after[dregions_%world%_]].include[__global__].replace[li@].replace[|].with[,]||null>]||li@>'
-    - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|<c.destination.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[after[dregions_%world%_]].include[__global__].replace[li@].replace[|].with[,]||null>]||li@>'
-    - if <def[oldLoc].get[1].is[!=].to[<def[orderedRegions].get[1]>]> determine cancelled
+
+    # Build list of dRegions for <c.location> in priority order
+    - define regionPri 'li@'
+    - foreach <c.location.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[after[dregions_%world%_]].include[__global__]> {
+      - define regionPri '<def[regionPri].include[<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%]>'
+      }
+    - define oldLoc '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]].get[1]>'
+
+    # Build list of dRegions for <c.destination> in priority order
+    - define regionPri 'li@'
+    - foreach <c.destination.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[after[dregions_%world%_]].include[__global__]> {
+      - define regionPri '<def[regionPri].include[<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%]>'
+      }
+    - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
+    # Block liquid from crossing region borders
+    - if %oldLoc% != <def[orderedRegions].get[1]> determine cancelled
+    # We want to control what blocks liquid is allowed to destroy when it flows
     - define target '<c.destination.material.bukkit_enum.to_lowercase>'
-    - define readPath 'spread.<c.location.material.bukkit_enum.split[_].last.to_lowercase||null>'
-    - inject instantly s@dRegions p:event_PreProc_Config
-    - define eventHooks '<c.location.material.bukkit_enum.split[_].last>Spread'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+
+    # Check global and world config files
+    - foreach '<el@val[%world%|global].as_list>' {
+      - define settingValue '<yaml[dRegions_%value%_config].read[config.spread.%mat%]||true>'
+      - define targetList '<yaml[dRegions_%value%_config].read[config.spread.%mat%-list]||li@>'
+      - if %settingValue% {
+        - if !<def[targetList].is_empty> {
+          - if %targetList% !contains %target% {
+            - determine CANCELLED
+            }
+          }
+        }
+      - if !%settingValue% {
+        - if <def[targetList].is_empty> {
+          - determine CANCELLED
+          }
+        - if %targetList% contains %target% {
+          - determine CANCELLED
+          }
+        }
+      }
+
+    # Process region flag
+
+    # Exhaustively search for a flag value
+    - foreach %orderedRegions% {
+      - define index %loop_index%
+      - define region %value%
+      # Check the (currently) highest priority region for a flag value
+      - define flagVal '<yaml[dRegions_%world%_regions].read[regions.%region%.flags.%mat%-spread]||null>'
+      # If it doesn't set the flag, exhaust its ancestry
+      - if %flagVal% == null {
+        - define thisRegion '%region%'
+        - while <def[flagVal].is[==].to[null]||false> {
+          - define thisRegion '<yaml[dRegions_%world%_regions].read[regions.%thisRegion%.parent]||null>'
+          - if %thisRegion% == null {
+            - while stop
+            }
+          - define flagVal '<yaml[dRegions_%world%_regions].read[regions.%thisRegion%.flags.%mat%-spread]||null>'
+          }
+        }
+      # If the flagVal is still null, check the next highest priority region for this location
+      - if %flagVal% == null {
+        # If there are no other regions at this location, set a default value
+        - if %index% == <def[orderedRegions].size> {
+          - define flagVal '<def[FlagScript].yaml_key[flag_defaultValue]||allow>'
+          }
+          else foreach next
+        }
+      # Working with ONLY the current region, get a list of blocks liquid is/isn't allowed to destroy
+      - define targetList '<yaml[dRegions_%world%_regions].read[regions.%region%.flags.%mat%-spreadblocks]||null>'
+      # If it doesn't set the flag, exhaust its ancestry
+      - if %targetList% == null {
+        - define thisRegion '%region%'
+        - while <def[targetList].is[==].to[null]||false> {
+          - define thisRegion '<yaml[dRegions_%world%_regions].read[regions.%thisRegion%.parent]||null>'
+          - if %thisRegion% == null {
+            - while stop
+            }
+          - define targetList '<yaml[dRegions_%world%_regions].read[regions.%thisRegion%.flags.%mat%-spreadblocks]||null>'
+          }
+        # Set a default if we've exhausted the ancestry and still have no value for the targetList.
+        - if %targetList% == null {
+          - define targetList 'li@all'
+          }
+        }
+      }
+
+    # Now that we have a flagVal and a targetList, check for canceling
+
+    # If the flag is set to allow, cancel the event as needed
+    - if %flagVal% == allow {
+      - if %targetList% != li@all {
+        - if %targetList% !contains %target% {
+          - determine cancelled
+          }
+        }
+      - queue clear
+      }
+
+    # Must be a deny flag
+    - if %targetList% == li@all {
+      - determine cancelled
+      }
+    # Cancel the event if the target matches the list, otherwise it's not a denied target.
+    - if %targetList% contains %target% {
+      - determine cancelled
+      }
 
     on lightning strikes:
     - define world '<c.world.name.to_lowercase>'
     - define target '<c.location.below.material.bukkit_enum.to_lowercase>'
     - define readPath 'lightning-strike'
-    - inject instantly s@dRegions p:event_PreProc_Config
+    - inject s@dRegions p:event_PreProc_Config
     - define cuboids '<c.location.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'lightning-strikes'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on leaves decay:
     - define world '<c.location.world.name.to_lowercase>'
     - define readPath 'leaf-decay'
-    - inject instantly s@dRegions p:event_PreProc_Config
+    - inject s@dRegions p:event_PreProc_Config
     - define cuboids '<c.location.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'leaf-decay'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on portal created:
     - define world '<c.world.name.to_lowercase>'
     - define readPath 'portal.create'
-    - inject instantly s@dRegions p:event_PreProc_Config
+    - inject s@dRegions p:event_PreProc_Config
 
     on potion splash:
     # This will cancel the splash if any entity is in a protected region!
     - define world '<c.location.world.name.to_lowercase>'
     - foreach <c.entities||li@> {
       - define cuboids '<def[value].location.cuboids>'
-      - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+      - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
       - define eventHooks 'throwPotion'
-      - inject instantly s@dRegions p:event_PreProc_RunEvent
+      - inject s@dRegions p:event_PreProc_RunEvent
       }
 
     on piston extends:
     - define world '<c.location.world.name.to_lowercase>'
     - define cuboids '<c.location.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define pistonCuboid '<def[orderedRegions].get[1]>'
     - define lastBlock '<tern[<c.length.is[==].to[0]||true>]:<c.relative>||<c.relative.sub[<c.location>].add[<c.blocks.last>]>>'
     - foreach <c.blocks.include[<def[lastBlock]>]> {
       - define cuboids <def[value].cuboids>
-      - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+      - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
       - if <def[pistonCuboid].is[!=].to[<def[orderedRegions].get[1]>]> determine cancelled
       }
     - define eventHooks 'pistons'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on piston retracts:
     - define world '<c.location.world.name.to_lowercase>'
     - define cuboids '<c.location.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define pistonCuboid '<def[orderedRegions].get[1]>'
     - define lastBlock '<tern[<c.length.is[==].to[0]||true>]:<c.relative>||<c.relative.sub[<c.location>].add[<c.blocks.last>]>>'
     - foreach <c.blocks.include[<def[lastBlock]>]> {
       - define cuboids '<def[value].cuboids>'
-      - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+      - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
       - if <def[pistonCuboid].is[!=].to[<def[orderedRegions].get[1]>]> determine cancelled
       }
     - define eventHooks 'pistons'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
 
 #
@@ -274,81 +436,82 @@ dRegions:
 #    - narrate "type <c.click_type||unknown>"
 #    - define world '<player.world.name.to_lowercase>'
 #    - define cuboids '<c.cuboids>'
-#    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+#    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
 #    - define allFlagScripts '<server.list_scripts.filter[starts_with[s@dRegions_Flag_]]||li@>'
 
-#    - inject instantly s@dRegions p:use_<c.item||null>
-#    - inject instantly s@dRegions p:playerClick_<c.type||null>
+#    - inject s@dRegions p:use_<c.item||null>
+#    - inject s@dRegions p:playerClick_<c.type||null>
 
     on player chats:
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<player.location.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'sendChat'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on player destroys vehicle:
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<c.vehicle.location.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'destroyVehicle'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on player stands on:
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<c.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks '<s@dRegions_Map_Interactions.yaml_key[block.<c.location.material.bukkit_enum||air>]||null>'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on player right clicks block with boat:
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<c.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'placeVehicle'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on player right clicks with potion:
     - if !<c.item.potion_effect.is_splash||false> queue clear
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<player.location.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'throwPotion'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on player consumes potion:
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<player.location.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'drinkPotion'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on player right clicks block with armor_stand:
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<c.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'Build'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on player right clicks block with monster_egg:
+    - narrate "no no"
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<c.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'Build'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on player throws hatching egg:
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<c.egg.location.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'Build'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on player right clicks:
     - define blockEvent '<s@dRegions_Map_Interactions.yaml_key[block.<c.location.material.bukkit_enum||air>]||null>'
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<c.cuboids||<player.location.cursor_on[5].cuboids>>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - if <c.item.material.name.is[==].to[air]||true> {
       - define eventHooks '<def[blockEvent]>'
       }
@@ -361,38 +524,38 @@ dRegions:
         - define eventHooks '<def[blockEvent]>'
         }
       }
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on player enters bed:
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<c.location.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'sleep'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on player enters vehicle:
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<c.vehicle.location.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegions
+    - inject s@dRegions p:event_PreProc_OrderRegions
     - define isEnter ''
     - define eventHooks 'regionEnter|regionToggle'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on player enters notable cuboid:
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<c.cuboids.unescaped>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define isEnter ''
     - define eventHooks 'regionEnter|regionToggle'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on player exits notable cuboid:
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<c.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define isExit ''
     - define eventHooks 'regionExit|regionToggle'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
     - event 'player enters notable cuboid' 'context:cuboids|<c.to.cuboids.escaped>|from|<c.from>|to|<c.to>' save:enter
     - if <entry[enter].determinations.get[1].is[==].to[cancelled]||false> determine cancelled
 
@@ -400,88 +563,88 @@ dRegions:
     - define world '<player.world.name.to_lowercase>'
     - define target '<c.material.bukkit_enum.to_lowercase>'
     - define cuboids '<c.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'blockBreak|build'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on player places block:
     - define world '<player.world.name.to_lowercase>'
     - define target '<c.material.bukkit_enum.to_lowercase>'
     - define cuboids '<c.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'blockPlace|build'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on player empties bucket:
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<c.location.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'emptyBucket|build'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on player fills bucket:
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<c.location.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'fillBucket|build'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on player drops item:
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<player.location.cuboids.include[<c.location.cuboids>].deduplicate>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'player-drop'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on player picks up item:
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<player.location.cuboids.include[<c.location.cuboids>].deduplicate>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'player-pickup'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on player places hanging:
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<c.location.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'hangingPlace|build'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on player right clicks at armor_stand:
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<c.entity.location.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'build'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on player right clicks item_frame:
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<c.entity.location.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'useFrame|build'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on player damages item_frame:
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<c.entity.location.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'useFrame|build'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on player left clicks block:
     - if <c.relative.material.name.is[!=].to[fire]> queue clear
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<c.relative.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'build'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on player clicks block with bone_meal:
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<c.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'bonemeal|build'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on player damaged:
     - if <player.has_permission[dregions.invincible]||false> || <player.has_permission[dregions.invincible.<c.cause>]||false> {
@@ -495,23 +658,30 @@ dRegions:
     - define world '<c.entity.world.name.to_lowercase>'
     - define target '<c.cause>'
     - define readPath 'player-damage'
-    - inject instantly s@dRegions p:event_PreProc_Config
+    - inject s@dRegions p:event_PreProc_Config
     - define cuboids '<c.entity.location.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'playerDamaged'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
+
+    on player changes food level:
+    - define world '<player.world.name.to_lowercase>'
+    - define cuboids '<player.location.cuboids>'
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - define eventHooks 'changeFood'
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on player teleports:
     - if <c.cause.is[!=].to[ender_pearl]||true> queue clear
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<c.origin.cuboids.include[<c.destination.cuboids>].deduplicate>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'enderPearl'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on player respawns:
     - if <player.has_flag[dRegions_Respawn]> {
-      - determine passively '<player.flag[dRegions_Respawn].as_location>'
+      - determine passively '<player.flag[dRegions_Respawn].as_location||<world.spawn_location>>'
       - flag <player> 'dRegions_Respawn:!'
       }
 
@@ -525,23 +695,23 @@ dRegions:
     on entity targets:
     - define world '<c.entity.world.name.to_lowercase>'
     - define cuboids '<c.target.location.cuboids||li@>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define attacker '<c.entity>'
     - define defender '<c.target||null>'
     - define eventHooks '<c.entity.prefix>_Target_<c.target.prefix||null>'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on entity damaged by block_explosion:
     - define world '<c.entity.world.name.to_lowercase>'
     - define cuboids '<c.entity.location.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'entity-explode'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on entity damages entity:
     - define world '<c.entity.world.name.to_lowercase>'
     - define cuboids '<c.entity.location.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define attacker '<c.damager>'
     - define defender '<c.entity>'
     - if <c.cause.is[==].to[entity_explosion]> {
@@ -551,31 +721,31 @@ dRegions:
       else {
       - define eventHooks '<tern[<c.entity.entity_type.is[==].to[armor_stand]>]:<tern[<c.damager.prefix.is[==].to[player]>]:Build||Entity_Target_Entity|Entity_Damage_Entity>||<c.damager.prefix>_Target_<c.entity.prefix>|<c.damager.prefix>_Damage_<c.entity.prefix>>'
       }
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on entity dies:
     - define world '<c.entity.world.name.to_lowercase>'
     - define cuboids '<c.entity.location.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define target '<c.entity.entity_type>'
     - define eventHooks '<c.entity.prefix>Dies'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on entity spawns:
     - define world '<c.entity.world.name.to_lowercase>'
     - define cuboids '<c.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define target '<c.entity.entity_type>'
     - define eventHooks '<c.entity.prefix>_Spawn'
 # This could be handy later, but right now the entity spawns event is powered
 # by CretureSpawnEvent which only cares about living entities.
 #    - define eventHooks '<t[<c.entity.is_living>]:Mob_Spawn||Entity_Spawn>'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on entity enters portal:
     - define world '<c.world.name.to_lowercase>'
     - define readPath 'portal.<c.entity.as_player.prefix||<c.entity.prefix>>-enter'
-    - inject instantly s@dRegions p:event_PreProc_Config
+    - inject s@dRegions p:event_PreProc_Config
 
     on entity changes block:
     - define world '<c.location.world.name.to_lowercase>'
@@ -592,10 +762,10 @@ dRegions:
       - define target '<c.entity.entity_type||other>'
       - define eventHooks 'entity-changeBlock'
       }
-    - inject instantly s@dRegions p:event_PreProc_Config
+    - inject s@dRegions p:event_PreProc_Config
     - define cuboids '<c.location.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on entity forms block:
 #    - if <c.entity.has_flag[dRegions_NoGrief]> determine cancelled
@@ -604,30 +774,30 @@ dRegions:
     - define readPath 'entity.changeBlock'
     - define target '<c.entity.entity_type||other>'
     - define eventHooks 'entity-changeBlock'
-    - inject instantly s@dRegions p:event_PreProc_Config
+    - inject s@dRegions p:event_PreProc_Config
     - define cuboids '<c.location.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on entity explodes:
     - define world '<c.location.world.name.to_lowercase>'
     - define readPath 'entity.explode'
     - define attacker '<c.entity>'
     - define target '<c.entity.entity_type||other>'
-    - inject instantly s@dRegions p:event_PreProc_Config
+    - inject s@dRegions p:event_PreProc_Config
     - define cuboids '<c.location.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks 'entity-explode'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
     on entity breaks hanging:
     - define world '<c.entity.world.name.to_lowercase>'
     - define readPath '<c.entity.prefix.to_lowercase||null>-break-<c.hanging.entity_type.to_lowercase>'
-    - inject instantly s@dRegions p:event_PreProc_Config
+    - inject s@dRegions p:event_PreProc_Config
     - define cuboids '<c.hanging.location.cuboids>'
-    - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define eventHooks '<t[<c.entity.is_player||false>]:hangingBreak|build||<c.entity.prefix.to_lowercase||null>-break-<c.hanging.entity_type.replace[_].to_lowercase>>'
-    - inject instantly s@dRegions p:event_PreProc_RunEvent
+    - inject s@dRegions p:event_PreProc_RunEvent
 
 
 
@@ -639,7 +809,7 @@ dRegions:
 #
 
   start:
-    - inject locally loadYaml instantly
+    - inject locally loadYaml
     - flag server 'dRegions_Flags:!'
     - flag server 'dRegions_Flags:|:<server.list_scripts.filter[starts_with[s@dRegions_Flag_]]||li@>'
 
@@ -668,18 +838,18 @@ dRegions:
     - foreach '<el@val[%world%|global].as_list>' {
       - define settingValue '<yaml[dRegions_%value%_config].read[config.%readPath%]||true>'
       - define targetList '<yaml[dRegions_%value%_config].read[config.%readPath%-list]||li@>'
-      - if <def[settingValue]||true> {
-        - if !<def[targetList].is_empty||true> {
-          - if !<def[targetList].contains[<def[target]||all>]||true> {
+      - if %settingValue% {
+        - if !<def[targetList].is_empty> {
+          - if %targetList% !contains <def[target]||all> {
             - determine CANCELLED
             }
           }
         }
-      - if !<def[settingValue]||true> {
-        - if <def[targetList].is_empty||true> {
+      - if !%settingValue% {
+        - if <def[targetList].is_empty> {
           - determine CANCELLED
           }
-        - if <def[targetList].contains[<def[target]||all>]||false> {
+        - if %targetList% contains %target% {
           - determine CANCELLED
           }
         }
@@ -717,13 +887,13 @@ dRegions:
   # Now that we have the orderedEvents we can inject each FlagScript in order.
   #
     - define eventHooks '<def[eventHooks].as_list.filter[contains_any[null].not]||li@>'
-    - if <def[eventHooks].is_empty||true> {
+    - if <def[eventHooks].is_empty> {
       - queue clear
       }
     - define Flags '<server.flag[dRegions_Flags].filter[yaml_key[event_hook].contains_any[%eventHooks%]]||li@>'
     - define eventPri '<def[Flags].parse[yaml_key[event_priority]]||li@>'
     - define eventList 'li@'
-    - foreach <def[Flags]> {
+    - foreach %Flags% {
       - define eventList '<def[eventList].include[<def[eventPri].get[%loop_index%]>/%value%]>'
       }
     - define orderedEvents '<def[eventList].alphanumeric.parse[split[/].get[2]]||li@>'
@@ -747,7 +917,7 @@ dRegions:
         - run instantly s@dRegions_Msg 'def:<&7><&o>Created <&f><&o>%world%<&7><&o> config file!'
         }
         else {
-        - inject locally createConfigFile instantly
+        - inject locally createConfigFile
         }
       - announce "<&b>dRegions<&co> <&7><&o>Created <&f><&o>%world%<&7><&o> config file!" to_console
       }
@@ -758,12 +928,12 @@ dRegions:
       - define isUpdate ''
       - if <player.is[!=].to[null]||false> {
         - flag <player> ConfigFileGeneratorNotify:true
-        - inject locally createConfigFile instantly
+        - inject locally createConfigFile
         - flag <player> ConfigFileGeneratorNotify:!
         - run instantly s@dRegions_Msg 'def:<&7><&o>Updated <&f><&o>%world%<&7><&o> config file!'
         }
         else {
-        - inject locally createConfigFile instantly
+        - inject locally createConfigFile
         }
       - define isUpdate:!
       - announce "<&b>dRegions<&co> <&7><&o>Updated <&f><&o>%world%<&7><&o> config file!" to_console
@@ -776,11 +946,11 @@ dRegions:
       - if !<server.has_file[dRegions/%file%.yml]> {
         - if <player.is[!=].to[null]||false> {
           - flag <player> ConfigFileGeneratorNotify:true
-          - inject locally createConfigFile instantly
+          - inject locally createConfigFile
           - flag <player> ConfigFileGeneratorNotify:!
           - run instantly s@dRegions_Msg 'def:<&7><&o>Created <&f><&o>%world%<&7><&o> config file!'
           }
-          else inject locally createConfigFile instantly
+          else inject locally createConfigFile
         - announce "<&b>dRegions<&co> <&7><&o>Created <&f><&o>%world%<&7><&o> config file!" to_console
         }
       - if <yaml.list.contains[dRegions_%world%_config]> yaml unload 'id:dRegions_%world%_config'
@@ -790,12 +960,12 @@ dRegions:
         - define isUpdate ''
         - if <player.is[!=].to[null]||false> {
           - flag <player> ConfigFileGeneratorNotify:true
-          - inject locally createConfigFile instantly
+          - inject locally createConfigFile
           - flag <player> ConfigFileGeneratorNotify:!
           - run instantly s@dRegions_Msg 'def:<&7><&o>Updated <&f><&o>%world%<&7><&o> config file!'
           }
           else {
-          - inject locally createConfigFile instantly
+          - inject locally createConfigFile
           }
         - define isUpdate:!
         - announce "<&b>dRegions<&co> <&7><&o>Updated <&f><&o>%world%<&7><&o> config file!" to_console
@@ -806,11 +976,11 @@ dRegions:
         - define region '__global__'
         - if <player.is[!=].to[null]||false> {
           - flag <player> ConfigFileGeneratorNotify:true
-          - inject locally createRegionFile instantly
+          - inject locally createRegionFile
           - flag <player> ConfigFileGeneratorNotify:!
           - run instantly s@dRegions_Msg 'def:<&7><&o>Created <&f><&o>%world%<&7><&o> regions file!'
           }
-          else inject locally createRegionFile instantly
+          else inject locally createRegionFile
         - announce "<&b>dRegions<&co> <&7><&o>Created <&f><&o>%world%<&7><&o> regions file!" to_console
         }
       - if <yaml.list.contains[dRegions_%world%_regions]> yaml unload 'id:dRegions_%world%_regions'
@@ -821,11 +991,11 @@ dRegions:
         - define region '__global__'
         - if <player.is[!=].to[null]||false> {
           - flag <player> ConfigFileGeneratorNotify:true
-          - inject locally createRegionFile instantly
+          - inject locally createRegionFile
           - flag <player> ConfigFileGeneratorNotify:!
           - run instantly s@dRegions_Msg 'def:<&7><&o>Created <&f><&o>%world%<&7><&o> regions file!'
           }
-          else inject locally createInventoryFile instantly
+          else inject locally createInventoryFile
         - announce "<&b>dRegions<&co> <&7><&o>Created <&f><&o>%world%<&7><&o> inventory file!" to_console
         }
       - if <yaml.list.contains[dRegions_%world%_inventories]> yaml unload 'id:dRegions_%world%_inventories'
@@ -924,6 +1094,7 @@ dRegions:
 
 dRegions_Msg:
   type: item
+  speed: 0
   debug: false
   material: i@human_skull
   display name: "<&4>  [<&6>dRegions<&4>]"
@@ -960,6 +1131,7 @@ dRegions_Msg:
 #
 dRegions_Commands:
   type: command
+  speed: 0
   debug: false
   name: dregions
   description: Denizen Regions Manager
@@ -1041,8 +1213,8 @@ dRegions_Commands:
   script:
     - define command '<c.args.get[1].escaped||help>'
     - define args '<script.list_keys[commandArgs].alphanumeric.to_lowercase||li@>'
-    - if !<def[args].contains[%command%]> inject locally help instantly
-      else inject locally %command% instantly
+    - if !<def[args].contains[%command%]> inject locally help
+      else inject locally %command%
 
 
 #
@@ -1191,7 +1363,6 @@ dRegions_Commands:
   # /drg info [ID] -w world
     - if <player.has_permission[dregions.info]||<player.is_op||false>> {
       - define spaces '<c.raw_args.to_list.count[ ]||0>'
-      - narrate "<c.args.find[-w].add[1].as_int> <c.args.get[1]>"
       - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name.to_lowercase||<player.world.name.to_lowercase||null>>'
       - define regions '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__].alphanumeric||li@>'
       - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
@@ -1580,14 +1751,14 @@ dRegions_Commands:
       - run instantly s@dRegions_Msg 'def:<script.yaml_key[commandArgs.%arg%.usage]||No help for you!>'
       - queue clear
       }
-    - if <player.has_permission[dRegions.admin]||<player.is_op||<context.server||false>>> inject locally msgsHelpAdmin instantly
-      else inject locally msgsHelpUser instantly
-    - inject locally msgsFooter instantly
+    - if <player.has_permission[dRegions.admin]||<player.is_op||<context.server||false>>> inject locally msgsHelpAdmin
+      else inject locally msgsHelpUser
+    - inject locally msgsFooter
     - queue clear
 
   about:
-    - inject locally msgsHelpUser instantly
-    - inject locally msgsFooter instantly
+    - inject locally msgsHelpUser
+    - inject locally msgsFooter
     - queue clear
 
   reload:
@@ -2911,6 +3082,7 @@ dRegions_IsOwner:
   # <proc[dRegions_IsOwner].context[region|world|player]>
   type: procedure
   definitions: region|world|player
+  speed: 0
   debug: false
 
   script:
@@ -2951,6 +3123,7 @@ dRegions_IsMember:
   # <proc[dRegions_IsMember].context[region|world|player]>
   type: procedure
   definitions: region|world|player
+  speed: 0
   debug: false
 
   script:
@@ -2996,6 +3169,7 @@ dRegions_RegionExists:
   # <proc[dRegions_RegionExists].context[region|world]>
   type: procedure
   definitions: region|world
+  speed: 0
   debug: false
 
   script:
@@ -3015,6 +3189,7 @@ dRegions_HighestPriority:
   # <proc[dRegions_HighestPriority].context[world|region1,...]>
   type: procedure
   definitions: world|regions
+  speed: 0
   debug: false
 
   script:
@@ -3035,6 +3210,7 @@ dRegions_RegionOverlaps:
   #    how priorities should be used!
   type: procedure
   definitions: selectedCuboid|world|player
+  speed: 0
   debug: false
 
   script:
@@ -3062,6 +3238,7 @@ dRegions_PlayerMatchRegionGroup:
   # <proc[dRegions_PlayerMatchRegionGroup].context[group|isMember|isOwner]>
   type: procedure
   definitions: group|isMember|isOwner
+  speed: 0
   debug: false
 
   script:
@@ -3100,6 +3277,7 @@ dRegions_CuboidIsWithinCuboid:
   # <proc[dRegions_CuboidIsWithinCuboid].context[inner|outer]>
   type: procedure
   definitions: inner|outer
+  speed: 0
   debug: false
 
   script:
@@ -3125,10 +3303,14 @@ dRegions_GetInheritedFlag:
   # <proc[dRegions_GetInheritedFlag].context[world|region|flag]>
   type: procedure
   definitions: world|region|flag
+  speed: 0
   debug: false
 
   script:
     - define return '<yaml[dRegions_%world%_regions].read[regions.%region%.flags.%flag%]||null>'
+    - if %return% != null {
+      - determine %return%
+      }
     - define thisRegion '%region%'
     - while <def[return].is[==].to[null]||false> {
       - define thisRegion '<yaml[dRegions_%world%_regions].read[regions.%thisRegion%.parent]||null>'
@@ -3146,6 +3328,7 @@ dRegions_getRelativeLocation:
   # <proc[dRegions_getRelativeLocation].context[location|direction|distance]>
   type: procedure
   definitions: l|d|n
+  speed: 0
   debug: false
 
   n_math: sub
@@ -3171,6 +3354,7 @@ dRegions_LineWrap:
   # Turn a long string into a list of smaller strings
   type: procedure
   definitions: string|targetLen
+  speed: 0
   debug: false
 
   script:
@@ -3226,6 +3410,7 @@ dRegions_LineWrap:
 #
 dRegion_FlagTypeMatch:
   type: procedure
+  speed: 0
   debug: false
   definitions: YourValue|Flag
 
@@ -3316,6 +3501,7 @@ dRegion_FlagTypeMatch:
 #
 dRegions_Author_Anthony:
   type: item
+  speed: 0
   debug: false
   material: i@human_skull
   display name: "<&f>             |Anthony|"
