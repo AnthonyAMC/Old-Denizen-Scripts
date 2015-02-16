@@ -21,6 +21,7 @@
 
 dRegions_Flag_Entry:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Entry<&4>]"
@@ -52,7 +53,7 @@ dRegions_Flag_Entry:
     - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
       - define player <player>
       - define flag 'entry'
-      - inject s@dRegions_Flags_Processors p:state-withGroup instantly
+      - inject s@dRegions_Flags_Processors p:state-withGroup
       }
 
   vehicle:
@@ -71,6 +72,7 @@ dRegions_Flag_Entry:
 
 dRegions_Flag_Greeting:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Greeting<&4>]"
@@ -105,6 +107,7 @@ dRegions_Flag_Greeting:
 
 dRegions_Flag_Exit:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Exit<&4>]"
@@ -136,7 +139,7 @@ dRegions_Flag_Exit:
     - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
       - define player <player>
       - define flag 'exit'
-      - inject s@dRegions_Flags_Processors p:state-withGroup instantly
+      - inject s@dRegions_Flags_Processors p:state-withGroup
       }
 
   vehicle:
@@ -155,6 +158,7 @@ dRegions_Flag_Exit:
 
 dRegions_Flag_Farewell:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Farewell<&4>]"
@@ -185,6 +189,7 @@ dRegions_Flag_Farewell:
 
 dRegions_Flag_Spawn:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Spawn<&4>]"
@@ -234,6 +239,7 @@ dRegions_Flag_Spawn:
 
 dRegions_Flag_Gamemode:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Gamemode<&4>]"
@@ -291,6 +297,7 @@ dRegions_Flag_Gamemode:
 
 dRegions_Flag_Inventory:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Inventory<&4>]"
@@ -388,6 +395,7 @@ dRegions_Flag_Inventory:
 
 dRegions_Flag_Build:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Build<&4>]"
@@ -419,12 +427,13 @@ dRegions_Flag_Build:
     - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
       - define player <player>
       - define flag 'build'
-      - inject s@dRegions_Flags_Processors p:state-withGroup instantly
+      - inject s@dRegions_Flags_Processors p:state-withGroup
       }
 
 
 dRegions_Flag_Vehicle-Place:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Vehicle-Place<&4>]"
@@ -454,12 +463,13 @@ dRegions_Flag_Vehicle-Place:
     - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
       - define player <player>
       - define flag 'vehicle-place'
-      - inject s@dRegions_Flags_Processors p:state-withGroup instantly
+      - inject s@dRegions_Flags_Processors p:state-withGroup
       }
 
 
 dRegions_Flag_Vehicle-Destroy:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Vehicle-Destroy<&4>]"
@@ -489,12 +499,13 @@ dRegions_Flag_Vehicle-Destroy:
     - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
       - define player <player>
       - define flag 'vehicle-destroy'
-      - inject s@dRegions_Flags_Processors p:state-withGroup instantly
+      - inject s@dRegions_Flags_Processors p:state-withGroup
       }
 
 
 dRegions_Flag_Send-Chat:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Send-Chat<&4>]"
@@ -524,12 +535,45 @@ dRegions_Flag_Send-Chat:
     - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
       - define player <player>
       - define flag 'send-chat'
-      - inject s@dRegions_Flags_Processors p:state-withGroup instantly
+      - inject s@dRegions_Flags_Processors p:state-withGroup
       }
+
+
+dRegions_Flag_Hunger:
+  type: item
+  speed: 0
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Hunger<&4>]"
+  lore:
+  - <&5>Who can get hungry
+  event_hook: changeFood
+  event_priority: 10
+  flag_type: state
+  flag_help: Control whether players will loose hunger in this region. Takes the -g group switch.
+  flag_takeGroup: true
+  flag_defaultValue: allow/all
+  region_highestOnly: false
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event-cleanup:
+    - announce "Hunger stopped!"
+
+  event:
+    - narrate "Hunger Flag"
+    - define player <player>
+    - define flag 'hunger'
+    - inject s@dRegions_Flags_Processors p:state-withGroup
 
 
 dRegions_Flag_Mob-Targeting:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Mob-Targeting<&4>]"
@@ -553,7 +597,7 @@ dRegions_Flag_Mob-Targeting:
     - define player '<def[defender]>'
     - define flag 'mob-targeting'
     - define flag-targetList 'mob-target'
-    - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup instantly
+    - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
 
   event-cleanup:
     - remove <c.projectile||li@>
@@ -562,6 +606,7 @@ dRegions_Flag_Mob-Targeting:
 
 dRegions_Flag_Mob-Target:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Mob-Target<&4>]"
@@ -580,11 +625,12 @@ dRegions_Flag_Mob-Target:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   command_handler:
-    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
 
 dRegions_Flag_Mob-Damage:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Mob-Damage<&4>]"
@@ -608,7 +654,7 @@ dRegions_Flag_Mob-Damage:
     - define player '<def[defender]>'
     - define flag 'mob-damage'
     - define flag-targetList 'mob-damagelist'
-    - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup instantly
+    - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
 
   event-cleanup:
     - remove <c.projectile||li@>
@@ -617,6 +663,7 @@ dRegions_Flag_Mob-Damage:
 
 dRegions_Flag_Mob-Damagelist:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Mob-DamageList<&4>]"
@@ -635,11 +682,12 @@ dRegions_Flag_Mob-Damagelist:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   command_handler:
-    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
 
 dRegions_Flag_Mob-Spawn:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Mob-Spawn<&4>]"
@@ -666,6 +714,7 @@ dRegions_Flag_Mob-Spawn:
 
 dRegions_Flag_Mob-SpawnList:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Mob-Spawnlist<&4>]"
@@ -684,11 +733,12 @@ dRegions_Flag_Mob-SpawnList:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   command_handler:
-    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
 
 dRegions_Flag_EVE:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>EVE<&4>]"
@@ -711,7 +761,7 @@ dRegions_Flag_EVE:
     - define target '<def[defender].entity_type>'
     - define flag 'eve'
     - define flag-targetList 'eve-moblist'
-    - inject s@dRegions_Flags_Processors p:state-withTarget instantly
+    - inject s@dRegions_Flags_Processors p:state-withTarget
 
   event-cleanup:
     - remove <c.projectile||li@>
@@ -720,6 +770,7 @@ dRegions_Flag_EVE:
 
 dRegions_Flag_EVE-Moblist:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>EVE-Moblist<&4>]"
@@ -738,11 +789,12 @@ dRegions_Flag_EVE-Moblist:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   command_handler:
-    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
 
 dRegions_Flag_Mob-Attack:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Mob-Attack<&4>]"
@@ -765,7 +817,7 @@ dRegions_Flag_Mob-Attack:
     - define target '<def[attacker].entity_type>'
     - define flag 'mob-attack'
     - define flag-targetList 'mob-attack-moblist'
-    - inject s@dRegions_Flags_Processors p:state-withTarget instantly
+    - inject s@dRegions_Flags_Processors p:state-withTarget
 
   event-cleanup:
     - remove <c.projectile||li@>
@@ -774,6 +826,7 @@ dRegions_Flag_Mob-Attack:
 
 dRegions_Flag_Mob-Attack-Moblist:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Mob-Attack-Moblist<&4>]"
@@ -792,11 +845,12 @@ dRegions_Flag_Mob-Attack-Moblist:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   command_handler:
-    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
 
 dRegions_Flag_PVE:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>PVE<&4>]"
@@ -821,7 +875,7 @@ dRegions_Flag_PVE:
       - define target '<def[defender].entity_type>'
       - define flag 'pve'
       - define flag-targetList 'pve-moblist'
-      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup instantly
+      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
       }
 
   event-cleanup:
@@ -834,6 +888,7 @@ dRegions_Flag_PVE:
 
 dRegions_Flag_PVE-Moblist:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>PVE-Moblist<&4>]"
@@ -852,11 +907,12 @@ dRegions_Flag_PVE-Moblist:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   command_handler:
-    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
 
 dRegions_Flag_Entity-Explode:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Entity-Explode<&4>]"
@@ -889,6 +945,7 @@ dRegions_Flag_Entity-Explode:
 
 dRegions_Flag_Entity-ExplodeList:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Entity-Explodelist<&4>]"
@@ -907,11 +964,12 @@ dRegions_Flag_Entity-ExplodeList:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   command_handler:
-    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
 
 dRegions_Flag_Entity-Grief:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Entity-Grief<&4>]"
@@ -931,16 +989,26 @@ dRegions_Flag_Entity-Grief:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event-cleanup:
-    - flag server dRegions_EntityGrief:->:<c.entity.uuid> duration:2s
+    - run locally flags def:<c.entity.uuid>|<c.entity.location>
 
   event:
     - define flag 'entity-grief'
     - define flag-targetList 'entity-grieflist'
     - inject s@dRegions_Flags_Processors p:state-withTarget
 
+  flags:
+    - define blocks '<def[2].find.blocks.within[2].parse[simple].replace[li@]>'
+    - flag server dRegions_EntityGrief:->:%1%
+    - flag server dRegions_LocationGrief:|:%blocks%
+    - wait 3s
+    - flag server dRegions_EntityGrief:<-:%1%
+    - foreach %blocks% {
+      - flag server dRegions_LocationGrief:<-:%value%
+      }
 
 dRegions_Flag_Entity-GriefList:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Entity-Grieflist<&4>]"
@@ -959,11 +1027,12 @@ dRegions_Flag_Entity-GriefList:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   command_handler:
-    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
 
 dRegions_Flag_Entity-Drops-OnDeath:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Entity-Drops-OnDeath<&4>]"
@@ -994,6 +1063,7 @@ dRegions_Flag_Entity-Drops-OnDeath:
 
 dRegions_Flag_Entity-Drops-OnDeathList:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Entity-Drops-OnDeathlist<&4>]"
@@ -1012,11 +1082,12 @@ dRegions_Flag_Entity-Drops-OnDeathList:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   command_handler:
-    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
 
 dRegions_Flag_Fire-Spread:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Fire-Spread<&4>]"
@@ -1051,6 +1122,7 @@ dRegions_Flag_Fire-Spread:
 
 dRegions_Flag_Fire-SpreadBlocks:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Fire-Spread-BlockList<&4>]"
@@ -1075,11 +1147,12 @@ dRegions_Flag_Fire-SpreadBlocks:
 #      - run instantly s@dRegions_Msg 'def:<&c><def[value]>'
 #      }
 #    - queue clear
-    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
 
 dRegions_Flag_Fire-Destroy:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Fire-Destroy<&4>]"
@@ -1106,6 +1179,7 @@ dRegions_Flag_Fire-Destroy:
 
 dRegions_Flag_Fire-DestroyBlocks:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Fire-Destroy-BlockList<&4>]"
@@ -1124,11 +1198,12 @@ dRegions_Flag_Fire-DestroyBlocks:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   command_handler:
-    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
 
 dRegions_Flag_Lightning-Strikes:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Lightning-Strikes<&4>]"
@@ -1155,6 +1230,7 @@ dRegions_Flag_Lightning-Strikes:
 
 dRegions_Flag_Lightning-StrikesBlocks:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Lightning-StrikesBlocks<&4>]"
@@ -1173,11 +1249,12 @@ dRegions_Flag_Lightning-StrikesBlocks:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   command_handler:
-    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
 
 dRegions_Flag_Water-Spread:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Water-Spread<&4>]"
@@ -1196,9 +1273,6 @@ dRegions_Flag_Water-Spread:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
-  event_cleanup:
-    - announce "Water Spread time <server.current_time_millis.sub_int[<queue.start_time>]>"
-
   event:
     - define flag 'water-spread'
     - define flag-targetList 'water-spreadblocks'
@@ -1207,6 +1281,7 @@ dRegions_Flag_Water-Spread:
 
 dRegions_Flag_Water-SpreadBlocks:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Water-Spread-BlockList<&4>]"
@@ -1225,11 +1300,12 @@ dRegions_Flag_Water-SpreadBlocks:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   command_handler:
-    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
 
 dRegions_Flag_Lava-Spread:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Lava-Spread<&4>]"
@@ -1256,6 +1332,7 @@ dRegions_Flag_Lava-Spread:
 
 dRegions_Flag_Lava-SpreadBlocks:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Lava-Spread-BlockList<&4>]"
@@ -1274,11 +1351,12 @@ dRegions_Flag_Lava-SpreadBlocks:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   command_handler:
-    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
 
 dRegions_Flag_Snow-Fall:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Snow-Fall<&4>]"
@@ -1305,6 +1383,7 @@ dRegions_Flag_Snow-Fall:
 
 dRegions_Flag_Snow-FallBlocks:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Snow-Fall-BlockList<&4>]"
@@ -1323,11 +1402,12 @@ dRegions_Flag_Snow-FallBlocks:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   command_handler:
-    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
 
 dRegions_Flag_Ice-Form:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Ice-Form<&4>]"
@@ -1352,6 +1432,7 @@ dRegions_Flag_Ice-Form:
 
 dRegions_Flag_Ice-Melt:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Ice-Melt<&4>]"
@@ -1376,6 +1457,7 @@ dRegions_Flag_Ice-Melt:
 
 dRegions_Flag_Snow-Melt:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Snow-Melt<&4>]"
@@ -1400,6 +1482,7 @@ dRegions_Flag_Snow-Melt:
 
 dRegions_Flag_Soil-Dry:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Soil-Dry<&4>]"
@@ -1424,6 +1507,7 @@ dRegions_Flag_Soil-Dry:
 
 dRegions_Flag_Trample-Crops-Player:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Trample-Crops-Player<&4>]"
@@ -1448,6 +1532,7 @@ dRegions_Flag_Trample-Crops-Player:
 
 dRegions_Flag_Trample-Crops-Entity:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Trample-Crops-Entity<&4>]"
@@ -1472,6 +1557,7 @@ dRegions_Flag_Trample-Crops-Entity:
 
 dRegions_Flag_Mushroom-Spread:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Mushroom-Spread<&4>]"
@@ -1497,6 +1583,7 @@ dRegions_Flag_Mushroom-Spread:
 
 dRegions_Flag_Grass-Spread:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Grass-Spread<&4>]"
@@ -1522,6 +1609,7 @@ dRegions_Flag_Grass-Spread:
 
 dRegions_Flag_Mycel-Spread:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Mycel-Spread<&4>]"
@@ -1547,6 +1635,7 @@ dRegions_Flag_Mycel-Spread:
 
 dRegions_Flag_Vine-Growth:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Vine-Growth<&4>]"
@@ -1572,6 +1661,7 @@ dRegions_Flag_Vine-Growth:
 
 dRegions_Flag_Leaf-Decay:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Leaf-Decay<&4>]"
@@ -1594,9 +1684,13 @@ dRegions_Flag_Leaf-Decay:
     - define flag 'leaf-decay'
     - inject s@dRegions_Flags_Processors p:boolean
 
+#  event_cleanup:
+#    - modifyblock <c.location> <c.material> no_physics
+
 
 dRegions_Flag_Falling-Sand:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Falling-Sand<&4>]"
@@ -1622,6 +1716,7 @@ dRegions_Flag_Falling-Sand:
 
 dRegions_Flag_Falling-Gravel:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Falling-Gravel<&4>]"
@@ -1647,6 +1742,7 @@ dRegions_Flag_Falling-Gravel:
 
 dRegions_Flag_Pistons:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Pistons<&4>]"
@@ -1672,6 +1768,7 @@ dRegions_Flag_Pistons:
 
 dRegions_Flag_Lighter:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Lighter<&4>]"
@@ -1699,12 +1796,13 @@ dRegions_Flag_Lighter:
     - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
       - define player <player>
       - define flag 'lighter'
-      - inject s@dRegions_Flags_Processors p:state-withGroup instantly
+      - inject s@dRegions_Flags_Processors p:state-withGroup
       }
 
 
 dRegions_Flag_Bucket-Fill:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Bucket-Fill<&4>]"
@@ -1732,12 +1830,13 @@ dRegions_Flag_Bucket-Fill:
     - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
       - define player <player>
       - define flag 'bucket-fill'
-      - inject s@dRegions_Flags_Processors p:state-withGroup instantly
+      - inject s@dRegions_Flags_Processors p:state-withGroup
       }
 
 
 dRegions_Flag_Bucket-Empty:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Bucket-Empty<&4>]"
@@ -1765,12 +1864,13 @@ dRegions_Flag_Bucket-Empty:
     - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
       - define player <player>
       - define flag 'bucket-empty'
-      - inject s@dRegions_Flags_Processors p:state-withGroup instantly
+      - inject s@dRegions_Flags_Processors p:state-withGroup
       }
 
 
 dRegions_Flag_Hanging-Place:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Hanging-Place<&4>]"
@@ -1798,12 +1898,13 @@ dRegions_Flag_Hanging-Place:
     - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
       - define player <player>
       - define flag 'hanging-place'
-      - inject s@dRegions_Flags_Processors p:state-withGroup instantly
+      - inject s@dRegions_Flags_Processors p:state-withGroup
       }
 
 
 dRegions_Flag_Hanging-Break:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Hanging-Break<&4>]"
@@ -1831,12 +1932,13 @@ dRegions_Flag_Hanging-Break:
     - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
       - define player <player>
       - define flag 'hanging-break'
-      - inject s@dRegions_Flags_Processors p:state-withGroup instantly
+      - inject s@dRegions_Flags_Processors p:state-withGroup
       }
 
 
 dRegions_Flag_Sleep:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Sleep<&4>]"
@@ -1864,12 +1966,13 @@ dRegions_Flag_Sleep:
     - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
       - define player <player>
       - define flag 'sleep'
-      - inject s@dRegions_Flags_Processors p:state-withGroup instantly
+      - inject s@dRegions_Flags_Processors p:state-withGroup
       }
 
 
 dRegions_Flag_Player-Drops:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Player-Drops<&4>]"
@@ -1897,12 +2000,13 @@ dRegions_Flag_Player-Drops:
     - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
       - define player <player>
       - define flag 'player-drops'
-      - inject s@dRegions_Flags_Processors p:state-withGroup instantly
+      - inject s@dRegions_Flags_Processors p:state-withGroup
       }
 
 
 dRegions_Flag_Player-Drops-OnDeath:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Player-Drops-OnDeath<&4>]"
@@ -1926,11 +2030,12 @@ dRegions_Flag_Player-Drops-OnDeath:
   event:
     - define player <player>
     - define flag 'player-drops-ondeath'
-    - inject s@dRegions_Flags_Processors p:state-withGroup instantly
+    - inject s@dRegions_Flags_Processors p:state-withGroup
 
 
 dRegions_Flag_Player-KeepItems:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Player-KeepItems<&4>]"
@@ -1994,6 +2099,7 @@ dRegions_Flag_Player-KeepItems:
 
 dRegions_Flag_Player-Pickup:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Player-Pickup<&4>]"
@@ -2021,12 +2127,13 @@ dRegions_Flag_Player-Pickup:
     - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
       - define player <player>
       - define flag 'player-pickup'
-      - inject s@dRegions_Flags_Processors p:state-withGroup instantly
+      - inject s@dRegions_Flags_Processors p:state-withGroup
       }
 
 
 dRegions_Flag_Entity-Break-Painting:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Entity-Break-Painting<&4>]"
@@ -2052,6 +2159,7 @@ dRegions_Flag_Entity-Break-Painting:
 
 dRegions_Flag_Entity-Break-ItemFrame:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Entity-Break-ItemFrame<&4>]"
@@ -2077,6 +2185,7 @@ dRegions_Flag_Entity-Break-ItemFrame:
 
 dRegions_Flag_PVP:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>PVP<&4>]"
@@ -2109,6 +2218,7 @@ dRegions_Flag_PVP:
 
 dRegions_Flag_Potion-Throw:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Potion-Throw<&4>]"
@@ -2140,6 +2250,7 @@ dRegions_Flag_Potion-Throw:
 
 dRegions_Flag_Potion-Drink:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Potion-Drink<&4>]"
@@ -2167,12 +2278,13 @@ dRegions_Flag_Potion-Drink:
     - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
       - define player <player>
       - define flag 'potion-drink'
-      - inject s@dRegions_Flags_Processors p:state-withGroup instantly
+      - inject s@dRegions_Flags_Processors p:state-withGroup
       }
 
 
 dRegions_Flag_Enderpearl:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Enderpearl<&4>]"
@@ -2200,12 +2312,13 @@ dRegions_Flag_Enderpearl:
     - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
       - define player <player>
       - define flag 'enderpearl'
-      - inject s@dRegions_Flags_Processors p:state-withGroup instantly
+      - inject s@dRegions_Flags_Processors p:state-withGroup
       }
 
 
 dRegions_Flag_Notify-Enter:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Notify-Enter<&4>]"
@@ -2241,6 +2354,7 @@ dRegions_Flag_Notify-Enter:
 
 dRegions_Flag_Notify-Exit:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Notify-Exit<&4>]"
@@ -2276,6 +2390,7 @@ dRegions_Flag_Notify-Exit:
 
 dRegions_Flag_Block-Place:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Block-Place<&4>]"
@@ -2299,7 +2414,7 @@ dRegions_Flag_Block-Place:
       - define player <player>
       - define flag 'block-place'
       - define flag-targetList 'block-placelist'
-      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup instantly
+      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
       }
 
   event-cleanup:
@@ -2311,6 +2426,7 @@ dRegions_Flag_Block-Place:
 
 dRegions_Flag_Block-PlaceList:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Block-PlaceList<&4>]"
@@ -2329,11 +2445,12 @@ dRegions_Flag_Block-PlaceList:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   command_handler:
-    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
 
 dRegions_Flag_Block-Break:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Block-Break<&4>]"
@@ -2357,7 +2474,7 @@ dRegions_Flag_Block-Break:
       - define player <player>
       - define flag 'block-break'
       - define flag-targetList 'block-breaklist'
-      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup instantly
+      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
       }
 
   event-cleanup:
@@ -2369,6 +2486,7 @@ dRegions_Flag_Block-Break:
 
 dRegions_Flag_Block-BreakList:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Block-BreakList<&4>]"
@@ -2387,11 +2505,12 @@ dRegions_Flag_Block-BreakList:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   command_handler:
-    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
 
 dRegions_Flag_Chest-Access:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Chest-Access<&4>]"
@@ -2417,7 +2536,7 @@ dRegions_Flag_Chest-Access:
       - define target <c.location.material.bukkit_enum>
       - define flag 'chest-access'
       - define flag-targetList 'chest-access-blocks'
-      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup instantly
+      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
       }
 
   event-cleanup:
@@ -2429,6 +2548,7 @@ dRegions_Flag_Chest-Access:
 
 dRegions_Flag_Chest-Access-Blocks:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Chest-Access-Blocks<&4>]"
@@ -2447,11 +2567,12 @@ dRegions_Flag_Chest-Access-Blocks:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   command_handler:
-    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
 
 dRegions_Flag_Door-Access:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Door-Access<&4>]"
@@ -2476,7 +2597,7 @@ dRegions_Flag_Door-Access:
       - define target <c.location.material.bukkit_enum>
       - define flag 'door-access'
       - define flag-targetList 'door-access-doors'
-      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup instantly
+      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
       }
 
   event-cleanup:
@@ -2488,6 +2609,7 @@ dRegions_Flag_Door-Access:
 
 dRegions_Flag_Door-Access-Doors:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Door-Access-Doors<&4>]"
@@ -2506,11 +2628,12 @@ dRegions_Flag_Door-Access-Doors:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   command_handler:
-    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
 
 dRegions_Flag_Use-Switches:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Use-Switches<&4>]"
@@ -2536,7 +2659,7 @@ dRegions_Flag_Use-Switches:
       - define target <c.location.material.bukkit_enum>
       - define flag 'use-switches'
       - define flag-targetList 'use-switches-list'
-      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup instantly
+      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
       }
 
   event-cleanup:
@@ -2548,6 +2671,7 @@ dRegions_Flag_Use-Switches:
 
 dRegions_Flag_Use-Switches-List:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Use-Switches-List<&4>]"
@@ -2566,11 +2690,12 @@ dRegions_Flag_Use-Switches-List:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   command_handler:
-    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
 
 dRegions_Flag_Use-Utilities:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Use-Utilities<&4>]"
@@ -2596,7 +2721,7 @@ dRegions_Flag_Use-Utilities:
       - define target <c.location.material.bukkit_enum>
       - define flag 'use-utilities'
       - define flag-targetList 'use-utilities-blocks'
-      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup instantly
+      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
       }
 
   event-cleanup:
@@ -2608,6 +2733,7 @@ dRegions_Flag_Use-Utilities:
 
 dRegions_Flag_Use-Utilities-Blocks:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Use-Utilities-Blocks<&4>]"
@@ -2626,11 +2752,12 @@ dRegions_Flag_Use-Utilities-Blocks:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   command_handler:
-    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
 
 dRegions_Flag_Player-Damage:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Player-Damage<&4>]"
@@ -2658,11 +2785,12 @@ dRegions_Flag_Player-Damage:
     - define player <player>
     - define flag 'player-damage'
     - define flag-targetList 'player-damage-types'
-    - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup instantly
+    - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
 
 
 dRegions_Flag_Player-Damage-Types:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Player-Damage-Types<&4>]"
@@ -2681,11 +2809,12 @@ dRegions_Flag_Player-Damage-Types:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   command_handler:
-    - inject instantly s@dRegions_Flags_CommandProcessors p:command_verifiedList
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
 
 dRegions_Flag_Commands:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Commands<&4>]"
@@ -2711,7 +2840,7 @@ dRegions_Flag_Commands:
       - define flag 'commands'
       - define flag-targetList 'commands-list'
       - define delimiter ' ; '
-      - inject s@dRegions_Flags_Processors p:state-withTargetString-withGroup instantly
+      - inject s@dRegions_Flags_Processors p:state-withTargetString-withGroup
       }
 
   event-cleanup:
@@ -2727,6 +2856,7 @@ dRegions_Flag_Commands:
 
 dRegions_Flag_Commands-List:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Commands-List<&4>]"
@@ -2744,11 +2874,12 @@ dRegions_Flag_Commands-List:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   command_handler:
-    - inject instantly s@dRegions_Flags_CommandProcessors p:command_stringList
+    - inject s@dRegions_Flags_CommandProcessors p:command_stringList
 
 
 dRegions_Flag_Heal-Amount:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Heal-Amount<&4>]"
@@ -2828,6 +2959,7 @@ dRegions_Flag_Heal-Amount:
 
 dRegions_Flag_Heal-Delay:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Heal-Delay<&4>]"
@@ -2852,6 +2984,7 @@ dRegions_Flag_Heal-Delay:
 
 dRegions_Flag_Heal-Max:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Heal-Max<&4>]"
@@ -2876,6 +3009,7 @@ dRegions_Flag_Heal-Max:
 
 dRegions_Flag_Heal-Min:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Heal-Min<&4>]"
@@ -2900,6 +3034,7 @@ dRegions_Flag_Heal-Min:
 
 dRegions_Flag_Feed-Amount:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Feed-Amount<&4>]"
@@ -2982,6 +3117,7 @@ dRegions_Flag_Feed-Amount:
 
 dRegions_Flag_Feed-Delay:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Feed-Delay<&4>]"
@@ -3006,6 +3142,7 @@ dRegions_Flag_Feed-Delay:
 
 dRegions_Flag_Feed-Max:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Feed-Max<&4>]"
@@ -3030,6 +3167,7 @@ dRegions_Flag_Feed-Max:
 
 dRegions_Flag_Feed-Min:
   type: item
+  speed: 0
   debug: false
   material: i@paper
   display name: "<&4>[<&6>Feed-Min<&4>]"
@@ -3060,14 +3198,15 @@ dRegions_Flag_Feed-Min:
 
 dRegions_Flags_Processors:
   type: task
+  speed: 0
   debug: false
 
   boolean:
-    - define List '<tern[<def[FlagScript].yaml_key[region_highestOnly]||false>]:<def[orderedRegions].get[1].as_list>||<def[orderedRegions]>>'
-    - foreach <def[List]> {
+    - define List '<tern[<def[FlagScript].yaml_key[region_highestOnly]||false>]:<def[orderedRegions].get[1].as_list>||%orderedRegions%>'
+    - foreach %List% {
       - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|%flag%]||null>'
-      - if <def[flagVal].is[==].to[null]||true> {
-        - if <def[loop_index].is[==].to[<def[List].size>]> {
+      - if %flagVal% == null {
+        - if %loop_index% == <def[List].size> {
           - define flagVal '<def[FlagScript].yaml_key[flag_defaultValue]||true>'
           }
           else foreach next
@@ -3075,11 +3214,11 @@ dRegions_Flags_Processors:
       - foreach stop
       }
 
-    - if <def[flagVal]||true> {
+    - if %flagVal% {
       - foreach stop
       }
       else {
-      - inject <def[FlagScript]||null> p:event-cleanup instantly
+      - inject %FlagScript% p:event-cleanup instantly
       - determine cancelled
       }
 
@@ -3088,23 +3227,24 @@ dRegions_Flags_Processors:
     - define List '<tern[<def[FlagScript].yaml_key[region_highestOnly]||false>]:<def[orderedRegions].get[1].as_list>||%orderedRegions%>'
     - foreach %List% {
       - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|%flag%]||null>'
-      - if <def[flagVal].is[==].to[null]||true> {
-        - if <def[loop_index].is[==].to[<def[List].size>]> {
+      - if %flagVal% == null {
+        - if %loop_index% == <def[List].size> {
           - define flagVal '<def[FlagScript].yaml_key[flag_defaultValue]||allow>'
           }
           else foreach next
         }
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|%flag-targetList%].replace[, ].with[|].as_list||li@all>'
-      - if <def[targetList].is[==].to[li@null]> {
+      - if %targetList% == li@null {
         - define targetList 'li@all'
         }
       - foreach stop
       }
+#    - narrate "%flag% %flagVal% %targetList% %target%" targets:p@Nilsentience
 # If the flag is set to allow, cancel the event as needed
-    - if <def[flagVal].is[==].to[allow]||false> {
-      - if <def[targetList].is[!=].to[li@all]||true> {
-        - if !<def[targetList].contains[%target%]||false> {
-          - inject <def[FlagScript]||null> p:event-cleanup instantly
+    - if %flagVal% == allow {
+      - if %targetList% != li@all {
+        - if %targetList% !contains %target% {
+          - inject %FlagScript% p:event-cleanup
           - determine cancelled
           }
         }
@@ -3113,13 +3253,13 @@ dRegions_Flags_Processors:
 # Must be a deny flag
 #    - if <def[flagVal].is[==].to[deny]||false> {
 #      else {
-    - if <def[targetList].is[==].to[li@all]||true> {
-      - inject <def[FlagScript]||null> p:event-cleanup instantly
+    - if %targetList% == li@all {
+      - inject %FlagScript% p:event-cleanup
       - determine cancelled
       }
 # Cancel the event if the target matches the list, otherwise it's not a denied target.
-    - if <def[targetList].contains[%target%]||false> {
-      - inject <def[FlagScript]||null> p:event-cleanup instantly
+    - if %targetList% contains %target% {
+      - inject %FlagScript% p:event-cleanup
       - determine cancelled
       }
 #      }
@@ -3128,13 +3268,13 @@ dRegions_Flags_Processors:
     - define List '<tern[<def[FlagScript].yaml_key[region_highestOnly]||false>]:<def[orderedRegions].get[1].as_list>||%orderedRegions%>'
     - foreach %List% {
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|%flag%]||null>'
-      - if <def[flagObj].is[==].to[null]||true> {
-        - if <def[loop_index].is[==].to[<def[List].size>]> {
+      - if %flagObj% == null {
+        - if %loop_index% == <def[List].size> {
           - define flagObj '<def[FlagScript].yaml_key[flag_defaultValue]||allow/all>'
           }
           else foreach next
         }
-      - define region '<def[value]>'
+      - define region '%value%'
       - foreach stop
       }
     - define flagVal '<def[flagObj].split[/].get[1]>'
@@ -3144,9 +3284,9 @@ dRegions_Flags_Processors:
     - define isMember '<proc[dRegions_isMember].context[%region%|%world%|%player%]>'
     - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]>'
 
-    - if <def[flagVal].is[==].to[allow]||false> {
+    - if %flagVal% == allow {
       - if !%isGroup% {
-        - inject <def[FlagScript]||null> p:event-cleanup instantly
+        - inject %FlagScript% p:event-cleanup instantly
         - determine cancelled
         }
       - foreach next
@@ -3155,7 +3295,7 @@ dRegions_Flags_Processors:
 #    - if <def[flagVal].is[==].to[deny]||false> {
 #      else {
     - if %isGroup% {
-      - inject <def[FlagScript]||null> p:event-cleanup instantly
+      - inject %FlagScript% p:event-cleanup
       - determine cancelled
       }
 #      }
@@ -3164,17 +3304,17 @@ dRegions_Flags_Processors:
     - define List '<tern[<def[FlagScript].yaml_key[region_highestOnly]||false>]:<def[orderedRegions].get[1].as_list>||%orderedRegions%>'
     - foreach <def[List]> {
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|%flag%]||null>'
-      - if <def[flagObj].is[==].to[null]||true> {
-        - if <def[loop_index].is[==].to[<def[List].size>]> {
+      - if %flagObj% == null {
+        - if %loop_index% == <def[List].size> {
           - define flagObj '<def[FlagScript].yaml_key[flag_defaultValue]||allow/all>'
           }
           else foreach next
         }
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|%flag-targetList%].replace[, ].with[|].as_list||li@all>'
-      - if <def[targetList].is[==].to[li@null]> {
+      - if %targetList% == li@null {
         - define targetList 'li@all'
         }
-      - define region '<def[value]>'
+      - define region '%value%'
       - foreach stop
       }
     - define flagVal '<def[flagObj].split[/].get[1]>'
@@ -3184,14 +3324,14 @@ dRegions_Flags_Processors:
     - define isMember '<proc[dRegions_isMember].context[%region%|%world%|%player%]>'
     - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]>'
 
-    - if <def[flagVal].is[==].to[allow]||false> {
+    - if %flagVal% == allow {
       - if !%isGroup% {
-        - inject <def[FlagScript]||null> p:event-cleanup instantly
+        - inject %FlagScript% p:event-cleanup
         - determine cancelled
         }
-      - if <def[targetList].is[!=].to[li@all]||true> {
-        - if !<def[targetList].contains[%target%]||false> {
-          - inject <def[FlagScript]||null> p:event-cleanup instantly
+      - if %targetList% != li@all {
+        - if %targetList% !contains %target% {
+          - inject %FlagScript% p:event-cleanup
           - determine cancelled
           }
         }
@@ -3201,12 +3341,12 @@ dRegions_Flags_Processors:
 #    - if <def[flagVal].is[==].to[deny]||false> {
 #      else {
     - if %isGroup% {
-      - if <def[targetList].is[==].to[li@all]||true> {
-        - inject <def[FlagScript]||null> p:event-cleanup instantly
+      - if %targetList% == li@all {
+        - inject %FlagScript% p:event-cleanup
         - determine cancelled
         }
-      - if <def[targetList].contains[%target%]||false> {
-        - inject <def[FlagScript]||null> p:event-cleanup instantly
+      - if %targetList% contains %target% {
+        - inject %FlagScript% p:event-cleanup
         - determine cancelled
         }
       }
@@ -3255,7 +3395,7 @@ dRegions_Flags_Processors:
                 }
               }
             - if !<def[pass].exists> {
-              - inject <def[FlagScript]||null> p:event-cleanup instantly
+              - inject <def[FlagScript]||null> p:event-cleanup
               - determine cancelled
               }
               else foreach stop
@@ -3263,14 +3403,14 @@ dRegions_Flags_Processors:
             else foreach stop
           }
           else {
-          - inject <def[FlagScript]||null> p:event-cleanup instantly
+          - inject <def[FlagScript]||null> p:event-cleanup
           - determine cancelled
           }
         }
         else {
         - if <def[isGroup]> {
           - if <def[targetList].is[==].to[li@all]||true> {
-            - inject <def[FlagScript]||null> p:event-cleanup instantly
+            - inject <def[FlagScript]||null> p:event-cleanup
             - determine cancelled
             }
             else {
@@ -3281,7 +3421,7 @@ dRegions_Flags_Processors:
                 }
               }
             - if <def[fail].exists> {
-              - inject <def[FlagScript]||null> p:event-cleanup instantly
+              - inject <def[FlagScript]||null> p:event-cleanup
               - determine cancelled
               }
               else foreach stop
@@ -3294,6 +3434,7 @@ dRegions_Flags_Processors:
 
 dRegions_Flags_CommandProcessors:
   type: task
+  speed: 0
   debug: false
 
   command_verifiedList:
