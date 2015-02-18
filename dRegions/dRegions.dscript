@@ -129,6 +129,14 @@ dRegions:
 #    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
 #    - define eventHooks 'playerCommand'
 #    - inject s@dRegions p:event_PreProc_RunEvent
+#    - if <c.cuboids.is_empty||true> {
+#      - define isGlobal ''
+#      - foreach <server.flag[dRegions_FlagMap].filter[starts_with[playerCommand]].parse[after[/]].alphanumeric.parse[split[/].get[2]]> {
+#        - define FlagScript '%value%'
+#        - inject %value% p:event
+#        }
+#      -queue clear
+#      }
     - define regionPri 'li@'
     - foreach <c.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[after[dregions_%world%_]].include[__global__]> {
       - define regionPri '<def[regionPri].include[<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%]>'
@@ -154,6 +162,14 @@ dRegions:
 #    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
 #    - define eventHooks '<t[<c.cause.is[==].to[flint_and_steel]>]:fireFrom-Lighter||fireFrom-Spread>'
 #    - inject s@dRegions p:event_PreProc_RunEvent
+#    - if <c.location.cuboids.is_empty||true> {
+#      - define isGlobal ''
+#      - foreach <server.flag[dRegions_FlagMap].filter[starts_with[<t[<c.cause.is[==].to[flint_and_steel]>]:fireFrom-Lighter||fireFrom-Spread>]].parse[after[/]].alphanumeric.parse[split[/].get[2]]> {
+#        - define FlagScript '%value%'
+#        - inject %value% p:event
+#        }
+#      - queue clear
+#      }
     - define regionPri 'li@'
     - foreach <c.location.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[after[dregions_%world%_]].include[__global__]> {
       - define regionPri '<def[regionPri].include[<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%]>'
@@ -734,7 +750,8 @@ dRegions:
     on player right clicks:
     - define blockEvent '<s@dRegions_Map_Interactions.yaml_key[block.<c.location.material.bukkit_enum||air>]||null>'
     - define world '<player.world.name.to_lowercase>'
-    - define cuboids '<c.cuboids||<player.location.cursor_on[5].cuboids>>'
+    - define cuboids '<c.location.cuboids>'
+#    - define cuboids '<c.relative.cuboids.include[<c.location.cuboids>].deduplicate>'
 #    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - if <c.item.material.name.is[==].to[air]||true> {
       - define eventHooks '<def[blockEvent]>'
@@ -747,6 +764,10 @@ dRegions:
         else {
         - define eventHooks '<def[blockEvent]>'
         }
+      }
+    - define eventHooks '<def[eventHooks].as_list.filter[contains_any[null|air].not]>'
+    - if <def[eventHooks].is_empty> {
+      - queue clear
       }
 #    - inject s@dRegions p:event_PreProc_RunEvent
     - define regionPri 'li@'
@@ -1195,8 +1216,8 @@ dRegions:
       }
 
     on entity enters portal:
-    - define world '<c.world.name.to_lowercase>'
-    - define readPath 'portal.<c.entity.as_player.prefix||<c.entity.prefix>>-enter'
+    - define world '<c.location.world.name.to_lowercase>'
+    - define readPath 'portal.<tern[<c.entity.as_player.is[!=].to[null]||false>]:player||entity>-enter'
     - inject s@dRegions p:event_PreProc_Config
 
     on entity changes block:
@@ -3592,7 +3613,7 @@ dRegions_IsOwner:
       - determine 'true'
       }
     # Regions inherit members and owners.
-    - while <def[return].is[==].to[null]||false> {
+    - while <el@a.is[==].to[a]> {
       - define region '<yaml[dRegions_%world%_regions].read[regions.%region%.parent]||null>'
       - if <def[region].is[==].to[null]||false> {
         - while stop
@@ -3625,7 +3646,7 @@ dRegions_IsMember:
       - determine 'true'
       }
     # Regions inherit members and owners.
-    - while <def[return].is[==].to[null]||false> {
+    - while <el@a.is[==].to[a]> {
       - define region '<yaml[dRegions_%world%_regions].read[regions.%region%.parent]||null>'
       - if <def[region].is[==].to[null]||false> {
         - while stop
