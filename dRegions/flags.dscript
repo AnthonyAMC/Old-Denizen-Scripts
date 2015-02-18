@@ -561,11 +561,7 @@ dRegions_Flag_Hunger:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
-  event-cleanup:
-    - announce "Hunger stopped!"
-
   event:
-    - narrate "Hunger Flag"
     - define player <player>
     - define flag 'hunger'
     - inject s@dRegions_Flags_Processors p:state-withGroup
@@ -989,7 +985,8 @@ dRegions_Flag_Entity-Grief:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event-cleanup:
-    - run locally flags def:<c.entity.uuid>|<c.entity.location>
+#    - run locally flags def:<c.entity.uuid>|<c.entity.location>
+    - run locally flags def:<c.entity.uuid>
 
   event:
     - define flag 'entity-grief'
@@ -997,14 +994,14 @@ dRegions_Flag_Entity-Grief:
     - inject s@dRegions_Flags_Processors p:state-withTarget
 
   flags:
-    - define blocks '<def[2].find.blocks.within[2].parse[simple].replace[li@]>'
-    - flag server dRegions_EntityGrief:->:%1%
-    - flag server dRegions_LocationGrief:|:%blocks%
-    - wait 3s
-    - flag server dRegions_EntityGrief:<-:%1%
-    - foreach %blocks% {
-      - flag server dRegions_LocationGrief:<-:%value%
-      }
+#    - ^define blocks '<def[2].find.blocks.within[2].parse[simple].replace[li@]>'
+    - ^flag server dRegions_EntityGrief:->:%1%
+#    - ^flag server dRegions_LocationGrief:|:%blocks%
+    - ^wait 3s
+    - ^flag server dRegions_EntityGrief:<-:%1%
+#    - ^foreach %blocks% {
+#      - flag server dRegions_LocationGrief:<-:%value%
+#      }
 
 dRegions_Flag_Entity-GriefList:
   type: item
@@ -1286,7 +1283,7 @@ dRegions_Flag_Water-SpreadBlocks:
   material: i@paper
   display name: "<&4>[<&6>Water-Spread-BlockList<&4>]"
   lore:
-  - <&5>List of blocks involved in fire spread
+  - <&5>List of blocks involved in water spread
   command_entryType: block
   command_verifyEntry: <def[value].as_material.is_block.not||true>
   flag_type: list
