@@ -31,8 +31,8 @@ dRegions_Flag_Entry:
   event_priority: 0
   flag_type: state
   flag_takeGroup: true
-  flag_defaultValue: allow/all
-  flag_globalDefault: allow/all
+  flag_defaultValue: none
+  flag_globalDefault: none
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
@@ -47,7 +47,7 @@ dRegions_Flag_Entry:
       }
     - if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run instantly s@dRegions_Msg 'def:<&c><&o>You do not have permission to enter this region'
+      - run s@dRegions_Msg 'def:<&c><&o>You do not have permission to enter this region'
       }
 
   event:
@@ -128,8 +128,8 @@ dRegions_Flag_Exit:
   event_priority: 0
   flag_type: state
   flag_takeGroup: true
-  flag_defaultValue: allow/all
-  flag_globalDefault: allow/all
+  flag_defaultValue: none
+  flag_globalDefault: none
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
@@ -144,7 +144,7 @@ dRegions_Flag_Exit:
       }
     - if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run instantly s@dRegions_Msg 'def:<&c><&o>You do not have permission to exit this region'
+      - run s@dRegions_Msg 'def:<&c><&o>You do not have permission to exit this region'
       }
 
   event:
@@ -236,7 +236,7 @@ dRegions_Flag_Spawn:
   command_handler:
     - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
       - if <proc[dRegions_RegionOverlaps].context[<def[flagValue]>/<def[flagValue]>|%world%|<player>]> {
-        - run instantly s@dRegions_Msg 'def:<&c>You can not use that location!'
+        - run s@dRegions_Msg 'def:<&c>You can not use that location!'
         - queue clear
         }
       }
@@ -255,9 +255,9 @@ dRegions_Flag_Spawn:
       }
     - define spawnLoc '<def[flagObj].split[/].get[1].as_location>'
     - define group '<def[flagObj].split[/].get[2]||all>'
-    - define isOwner '<proc[dRegions_IsOwner].context[%region%|%world%|<player>]>'
-    - define isMember '<proc[dRegions_isMember].context[%region%|%world%|<player>]>'
-    - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]>'
+#    - define isOwner '<proc[dRegions_IsOwner].context[%region%|%world%|<player>]>'
+#    - define isMember '<proc[dRegions_isMember].context[%region%|%world%|<player>]>'
+    - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|%region%|%world%|<player>]>'
 
     - if %isGroup% {
       - adjust <player> 'location:%spawnLoc%'
@@ -272,9 +272,9 @@ dRegions_Flag_Spawn:
       }
     - define spawnLoc '<def[flagObj].split[/].get[1].as_location>'
     - define group '<def[flagObj].split[/].get[2]||all>'
-    - define isOwner '<proc[dRegions_IsOwner].context[__global__|%world%|<player>]>'
-    - define isMember '<proc[dRegions_isMember].context[__global__|%world%|<player>]>'
-    - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]>'
+#    - define isOwner '<proc[dRegions_IsOwner].context[__global__|%world%|<player>]>'
+#    - define isMember '<proc[dRegions_isMember].context[__global__|%world%|<player>]>'
+    - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|__global__|%world%|<player>]>'
 
     - if %isGroup% {
       - adjust <player> 'location:%spawnLoc%'
@@ -317,9 +317,9 @@ dRegions_Flag_Gamemode:
       }
     - define gm '<def[flagObj].split[/].get[1]>'
     - define group '<def[flagObj].split[/].get[2]||all>'
-    - define isOwner '<proc[dRegions_IsOwner].context[%region%|%world%|<player>]>'
-    - define isMember '<proc[dRegions_isMember].context[%region%|%world%|<player>]>'
-    - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]>'
+#    - define isOwner '<proc[dRegions_IsOwner].context[%region%|%world%|<player>]>'
+#    - define isMember '<proc[dRegions_isMember].context[%region%|%world%|<player>]>'
+    - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|%region%|%world%|<player>]>'
 
     - if !%isGroup% {
       - foreach next
@@ -328,7 +328,7 @@ dRegions_Flag_Gamemode:
     - if <def[isExit].exists> {
       - if <player.flag[dRegions_%world%_%region%_PreviousGamemode]||null> != <player.gamemode> {
         - adjust <player> 'gamemode:<player.flag[dRegions_%world%_%region%_PreviousGamemode]||survival>'
-        - run instantly s@dRegions_Msg 'def:<&7><&o>Your gamemode has been updated.'
+        - run s@dRegions_Msg 'def:<&7><&o>Your gamemode has been updated.'
         }
       - flag <player> 'dRegions_%world%_%region%_PreviousGamemode:!'
       - foreach next
@@ -337,7 +337,7 @@ dRegions_Flag_Gamemode:
     - if %gm% != <player.gamemode> {
       - flag <player> 'dRegions_%world%_%region%_PreviousGamemode:<player.gamemode>'
       - adjust <player> 'gamemode:%gm%'
-      - run instantly s@dRegions_Msg 'def:<&7><&o>Your gamemode has been updated.'
+      - run s@dRegions_Msg 'def:<&7><&o>Your gamemode has been updated.'
       }
 
   event-global:
@@ -348,9 +348,9 @@ dRegions_Flag_Gamemode:
       }
     - define gm '<def[flagObj].split[/].get[1]>'
     - define group '<def[flagObj].split[/].get[2]||all>'
-    - define isOwner '<proc[dRegions_IsOwner].context[__global__|%world%|<player>]>'
-    - define isMember '<proc[dRegions_isMember].context[__global__|%world%|<player>]>'
-    - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]>'
+#    - define isOwner '<proc[dRegions_IsOwner].context[__global__|%world%|<player>]>'
+#    - define isMember '<proc[dRegions_isMember].context[__global__|%world%|<player>]>'
+    - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|__global__|%world%|<player>]>'
 
     - if !%isGroup% {
       - foreach next
@@ -359,7 +359,7 @@ dRegions_Flag_Gamemode:
     - if <def[isExit].exists> {
       - if <player.flag[dRegions_%world%___global___PreviousGamemode]||null> != <player.gamemode> {
         - adjust <player> 'gamemode:<player.flag[dRegions_%world%___global___PreviousGamemode]||survival>'
-        - run instantly s@dRegions_Msg 'def:<&7><&o>Your gamemode has been updated.'
+        - run s@dRegions_Msg 'def:<&7><&o>Your gamemode has been updated.'
         }
       - flag <player> 'dRegions_%world%___global___PreviousGamemode:!'
       - foreach next
@@ -368,7 +368,7 @@ dRegions_Flag_Gamemode:
     - if %gm% != <player.gamemode> {
       - flag <player> 'dRegions_%world%___global___PreviousGamemode:<player.gamemode>'
       - adjust <player> 'gamemode:%gm%'
-      - run instantly s@dRegions_Msg 'def:<&7><&o>Your gamemode has been updated.'
+      - run s@dRegions_Msg 'def:<&7><&o>Your gamemode has been updated.'
       }
 
 
@@ -422,9 +422,9 @@ dRegions_Flag_Inventory:
       }
     - define inv '<def[flagObj].split[/].get[1]>'
     - define group '<def[flagObj].split[/].get[2]||all>'
-    - define isOwner '<proc[dRegions_IsOwner].context[%region%|%world%|<player>]>'
-    - define isMember '<proc[dRegions_isMember].context[%region%|%world%|<player>]>'
-    - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]>'
+#    - define isOwner '<proc[dRegions_IsOwner].context[%region%|%world%|<player>]>'
+#    - define isMember '<proc[dRegions_isMember].context[%region%|%world%|<player>]>'
+    - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|%region%|%world%|<player>]>'
     - if !%isGroup% {
       - foreach next
       - queue stop
@@ -440,9 +440,9 @@ dRegions_Flag_Inventory:
     - define region '__global__'
     - define inv '<def[flagObj].split[/].get[1]>'
     - define group '<def[flagObj].split[/].get[2]||all>'
-    - define isOwner '<proc[dRegions_IsOwner].context[__global__|%world%|<player>]>'
-    - define isMember '<proc[dRegions_isMember].context[__global__|%world%|<player>]>'
-    - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]>'
+#    - define isOwner '<proc[dRegions_IsOwner].context[__global__|%world%|<player>]>'
+#    - define isMember '<proc[dRegions_isMember].context[__global__|%world%|<player>]>'
+    - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|__global__|%world%|<player>]>'
     - if !%isGroup% {
       - foreach next
       - queue stop
@@ -459,7 +459,7 @@ dRegions_Flag_Inventory:
         - inventory set 'd:<player.inventory>' 'o:<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.entry.kit.inv]||li@>'
         - define equipment '<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.entry.kit.equip]||li@>'
         - equip <player> 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>'
-        - run instantly s@dRegions_Msg 'def:<&7><&o>Your inventory has been updated.'
+        - run s@dRegions_Msg 'def:<&7><&o>Your inventory has been updated.'
         - foreach next
         - queue stop
         }
@@ -471,7 +471,7 @@ dRegions_Flag_Inventory:
         - inventory set 'd:<player.inventory>' 'o:<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.entry.players.<player.uuid>.inv]||li@>'
         - define equipment '<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.entry.players.<player.uuid>.equip]||li@>'
         - equip <player> 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>'
-        - run instantly s@dRegions_Msg 'def:<&7><&o>Your inventory has been updated.'
+        - run s@dRegions_Msg 'def:<&7><&o>Your inventory has been updated.'
         - foreach next
         - queue stop
         }
@@ -484,7 +484,7 @@ dRegions_Flag_Inventory:
         - equip <player> 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>'
         - yaml set 'inventories.regions.%region%.exit.players.<player.uuid>:!' 'id:dRegions_%world%_inventories'
         - yaml 'savefile:dRegions/worlds/%world%/inventories.yml' 'id:dRegions_%world%_inventories'
-        - run instantly s@dRegions_Msg 'def:<&7><&o>Your inventory has been updated.'
+        - run s@dRegions_Msg 'def:<&7><&o>Your inventory has been updated.'
         - foreach next
         - queue stop
         }
@@ -497,7 +497,7 @@ dRegions_Flag_Inventory:
         - equip <player> 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>'
         - yaml set 'inventories.regions.%region%.exit.players.<player.uuid>:!' 'id:dRegions_%world%_inventories'
         - yaml 'savefile:dRegions/worlds/%world%/inventories.yml' 'id:dRegions_%world%_inventories'
-        - run instantly s@dRegions_Msg 'def:<&7><&o>Your inventory has been updated.'
+        - run s@dRegions_Msg 'def:<&7><&o>Your inventory has been updated.'
         - foreach next
         - queue stop
         }
@@ -513,12 +513,12 @@ dRegions_Flag_Build:
   lore:
   - <&5>Override default build perms
   event_hook: build
-  event_priority: 0
+  event_priority: 10
   flag_type: state
   flag_help: By default, all members and owners can build in their regions. Setting this flag can over ride that behavior. Can be set to allow, deny, or none and accepts the -g group switch.
   flag_takeGroup: true
   flag_defaultValue: deny/nonmembers
-  flag_globalDefault: allow/all
+  flag_globalDefault: none
   region_highestOnly: true
   script:
     - narrate "A handy container for region flags."
@@ -530,13 +530,13 @@ dRegions_Flag_Build:
   event-cleanup:
     - if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run instantly s@dRegions_Msg 'def:<&c><&o>You do not have permission to build in this region'
+      - run s@dRegions_Msg 'def:<&c><&o>You do not have permission to build in this region'
       }
 
   event-global:
   # Build is handled differently than the other flags. It checks only the HIGHEST
   # priority region. It does inherit owners, members, and flags from parent regions.
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - if !<player.has_permission[dRegions.admin]||<player.is_op>> {
       - define player <player>
       - define flag 'build'
       - inject s@dRegions_Flags_Processors p:state-withGroup-Global
@@ -545,7 +545,7 @@ dRegions_Flag_Build:
   event:
   # Build is handled differently than the other flags. It checks only the HIGHEST
   # priority region. It does inherit owners, members, and flags from parent regions.
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - if !<player.has_permission[dRegions.admin]||<player.is_op>> {
       - define player <player>
       - define flag 'build'
       - inject s@dRegions_Flags_Processors p:state-withGroup
@@ -561,12 +561,12 @@ dRegions_Flag_Vehicle-Place:
   lore:
   - <&5>Who can place vehicles
   event_hook: placeVehicle
-  event_priority: 10
+  event_priority: 5
   flag_type: state
   flag_help: Control who can place vehicles in a region. Takes the -g group switch.
   flag_takeGroup: true
   flag_defaultValue: deny/nonmembers
-  flag_globalDefault: allow/all
+  flag_globalDefault: none
   region_highestOnly: true
   script:
     - narrate "A handy container for region flags."
@@ -578,7 +578,7 @@ dRegions_Flag_Vehicle-Place:
   event-cleanup:
     - if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run instantly s@dRegions_Msg 'def:<&c><&o>You can not place <c.item.material.name.replace[_].with[ ]>s here.'
+      - run s@dRegions_Msg 'def:<&c><&o>You can not place <c.item.material.name.replace[_].with[ ]>s here.'
       }
 
   event:
@@ -610,7 +610,7 @@ dRegions_Flag_Vehicle-Destroy:
   flag_help: Control who can destroy vehicles in a region. Takes the -g group switch.
   flag_takeGroup: true
   flag_defaultValue: deny/nonmembers
-  flag_globalDefault: allow/all
+  flag_globalDefault: none
   region_highestOnly: true
   script:
     - narrate "A handy container for region flags."
@@ -622,7 +622,7 @@ dRegions_Flag_Vehicle-Destroy:
   event-cleanup:
     - if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run instantly s@dRegions_Msg 'def:<&c><&o>You can not break <c.vehicle.entity_type.to_lowercase.replace[_].with[ ]>s here.'
+      - run s@dRegions_Msg 'def:<&c><&o>You can not break <c.vehicle.entity_type.to_lowercase.replace[_].with[ ]>s here.'
       }
 
   event:
@@ -653,8 +653,8 @@ dRegions_Flag_Send-Chat:
   flag_type: state
   flag_help: Control who can send chat in a region. Takes the -g group switch.
   flag_takeGroup: true
-  flag_defaultValue: allow/all
-  flag_globalDefault: allow/all
+  flag_defaultValue: none
+  flag_globalDefault: none
   region_highestOnly: true
   script:
     - narrate "A handy container for region flags."
@@ -666,7 +666,7 @@ dRegions_Flag_Send-Chat:
   event-cleanup:
     - if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run instantly s@dRegions_Msg 'def:<&c><&o>You can not chat here.'
+      - run s@dRegions_Msg 'def:<&c><&o>You can not chat here.'
       }
 
   event:
@@ -697,8 +697,8 @@ dRegions_Flag_Hunger:
   flag_type: state
   flag_help: Control whether players will loose hunger in this region. Takes the -g group switch.
   flag_takeGroup: true
-  flag_defaultValue: allow/all
-  flag_globalDefault: allow/all
+  flag_defaultValue: none
+  flag_globalDefault: none
   region_highestOnly: false
   script:
     - narrate "A handy container for region flags."
@@ -730,8 +730,8 @@ dRegions_Flag_Mob-Target:
   event_priority: 0
   flag_type: state
   flag_takeGroup: true
-  flag_defaultValue: allow/all
-  flag_globalDefault: allow/all
+  flag_defaultValue: none
+  flag_globalDefault: none
   flag_help: State flag controlling whether mobs will be able to target players in this region. Defaults to allow all. Use mob-target flag to specify mob types. Takes the -g group switch.
   script:
     - narrate "A handy container for region flags."
@@ -742,14 +742,14 @@ dRegions_Flag_Mob-Target:
 
   event:
     - define target '<def[attacker].entity_type>'
-    - define player '<def[defender]>'
-    - define flag 'mob-targeting'
-    - define flag-targetList 'mob-target'
+    - define player '%defender%'
+    - define flag 'mob-target'
+    - define flag-targetList 'mob-targetlist'
     - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
 
   event-global:
     - define target '<def[attacker].entity_type>'
-    - define player '<def[defender]>'
+    - define player '%defender%'
     - define flag 'mob-target'
     - define flag-targetList 'mob-targetlist'
     - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup-Global
@@ -795,8 +795,8 @@ dRegions_Flag_Mob-Damage:
   event_priority: 10
   flag_type: state
   flag_takeGroup: true
-  flag_defaultValue: allow/all
-  flag_globalDefault: allow/all
+  flag_defaultValue: none
+  flag_globalDefault: none
   flag_help: State flag controlling whether mobs will be able to damage players in this region. Defaults to allow all. Use mob-damagelist flag to specify mob types. Takes the -g group switch.
   script:
     - narrate "A handy container for region flags."
@@ -807,14 +807,14 @@ dRegions_Flag_Mob-Damage:
 
   event:
     - define target '<def[attacker].entity_type>'
-    - define player '<def[defender]>'
+    - define player '%defender%'
     - define flag 'mob-damage'
     - define flag-targetList 'mob-damagelist'
     - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
 
   event-global:
     - define target '<def[attacker].entity_type>'
-    - define player '<def[defender]>'
+    - define player '%defender%'
     - define flag 'mob-damage'
     - define flag-targetList 'mob-damagelist'
     - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup-Global
@@ -860,8 +860,8 @@ dRegions_Flag_Mob-Spawn:
   event_priority: 10
   flag_type: state
   flag_takeGroup: false
-  flag_defaultValue: allow
-  flag_globalDefault: allow
+  flag_defaultValue: none
+  flag_globalDefault: none
   flag_help: State flag controlling whether mobs will be able to spawn in this region. Defaults to allow all. Use mob-spawnlist flag to specify mob types.
   script:
     - narrate "A handy container for region flags."
@@ -917,8 +917,8 @@ dRegions_Flag_EVE:
   event_priority: 20
   flag_type: state
   flag_takeGroup: false
-  flag_defaultValue: allow
-  flag_globalDefault: allow
+  flag_defaultValue: none
+  flag_globalDefault: none
   flag_help: State flag controlling whether mobs can be targeted for attack by other mobs in this region. Defaults to allow. Use eve-moblist flag to specify mob types.
   script:
     - narrate "A handy container for region flags."
@@ -980,8 +980,8 @@ dRegions_Flag_Mob-Attack:
   event_priority: 10
   flag_type: state
   flag_takeGroup: false
-  flag_defaultValue: allow
-  flag_globalDefault: allow
+  flag_defaultValue: none
+  flag_globalDefault: none
   flag_help: State flag controlling whether mobs can attack other mobs in this region. Defaults to allow. Use mob-attack-moblist flag to specify mob types.
   script:
     - narrate "A handy container for region flags."
@@ -1043,8 +1043,8 @@ dRegions_Flag_PVE:
   event_priority: 10
   flag_type: state
   flag_takeGroup: true
-  flag_defaultValue: allow/all
-  flag_globalDefault: allow/all
+  flag_defaultValue: none
+  flag_globalDefault: none
   flag_help: State flag controlling whether players will be able to damage mobs in this region. Defaults to allow all. Use pve-moblist flag to specify mob types. Takes the -g group switch.
   script:
     - narrate "A handy container for region flags."
@@ -1075,7 +1075,7 @@ dRegions_Flag_PVE:
     - remove <c.projectile||li@>
     - if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run instantly s@dRegions_Msg 'def:<&c><&o>You can not attack <def[target].to_lowercase.replace[_].with[ ]>s here!'
+      - run s@dRegions_Msg 'def:<&c><&o>You can not attack <def[target].to_lowercase.replace[_].with[ ]>s here!'
       }
 
 
@@ -1115,8 +1115,8 @@ dRegions_Flag_Entity-Explode:
   event_priority: 10
   flag_type: state
   flag_takeGroup: false
-  flag_defaultValue: allow
-  flag_globalDefault: allow
+  flag_defaultValue: none
+  flag_globalDefault: none
   flag_help: State flag controlling whether entities will be able to explode in this region. Defaults to allow all. Use entity-explodelist flag to specify entities types.
   script:
     - narrate "A handy container for region flags."
@@ -1178,8 +1178,8 @@ dRegions_Flag_Entity-Grief:
   event_priority: 10
   flag_type: state
   flag_takeGroup: false
-  flag_defaultValue: allow
-  flag_globalDefault: allow
+  flag_defaultValue: none
+  flag_globalDefault: none
   flag_help: State flag controlling whether entities will be able to alter blocks in this region. Defaults to allow all. Use entity-grieflist flag to specify entities types.
   script:
     - narrate "A handy container for region flags."
@@ -1244,8 +1244,8 @@ dRegions_Flag_Entity-Drops-OnDeath:
   event_priority: 10
   flag_type: state
   flag_takeGroup: false
-  flag_defaultValue: allow
-  flag_globalDefault: allow
+  flag_defaultValue: none
+  flag_globalDefault: none
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
@@ -1307,8 +1307,8 @@ dRegions_Flag_Fire-Spread:
   event_priority: 10
   flag_type: state
   flag_takeGroup: false
-  flag_defaultValue: allow
-  flag_globalDefault: allow
+  flag_defaultValue: none
+  flag_globalDefault: none
   flag_help: State flag controlling whether fire will be able to spread in this region. Defaults to allow all. Use fire-spreadblocks flag to specify blocks to check when spreading.
 #  flag_help: This flag is temporarily disabled. Please use the fire-destroyblocks flag.
   script:
@@ -1365,8 +1365,8 @@ dRegions_Flag_Fire-Destroy:
   event_priority: 10
   flag_type: state
   flag_takeGroup: false
-  flag_defaultValue: allow
-  flag_globalDefault: allow
+  flag_defaultValue: none
+  flag_globalDefault: none
   flag_help: State flag controlling whether fire will be able to spread to and destroy blocks in this region. Defaults to allow all. Use fire-destroyblocks flag to specify blocks to check when spreading.
   script:
     - narrate "A handy container for region flags."
@@ -1422,8 +1422,8 @@ dRegions_Flag_Lightning-Strikes:
   event_priority: 10
   flag_type: state
   flag_takeGroup: false
-  flag_defaultValue: allow
-  flag_globalDefault: allow
+  flag_defaultValue: none
+  flag_globalDefault: none
   flag_help: State flag controlling whether lightning will be able to strike in this region. Defaults to allow all. Use lightning-strikeblocks flag to specify blocks to check when striking.
   script:
     - narrate "A handy container for region flags."
@@ -1479,8 +1479,8 @@ dRegions_Flag_Water-Spread:
   event_priority: 10
   flag_type: state
   flag_takeGroup: false
-  flag_defaultValue: allow
-  flag_globalDefault: allow
+  flag_defaultValue: none
+  flag_globalDefault: none
   flag_help: State flag controlling whether water will be able to spread in this region. Defaults to allow all. Use water-spreadblocks flag to specify blocks to check when spreading.
   script:
     - narrate "A handy container for region flags."
@@ -1536,8 +1536,8 @@ dRegions_Flag_Lava-Spread:
   event_priority: 10
   flag_type: state
   flag_takeGroup: false
-  flag_defaultValue: allow
-  flag_globalDefault: allow
+  flag_defaultValue: none
+  flag_globalDefault: none
   flag_help: State flag controlling whether lava will be able to spread in this region. Defaults to allow all. Use lava-spreadblocks flag to specify blocks to check when spreading.
   script:
     - narrate "A handy container for region flags."
@@ -1593,8 +1593,8 @@ dRegions_Flag_Snow-Fall:
   event_priority: 10
   flag_type: state
   flag_takeGroup: false
-  flag_defaultValue: allow
-  flag_globalDefault: allow
+  flag_defaultValue: none
+  flag_globalDefault: none
   flag_help: State flag controlling whether snow will be able to accumulate on the ground in this region. Defaults to allow all. Use snow-fallblocks flag to specify blocks below the snow to check when forming.
   script:
     - narrate "A handy container for region flags."
@@ -1955,6 +1955,7 @@ dRegions_Flag_Leaf-Decay:
   flag_type: boolean
   flag_takeGroup: false
   flag_defaultValue: true
+  flag_globalDefault: true
   flag_global: true
   flag_help: Boolean flag controlling whether leaves will be able to decay in this region. Set to true or false. Defaults to true.
   script:
@@ -2079,7 +2080,7 @@ dRegions_Flag_Lighter:
   flag_type: state
   flag_takeGroup: true
   flag_defaultValue: deny/nonmembers
-  flag_globalDefault: allow/all
+  flag_globalDefault: none
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
@@ -2090,7 +2091,7 @@ dRegions_Flag_Lighter:
   event-cleanup:
     - if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run instantly s@dRegions_Msg 'def:<&c><&o>You can not use a lighter in this region'
+      - run s@dRegions_Msg 'def:<&c><&o>You can not use a lighter in this region'
       }
 
   event:
@@ -2117,11 +2118,11 @@ dRegions_Flag_Bucket-Fill:
   lore:
   - <&5>Who can fill a bucket in a region
   event_hook: fillBucket
-  event_priority: 10
+  event_priority: 5
   flag_type: state
   flag_takeGroup: true
   flag_defaultValue: deny/nonmembers
-  flag_globalDefault: allow/all
+  flag_globalDefault: none
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
@@ -2132,21 +2133,27 @@ dRegions_Flag_Bucket-Fill:
   event-cleanup:
     - if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run instantly s@dRegions_Msg 'def:<&c><&o>You can not fill a bucket in this region'
-      }
-
-  event-global:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
-      - define player <player>
-      - define flag 'bucket-fill'
-      - inject s@dRegions_Flags_Processors p:state-withGroup-Global
+      - run s@dRegions_Msg 'def:<&c><&o>You can not fill a bucket in this region'
       }
 
   event:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - if <player.has_permission[dRegions.admin]> {
+      - foreach next
+      - queue clear
+      }
+    - if <player.is_op> {
+      - foreach next
+      - queue clear
+      }
+    - define player <player>
+    - define flag 'bucket-fill'
+    - inject s@dRegions_Flags_Processors p:state-withGroup
+
+  event-global:
+    - if !<player.has_permission[dRegions.admin]||<player.is_op> {
       - define player <player>
       - define flag 'bucket-fill'
-      - inject s@dRegions_Flags_Processors p:state-withGroup
+      - inject s@dRegions_Flags_Processors p:state-withGroup-Global
       }
 
 
@@ -2159,11 +2166,11 @@ dRegions_Flag_Bucket-Empty:
   lore:
   - <&5>Who can fill a bucket in a region
   event_hook: emptyBucket
-  event_priority: 10
+  event_priority: 5
   flag_type: state
   flag_takeGroup: true
   flag_defaultValue: deny/nonmembers
-  flag_globalDefault: allow/all
+  flag_globalDefault: none
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
@@ -2174,7 +2181,7 @@ dRegions_Flag_Bucket-Empty:
   event-cleanup:
     - if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run instantly s@dRegions_Msg 'def:<&c><&o>You can not empty a bucket in this region'
+      - run s@dRegions_Msg 'def:<&c><&o>You can not empty a bucket in this region'
       }
 
   event-global:
@@ -2201,11 +2208,11 @@ dRegions_Flag_Hanging-Place:
   lore:
   - <&5>Who can place item frames and paintings
   event_hook: hangingPlace
-  event_priority: 10
+  event_priority: 0
   flag_type: state
   flag_takeGroup: true
   flag_defaultValue: deny/nonmembers
-  flag_globalDefault: allow/all
+  flag_globalDefault: none
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
@@ -2216,7 +2223,7 @@ dRegions_Flag_Hanging-Place:
   event-cleanup:
     - if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run instantly s@dRegions_Msg 'def:<&c><&o>You can not hang that in this region'
+      - run s@dRegions_Msg 'def:<&c><&o>You can not hang that in this region'
       }
 
   event:
@@ -2243,11 +2250,11 @@ dRegions_Flag_Hanging-Break:
   lore:
   - <&5>Who can break item frames and paintings
   event_hook: hangingBreak
-  event_priority: 10
+  event_priority: 0
   flag_type: state
   flag_takeGroup: true
-  flag_defaultValue: allow/all
-  flag_globalDefault: deny/nonmembers
+  flag_defaultValue: deny/nonmembers
+  flag_globalDefault: none
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
@@ -2258,7 +2265,7 @@ dRegions_Flag_Hanging-Break:
   event-cleanup:
     - if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run instantly s@dRegions_Msg 'def:<&c><&o>You can not break that in this region'
+      - run s@dRegions_Msg 'def:<&c><&o>You can not break that in this region'
       }
 
   event:
@@ -2289,7 +2296,7 @@ dRegions_Flag_Sleep:
   flag_type: state
   flag_takeGroup: true
   flag_defaultValue: deny/nonmembers
-  flag_globalDefault: allow/all
+  flag_globalDefault: none
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
@@ -2300,7 +2307,7 @@ dRegions_Flag_Sleep:
   event-cleanup:
     - if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run instantly s@dRegions_Msg 'def:<&c><&o>You can not sleep here.'
+      - run s@dRegions_Msg 'def:<&c><&o>You can not sleep here.'
       }
 
   event:
@@ -2330,8 +2337,8 @@ dRegions_Flag_Player-Drops:
   event_priority: 10
   flag_type: state
   flag_takeGroup: true
-  flag_defaultValue: allow/all
-  flag_globalDefault: allow/all
+  flag_defaultValue: none
+  flag_globalDefault: none
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
@@ -2342,7 +2349,7 @@ dRegions_Flag_Player-Drops:
   event-cleanup:
     - if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run instantly s@dRegions_Msg 'def:<&c><&o>You can not drop items here.'
+      - run s@dRegions_Msg 'def:<&c><&o>You can not drop items here.'
       }
 
   event:
@@ -2372,8 +2379,8 @@ dRegions_Flag_Player-Drops-OnDeath:
   event_priority: 20
   flag_type: state
   flag_takeGroup: true
-  flag_defaultValue: allow/all
-  flag_globalDefault: allow/all
+  flag_defaultValue: none
+  flag_globalDefault: none
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
@@ -2430,9 +2437,9 @@ dRegions_Flag_Player-KeepItems:
       }
     - define flagVal '<def[flagObj].split[/].get[1]>'
     - define group '<def[flagObj].split[/].get[2]||all>'
-    - define isOwner '<proc[dRegions_IsOwner].context[%region%|%world%|<player>]>'
-    - define isMember '<proc[dRegions_isMember].context[%region%|%world%|<player>]>'
-    - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]>'
+#    - define isOwner '<proc[dRegions_IsOwner].context[%region%|%world%|<player>]>'
+#    - define isMember '<proc[dRegions_isMember].context[%region%|%world%|<player>]>'
+    - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|%region%|%world%|<player>]>'
 
     - if %flagVal% == allow {
       - if %isGroup% {
@@ -2455,9 +2462,9 @@ dRegions_Flag_Player-KeepItems:
       }
     - define flagVal '<def[flagObj].split[/].get[1]>'
     - define group '<def[flagObj].split[/].get[2]||all>'
-    - define isOwner '<proc[dRegions_IsOwner].context[__global__|%world%|<player>]>'
-    - define isMember '<proc[dRegions_isMember].context[__global__|%world%|<player>]>'
-    - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]>'
+#    - define isOwner '<proc[dRegions_IsOwner].context[__global__|%world%|<player>]>'
+#    - define isMember '<proc[dRegions_isMember].context[__global__|%world%|<player>]>'
+    - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|__global__|%world%|<player>]>'
 
     - if %flagVal% == allow {
       - if %isGroup% {
@@ -2492,8 +2499,8 @@ dRegions_Flag_Player-Pickup:
   event_priority: 10
   flag_type: state
   flag_takeGroup: true
-  flag_defaultValue: allow/all
-  flag_globalDefault: allow/all
+  flag_defaultValue: none
+  flag_globalDefault: none
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
@@ -2504,7 +2511,7 @@ dRegions_Flag_Player-Pickup:
   event-cleanup:
     - if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run instantly s@dRegions_Msg 'def:<&c><&o>You can not pick up items here.'
+      - run s@dRegions_Msg 'def:<&c><&o>You can not pick up items here.'
       }
 
   event:
@@ -2610,7 +2617,7 @@ dRegions_Flag_PVP:
     - remove <c.projectile||li@>
     - if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run instantly s@dRegions_Msg 'def:<&c><&o>You are in a no PVP zone.'
+      - run s@dRegions_Msg 'def:<&c><&o>You are in a no PVP zone.'
       }
 
   event:
@@ -2648,7 +2655,7 @@ dRegions_Flag_Potion-Throw:
     - if <player.is[!=].to[null]||false> {
       - if <player.has_flag[dRegions_Message_Cooldown].not||false> {
         - flag player dRegions_Message_Cooldown duration:3s
-        - run instantly s@dRegions_Msg 'def:<&c><&o>You can not throw potions here.'
+        - run s@dRegions_Msg 'def:<&c><&o>You can not throw potions here.'
         }
       }
 
@@ -2673,8 +2680,8 @@ dRegions_Flag_Potion-Drink:
   event_priority: 10
   flag_type: state
   flag_takeGroup: true
-  flag_defaultValue: allow/all
-  flag_globalDefault: allow/all
+  flag_defaultValue: none
+  flag_globalDefault: none
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
@@ -2685,7 +2692,7 @@ dRegions_Flag_Potion-Drink:
   event-cleanup:
     - if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run instantly s@dRegions_Msg 'def:<&c><&o>You can not drink potions here.'
+      - run s@dRegions_Msg 'def:<&c><&o>You can not drink potions here.'
       }
 
   event:
@@ -2715,8 +2722,8 @@ dRegions_Flag_Enderpearl:
   event_priority: 10
   flag_type: state
   flag_takeGroup: true
-  flag_defaultValue: allow/all
-  flag_globalDefault: allow/all
+  flag_defaultValue: none
+  flag_globalDefault: none
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
@@ -2727,7 +2734,7 @@ dRegions_Flag_Enderpearl:
   event-cleanup:
     - if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run instantly s@dRegions_Msg 'def:<&c><&o>You can not use enderpearls here.'
+      - run s@dRegions_Msg 'def:<&c><&o>You can not use enderpearls here.'
       }
 
   event:
@@ -2771,7 +2778,7 @@ dRegions_Flag_Notify-Enter:
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|<def[orderedRegions].get[1]>|notify-enter]>'
     - if %flagVal% == true {
       - foreach <server.list_online_players.filter[has_permission[dregions.notify]].include[<server.list_online_ops>].deduplicate> {
-        - run instantly player:%value% s@dRegions_Msg 'def:<&5><&o><def[player].name> entered <def[orderedRegions].get[1]> in %world%'
+        - run player:%value% s@dRegions_Msg 'def:<&5><&o><def[player].name> entered <def[orderedRegions].get[1]> in %world%'
         }
       }
 
@@ -2780,7 +2787,7 @@ dRegions_Flag_Notify-Enter:
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|notify-enter]>'
     - if %flagVal% = true {
       - foreach <server.list_online_players.filter[has_permission[dregions.notify]].include[<server.list_online_ops>].deduplicate> {
-        - run instantly player:%value% s@dRegions_Msg 'def:<&5><&o><def[player].name> entered <def[orderedRegions].get[1]> in %world%'
+        - run player:%value% s@dRegions_Msg 'def:<&5><&o><def[player].name> entered <def[orderedRegions].get[1]> in %world%'
         }
       }
 
@@ -2811,7 +2818,7 @@ dRegions_Flag_Notify-Exit:
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|<def[orderedRegions].get[1]>|notify-exit]>'
     - if %flagVal% == true {
       - foreach <server.list_online_players.filter[has_permission[dregions.notify]].include[<server.list_online_ops>].deduplicate> {
-        - run instantly player:%value% s@dRegions_Msg 'def:<&5><&o><def[player].name> entered <def[orderedRegions].get[1]> in %world%'
+        - run player:%value% s@dRegions_Msg 'def:<&5><&o><def[player].name> entered <def[orderedRegions].get[1]> in %world%'
         }
       }
 
@@ -2820,7 +2827,7 @@ dRegions_Flag_Notify-Exit:
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|notify-exit]>'
     - if %flagVal% = true {
       - foreach <server.list_online_players.filter[has_permission[dregions.notify]].include[<server.list_online_ops>].deduplicate> {
-        - run instantly player:%value% s@dRegions_Msg 'def:<&5><&o><def[player].name> entered <def[orderedRegions].get[1]> in %world%'
+        - run player:%value% s@dRegions_Msg 'def:<&5><&o><def[player].name> entered <def[orderedRegions].get[1]> in %world%'
         }
       }
 
@@ -2834,11 +2841,11 @@ dRegions_Flag_Block-Place:
   lore:
   - <&5>Can players place blocks.
   event_hook: blockPlace
-  event_priority: 10
+  event_priority: 5
   flag_type: state
   flag_takeGroup: true
-  flag_defaultValue: allow/all
-  flag_globalDefault: allow/all
+  flag_defaultValue: none
+  flag_globalDefault: none
   flag_help: State flag controlling whether players will be able to place blocks in this region. Defaults to allow all. Use block-placelist flag to specify block types. Takes the -g group switch.
   script:
     - narrate "A handy container for region flags."
@@ -2866,7 +2873,7 @@ dRegions_Flag_Block-Place:
   event-cleanup:
     - if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run instantly s@dRegions_Msg 'def:<&c><&o>You can not place <def[target]> in this region!'
+      - run s@dRegions_Msg 'def:<&c><&o>You can not place <def[target]> in this region!'
       }
 
 
@@ -2903,11 +2910,11 @@ dRegions_Flag_Block-Break:
   lore:
   - <&5>Can players break blocks.
   event_hook: blockBreak
-  event_priority: 10
+  event_priority: 5
   flag_type: state
   flag_takeGroup: true
-  flag_defaultValue: allow/all
-  flag_globalDefault: allow/all
+  flag_defaultValue: none
+  flag_globalDefault: none
   flag_help: State flag controlling whether players will be able to break blocks in this region. Defaults to allow all. Use block-breaklist flag to specify block types. Takes the -g group switch.
   script:
     - narrate "A handy container for region flags."
@@ -2935,7 +2942,7 @@ dRegions_Flag_Block-Break:
   event-cleanup:
     - if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run instantly s@dRegions_Msg 'def:<&c><&o>You can not break <def[target]> in this region!'
+      - run s@dRegions_Msg 'def:<&c><&o>You can not break <def[target]> in this region!'
       }
 
 
@@ -2976,7 +2983,7 @@ dRegions_Flag_Chest-Access:
   flag_type: state
   flag_takeGroup: true
   flag_defaultValue: deny/nonmembers
-  flag_globalDefault: allow/all
+  flag_globalDefault: none
   region_highestOnly: true
   flag_help: State flag controlling whether players will be able to open containers in this region. Defaults to deny nonmembers. Use chest-access-blocks flag to specify container blocks types. Takes the -g group switch.
   script:
@@ -3007,7 +3014,7 @@ dRegions_Flag_Chest-Access:
   event-cleanup:
     - if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run instantly s@dRegions_Msg 'def:<&c><&o>You can not open <c.location.material.name.replace[_].with[ ]>s in this region!'
+      - run s@dRegions_Msg 'def:<&c><&o>You can not open <c.location.material.name.replace[_].with[ ]>s in this region!'
       }
 
 
@@ -3047,8 +3054,8 @@ dRegions_Flag_Door-Access:
   event_priority: 10
   flag_type: state
   flag_takeGroup: true
-  flag_defaultValue: allow/all
-  flag_globalDefault: allow/all
+  flag_defaultValue: none
+  flag_globalDefault: none
   flag_help: State flag controlling whether players will be able to open doors in this region. Defaults to allow all. Use door-access-doors flag to specify door blocks types. Takes the -g group switch.
   script:
     - narrate "A handy container for region flags."
@@ -3078,7 +3085,7 @@ dRegions_Flag_Door-Access:
   event-cleanup:
     - if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run instantly s@dRegions_Msg 'def:<&c><&o>You can not open <c.location.material.name.replace[_].with[ ]>s in this region!'
+      - run s@dRegions_Msg 'def:<&c><&o>You can not open <c.location.material.name.replace[_].with[ ]>s in this region!'
       }
 
 
@@ -3119,7 +3126,7 @@ dRegions_Flag_Use-Switches:
   flag_type: state
   flag_takeGroup: true
   flag_defaultValue: deny/nonmembers
-  flag_globalDefault: allow/all
+  flag_globalDefault: none
   region_highestOnly: true
   flag_help: State flag controlling whether players will be able to use switches in this region. Defaults to deny nonmembers. Use use-switches-list flag to specify switch block types. Takes the -g group switch.
   script:
@@ -3150,7 +3157,7 @@ dRegions_Flag_Use-Switches:
   event-cleanup:
     - if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run instantly s@dRegions_Msg 'def:<&c><&o>You can not use <c.location.material.name.replace[_].with[ ]>s in this region!'
+      - run s@dRegions_Msg 'def:<&c><&o>You can not use <c.location.material.name.replace[_].with[ ]>s in this region!'
       }
 
 
@@ -3191,7 +3198,7 @@ dRegions_Flag_Use-Utilities:
   flag_type: state
   flag_takeGroup: true
   flag_defaultValue: deny/nonmembers
-  flag_globalDefault: allow/all
+  flag_globalDefault: none
   region_highestOnly: true
   flag_help: State flag controlling whether players will be able to use utility blocks in this region. Defaults to deny nonmembers. Use use-utilities-blocks flag to specify utility blocks. Takes the -g group switch.
   script:
@@ -3222,7 +3229,7 @@ dRegions_Flag_Use-Utilities:
   event-cleanup:
     - if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run instantly s@dRegions_Msg 'def:<&c><&o>You can not use <c.location.material.name.replace[_].with[ ]>s in this region!'
+      - run s@dRegions_Msg 'def:<&c><&o>You can not use <c.location.material.name.replace[_].with[ ]>s in this region!'
       }
 
 
@@ -3262,8 +3269,8 @@ dRegions_Flag_Player-Damage:
   event_priority: 10
   flag_type: state
   flag_takeGroup: true
-  flag_defaultValue: allow/all
-  flag_globalDefault: allow/all
+  flag_defaultValue: none
+  flag_globalDefault: none
   region_highestOnly: false
   flag_help: State flag controlling whether players will take damage in this region. Defaults to allow all. Use player-damage-types flag to specify damage types. Takes the -g group switch.
   script:
@@ -3326,7 +3333,8 @@ dRegions_Flag_Commands:
   event_priority: 10
   flag_type: state
   flag_takeGroup: true
-  flag_defaultValue: allow/all
+  flag_defaultValue: none
+  flag_globalDefault: none
   region_highestOnly: false
   flag_help: State flag controlling whether players can use commands in this region. Defaults to allow all. Use commands-list flag to specify commands. Takes the -g group switch.
   script:
@@ -3351,7 +3359,7 @@ dRegions_Flag_Commands:
       - define command '<def[target].split[ ].parse[replace[regex:^].with[<&e>]].as_string>'
       - define lines '<proc[dRegions_LineWrap].context[You can not use the <def[command]> <&c>command in this region!|45]>'
       - foreach <def[lines]> {
-        - run instantly s@dRegions_Msg 'def:<&c><def[value]>'
+        - run s@dRegions_Msg 'def:<&c><def[value]>'
         }
       }
 
@@ -3431,7 +3439,8 @@ dRegions_Flag_Heal-Amount:
     - while <player.is_online> {
       - define world '<player.world.name.to_lowercase>'
 #      - define cuboids '<player.location.cuboids>'
-#      - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+#      - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
+      - define regionPri 'li@'
       - foreach <player.location.cuboids.parse[notable_name].filter[starts_with[dRegions_]].parse[after[dregions_%world%_]].include[__global__]> {
         - define regionPri '<def[regionPri].include[<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%]>'
         }
@@ -3497,7 +3506,7 @@ dRegions_Flag_Heal-Delay:
 
   command_handler:
     - if <def[flagValue].is[LESS].than[0]> {
-      - run instantly s@dRegions_Msg 'def:<&c>Can not specify negative time!'
+      - run s@dRegions_Msg 'def:<&c>Can not specify negative time!'
       - queue clear
       }
 
@@ -3522,7 +3531,7 @@ dRegions_Flag_Heal-Max:
 
   command_handler:
     - if !<def[flagValue].is[MORE].than[0]> {
-      - run instantly s@dRegions_Msg 'def:<&c>Must be a value greater than 0!'
+      - run s@dRegions_Msg 'def:<&c>Must be a value greater than 0!'
       - queue clear
       }
 
@@ -3547,7 +3556,7 @@ dRegions_Flag_Heal-Min:
 
   command_handler:
     - if <def[flagValue].is[LESS].than[0]> {
-      - run instantly s@dRegions_Msg 'def:<&c>Can not set to a negative number!'
+      - run s@dRegions_Msg 'def:<&c>Can not set to a negative number!'
       - queue clear
       }
 
@@ -3602,7 +3611,8 @@ dRegions_Flag_Feed-Amount:
     - while <player.is_online> {
       - define world '<player.world.name.to_lowercase>'
 #      - define cuboids '<player.location.cuboids>'
-#      - inject instantly s@dRegions p:event_PreProc_OrderRegionsGlobal
+#      - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
+      - define regionPri 'li@'
       - foreach <player.location.cuboids.parse[notable_name].filter[starts_with[dRegions_]].parse[after[dregions_%world%_]].include[__global__]> {
         - define regionPri '<def[regionPri].include[<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%]>'
         }
@@ -3672,7 +3682,7 @@ dRegions_Flag_Feed-Delay:
 
   command_handler:
     - if <def[flagValue].is[LESS].than[0]> {
-      - run instantly s@dRegions_Msg 'def:<&c>Can not specify negative time!'
+      - run s@dRegions_Msg 'def:<&c>Can not specify negative time!'
       - queue clear
       }
 
@@ -3697,7 +3707,7 @@ dRegions_Flag_Feed-Max:
 
   command_handler:
     - if !<def[flagValue].is[MORE].than[0]> {
-      - run instantly s@dRegions_Msg 'def:<&c>Must be a value greater than 0!'
+      - run s@dRegions_Msg 'def:<&c>Must be a value greater than 0!'
       - queue clear
       }
 
@@ -3722,7 +3732,7 @@ dRegions_Flag_Feed-Min:
 
   command_handler:
     - if <def[flagValue].is[LESS].than[0]> {
-      - run instantly s@dRegions_Msg 'def:<&c>Can not set to a negative number!'
+      - run s@dRegions_Msg 'def:<&c>Can not set to a negative number!'
       - queue clear
       }
 
@@ -3738,228 +3748,82 @@ dRegions_Flags_Processors:
   speed: 0
   debug: false
 
+#---------------------------------------
+# Region flag pre-processors
+#
   boolean:
-    - define regionList '<tern[<def[FlagScript].yaml_key[region_highestOnly]||false>]:<def[orderedRegions].get[1].as_list>||%orderedRegions%>'
-    - foreach %regionList% {
+    - if <def[FlagScript].yaml_key[region_highestOnly]||false> {
+      - define orderedRegions '<def[orderedRegions].get[1].as_list>'
+      }
+    - foreach %orderedRegions% {
       - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|%flag%]>'
       - if %flagVal% == null {
-        - if %loop_index% == <def[regionList].size> {
-          - define flagVal '<def[FlagScript].yaml_key[flag_defaultValue]||true>'
-          }
-          else foreach next
+        - foreach next
         }
+      - define region '%value%'
       - foreach stop
       }
-
+# Get the default flag value if not set by a region
+    - if %flagVal% == null {
+      - define flagVal '<def[FlagScript].yaml_key[flag_defaultValue]||true>'
+      }
     - if !%flagVal% {
-      - inject %FlagScript% p:event-cleanup instantly
+      - inject %FlagScript% p:event-cleanup
       - determine cancelled
       }
+
 
   state-withTarget:
-    - define regionList '<tern[<def[FlagScript].yaml_key[region_highestOnly]||false>]:<def[orderedRegions].get[1].as_list>||%orderedRegions%>'
-    - foreach %regionList% {
+    - if <def[FlagScript].yaml_key[region_highestOnly]||false> {
+      - define orderedRegions '<def[orderedRegions].get[1].as_list>'
+      }
+    - foreach %orderedRegions% {
       - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|%flag%]>'
       - if %flagVal% == null {
-        - if %loop_index% == <def[regionList].size> {
-          - define flagVal '<def[FlagScript].yaml_key[flag_defaultValue]||allow>'
-          }
-          else foreach next
+        - foreach next
         }
-      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|%flag-targetList%].replace[, ].with[|].as_list>'
-      - if %targetList% == li@null {
-        - define targetList 'li@all'
-        }
+      - define region '%value%'
       - foreach stop
       }
+    - inject locally state-process-WithTargetNoGroup_%flagVal%
+    - queue clear
 
-# If the flag is set to allow, cancel the event as needed
-    - if %flagVal% == allow {
-      - if %targetList% != li@all {
-        - if %targetList% !contains %target% {
-          - inject %FlagScript% p:event-cleanup
-          - determine cancelled
-          }
-        }
-      - foreach next
-      - queue clear
-      }
-# Must be a deny flag
-#    - if <def[flagVal].is[==].to[deny]||false> {
-#      else {
-    - if %targetList% == li@all {
-      - inject %FlagScript% p:event-cleanup
-      - determine cancelled
-      }
-# Cancel the event if the target matches the list, otherwise it's not a denied target.
-    - if %targetList% contains %target% {
-      - inject %FlagScript% p:event-cleanup
-      - determine cancelled
-      }
-#      }
 
   state-withGroup:
-    - define regionList '<tern[<def[FlagScript].yaml_key[region_highestOnly]||false>]:<def[orderedRegions].get[1].as_list>||%orderedRegions%>'
-    - foreach %regionList% {
+    - if <def[FlagScript].yaml_key[region_highestOnly]||false> {
+      - define orderedRegions '<def[orderedRegions].get[1].as_list>'
+      }
+    - foreach %orderedRegions% {
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|%flag%]>'
       - if %flagObj% == null {
-        - if %loop_index% == <def[regionList].size> {
-          - define flagObj '<def[FlagScript].yaml_key[flag_defaultValue]||allow/all>'
-          }
-          else foreach next
+        - foreach next
         }
       - define region '%value%'
       - foreach stop
       }
-    - define flagVal '<def[flagObj].split[/].get[1]>'
-    - define group '<def[flagObj].split[/].get[2]||<t[<def[flagVal].is[==].to[allow]>]:all||nonmembers>>'
-    - define isOwner '<proc[dRegions_IsOwner].context[%region%|%world%|%player%]>'
-    - define isMember '<proc[dRegions_isMember].context[%region%|%world%|%player%]>'
-    - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]>'
+    - inject locally state-process-WithGroup_<def[flagObj].split[/].get[1]>
+    - queue clear
 
-    - if %flagVal% == allow {
-      - if !%isGroup% {
-        - inject %FlagScript% p:event-cleanup instantly
-        - determine cancelled
-        }
-      - foreach next
-      - queue clear
-      }
-# Must be a deny flag
-#    - if <def[flagVal].is[==].to[deny]||false> {
-#      else {
-    - if %isGroup% {
-      - inject %FlagScript% p:event-cleanup
-      - determine cancelled
-      }
-#      }
 
   state-withTarget-withGroup:
-    - define regionList '<tern[<def[FlagScript].yaml_key[region_highestOnly]||false>]:<def[orderedRegions].get[1].as_list>||%orderedRegions%>'
-    - foreach %regionList% {
+    - if <def[FlagScript].yaml_key[region_highestOnly]||false> {
+      - define orderedRegions '<def[orderedRegions].get[1].as_list>'
+      }
+    - foreach %orderedRegions% {
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|%flag%]>'
       - if %flagObj% == null {
-        - if %loop_index% == <def[regionList].size> {
-          - define flagObj '<def[FlagScript].yaml_key[flag_defaultValue]||allow/all>'
-          }
-          else foreach next
-        }
-      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|%flag-targetList%].replace[, ].with[|].as_list>'
-      - if %targetList% == li@null {
-        - define targetList 'li@all'
+        - foreach next
         }
       - define region '%value%'
       - foreach stop
       }
-    - define flagVal '<def[flagObj].split[/].get[1]>'
-    - define group '<def[flagObj].split[/].get[2]||<t[<def[flagVal].is[==].to[allow]>]:all||nonmembers>>'
-    - define isOwner '<proc[dRegions_IsOwner].context[%region%|%world%|%player%]>'
-    - define isMember '<proc[dRegions_isMember].context[%region%|%world%|%player%]>'
-    - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]>'
+    - inject locally state-process-WithTargetWithGroup_<def[flagObj].split[/].get[1]>
+    - queue clear
 
-    - if %flagVal% == allow {
-      - if !%isGroup% {
-        - inject %FlagScript% p:event-cleanup
-        - determine cancelled
-        }
-      - if %targetList% != li@all {
-        - if %targetList% !contains %target% {
-          - inject %FlagScript% p:event-cleanup
-          - determine cancelled
-          }
-        }
-      - foreach next
-      - queue clear
-      }
-    - if %isGroup% {
-      - if %targetList% == li@all {
-        - inject %FlagScript% p:event-cleanup
-        - determine cancelled
-        }
-      - if %targetList% contains %target% {
-        - inject %FlagScript% p:event-cleanup
-        - determine cancelled
-        }
-      }
 
-  state-withTargetString-withGroup:
-    # requires %player% to be filled with a valid player object
-    - if <def[FlagScript].yaml_key[region_highestOnly]||false> {
-      - define InheritedTargets '<proc[dRegions_GetInheritedFlag].context[%world%|<def[orderedRegions].get[1]>|%flag-targetList%].as_list||null>'
-      - define InheritedFlags '<proc[dRegions_GetInheritedFlag].context[%world%|<def[orderedRegions].get[1]>|%flag%].as_list||null>'
-      }
-      else {
-      - define prefix '<&lt>proc<&lb>dRegions_GetInheritedFlag<&rb>.context<&lb>%world%<&pipe>'
-      - define suffix '<&pipe>%flag-targetList%<&rb>||all<&gt>'
-      - define InheritedTargets '<parse:<def[orderedRegions].parse[replace[regex:^].with[<def[prefix]>]].parse[replace[regex:$].with[<def[suffix]>]]>>'
-      - define suffix '<&pipe>%flag%<&rb>||null<&gt>'
-      - define InheritedFlags '<parse:<def[orderedRegions].parse[replace[regex:^].with[<def[prefix]>]].parse[replace[regex:$].with[<def[suffix]>]]>>'
-      }
-    - foreach %InheritedFlags% {
-      - define targetList '<def[InheritedTargets].get[%loop_index%].replace[<def[delimiter]||, >].with[|].as_list||li@all>'
-      - if <def[targetList].is[==].to[li@null]> {
-        - define targetList 'li@all'
-        }
-      - define flagObj '<def[value]>'
-      - if <def[flagObj].is[==].to[null]||true> {
-        - if <def[loop_index].is[==].to[<def[InheritedFlags].size>]> {
-          - define flagObj '<def[FlagScript].yaml_key[flag_defaultValue]||allow/all>'
-          }
-          else foreach next
-        }
-      - define flagVal '<def[flagObj].split[/].get[1]>'
-      - define group '<def[flagObj].split[/].get[2]||<t[<def[flagVal].is[==].to[allow]>]:all||nonmembers>>'
-      - define region '<def[orderedRegions].get[%loop_index%]>'
-      - define isOwner '<proc[dRegions_IsOwner].context[%region%|%world%|<def[player]>]>'
-      - define isMember '<proc[dRegions_isMember].context[%region%|%world%|<def[player]>]>'
-      - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]>'
-
-      - if <def[flagVal].is[==].to[allow]||false> {
-        - if <def[isGroup]> {
-          - if <def[targetList].is[!=].to[li@all]||true> {
-            - foreach <def[targetList]> {
-              - if <def[target].starts_with[<def[value]>]> {
-                - define pass ''
-                - foreach stop
-                }
-              }
-            - if !<def[pass].exists> {
-              - inject <def[FlagScript]||null> p:event-cleanup
-              - determine cancelled
-              }
-              else foreach stop
-            }
-            else foreach stop
-          }
-          else {
-          - inject <def[FlagScript]||null> p:event-cleanup
-          - determine cancelled
-          }
-        }
-        else {
-        - if <def[isGroup]> {
-          - if <def[targetList].is[==].to[li@all]||true> {
-            - inject <def[FlagScript]||null> p:event-cleanup
-            - determine cancelled
-            }
-            else {
-            - foreach <def[targetList]> {
-              - if <def[target].starts_with[<def[value]>]> {
-                - define fail ''
-                - foreach stop
-                }
-              }
-            - if <def[fail].exists> {
-              - inject <def[FlagScript]||null> p:event-cleanup
-              - determine cancelled
-              }
-              else foreach stop
-            }
-          }
-          else foreach stop
-        }
-      }
-
+#---------------------------------------
+# Global flag pre-processors
+#
   boolean-Global:
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag%]||null>'
     - if %flagVal% == null {
@@ -3967,53 +3831,92 @@ dRegions_Flags_Processors:
       }
 
     - if !%flagVal% {
-      - inject %FlagScript% p:event-cleanup instantly
-      - determine cancelled
-      }
-
-  state-withGroup-Global:
-    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag%]>'
-    - if %flagObj% == null {
-      - define flagObj '<def[FlagScript].yaml_key[flag_globalDefault]||allow/all>'
-      }
-    - define flagVal '<def[flagObj].split[/].get[1]>'
-    - define group '<def[flagObj].split[/].get[2]||<t[<def[flagVal].is[==].to[allow]>]:all||nonmembers>>'
-    - define isOwner '<proc[dRegions_IsOwner].context[__global__|%world%|%player%]>'
-    - define isMember '<proc[dRegions_isMember].context[__global__|%world%|%player%]>'
-    - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]>'
-
-    - if %flagVal% == allow {
-      - if !%isGroup% {
-        - inject %FlagScript% p:event-cleanup instantly
-        - determine cancelled
-        }
-      - foreach next
-      - queue clear
-      }
-    - if %isGroup% {
       - inject %FlagScript% p:event-cleanup
       - determine cancelled
       }
 
+
+  state-withGroup-Global:
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag%]>'
+    - inject locally state-process-Global-WithGroup_<def[flagObj].split[/].get[1]>
+    - queue clear
+
+
   state-withTarget-Global:
-    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag%]>'
-    - if %flagVal% == null {
-      - define flagVal '<def[FlagScript].yaml_key[flag_globalDefault]||allow>'
-      }
+    - inject locally state-process-Global-WithTargetNoGroup_<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag%]>
+    - queue clear
+
+
+  state-withTarget-withGroup-Global:
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag%]>'
+    - inject locally state-process-Global-WithTargetNoGroup_<def[flagObj].split[/].get[1]>
+    - queue clear
+
+
+#-------------------
+# Global WithGroup Flag Processors
+#
+  state-process-Global-WithGroup_null:
+    - define flagObj '<def[FlagScript].yaml_key[flag_globalDefault]||none>'
+    - inject locally state-process-Global-WithGroup_<def[flagObj].split[/].get[1]>
+
+  state-process-Global-WithGroup_none:
+    - foreach next
+    - queue clear
+
+  state-process-Global-WithGroup_allow:
+    - define group '<def[flagObj].split[/].get[2]||all>'
+    - inject locally state-process-WithGroup_deny-<proc[dRegions_PlayerMatchRegionGroup].context[%group%|__global__|%world%|%player%].not>
+
+  state-process-Global-WithGroup_deny:
+    - define group '<def[flagObj].split[/].get[2]||all>'
+    - inject locally state-process-WithGroup_deny-<proc[dRegions_PlayerMatchRegionGroup].context[%group%|__global__|%world%|%player%]>
+
+  state-process-Global-WithGroup_deny-true:
+    - inject %FlagScript% p:event-cleanup
+    - determine cancelled
+
+
+#-------------------
+# Global WithTargetWithGroup Flag Processors
+#
+  state-process-Global-WithTargetWithGroup_null:
+    - define flagObj '<def[FlagScript].yaml_key[flag_globalDefault]||none>'
+    - inject locally state-process-WithTargetWithGroup_<def[flagObj].split[/].get[1]>
+
+  state-process-Global-WithTargetWithGroup_none:
+    - foreach next
+    - queue clear
+
+  state-process-Global-WithTargetWithGroup_allow:
+    - define group '<def[flagObj].split[/].get[2]||all>'
+    - inject locally state-process-WithTargetWithGroup_allow-<proc[dRegions_PlayerMatchRegionGroup].context[%group%|__global__|%world%|%player%]>
+
+  state-process-Global-WithTargetWithGroup_allow-true:
     - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag-targetList%].replace[, ].with[|].as_list>'
     - if %targetList% == li@null {
-      - define targetList 'li@all'
+      - queue clear
+      }
+    - if %targetList% != li@all {
+      - if %targetList% !contains %target% {
+        - inject %FlagScript% p:event-cleanup
+        - determine cancelled
+        }
       }
 
-    - if %flagVal% == allow {
-      - if %targetList% != li@all {
-        - if %targetList% !contains %target% {
-          - inject %FlagScript% p:event-cleanup
-          - determine cancelled
-          }
-        }
-      - foreach next
-      - queue clear
+  state-process-Global-WithTargetWithGroup_allow-false:
+    - inject %FlagScript% p:event-cleanup
+    - determine cancelled
+
+  state-process-Global-WithTargetWithGroup_deny:
+    - define group '<def[flagObj].split[/].get[2]||all>'
+    - inject locally state-process-WithTargetWithGroup_deny-<proc[dRegions_PlayerMatchRegionGroup].context[%group%|__global__|%world%|%player%]>
+
+  state-process-Global-WithTargetWithGroup_deny-true:
+    - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag-targetList%].replace[, ].with[|].as_list>'
+    - if %targetList% == li@null {
+      - inject %FlagScript% p:event-cleanup
+      - determine cancelled
       }
     - if %targetList% == li@all {
       - inject %FlagScript% p:event-cleanup
@@ -4024,45 +3927,158 @@ dRegions_Flags_Processors:
       - determine cancelled
       }
 
-  state-withTarget-withGroup-Global:
-    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag%]>'
-    - if %flagObj% == null {
-      - define flagObj '<def[FlagScript].yaml_key[flag_globalDefault]||allow/all>'
-      }
-    - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag-targetList%].replace[, ].with[|].as_list>'
-    - if %targetList% == li@null {
-      - define targetList 'li@all'
-      }
-    - define flagVal '<def[flagObj].split[/].get[1]>'
-    - define group '<def[flagObj].split[/].get[2]||<t[<def[flagVal].is[==].to[allow]>]:all||nonmembers>>'
-    - define isOwner '<proc[dRegions_IsOwner].context[__global__|%world%|%player%]>'
-    - define isMember '<proc[dRegions_isMember].context[__global__|%world%|%player%]>'
-    - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|%isMember%|%isOwner%]>'
+#-------------------
+# Global WithTargetNoGroup Flag Processors
+#
+  state-process-Global-WithTargetNoGroup_null:
+    - inject locally state-process-WithTargetNoGroup_<def[FlagScript].yaml_key[flag_globalDefalut]||none>
 
-    - if %flagVal% == allow {
-      - if !%isGroup% {
-        - inject %FlagScript% p:event-cleanup
-        - determine cancelled
-        }
-      - if %targetList% != li@all {
-        - if %targetList% !contains %target% {
-          - inject %FlagScript% p:event-cleanup
-          - determine cancelled
-          }
-        }
-      - foreach next
+  state-process-Global-WithTargetNoGroup_none:
+    - foreach next
+    - queue clear
+
+  state-process-Global-WithTargetNoGroup_allow:
+    - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag-targetList%].replace[, ].with[|].as_list>'
+    - if %targetList% == 'li@null' {
       - queue clear
       }
-    - if %isGroup% {
-      - if %targetList% == li@all {
-        - inject %FlagScript% p:event-cleanup
-        - determine cancelled
-        }
-      - if %targetList% contains %target% {
+    - if %targetList% != li@all {
+      - if %targetList% !contains %target% {
         - inject %FlagScript% p:event-cleanup
         - determine cancelled
         }
       }
+
+  state-process-Global-WithTargetNoGroup_deny:
+    - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag-targetList%].replace[, ].with[|].as_list>'
+    - if %targetList% == li@null {
+      - inject %FlagScript% p:event-cleanup
+      - determine cancelled
+      }
+    - if %targetList% == li@all {
+      - inject %FlagScript% p:event-cleanup
+      - determine cancelled
+      }
+    - if %targetList% contains %target% {
+      - inject %FlagScript% p:event-cleanup
+      - determine cancelled
+      }
+
+
+#-------------------
+# Region WithGroup Flag Processors
+#
+  state-process-WithGroup_null:
+    - define flagObj '<def[FlagScript].yaml_key[flag_defaultValue]||none>'
+    - inject locally state-process-WithGroup_<def[flagObj].split[/].get[1]>
+
+  state-process-WithGroup_none:
+    - foreach next
+    - queue clear
+
+  state-process-WithGroup_allow:
+    - define group '<def[flagObj].split[/].get[2]||all>'
+    - inject locally state-process-WithGroup_deny-<proc[dRegions_PlayerMatchRegionGroup].context[%group%|<def[orderedRegions].get[1]>|%world%|%player%].not>
+
+  state-process-WithGroup_deny:
+    - define group '<def[flagObj].split[/].get[2]||all>'
+    - inject locally state-process-WithGroup_deny-<proc[dRegions_PlayerMatchRegionGroup].context[%group%|<def[orderedRegions].get[1]>|%world%|%player%]>
+
+  state-process-WithGroup_deny-true:
+    - inject %FlagScript% p:event-cleanup
+    - determine cancelled
+
+
+#-------------------
+# Region WithTargetWithGroup Flag Processors
+#
+  state-process-WithTargetWithGroup_null:
+    - define flagObj '<def[FlagScript].yaml_key[flag_defaultValue]||none>'
+    - inject locally state-process-WithTargetWithGroup_<def[flagObj].split[/].get[1]>
+
+  state-process-WithTargetWithGroup_none:
+    - foreach next
+    - queue clear
+
+  state-process-WithTargetWithGroup_allow:
+    - define group '<def[flagObj].split[/].get[2]||all>'
+    - inject locally state-process-WithTargetWithGroup_allow-<proc[dRegions_PlayerMatchRegionGroup].context[%group%|<def[orderedRegions].get[1]>|%world%|%player%]>
+
+  state-process-WithTargetWithGroup_allow-true:
+    - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|%flag-targetList%].replace[, ].with[|].as_list>'
+    - if %targetList% == li@null {
+      - queue clear
+      }
+    - if %targetList% != li@all {
+      - if %targetList% !contains %target% {
+        - inject %FlagScript% p:event-cleanup
+        - determine cancelled
+        }
+      }
+
+  state-process-WithTargetWithGroup_allow-false:
+    - inject %FlagScript% p:event-cleanup
+    - determine cancelled
+
+  state-process-WithTargetWithGroup_deny:
+    - define group '<def[flagObj].split[/].get[2]||all>'
+    - inject locally state-process-WithTargetWithGroup_deny-<proc[dRegions_PlayerMatchRegionGroup].context[%group%|<def[orderedRegions].get[1]>|%world%|%player%]>
+
+  state-process-WithTargetWithGroup_deny-true:
+    - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|%flag-targetList%].replace[, ].with[|].as_list>'
+    - if %targetList% == li@null {
+      - inject %FlagScript% p:event-cleanup
+      - determine cancelled
+      }
+    - if %targetList% == li@all {
+      - inject %FlagScript% p:event-cleanup
+      - determine cancelled
+      }
+    - if %targetList% contains %target% {
+      - inject %FlagScript% p:event-cleanup
+      - determine cancelled
+      }
+
+#-------------------
+# Region WithTargetNoGroup Flag Processors
+#
+  state-process-WithTargetNoGroup_null:
+    - inject locally state-process-WithTargetNoGroup_<def[FlagScript].yaml_key[flag_defaultValue]||none>
+
+  state-process-WithTargetNoGroup_none:
+    - foreach next
+    - queue clear
+
+  state-process-WithTargetNoGroup_allow:
+    - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|%flag-targetList%].replace[, ].with[|].as_list>'
+    - if %targetList% == 'li@null' {
+      - queue clear
+      }
+    - if %targetList% != li@all {
+      - if %targetList% !contains %target% {
+        - inject %FlagScript% p:event-cleanup
+        - determine cancelled
+        }
+      }
+
+  state-process-WithTargetNoGroup_deny:
+    - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|%flag-targetList%].replace[, ].with[|].as_list>'
+    - if %targetList% == li@null {
+      - inject %FlagScript% p:event-cleanup
+      - determine cancelled
+      }
+    - if %targetList% == li@all {
+      - inject %FlagScript% p:event-cleanup
+      - determine cancelled
+      }
+    - if %targetList% contains %target% {
+      - inject %FlagScript% p:event-cleanup
+      - determine cancelled
+      }
+
+
+
+#-------------------------------------------------------------------------------
 
 
 dRegions_Flags_CommandProcessors:
@@ -4074,7 +4090,7 @@ dRegions_Flags_CommandProcessors:
     - if <def[flagValue].is[==].to[null]||false> {
       - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
       - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-      - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
+      - run s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
       - queue clear
       }
       else {
@@ -4083,13 +4099,13 @@ dRegions_Flags_CommandProcessors:
         - if '<def[flagValue].split[ ].get[1].is[==].to[-a]||false>' {
           - yaml set 'regions.%region%.flags.%flag%:all' 'id:dRegions_%world%_regions'
           - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-          - run instantly s@dRegions_Msg 'def:<&f><&o>%region%<&7><&o> set %flag% flag to <&f><&o>%flagValue%'
+          - run s@dRegions_Msg 'def:<&f><&o>%region%<&7><&o> set %flag% flag to <&f><&o>%flagValue%'
           - queue clear
           }
         - if '<def[flagValue].split[ ].get[1].is[==].to[-r]||false>' {
           - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
           - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-          - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
+          - run s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
           - queue clear
           }
         }
@@ -4103,7 +4119,7 @@ dRegions_Flags_CommandProcessors:
         - run  s@dRegions_Msg 'def:<&c><&o>No valid <s@dRegions_Flag_%Flag%.yaml_key[command_entryType]>s specified!'
         - define lines '<proc[dRegions_LineWrap].context[<s@dRegions_Flag_%Flag%.yaml_key[flag_help]||<&c>%flag% flag requires a %type% value!>|45]>'
         - foreach <def[lines]> {
-          - run instantly s@dRegions_Msg 'def:<&c><def[value]>'
+          - run s@dRegions_Msg 'def:<&c><def[value]>'
           }
         - queue clear
         }
@@ -4118,7 +4134,7 @@ dRegions_Flags_CommandProcessors:
       - if <def[flagValue].is_empty||true> {
         - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
         - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-        - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
+        - run s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
         - queue clear
         }
       - define flagValue '<def[flagValue].comma_separated>'
@@ -4129,7 +4145,7 @@ dRegions_Flags_CommandProcessors:
     - if <def[flagValue].is[==].to[null]||false> {
       - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
       - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-      - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
+      - run s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
       - queue clear
       }
     - define action '<def[flagValue].split[ ].get[1]>'
@@ -4139,13 +4155,13 @@ dRegions_Flags_CommandProcessors:
       - if <def[action].is[==].to[-a]||false> {
         - yaml set 'regions.%region%.flags.%flag%:all' 'id:dRegions_%world%_regions'
         - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-        - run instantly s@dRegions_Msg 'def:<&f><&o>%region%<&7><&o> set %flag% flag to <&f><&o>%flagValue%'
+        - run s@dRegions_Msg 'def:<&f><&o>%region%<&7><&o> set %flag% flag to <&f><&o>%flagValue%'
         - queue clear
         }
       - if <def[action].is[==].to[-r]||false> {
         - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
         - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-        - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
+        - run s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
         - queue clear
         }
       }
@@ -4153,7 +4169,7 @@ dRegions_Flags_CommandProcessors:
       - run  s@dRegions_Msg 'def:<&c><&o>No valid <s@dRegions_Flag_%Flag%.yaml_key[command_entryType]>s specified!'
       - define lines '<proc[dRegions_LineWrap].context[<s@dRegions_Flag_%Flag%.yaml_key[flag_help]||<&c>%flag% flag requires a %type% value!>|45]>'
       - foreach <def[lines]> {
-        - run instantly s@dRegions_Msg 'def:<&c><def[value]>'
+        - run s@dRegions_Msg 'def:<&c><def[value]>'
         }
       - queue clear
       }
@@ -4168,7 +4184,7 @@ dRegions_Flags_CommandProcessors:
     - if <def[flagValue].is_empty||true> {
       - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
       - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-      - run instantly s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
+      - run s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
       - queue clear
       }
     - define flagValue '<def[flagValue].replace[|].with[ ; ].replace[li@]>'
