@@ -3489,13 +3489,21 @@ dRegions_Flag_Heal-Amount:
     - define healAmount '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|heal-amount]>'
     - if %healAmount% != null {
       - define healDelay '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|heal-delay]>'
-      - if %healDelay% == null define healDelay '5'
+      - if %healDelay% == null {
+        - define healDelay '5'
+        }
       - define healMax '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|heal-max]>'
-      - if %healMax% == null  define healMax '20'
+      - if %healMax% == null {
+        - define healMax '20'
+        }
       - define healMax '<tern[<def[healMax].is[MORE].than[<player.health.max>]>]:<player.health.max>||%healMax%>'
       - define healMin '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|heal-min]>'
-      - if %healMin% == null define healMin '0'
-      - if <queue.exists[dRegions_Heal_<player.name>]> queue q@dRegions_Heal_<player.name> clear
+      - if %healMin% == null {
+        - define healMin '0'
+        }
+      - if <queue.exists[dRegions_Heal_<player.name>]> {
+        - queue q@dRegions_Heal_<player.name> clear
+        }
       - run locally healTask 'def:%region%|%healAmount%|%healDelay%|%healMax%|%healMin%' id:dRegions_Heal_<player.name>
       }
 
@@ -3503,13 +3511,21 @@ dRegions_Flag_Heal-Amount:
     - define healAmount '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|heal-amount]>'
     - if %healAmount% != null {
       - define healDelay '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|heal-delay]>'
-      - if %healDelay% == null define healDelay '5'
+      - if %healDelay% == null {
+        - define healDelay '5'
+        }
       - define healMax '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|heal-max]>'
-      - if %healMax% == null  define healMax '20'
+      - if %healMax% == null {
+        - define healMax '20'
+        }
       - define healMax '<tern[<def[healMax].is[MORE].than[<player.health.max>]>]:<player.health.max>||%healMax%>'
       - define healMin '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|heal-min]>'
-      - if %healMin% == null define healMin '0'
-      - if <queue.exists[dRegions_Heal_<player.name>]> queue q@dRegions_Heal_<player.name> clear
+      - if %healMin% == null {
+        - define healMin '0'
+        }
+      - if <queue.exists[dRegions_Heal_<player.name>]> {
+        - queue q@dRegions_Heal_<player.name> clear
+        }
       - run locally healTask 'def:__global__|%healAmount%|%healDelay%|%healMax%|%healMin%' id:dRegions_Heal_<player.name>
       }
 
@@ -3663,12 +3679,20 @@ dRegions_Flag_Feed-Amount:
     - define feedAmount '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|feed-amount]>'
     - if %feedAmount% != null {
       - define feedDelay '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|feed-delay]>'
-      - if %feedDelay% == null define feedDelay '5'
+      - if %feedDelay% == null {
+        - define feedDelay '5'
+        }
       - define feedMax '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|feed-max]>'
-      - if %feedMax% == null  define feedMax '20'
+      - if %feedMax% == null {
+        - define feedMax '20'
+        }
       - define feedMin '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|feed-min]>'
-      - if %feedMin% == null define feedMin '0'
-      - if <queue.exists[dRegions_Feed_<player.name>]> queue q@dRegions_Feed_<player.name> clear
+      - if %feedMin% == null {
+        - define feedMin '0'
+        }
+      - if <queue.exists[dRegions_Feed_<player.name>]> {
+        - queue q@dRegions_Feed_<player.name> clear
+        }
       - run locally feedTask 'def:%region%|%feedAmount%|%feedDelay%|%feedMax%|%feedMin%' id:dRegions_Feed_<player.name>
       }
 
@@ -3676,12 +3700,20 @@ dRegions_Flag_Feed-Amount:
     - define feedAmount '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|feed-amount]>'
     - if %feedAmount% != null {
       - define feedDelay '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|feed-delay]>'
-      - if %feedDelay% == null define feedDelay '5'
+      - if %feedDelay% == null {
+        - define feedDelay '5'
+        }
       - define feedMax '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|feed-max]>'
-      - if %feedMax% == null  define feedMax '20'
+      - if %feedMax% == null {
+        - define feedMax '20'
+        }
        - define feedMin '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|feed-min]>'
-      - if %feedMin% == null define feedMin '0'
-      - if <queue.exists[dRegions_Feed_<player.name>]> queue q@dRegions_Feed_<player.name> clear
+      - if %feedMin% == null {
+        - define feedMin '0'
+        }
+      - if <queue.exists[dRegions_Feed_<player.name>]> {
+        - queue q@dRegions_Feed_<player.name> clear
+        }
       - run locally feedTask 'def:__global__|%feedAmount%|%feedDelay%|%feedMax%|%feedMin%' id:dRegions_Feed_<player.name>
       }
 
