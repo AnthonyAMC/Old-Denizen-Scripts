@@ -5,8 +5,8 @@
 #                                 Flag Modules
 #
 #   Authors: |Anthony|
-#   Version: 0.1
-#   dScript Version: 0.9.6-DEV_b60
+#   Version: 0.2
+#   dScript Version: 0.9.6-DEV_b140
 #
 #
 #
@@ -43,11 +43,14 @@ dRegions_Flag_Entry:
   event-cleanup:
     - if <player.is_inside_vehicle||false> {
       - define vehicle '<player.get_vehicle>'
-      - run locally vehicle 'def:<def[vehicle]>|<c.from>' delay:1t
+      - run locally vehicle 'def:%vehicle%|<c.from>' delay:1t
       }
-    - if <player.has_flag[dRegions_Message_Cooldown].not> {
+    - run locally msg
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run s@dRegions_Msg 'def:<&c><&o>You do not have permission to enter this region'
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You do not have permission to enter this region'
       }
 
   event:
@@ -71,11 +74,11 @@ dRegions_Flag_Entry:
       else {
       - flag <player> dRegions_regionKick d:5t
       }
-    - ^mount cancel <player>|<def[1]>
+    - ^mount cancel <player>|%1%
     - ^teleport '<player>' '<def[2].above>'
     - ^wait 20t
-    - ^adjust <def[1]> 'velocity:l@0,0,0,<def[1].world>'
-    - ^teleport '<def[1]>' '<t[<def[1].is_living>]:<player.location>||<def[2].above>>'
+    - ^adjust %1% 'velocity:l@0,0,0,<def[1].world>'
+    - ^teleport %1% '<t[<def[1].is_living>]:<player.location>||<def[2].above>>'
 
 
 dRegions_Flag_Greeting:
@@ -140,11 +143,14 @@ dRegions_Flag_Exit:
   event-cleanup:
     - if <player.is_inside_vehicle||false> {
       - define vehicle '<player.get_vehicle>'
-      - run locally vehicle 'def:<def[vehicle]>|<c.from>' delay:1t
+      - run locally vehicle 'def:%vehicle%|<c.from>' delay:1t
       }
-    - if <player.has_flag[dRegions_Message_Cooldown].not> {
+    - run locally msg
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run s@dRegions_Msg 'def:<&c><&o>You do not have permission to exit this region'
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You do not have permission to exit this region'
       }
 
   event:
@@ -168,11 +174,11 @@ dRegions_Flag_Exit:
       else {
       - flag <player> dRegions_regionKick d:5t
       }
-    - ^mount cancel <player>|<def[1]>
+    - ^mount cancel <player>|%1%
     - ^teleport '<player>' '<def[2].above>'
     - ^wait 20t
-    - ^adjust <def[1]> 'velocity:l@0,0,0,<def[1].world>'
-    - ^teleport '<def[1]>' '<t[<def[1].is_living>]:<player.location>||<def[2].above>>'
+    - ^adjust %1% 'velocity:l@0,0,0,<def[1].world>'
+    - ^teleport %1% '<t[<def[1].is_living>]:<player.location>||<def[2].above>>'
 
 
 dRegions_Flag_Farewell:
@@ -236,7 +242,7 @@ dRegions_Flag_Spawn:
   command_handler:
     - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
       - if <proc[dRegions_RegionOverlaps].context[<def[flagValue]>/<def[flagValue]>|%world%|<player>]> {
-        - run s@dRegions_Msg 'def:<&c>You can not use that location!'
+        - run s@dRegions_Msg delay:1t 'def:<&c>You can not use that location!'
         - queue clear
         }
       }
@@ -255,8 +261,6 @@ dRegions_Flag_Spawn:
       }
     - define spawnLoc '<def[flagObj].split[/].get[1].as_location>'
     - define group '<def[flagObj].split[/].get[2]||all>'
-#    - define isOwner '<proc[dRegions_IsOwner].context[%region%|%world%|<player>]>'
-#    - define isMember '<proc[dRegions_isMember].context[%region%|%world%|<player>]>'
     - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|%region%|%world%|<player>]>'
 
     - if %isGroup% {
@@ -272,8 +276,6 @@ dRegions_Flag_Spawn:
       }
     - define spawnLoc '<def[flagObj].split[/].get[1].as_location>'
     - define group '<def[flagObj].split[/].get[2]||all>'
-#    - define isOwner '<proc[dRegions_IsOwner].context[__global__|%world%|<player>]>'
-#    - define isMember '<proc[dRegions_isMember].context[__global__|%world%|<player>]>'
     - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|__global__|%world%|<player>]>'
 
     - if %isGroup% {
@@ -328,7 +330,7 @@ dRegions_Flag_Gamemode:
     - if <def[isExit].exists> {
       - if <player.flag[dRegions_%world%_%region%_PreviousGamemode]||null> != <player.gamemode> {
         - adjust <player> 'gamemode:<player.flag[dRegions_%world%_%region%_PreviousGamemode]||survival>'
-        - run s@dRegions_Msg 'def:<&7><&o>Your gamemode has been updated.'
+        - run s@dRegions_Msg delay:1t 'def:<&7><&o>Your gamemode has been updated.'
         }
       - flag <player> 'dRegions_%world%_%region%_PreviousGamemode:!'
       - foreach next
@@ -337,7 +339,7 @@ dRegions_Flag_Gamemode:
     - if %gm% != <player.gamemode> {
       - flag <player> 'dRegions_%world%_%region%_PreviousGamemode:<player.gamemode>'
       - adjust <player> 'gamemode:%gm%'
-      - run s@dRegions_Msg 'def:<&7><&o>Your gamemode has been updated.'
+      - run s@dRegions_Msg delay:1t 'def:<&7><&o>Your gamemode has been updated.'
       }
 
   event-global:
@@ -359,7 +361,7 @@ dRegions_Flag_Gamemode:
     - if <def[isExit].exists> {
       - if <player.flag[dRegions_%world%___global___PreviousGamemode]||null> != <player.gamemode> {
         - adjust <player> 'gamemode:<player.flag[dRegions_%world%___global___PreviousGamemode]||survival>'
-        - run s@dRegions_Msg 'def:<&7><&o>Your gamemode has been updated.'
+        - run s@dRegions_Msg delay:1t 'def:<&7><&o>Your gamemode has been updated.'
         }
       - flag <player> 'dRegions_%world%___global___PreviousGamemode:!'
       - foreach next
@@ -368,7 +370,7 @@ dRegions_Flag_Gamemode:
     - if %gm% != <player.gamemode> {
       - flag <player> 'dRegions_%world%___global___PreviousGamemode:<player.gamemode>'
       - adjust <player> 'gamemode:%gm%'
-      - run s@dRegions_Msg 'def:<&7><&o>Your gamemode has been updated.'
+      - run s@dRegions_Msg delay:1t 'def:<&7><&o>Your gamemode has been updated.'
       }
 
 
@@ -459,7 +461,7 @@ dRegions_Flag_Inventory:
         - inventory set 'd:<player.inventory>' 'o:<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.entry.kit.inv]||li@>'
         - define equipment '<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.entry.kit.equip]||li@>'
         - equip <player> 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>'
-        - run s@dRegions_Msg 'def:<&7><&o>Your inventory has been updated.'
+        - run s@dRegions_Msg delay:1t 'def:<&7><&o>Your inventory has been updated.'
         - foreach next
         - queue stop
         }
@@ -471,7 +473,7 @@ dRegions_Flag_Inventory:
         - inventory set 'd:<player.inventory>' 'o:<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.entry.players.<player.uuid>.inv]||li@>'
         - define equipment '<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.entry.players.<player.uuid>.equip]||li@>'
         - equip <player> 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>'
-        - run s@dRegions_Msg 'def:<&7><&o>Your inventory has been updated.'
+        - run s@dRegions_Msg delay:1t 'def:<&7><&o>Your inventory has been updated.'
         - foreach next
         - queue stop
         }
@@ -484,7 +486,7 @@ dRegions_Flag_Inventory:
         - equip <player> 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>'
         - yaml set 'inventories.regions.%region%.exit.players.<player.uuid>:!' 'id:dRegions_%world%_inventories'
         - yaml 'savefile:dRegions/worlds/%world%/inventories.yml' 'id:dRegions_%world%_inventories'
-        - run s@dRegions_Msg 'def:<&7><&o>Your inventory has been updated.'
+        - run s@dRegions_Msg delay:1t 'def:<&7><&o>Your inventory has been updated.'
         - foreach next
         - queue stop
         }
@@ -497,7 +499,7 @@ dRegions_Flag_Inventory:
         - equip <player> 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>'
         - yaml set 'inventories.regions.%region%.exit.players.<player.uuid>:!' 'id:dRegions_%world%_inventories'
         - yaml 'savefile:dRegions/worlds/%world%/inventories.yml' 'id:dRegions_%world%_inventories'
-        - run s@dRegions_Msg 'def:<&7><&o>Your inventory has been updated.'
+        - run s@dRegions_Msg delay:1t 'def:<&7><&o>Your inventory has been updated.'
         - foreach next
         - queue stop
         }
@@ -528,9 +530,12 @@ dRegions_Flag_Build:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event-cleanup:
-    - if <player.has_flag[dRegions_Message_Cooldown].not> {
+    - run locally msg
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run s@dRegions_Msg 'def:<&c><&o>You do not have permission to build in this region'
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You do not have permission to build in this region'
       }
 
   event-global:
@@ -576,9 +581,12 @@ dRegions_Flag_Vehicle-Place:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event-cleanup:
-    - if <player.has_flag[dRegions_Message_Cooldown].not> {
+    - run locally msg def:<c.item.material.name.replace[_].with[ ]>
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run s@dRegions_Msg 'def:<&c><&o>You can not place <c.item.material.name.replace[_].with[ ]>s here.'
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not place %1%s here.'
       }
 
   event:
@@ -620,9 +628,12 @@ dRegions_Flag_Vehicle-Destroy:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event-cleanup:
-    - if <player.has_flag[dRegions_Message_Cooldown].not> {
+    - run locally msg def:<c.vehicle.entity_type.to_lowercase.replace[_].with[ ]>
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run s@dRegions_Msg 'def:<&c><&o>You can not break <c.vehicle.entity_type.to_lowercase.replace[_].with[ ]>s here.'
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not break %1%s here.'
       }
 
   event:
@@ -664,9 +675,12 @@ dRegions_Flag_Send-Chat:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event-cleanup:
-    - if <player.has_flag[dRegions_Message_Cooldown].not> {
+    - run locally msg
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run s@dRegions_Msg 'def:<&c><&o>You can not chat here.'
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not chat here.'
       }
 
   event:
@@ -756,7 +770,7 @@ dRegions_Flag_Mob-Target:
 
   event-cleanup:
     - remove <c.projectile||li@>
-    - attack <def[attacker]> target:cancel
+    - attack %attacker% target:cancel
 
 
 dRegions_Flag_Mob-TargetList:
@@ -821,7 +835,7 @@ dRegions_Flag_Mob-Damage:
 
   event-cleanup:
     - remove <c.projectile||li@>
-    - attack <def[attacker]> target:cancel
+    - attack %attacker% target:cancel
 
 
 dRegions_Flag_Mob-Damagelist:
@@ -941,7 +955,7 @@ dRegions_Flag_EVE:
 
   event-cleanup:
     - remove <c.projectile||li@>
-    - attack <def[attacker]> target:cancel
+    - attack %attacker% target:cancel
 
 
 dRegions_Flag_EVE-Moblist:
@@ -1004,7 +1018,7 @@ dRegions_Flag_Mob-Attack:
 
   event-cleanup:
     - remove <c.projectile||li@>
-    - attack <def[attacker]> target:cancel
+    - attack %attacker% target:cancel
 
 
 dRegions_Flag_Mob-Attack-Moblist:
@@ -1073,9 +1087,12 @@ dRegions_Flag_PVE:
 
   event-cleanup:
     - remove <c.projectile||li@>
-    - if <player.has_flag[dRegions_Message_Cooldown].not> {
+    - run locally msg 'def:<def[target].to_lowercase.replace[_].with[ ]>'
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run s@dRegions_Msg 'def:<&c><&o>You can not attack <def[target].to_lowercase.replace[_].with[ ]>s here!'
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not attack %1%s here!'
       }
 
 
@@ -1127,8 +1144,8 @@ dRegions_Flag_Entity-Explode:
 
   event-cleanup:
     - determine passively cancelled
-    - foreach <def[attacker].location.find.entities.within[5].exclude[<def[attacker]>]> {
-      - adjust <def[value]> 'velocity:l@0,0,0,<def[world]>'
+    - foreach <def[attacker].location.find.entities.within[5].exclude[%attacker%]> {
+      - adjust %value% 'velocity:l@0,0,0,%world%'
       }
 
   event:
@@ -2089,9 +2106,12 @@ dRegions_Flag_Lighter:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event-cleanup:
-    - if <player.has_flag[dRegions_Message_Cooldown].not> {
+    - run locally msg
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run s@dRegions_Msg 'def:<&c><&o>You can not use a lighter in this region'
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not use a lighter in this region'
       }
 
   event:
@@ -2131,9 +2151,12 @@ dRegions_Flag_Bucket-Fill:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event-cleanup:
-    - if <player.has_flag[dRegions_Message_Cooldown].not> {
+    - run locally msg
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run s@dRegions_Msg 'def:<&c><&o>You can not fill a bucket in this region'
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not fill a bucket in this region'
       }
 
   event:
@@ -2179,9 +2202,12 @@ dRegions_Flag_Bucket-Empty:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event-cleanup:
-    - if <player.has_flag[dRegions_Message_Cooldown].not> {
+    - run locally msg
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run s@dRegions_Msg 'def:<&c><&o>You can not empty a bucket in this region'
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not empty a bucket in this region'
       }
 
   event-global:
@@ -2221,9 +2247,12 @@ dRegions_Flag_Hanging-Place:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event-cleanup:
-    - if <player.has_flag[dRegions_Message_Cooldown].not> {
+    - run locally msg
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run s@dRegions_Msg 'def:<&c><&o>You can not hang that in this region'
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not hang that in this region'
       }
 
   event:
@@ -2263,9 +2292,12 @@ dRegions_Flag_Hanging-Break:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event-cleanup:
-    - if <player.has_flag[dRegions_Message_Cooldown].not> {
+    - run locally msg
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run s@dRegions_Msg 'def:<&c><&o>You can not break that in this region'
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not break that in this region'
       }
 
   event:
@@ -2305,9 +2337,12 @@ dRegions_Flag_Sleep:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event-cleanup:
-    - if <player.has_flag[dRegions_Message_Cooldown].not> {
+    - run locally msg
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run s@dRegions_Msg 'def:<&c><&o>You can not sleep here.'
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not sleep here.'
       }
 
   event:
@@ -2347,9 +2382,12 @@ dRegions_Flag_Player-Drops:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event-cleanup:
-    - if <player.has_flag[dRegions_Message_Cooldown].not> {
+    - run locally msg
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run s@dRegions_Msg 'def:<&c><&o>You can not drop items here.'
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not drop items here.'
       }
 
   event:
@@ -2481,7 +2519,7 @@ dRegions_Flag_Player-KeepItems:
 
   returnItems:
     - inventory clear
-    - run s@dRegions_Msg 'def:<&9>You died, but your inventory is safe!'
+    - run s@dRegions_Msg delay:1t 'def:<&9>You died, but your inventory is safe!'
     - inventory set 'd:<player.inventory>' 'o:<def[1].unescaped>'
     - define equipment '<def[2].unescaped>'
     - equip <player> 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>'
@@ -2509,9 +2547,12 @@ dRegions_Flag_Player-Pickup:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event-cleanup:
-    - if <player.has_flag[dRegions_Message_Cooldown].not> {
+    - run locally msg
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run s@dRegions_Msg 'def:<&c><&o>You can not pick up items here.'
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not pick up items here.'
       }
 
   event:
@@ -2615,9 +2656,12 @@ dRegions_Flag_PVP:
 
   event-cleanup:
     - remove <c.projectile||li@>
-    - if <player.has_flag[dRegions_Message_Cooldown].not> {
+    - run locally msg
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run s@dRegions_Msg 'def:<&c><&o>You are in a no PVP zone.'
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You are in a no PVP zone.'
       }
 
   event:
@@ -2653,10 +2697,13 @@ dRegions_Flag_Potion-Throw:
 
   event-cleanup:
     - if <player.is[!=].to[null]||false> {
-      - if <player.has_flag[dRegions_Message_Cooldown].not||false> {
-        - flag player dRegions_Message_Cooldown duration:3s
-        - run s@dRegions_Msg 'def:<&c><&o>You can not throw potions here.'
-        }
+      - run locally msg
+      }
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not||false> {
+      - flag player dRegions_Message_Cooldown duration:3s
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not throw potions here.'
       }
 
   event:
@@ -2690,9 +2737,12 @@ dRegions_Flag_Potion-Drink:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event-cleanup:
-    - if <player.has_flag[dRegions_Message_Cooldown].not> {
+    - run locally msg
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run s@dRegions_Msg 'def:<&c><&o>You can not drink potions here.'
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not drink potions here.'
       }
 
   event:
@@ -2732,9 +2782,12 @@ dRegions_Flag_Enderpearl:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event-cleanup:
-    - if <player.has_flag[dRegions_Message_Cooldown].not> {
+    - run locally msg
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run s@dRegions_Msg 'def:<&c><&o>You can not use enderpearls here.'
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not use enderpearls here.'
       }
 
   event:
@@ -2846,6 +2899,7 @@ dRegions_Flag_Block-Place:
   flag_takeGroup: true
   flag_defaultValue: none
   flag_globalDefault: none
+  region_highestOnly: true
   flag_help: State flag controlling whether players will be able to place blocks in this region. Defaults to allow all. Use block-placelist flag to specify block types. Takes the -g group switch.
   script:
     - narrate "A handy container for region flags."
@@ -2871,9 +2925,12 @@ dRegions_Flag_Block-Place:
       }
 
   event-cleanup:
-    - if <player.has_flag[dRegions_Message_Cooldown].not> {
+    - run locally msg 'def:%target%'
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run s@dRegions_Msg 'def:<&c><&o>You can not place <def[target]> in this region!'
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not place %1% in this region!'
       }
 
 
@@ -2915,6 +2972,7 @@ dRegions_Flag_Block-Break:
   flag_takeGroup: true
   flag_defaultValue: none
   flag_globalDefault: none
+  region_highestOnly: true
   flag_help: State flag controlling whether players will be able to break blocks in this region. Defaults to allow all. Use block-breaklist flag to specify block types. Takes the -g group switch.
   script:
     - narrate "A handy container for region flags."
@@ -2940,9 +2998,12 @@ dRegions_Flag_Block-Break:
       }
 
   event-cleanup:
-    - if <player.has_flag[dRegions_Message_Cooldown].not> {
+    - run locally msg 'def:%target%'
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run s@dRegions_Msg 'def:<&c><&o>You can not break <def[target]> in this region!'
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not break %1% in this region!'
       }
 
 
@@ -3012,9 +3073,12 @@ dRegions_Flag_Chest-Access:
       }
 
   event-cleanup:
-    - if <player.has_flag[dRegions_Message_Cooldown].not> {
+    - run locally msg 'def:<c.location.material.name.replace[_].with[ ]>'
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run s@dRegions_Msg 'def:<&c><&o>You can not open <c.location.material.name.replace[_].with[ ]>s in this region!'
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not open %1%s in this region!'
       }
 
 
@@ -3083,9 +3147,12 @@ dRegions_Flag_Door-Access:
       }
 
   event-cleanup:
-    - if <player.has_flag[dRegions_Message_Cooldown].not> {
+    - run locally msg 'def:<c.location.material.name.replace[_].with[ ]>'
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run s@dRegions_Msg 'def:<&c><&o>You can not open <c.location.material.name.replace[_].with[ ]>s in this region!'
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not open %1%s in this region!'
       }
 
 
@@ -3155,9 +3222,12 @@ dRegions_Flag_Use-Switches:
       }
 
   event-cleanup:
-    - if <player.has_flag[dRegions_Message_Cooldown].not> {
+    - run locally msg 'def:<c.location.material.name.replace[_].with[ ]>'
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run s@dRegions_Msg 'def:<&c><&o>You can not use <c.location.material.name.replace[_].with[ ]>s in this region!'
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not use %1%s in this region!'
       }
 
 
@@ -3227,9 +3297,12 @@ dRegions_Flag_Use-Utilities:
       }
 
   event-cleanup:
-    - if <player.has_flag[dRegions_Message_Cooldown].not> {
+    - run locally msg 'def:<c.location.material.name.replace[_].with[ ]>'
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - run s@dRegions_Msg 'def:<&c><&o>You can not use <c.location.material.name.replace[_].with[ ]>s in this region!'
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not use %1%s in this region!'
       }
 
 
@@ -3281,8 +3354,11 @@ dRegions_Flag_Player-Damage:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event-cleanup:
-    - flag player dRegions_cancelDamage_<c.cause> duration:1s
-    - adjust <player> 'fire_time:0'
+    - run locally offthread 'def:<c.cause>'
+
+  offtread:
+    - ^flag player dRegions_cancelDamage_%1% duration:1s
+    - ^adjust <player> 'fire_time:0'
 
   event:
     - define player <player>
@@ -3354,12 +3430,14 @@ dRegions_Flag_Commands:
       }
 
   event-cleanup:
-    - if <player.has_flag[dRegions_Message_Cooldown].not> {
+    - run locally msg 'def:<def[target].split[ ].parse[replace[regex:^].with[<&e>]].as_string>'
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
-      - define command '<def[target].split[ ].parse[replace[regex:^].with[<&e>]].as_string>'
-      - define lines '<proc[dRegions_LineWrap].context[You can not use the <def[command]> <&c>command in this region!|45]>'
-      - foreach <def[lines]> {
-        - run s@dRegions_Msg 'def:<&c><def[value]>'
+      - define lines '<proc[dRegions_LineWrap].context[You can not use the %1% <&c>command in this region!|45]>'
+      - foreach %lines% {
+        - run s@dRegions_Msg delay:1t 'def:<&c>%value%'
         }
       }
 
@@ -3506,7 +3584,7 @@ dRegions_Flag_Heal-Delay:
 
   command_handler:
     - if <def[flagValue].is[LESS].than[0]> {
-      - run s@dRegions_Msg 'def:<&c>Can not specify negative time!'
+      - run s@dRegions_Msg delay:1t 'def:<&c>Can not specify negative time!'
       - queue clear
       }
 
@@ -3531,7 +3609,7 @@ dRegions_Flag_Heal-Max:
 
   command_handler:
     - if !<def[flagValue].is[MORE].than[0]> {
-      - run s@dRegions_Msg 'def:<&c>Must be a value greater than 0!'
+      - run s@dRegions_Msg delay:1t 'def:<&c>Must be a value greater than 0!'
       - queue clear
       }
 
@@ -3556,7 +3634,7 @@ dRegions_Flag_Heal-Min:
 
   command_handler:
     - if <def[flagValue].is[LESS].than[0]> {
-      - run s@dRegions_Msg 'def:<&c>Can not set to a negative number!'
+      - run s@dRegions_Msg delay:1t 'def:<&c>Can not set to a negative number!'
       - queue clear
       }
 
@@ -3682,7 +3760,7 @@ dRegions_Flag_Feed-Delay:
 
   command_handler:
     - if <def[flagValue].is[LESS].than[0]> {
-      - run s@dRegions_Msg 'def:<&c>Can not specify negative time!'
+      - run s@dRegions_Msg delay:1t 'def:<&c>Can not specify negative time!'
       - queue clear
       }
 
@@ -3707,7 +3785,7 @@ dRegions_Flag_Feed-Max:
 
   command_handler:
     - if !<def[flagValue].is[MORE].than[0]> {
-      - run s@dRegions_Msg 'def:<&c>Must be a value greater than 0!'
+      - run s@dRegions_Msg delay:1t 'def:<&c>Must be a value greater than 0!'
       - queue clear
       }
 
@@ -3732,7 +3810,7 @@ dRegions_Flag_Feed-Min:
 
   command_handler:
     - if <def[flagValue].is[LESS].than[0]> {
-      - run s@dRegions_Msg 'def:<&c>Can not set to a negative number!'
+      - run s@dRegions_Msg delay:1t 'def:<&c>Can not set to a negative number!'
       - queue clear
       }
 
@@ -3849,7 +3927,7 @@ dRegions_Flags_Processors:
 
   state-withTarget-withGroup-Global:
     - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag%]>'
-    - inject locally state-process-Global-WithTargetNoGroup_<def[flagObj].split[/].get[1]>
+    - inject locally state-process-Global-WithTargetWithGroup_<def[flagObj].split[/].get[1]>
     - queue clear
 
 
@@ -4090,7 +4168,7 @@ dRegions_Flags_CommandProcessors:
     - if <def[flagValue].is[==].to[null]||false> {
       - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
       - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-      - run s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
+      - run s@dRegions_Msg delay:1t 'def:<&c>Cleared %flag% list for region %region%'
       - queue clear
       }
       else {
@@ -4099,13 +4177,13 @@ dRegions_Flags_CommandProcessors:
         - if '<def[flagValue].split[ ].get[1].is[==].to[-a]||false>' {
           - yaml set 'regions.%region%.flags.%flag%:all' 'id:dRegions_%world%_regions'
           - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-          - run s@dRegions_Msg 'def:<&f><&o>%region%<&7><&o> set %flag% flag to <&f><&o>%flagValue%'
+          - run s@dRegions_Msg delay:1t 'def:<&f><&o>%region%<&7><&o> set %flag% flag to <&f><&o>%flagValue%'
           - queue clear
           }
         - if '<def[flagValue].split[ ].get[1].is[==].to[-r]||false>' {
           - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
           - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-          - run s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
+          - run s@dRegions_Msg delay:1t 'def:<&c>Cleared %flag% list for region %region%'
           - queue clear
           }
         }
@@ -4119,7 +4197,7 @@ dRegions_Flags_CommandProcessors:
         - run  s@dRegions_Msg 'def:<&c><&o>No valid <s@dRegions_Flag_%Flag%.yaml_key[command_entryType]>s specified!'
         - define lines '<proc[dRegions_LineWrap].context[<s@dRegions_Flag_%Flag%.yaml_key[flag_help]||<&c>%flag% flag requires a %type% value!>|45]>'
         - foreach <def[lines]> {
-          - run s@dRegions_Msg 'def:<&c><def[value]>'
+          - run s@dRegions_Msg delay:1t 'def:<&c><def[value]>'
           }
         - queue clear
         }
@@ -4134,7 +4212,7 @@ dRegions_Flags_CommandProcessors:
       - if <def[flagValue].is_empty||true> {
         - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
         - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-        - run s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
+        - run s@dRegions_Msg delay:1t 'def:<&c>Cleared %flag% list for region %region%'
         - queue clear
         }
       - define flagValue '<def[flagValue].comma_separated>'
@@ -4145,7 +4223,7 @@ dRegions_Flags_CommandProcessors:
     - if <def[flagValue].is[==].to[null]||false> {
       - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
       - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-      - run s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
+      - run s@dRegions_Msg delay:1t 'def:<&c>Cleared %flag% list for region %region%'
       - queue clear
       }
     - define action '<def[flagValue].split[ ].get[1]>'
@@ -4155,13 +4233,13 @@ dRegions_Flags_CommandProcessors:
       - if <def[action].is[==].to[-a]||false> {
         - yaml set 'regions.%region%.flags.%flag%:all' 'id:dRegions_%world%_regions'
         - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-        - run s@dRegions_Msg 'def:<&f><&o>%region%<&7><&o> set %flag% flag to <&f><&o>%flagValue%'
+        - run s@dRegions_Msg delay:1t 'def:<&f><&o>%region%<&7><&o> set %flag% flag to <&f><&o>%flagValue%'
         - queue clear
         }
       - if <def[action].is[==].to[-r]||false> {
         - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
         - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-        - run s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
+        - run s@dRegions_Msg delay:1t 'def:<&c>Cleared %flag% list for region %region%'
         - queue clear
         }
       }
@@ -4169,7 +4247,7 @@ dRegions_Flags_CommandProcessors:
       - run  s@dRegions_Msg 'def:<&c><&o>No valid <s@dRegions_Flag_%Flag%.yaml_key[command_entryType]>s specified!'
       - define lines '<proc[dRegions_LineWrap].context[<s@dRegions_Flag_%Flag%.yaml_key[flag_help]||<&c>%flag% flag requires a %type% value!>|45]>'
       - foreach <def[lines]> {
-        - run s@dRegions_Msg 'def:<&c><def[value]>'
+        - run s@dRegions_Msg delay:1t 'def:<&c><def[value]>'
         }
       - queue clear
       }
@@ -4184,7 +4262,7 @@ dRegions_Flags_CommandProcessors:
     - if <def[flagValue].is_empty||true> {
       - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
       - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-      - run s@dRegions_Msg 'def:<&c>Cleared %flag% list for region %region%'
+      - run s@dRegions_Msg delay:1t 'def:<&c>Cleared %flag% list for region %region%'
       - queue clear
       }
     - define flagValue '<def[flagValue].replace[|].with[ ; ].replace[li@]>'
