@@ -1120,6 +1120,126 @@ dRegions_Flag_PVE-Moblist:
     - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
 
 
+dRegions_Flag_Npc-Interact:
+  type: item
+  speed: 0
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>NPC Interact<&4>]"
+  lore:
+  - <&5>Can players interact with NPCs
+  event_hook: npc-interact
+  event_priority: 10
+  flag_type: state
+  flag_takeGroup: true
+  flag_defaultValue: none
+  flag_globalDefault: none
+  flag_help: State flag controlling whether players will be able to interact with NPCs in this region. Defaults to allow. Takes the -g group switch.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event:
+    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+      - define player '<player>'
+      - define flag 'npc-interact'
+      - inject s@dRegions_Flags_Processors p:state-withGroup
+      }
+
+  event-global:
+    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+      - define player '<player>'
+      - define flag 'npc-interact'
+      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup-Global
+      }
+
+  event-cleanup:
+    - run locally msg 'def:<def[target].to_lowercase.replace[_].with[ ]>'
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
+      - flag player dRegions_Message_Cooldown duration:3s
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not interact with NPCs here!'
+      }
+
+
+dRegions_Flag_Entity-Interact:
+  type: item
+  speed: 0
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Entity Interact<&4>]"
+  lore:
+  - <&5>Can players interact with entities
+  event_hook: entity-interact
+  event_priority: 10
+  flag_type: state
+  flag_takeGroup: true
+  flag_defaultValue: none
+  flag_globalDefault: none
+  flag_help: State flag controlling whether players will be able to interact with entities in this region. Defaults to allow all. Use entity-interactlist flag to specify entity types. Takes the -g group switch.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event:
+    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+      - define player '<player>'
+      - define target '<c.entity.entity_type>'
+      - define flag 'entity-interact'
+      - define flag-targetList 'entity-interactlist'
+      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
+      }
+
+  event-global:
+    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+      - define player '<player>'
+      - define target '<c.entity.entity_type>'
+      - define flag 'entity-interact'
+      - define flag-targetList 'entity-interactlist'
+      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup-Global
+      }
+
+  event-cleanup:
+    - run locally msg 'def:<def[target].to_lowercase.replace[_].with[ ]>'
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
+      - flag player dRegions_Message_Cooldown duration:3s
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not interact with %1%s here!'
+      }
+
+
+dRegions_Flag_Entity-Interactlist:
+  type: item
+  speed: 0
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Entity Interact List<&4>]"
+  lore:
+  - <&5>List of entities used by entity-interact flag
+  command_entryType: mob
+  command_verifyEntry: <def[value].is[matches].to[entity].not>
+  flag_type: list
+  flag_takeGroup: false
+  flag_help: List flag used with entity-interact flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of entities.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  command_handler:
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
+
+
 dRegions_Flag_Entity-Explode:
   type: item
   speed: 0

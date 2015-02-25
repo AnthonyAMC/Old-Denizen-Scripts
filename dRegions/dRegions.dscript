@@ -793,6 +793,28 @@ dRegions:
       - inject %value% p:event
       }
 
+    on player right clicks entity:
+    - if <c.entity.entity_type> == item_frame {
+      - queue clear
+      }
+    - define world '<player.world.name.to_lowercase>'
+    - if <c.cuboids.is_empty||true> {
+      - foreach <server.flag[dRegions_FlagMap].filter[starts_with[<tern[<c.entity.is_npc>]:npc-interact||entity-interact>]].parse[after[/]].alphanumeric.parse[split[/].get[2]]> {
+        - define FlagScript '%value%'
+        - inject %value% p:event-global
+        }
+      - queue clear
+      }
+    - define regionPri 'li@'
+    - foreach <c.cuboids.parse[notable_name].filter[starts_with[dRegions_]].parse[after[dregions_%world%_]].include[__global__]> {
+      - define regionPri '<def[regionPri].include[<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%]>'
+      }
+    - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
+    - foreach <server.flag[dRegions_FlagMap].filter[starts_with[<tern[<c.entity.is_npc>]:npc-interact||entity-interact>]].parse[after[/]].alphanumeric.parse[split[/].get[2]]> {
+      - define FlagScript '%value%'
+      - inject %value% p:event
+      }
+
     on player enters bed:
     # Do we need to fire events for region enter, exit, and toggle?
     - define world '<player.world.name.to_lowercase>'
