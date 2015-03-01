@@ -1197,31 +1197,27 @@ dRegions:
     - inject s@dRegions p:event_PreProc_Config
 
     on entity changes block:
+    - if <server.flag[dRegions_EntityGrief].as_list.contains[<c.entity.uuid>]||false> {
+      - determine cancelled
+      }
     - define world '<c.location.world.name.to_lowercase>'
     # Maybe abuse repeat here to get out of if else if else
     - if <c.entity.entity_type.is[==].to[falling_block]> {
       - define readPath 'physics.<c.entity.fallingblock_material.bukkit_enum.to_lowercase>'
-#      - define eventHooks 'physics-<c.entity.fallingblock_material.bukkit_enum>'
       - define FlagScript 's@dRegions_Flag_Falling-<c.entity.fallingblock_material.bukkit_enum>'
       }
       else if <c.old_material.bukkit_enum.is[==].to[soil]||false> {
       - define readPath 'trample-crops.<c.entity.prefix||entity>'
-#      - define eventHooks 'trample-crops-<c.entity.prefix||entity>'
       - define FlagScript 's@dRegions_Flag_Trample-Crops-<c.entity.prefix||entity>'
       }
       else {
       - define readPath 'entity.changeBlock'
       - define target '<c.entity.entity_type||other>'
-#      - define eventHooks 'entity-changeBlock'
       - define FlagScript 's@dRegions_Flag_Entity-Grief'
       }
     - inject s@dRegions p:event_PreProc_Config
     - if <c.location.cuboids.is_empty||true> {
       - inject %FlagScript% p:event-global
-#      - foreach <server.flag[dRegions_FlagMap].filter[starts_with[%eventHooks%]].parse[after[/]].alphanumeric.parse[split[/].get[2]]> {
-#        - define FlagScript '%value%'
-#        - inject %value% p:event-global
-#        }
       - queue clear
       }
     - define regionPri 'li@'
@@ -1229,10 +1225,6 @@ dRegions:
       - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
       }
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
-#    - foreach <server.flag[dRegions_FlagMap].filter[starts_with[%eventHooks%]].parse[after[/]].alphanumeric.parse[split[/].get[2]]> {
-#      - define FlagScript '%value%'
-#      - inject %value% p:event
-#      }
     - inject %FlagScript% p:event
 
     on entity forms block:

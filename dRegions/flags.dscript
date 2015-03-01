@@ -1327,7 +1327,7 @@ dRegions_Flag_Entity-Grief:
 
   event-cleanup:
 #    - run locally flags def:<c.entity.uuid>|<c.entity.location>
-    - run locally flags def:<c.entity.uuid>
+    - run locally flags def:<c.entity.uuid> delay:1t
 
   event:
     - define flag 'entity-grief'
