@@ -832,7 +832,7 @@ dRegions:
     - define world '<player.world.name.to_lowercase>'
     - if <c.relative.cuboids.is_empty||true> {
       - define FlagScript 's@dRegions_Flag_dRegions_Flag_Bucket-Empty'
-      - inject s@dRegions_Flag_Build p:event-global
+      - inject s@dRegions_Flag_Bucket-Empty p:event-global
       - queue clear
       }
     - define regionPri 'li@'
@@ -841,13 +841,13 @@ dRegions:
       }
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
     - define FlagScript 's@dRegions_Flag_dRegions_Flag_Bucket-Empty'
-    - inject s@dRegions_Flag_Build p:event
+    - inject s@dRegions_Flag_Bucket-Empty p:event
 
     on player fills bucket:
     - define world '<player.world.name.to_lowercase>'
     - if <c.location.cuboids.is_empty||true> {
       - define FlagScript 's@dRegions_Flag_dRegions_Flag_Bucket-Fill'
-      - inject s@dRegions_Flag_Build p:event-global
+      - inject s@dRegions_Flag_Bucket-Fill p:event-global
       - queue clear
       }
     - define regionPri 'li@'
@@ -856,14 +856,14 @@ dRegions:
       }
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
     - define FlagScript 's@dRegions_Flag_dRegions_Flag_Bucket-Fill'
-    - inject s@dRegions_Flag_Build p:event
+    - inject s@dRegions_Flag_Bucket-Fill p:event
 
     on player drops item:
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<player.location.cuboids.include[<c.location.cuboids>].deduplicate>'
     - if <def[cuboids].is_empty||true> {
       - define FlagScript 's@dRegions_Flag_Player-Drops'
-      - inject s@dRegions_Flag_Build p:event-global
+      - inject s@dRegions_Flag_Player-Drops p:event-global
       - queue clear
       }
     - define regionPri 'li@'
@@ -872,14 +872,14 @@ dRegions:
       }
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
     - define FlagScript 's@dRegions_Flag_Player-Drops'
-    - inject s@dRegions_Flag_Build p:event
+    - inject s@dRegions_Flag_Player-Drops p:event
 
     on player picks up item:
     - define world '<player.world.name.to_lowercase>'
     - define cuboids '<player.location.cuboids.include[<c.location.cuboids>].deduplicate>'
     - if <def[cuboids].is_empty||true> {
       - define FlagScript 's@dRegions_Flag_Player-Pickup'
-      - inject s@dRegions_Flag_Build p:event-global
+      - inject s@dRegions_Flag_Player-Pickup p:event-global
       - queue clear
       }
     - define regionPri 'li@'
@@ -888,7 +888,7 @@ dRegions:
       }
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
     - define FlagScript 's@dRegions_Flag_Player-Pickup'
-    - inject s@dRegions_Flag_Build p:event
+    - inject s@dRegions_Flag_Player-Pickup p:event
 
     on player places hanging:
     - define world '<player.world.name.to_lowercase>'
@@ -896,7 +896,7 @@ dRegions:
       - define FlagScript 's@dRegions_Flag_Build'
       - inject s@dRegions_Flag_Build p:event-global
       - define FlagScript 's@dRegions_Flag_Hanging-Place'
-      - inject s@dRegions_Flag_Build p:event-global
+      - inject s@dRegions_Flag_Hanging-Place p:event-global
       - queue clear
       }
     - define regionPri 'li@'
@@ -907,7 +907,7 @@ dRegions:
     - define FlagScript 's@dRegions_Flag_Build'
     - inject s@dRegions_Flag_Build p:event
     - define FlagScript 's@dRegions_Flag_Hanging-Place'
-    - inject s@dRegions_Flag_Build p:event
+    - inject s@dRegions_Flag_Hanging-Place p:event
 
     on player right clicks at armor_stand:
     - define world '<player.world.name.to_lowercase>'
@@ -1017,7 +1017,7 @@ dRegions:
     - define world '<player.world.name.to_lowercase>'
     - if <player.location.cuboids.is_empty||true> {
       - define FlagScript 's@dRegions_Flag_Hunger'
-      - inject s@dRegions_Flag_Build p:event-global
+      - inject s@dRegions_Flag_Hunger p:event-global
       - queue clear
       }
     - define regionPri 'li@'
@@ -1026,7 +1026,7 @@ dRegions:
       }
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
     - define FlagScript 's@dRegions_Flag_Hunger'
-    - inject s@dRegions_Flag_Build p:event
+    - inject s@dRegions_Flag_Hunger p:event
 
     on player teleports:
     - if <c.cause.is[!=].to[ender_pearl]||true> {
@@ -1036,7 +1036,7 @@ dRegions:
     - define cuboids '<c.origin.cuboids.include[<c.destination.cuboids>].deduplicate>'
     - if <def[cuboids].is_empty||true> {
       - define FlagScript 's@dRegions_Flag_Enderpearl'
-      - inject s@dRegions_Flag_Build p:event-global
+      - inject s@dRegions_Flag_Enderpearl p:event-global
       - queue clear
       }
     - define regionPri 'li@'
@@ -1045,7 +1045,7 @@ dRegions:
       }
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
     - define FlagScript 's@dRegions_Flag_Enderpearl'
-    - inject s@dRegions_Flag_Build p:event
+    - inject s@dRegions_Flag_Enderpearl p:event
 
     on player respawns:
     - if <player.has_flag[dRegions_Respawn]> {
