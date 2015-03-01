@@ -434,7 +434,7 @@ dRegions_Flag_Inventory:
     - inject locally updateInv
 
   event-global:
-    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|inventory]>'
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|inventory]>'
     - if %flagObj% == null {
       - foreach next
       - queue stop
@@ -515,7 +515,7 @@ dRegions_Flag_Build:
   lore:
   - <&5>Override default build perms
   event_hook: build
-  event_priority: 10
+  event_priority: 0
   flag_type: state
   flag_help: By default, all members and owners can build in their regions. Setting this flag can over ride that behavior. Can be set to allow, deny, or none and accepts the -g group switch.
   flag_takeGroup: true
@@ -530,7 +530,7 @@ dRegions_Flag_Build:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event-cleanup:
-    - run locally msg
+    - run locally msg delay:1t
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
@@ -581,7 +581,7 @@ dRegions_Flag_Vehicle-Place:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event-cleanup:
-    - run locally msg def:<c.item.material.name.replace[_].with[ ]>
+    - run locally msg 'def:<c.item.material.name.replace[_].with[ ]>'
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
@@ -628,7 +628,7 @@ dRegions_Flag_Vehicle-Destroy:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event-cleanup:
-    - run locally msg def:<c.vehicle.entity_type.to_lowercase.replace[_].with[ ]>
+    - run locally msg 'def:<c.vehicle.entity_type.to_lowercase.replace[_].with[ ]>'
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
@@ -2785,12 +2785,16 @@ dRegions_Flag_PVP:
       }
 
   event:
-    - define flag 'pvp'
-    - inject s@dRegions_Flags_Processors p:boolean
+    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+      - define flag 'pvp'
+      - inject s@dRegions_Flags_Processors p:boolean
+      }
 
   event-global:
-    - define flag 'pvp'
-    - inject s@dRegions_Flags_Processors p:boolean-Global
+    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+      - define flag 'pvp'
+      - inject s@dRegions_Flags_Processors p:boolean-Global
+      }
 
 
 dRegions_Flag_Potion-Throw:
@@ -3045,7 +3049,7 @@ dRegions_Flag_Block-Place:
       }
 
   event-cleanup:
-    - run locally msg 'def:%target%'
+    - run locally msg 'def:%target%' delay:1t
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
@@ -3118,7 +3122,7 @@ dRegions_Flag_Block-Break:
       }
 
   event-cleanup:
-    - run locally msg 'def:%target%'
+    - run locally msg 'def:%target%' delay:1t
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
@@ -3342,13 +3346,16 @@ dRegions_Flag_Use-Switches:
       }
 
   event-cleanup:
-    - run locally msg 'def:<c.location.material.name.replace[_].with[ ]>'
+    - run locally msg 'def:<c.location.material.name.replace[_].with[ ]>' delay:1t
 
   msg:
+    - ^flag <player> dRegions_UseSwitch
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
       - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not use %1%s in this region!'
       }
+    - ^wait 2s
+    - ^flag <player> dRegions_UseSwitch:!
 
 
 dRegions_Flag_Use-Switches-List:
@@ -3827,7 +3834,7 @@ dRegions_Flag_Feed-Amount:
       - if %feedMax% == null {
         - define feedMax '20'
         }
-       - define feedMin '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|feed-min]>'
+      - define feedMin '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|feed-min]>'
       - if %feedMin% == null {
         - define feedMin '0'
         }
@@ -3983,15 +3990,17 @@ dRegions_Flags_Processors:
 #
   boolean:
     - if <def[FlagScript].yaml_key[region_highestOnly]||false> {
-      - define orderedRegions '<def[orderedRegions].get[1].as_list>'
+      - define region '<def[orderedRegions].get[1]>'
+      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|%flag%]>'
       }
-    - foreach %orderedRegions% {
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|%flag%]>'
-      - if %flagVal% == null {
-        - foreach next
+      else {
+      - foreach %orderedRegions% {
+        - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|%flag%]>'
+        - define region '%value%'
+        - if %flagVal% != null {
+          - foreach stop
+          }
         }
-      - define region '%value%'
-      - foreach stop
       }
 # Get the default flag value if not set by a region
     - if %flagVal% == null {
@@ -4002,53 +4011,214 @@ dRegions_Flags_Processors:
       - determine cancelled
       }
 
+  state-withGroup:
+    - if <def[FlagScript].yaml_key[region_highestOnly]||false> {
+      - define region '<def[orderedRegions].get[1]>'
+      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|%flag%]>'
+      }
+      else {
+      - foreach %orderedRegions% {
+        - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|%flag%]>'
+        - define region '%value%'
+        - if %flagObj% != null {
+          - foreach stop
+          }
+        }
+      }
+    - if %flagObj% == null {
+      - define flagObj '<def[FlagScript].yaml_key[flag_defaultValue]||none>'
+      }
+    - if %flagObj% != none {
+      - if <def[flagObj].split[/].get[1]> == allow {
+        - if !<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|<def[orderedRegions].get[1]>|%world%|%player%]> {
+          - inject %FlagScript% p:event-cleanup
+          - determine cancelled
+          }
+        }
+        else {
+        - if <proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|<def[orderedRegions].get[1]>|%world%|%player%]> {
+          - inject %FlagScript% p:event-cleanup
+          - determine cancelled
+          }
+        }
+      }
 
   state-withTarget:
     - if <def[FlagScript].yaml_key[region_highestOnly]||false> {
-      - define orderedRegions '<def[orderedRegions].get[1].as_list>'
+      - define region '<def[orderedRegions].get[1]>'
+      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|%flag%]>'
       }
-    - foreach %orderedRegions% {
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|%flag%]>'
-      - if %flagVal% == null {
-        - foreach next
+      else {
+      - foreach %orderedRegions% {
+        - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|%flag%]>'
+        - define region '%value%'
+        - if %flagVal% != null {
+          - foreach stop
+          }
         }
-      - define region '%value%'
-      - foreach stop
       }
-    - inject locally state-process-WithTargetNoGroup_%flagVal%
-    - queue clear
-
-
-  state-withGroup:
-    - if <def[FlagScript].yaml_key[region_highestOnly]||false> {
-      - define orderedRegions '<def[orderedRegions].get[1].as_list>'
+    - if %flagVal% == null {
+      - define flagVal '<def[FlagScript].yaml_key[flag_defaultValue]||none>'
       }
-    - foreach %orderedRegions% {
-      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|%flag%]>'
-      - if %flagObj% == null {
-        - foreach next
+    - if %flagVal% != none {
+      - if %flagVal% == allow {
+        - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|%flag-targetList%].replace[, ].with[|].as_list>'
+        - if ( %targetList% != li@null ) && ( %targetList% != li@all ) && ( %targetList% !contains %target% ) {
+          - inject %FlagScript% p:event-cleanup
+          - determine cancelled
+          }
         }
-      - define region '%value%'
-      - foreach stop
+        else {
+        - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|%flag-targetList%].replace[, ].with[|].as_list>'
+        - if ( %targetList% == li@null ) || ( %targetList% == li@all ) || ( %targetList% contains %target% ) {
+          - inject %FlagScript% p:event-cleanup
+          - determine cancelled
+          }
+        }
       }
-    - inject locally state-process-WithGroup_<def[flagObj].split[/].get[1]>
-    - queue clear
-
 
   state-withTarget-withGroup:
     - if <def[FlagScript].yaml_key[region_highestOnly]||false> {
-      - define orderedRegions '<def[orderedRegions].get[1].as_list>'
+      - define region '<def[orderedRegions].get[1]>'
+      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|%flag%]>'
       }
-    - foreach %orderedRegions% {
-      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|%flag%]>'
-      - if %flagObj% == null {
-        - foreach next
+      else {
+      - foreach %orderedRegions% {
+        - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|%flag%]>'
+        - define region '%value%'
+        - if %flagObj% != null {
+          - foreach stop
+          }
         }
-      - define region '%value%'
-      - foreach stop
       }
-    - inject locally state-process-WithTargetWithGroup_<def[flagObj].split[/].get[1]>
-    - queue clear
+    - if %flagObj% == null {
+      - define flagObj '<def[FlagScript].yaml_key[flag_defaultValue]||none>'
+      }
+    - if %flagObj% != none {
+      - if <def[flagObj].split[/].get[1]> == allow {
+        - if !<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|<def[orderedRegions].get[1]>|%world%|%player%]> {
+          - inject %FlagScript% p:event-cleanup
+          - determine cancelled
+          }
+        - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|%flag-targetList%].replace[, ].with[|].as_list>'
+        - if ( %targetList% != li@null ) && ( %targetList% != li@all ) && ( %targetList% !contains %target% ) {
+          - inject %FlagScript% p:event-cleanup
+          - determine cancelled
+          }
+        }
+        else {
+        - if <proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|<def[orderedRegions].get[1]>|%world%|%player%]> {
+          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|%flag-targetList%].replace[, ].with[|].as_list>'
+          - if ( %targetList% == li@null ) || ( %targetList% == li@all ) || ( %targetList% contains %target% ) {
+            - inject %FlagScript% p:event-cleanup
+            - determine cancelled
+            }
+          }
+        }
+      }
+
+
+  state-withTargetString-withGroup:
+    - if <def[FlagScript].yaml_key[region_highestOnly]||false> {
+      - define region '<def[orderedRegions].get[1]>'
+      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|%flag%]>'
+      }
+      else {
+      - foreach %orderedRegions% {
+        - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|%flag%]>'
+        - define region '%value%'
+        - if %flagObj% != null {
+          - foreach stop
+          }
+        }
+      }
+    - if %flagObj% == null {
+      - define flagObj '<def[FlagScript].yaml_key[flag_defaultValue]||none>'
+      }
+    - if %flagObj% != none {
+      - if <def[flagObj].split[/].get[1]> == allow {
+        - if !<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|<def[orderedRegions].get[1]>|%world%|%player%]> {
+          - inject %FlagScript% p:event-cleanup
+          - determine cancelled
+          }
+        - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|%flag-targetList%].replace[<def[delimiter]||, >].with[|].as_list>'
+        - if ( %targetList% != li@null ) && ( %targetList% != li@all ) {
+          - foreach %targetList% {
+            - if <def[target].starts_with[%value%]> {
+              - inject %FlagScript% p:event-cleanup
+              - determine cancelled
+              }
+            }
+          }
+        }
+        else {
+        - if <proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|<def[orderedRegions].get[1]>|%world%|%player%]> {
+          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|%flag-targetList%].replace[<def[delimiter]||, >].with[|].as_list>'
+          - if ( %targetList% == li@null ) || ( %targetList% == li@all ) {
+            - inject %FlagScript% p:event-cleanup
+            - determine cancelled
+            }
+          - foreach %targetList% {
+            - if <def[target].starts_with[%value%]> {
+              - inject %FlagScript% p:event-cleanup
+              - determine cancelled
+              }
+            }
+          }
+        }
+      }
+
+
+
+##############################
+# Abstract methods
+#
+#  state-withTarget:
+#    - if <def[FlagScript].yaml_key[region_highestOnly]||false> {
+#      - define orderedRegions '<def[orderedRegions].get[1].as_list>'
+#      }
+#    - foreach %orderedRegions% {
+#      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|%flag%]>'
+#      - if %flagVal% == null {
+#        - foreach next
+#        }
+#      - define region '%value%'
+#      - foreach stop
+#      }
+#    - inject locally state-process-WithTargetNoGroup_%flagVal%
+#    - queue clear
+
+
+#  state-withGroup:
+#    - if <def[FlagScript].yaml_key[region_highestOnly]||false> {
+#      - define orderedRegions '<def[orderedRegions].get[1].as_list>'
+#      }
+#    - foreach %orderedRegions% {
+#      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|%flag%]>'
+#      - if %flagObj% == null {
+#        - foreach next
+#        }
+#      - define region '%value%'
+#      - foreach stop
+#      }
+#    - inject locally state-process-WithGroup_<def[flagObj].split[/].get[1]>
+#    - queue clear
+
+
+#  state-withTarget-withGroup:
+#    - if <def[FlagScript].yaml_key[region_highestOnly]||false> {
+#      - define orderedRegions '<def[orderedRegions].get[1].as_list>'
+#      }
+#    - foreach %orderedRegions% {
+#      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|%flag%]>'
+#      - if %flagObj% == null {
+#        - foreach next
+#        }
+#      - define region '%value%'
+#      - foreach stop
+#      }
+#    - inject locally state-process-WithTargetWithGroup_<def[flagObj].split[/].get[1]>
+#    - queue clear
 
 
 #---------------------------------------
@@ -4059,252 +4229,323 @@ dRegions_Flags_Processors:
     - if %flagVal% == null {
       - define flagVal '<def[FlagScript].yaml_key[flag_globalDefault]||true>'
       }
-
     - if !%flagVal% {
       - inject %FlagScript% p:event-cleanup
       - determine cancelled
       }
 
-
   state-withGroup-Global:
     - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag%]>'
-    - inject locally state-process-Global-WithGroup_<def[flagObj].split[/].get[1]>
-    - queue clear
-
+    - if %flagObj% == null {
+      - define flagObj '<def[FlagScript].yaml_key[flag_globalDefault]||none>'
+      }
+    - if %flagObj% != none {
+      - if <def[flagObj].split[/].get[1]> == allow {
+        - if !<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|__global__|%world%|%player%]> {
+          - inject %FlagScript% p:event-cleanup
+          - determine cancelled
+          }
+        }
+        else {
+        - if <proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|__global__|%world%|%player%]> {
+          - inject %FlagScript% p:event-cleanup
+          - determine cancelled
+          }
+        }
+      }
 
   state-withTarget-Global:
-    - inject locally state-process-Global-WithTargetNoGroup_<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag%]>
-    - queue clear
-
+    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag%]>'
+    - if %flagVal% == null {
+      - define flagVal '<def[FlagScript].yaml_key[flag_globalDefault]||none>'
+      }
+    - if %flagVal% != none {
+      - if %flagVal% == allow {
+        - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag-targetList%].replace[, ].with[|].as_list>'
+        - if ( %targetList% != li@null ) && ( %targetList% != li@all ) && ( %targetList% !contains %target% ) {
+          - inject %FlagScript% p:event-cleanup
+          - determine cancelled
+          }
+        }
+        else {
+        - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag-targetList%].replace[, ].with[|].as_list>'
+        - if ( %targetList% == li@null ) || ( %targetList% == li@all ) || ( %targetList% contains %target% ) {
+          - inject %FlagScript% p:event-cleanup
+          - determine cancelled
+          }
+        }
+      }
 
   state-withTarget-withGroup-Global:
     - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag%]>'
-    - inject locally state-process-Global-WithTargetWithGroup_<def[flagObj].split[/].get[1]>
-    - queue clear
+    - if %flagObj% == null {
+      - define flagObj '<def[FlagScript].yaml_key[flag_globalDefault]||none>'
+      }
+    - if %flagObj% != none {
+      - if <def[flagObj].split[/].get[1]> == allow {
+        - if !<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|__global__|%world%|%player%]> {
+          - inject %FlagScript% p:event-cleanup
+          - determine cancelled
+          }
+        - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag-targetList%].replace[, ].with[|].as_list>'
+        - if ( %targetList% != li@null ) && ( %targetList% != li@all ) && ( %targetList% !contains %target% ) {
+          - inject %FlagScript% p:event-cleanup
+          - determine cancelled
+          }
+        }
+        else {
+        - if <proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|__global__|%world%|%player%]> {
+          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag-targetList%].replace[, ].with[|].as_list>'
+          - if ( %targetList% == li@null ) || ( %targetList% == li@all ) || ( %targetList% contains %target% ) {
+            - inject %FlagScript% p:event-cleanup
+            - determine cancelled
+            }
+          }
+        }
+      }
 
+
+##############################
+# Abstract methods
+#
+#  state-withGroup-Global:
+#    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag%]>'
+#    - inject locally state-process-Global-WithGroup_<def[flagObj].split[/].get[1]>
+#    - queue clear
+
+
+#  state-withTarget-Global:
+#    - inject locally state-process-Global-WithTargetNoGroup_<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag%]>
+#    - queue clear
+
+
+#  state-withTarget-withGroup-Global:
+#    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag%]>'
+#    - inject locally state-process-Global-WithTargetWithGroup_<def[flagObj].split[/].get[1]>
+#    - queue clear
 
 #-------------------
 # Global WithGroup Flag Processors
 #
-  state-process-Global-WithGroup_null:
-    - define flagObj '<def[FlagScript].yaml_key[flag_globalDefault]||none>'
-    - inject locally state-process-Global-WithGroup_<def[flagObj].split[/].get[1]>
+#  state-process-Global-WithGroup_null:
+#    - define flagObj '<def[FlagScript].yaml_key[flag_globalDefault]||none>'
+#    - inject locally state-process-Global-WithGroup_<def[flagObj].split[/].get[1]>
 
-  state-process-Global-WithGroup_none:
-    - foreach next
-    - queue clear
+#  state-process-Global-WithGroup_none:
+#    - foreach next
+#    - queue clear
 
-  state-process-Global-WithGroup_allow:
-    - define group '<def[flagObj].split[/].get[2]||all>'
-    - inject locally state-process-WithGroup_deny-<proc[dRegions_PlayerMatchRegionGroup].context[%group%|__global__|%world%|%player%].not>
+#  state-process-Global-WithGroup_allow:
+#    - define group '<def[flagObj].split[/].get[2]||all>'
+#    - inject locally state-process-Global-WithGroup_deny-<proc[dRegions_PlayerMatchRegionGroup].context[%group%|__global__|%world%|%player%].not>
 
-  state-process-Global-WithGroup_deny:
-    - define group '<def[flagObj].split[/].get[2]||all>'
-    - inject locally state-process-WithGroup_deny-<proc[dRegions_PlayerMatchRegionGroup].context[%group%|__global__|%world%|%player%]>
+#  state-process-Global-WithGroup_deny:
+#    - define group '<def[flagObj].split[/].get[2]||all>'
+#    - inject locally state-process-Global-WithGroup_deny-<proc[dRegions_PlayerMatchRegionGroup].context[%group%|__global__|%world%|%player%]>
 
-  state-process-Global-WithGroup_deny-true:
-    - inject %FlagScript% p:event-cleanup
-    - determine cancelled
+#  state-process-Global-WithGroup_deny-true:
+#    - inject %FlagScript% p:event-cleanup
+#    - determine cancelled
 
 
 #-------------------
 # Global WithTargetWithGroup Flag Processors
 #
-  state-process-Global-WithTargetWithGroup_null:
-    - define flagObj '<def[FlagScript].yaml_key[flag_globalDefault]||none>'
-    - inject locally state-process-WithTargetWithGroup_<def[flagObj].split[/].get[1]>
+#  state-process-Global-WithTargetWithGroup_null:
+#    - define flagObj '<def[FlagScript].yaml_key[flag_globalDefault]||none>'
+#    - inject locally state-process-Global-WithTargetWithGroup_<def[flagObj].split[/].get[1]>
 
-  state-process-Global-WithTargetWithGroup_none:
-    - foreach next
-    - queue clear
+#  state-process-Global-WithTargetWithGroup_none:
+#    - foreach next
+#    - queue clear
 
-  state-process-Global-WithTargetWithGroup_allow:
-    - define group '<def[flagObj].split[/].get[2]||all>'
-    - inject locally state-process-WithTargetWithGroup_allow-<proc[dRegions_PlayerMatchRegionGroup].context[%group%|__global__|%world%|%player%]>
+#  state-process-Global-WithTargetWithGroup_allow:
+#    - define group '<def[flagObj].split[/].get[2]||all>'
+#    - inject locally state-process-Global-WithTargetWithGroup_allow-<proc[dRegions_PlayerMatchRegionGroup].context[%group%|__global__|%world%|%player%]>
 
-  state-process-Global-WithTargetWithGroup_allow-true:
-    - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag-targetList%].replace[, ].with[|].as_list>'
-    - if %targetList% == li@null {
-      - queue clear
-      }
-    - if %targetList% != li@all {
-      - if %targetList% !contains %target% {
-        - inject %FlagScript% p:event-cleanup
-        - determine cancelled
-        }
-      }
+#  state-process-Global-WithTargetWithGroup_allow-true:
+#    - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag-targetList%].replace[, ].with[|].as_list>'
+#    - if %targetList% == li@null {
+#      - queue clear
+#      }
+#    - if %targetList% != li@all {
+#      - if %targetList% !contains %target% {
+#        - inject %FlagScript% p:event-cleanup
+#        - determine cancelled
+#        }
+#      }
 
-  state-process-Global-WithTargetWithGroup_allow-false:
-    - inject %FlagScript% p:event-cleanup
-    - determine cancelled
+#  state-process-Global-WithTargetWithGroup_allow-false:
+#    - inject %FlagScript% p:event-cleanup
+#    - determine cancelled
 
-  state-process-Global-WithTargetWithGroup_deny:
-    - define group '<def[flagObj].split[/].get[2]||all>'
-    - inject locally state-process-WithTargetWithGroup_deny-<proc[dRegions_PlayerMatchRegionGroup].context[%group%|__global__|%world%|%player%]>
+#  state-process-Global-WithTargetWithGroup_deny:
+#    - define group '<def[flagObj].split[/].get[2]||all>'
+#    - inject locally state-process-Global-WithTargetWithGroup_deny-<proc[dRegions_PlayerMatchRegionGroup].context[%group%|__global__|%world%|%player%]>
 
-  state-process-Global-WithTargetWithGroup_deny-true:
-    - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag-targetList%].replace[, ].with[|].as_list>'
-    - if %targetList% == li@null {
-      - inject %FlagScript% p:event-cleanup
-      - determine cancelled
-      }
-    - if %targetList% == li@all {
-      - inject %FlagScript% p:event-cleanup
-      - determine cancelled
-      }
-    - if %targetList% contains %target% {
-      - inject %FlagScript% p:event-cleanup
-      - determine cancelled
-      }
+#  state-process-Global-WithTargetWithGroup_deny-true:
+#    - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag-targetList%].replace[, ].with[|].as_list>'
+#    - if %targetList% == li@null {
+#      - inject %FlagScript% p:event-cleanup
+#      - determine cancelled
+#      }
+#    - if %targetList% == li@all {
+#      - inject %FlagScript% p:event-cleanup
+#      - determine cancelled
+#      }
+#    - if %targetList% contains %target% {
+#      - inject %FlagScript% p:event-cleanup
+#      - determine cancelled
+#      }
 
 #-------------------
 # Global WithTargetNoGroup Flag Processors
 #
-  state-process-Global-WithTargetNoGroup_null:
-    - inject locally state-process-WithTargetNoGroup_<def[FlagScript].yaml_key[flag_globalDefalut]||none>
+#  state-process-Global-WithTargetNoGroup_null:
+#    - inject locally state-process-Global-WithTargetNoGroup_<def[FlagScript].yaml_key[flag_globalDefalut]||none>
 
-  state-process-Global-WithTargetNoGroup_none:
-    - foreach next
-    - queue clear
+#  state-process-Global-WithTargetNoGroup_none:
+#    - foreach next
+#    - queue clear
 
-  state-process-Global-WithTargetNoGroup_allow:
-    - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag-targetList%].replace[, ].with[|].as_list>'
-    - if %targetList% == 'li@null' {
-      - queue clear
-      }
-    - if %targetList% != li@all {
-      - if %targetList% !contains %target% {
-        - inject %FlagScript% p:event-cleanup
-        - determine cancelled
-        }
-      }
+#  state-process-Global-WithTargetNoGroup_allow:
+#    - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag-targetList%].replace[, ].with[|].as_list>'
+#    - if %targetList% == 'li@null' {
+#      - queue clear
+#      }
+#    - if %targetList% != li@all {
+#      - if %targetList% !contains %target% {
+#        - inject %FlagScript% p:event-cleanup
+#        - determine cancelled
+#        }
+#      }
 
-  state-process-Global-WithTargetNoGroup_deny:
-    - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag-targetList%].replace[, ].with[|].as_list>'
-    - if %targetList% == li@null {
-      - inject %FlagScript% p:event-cleanup
-      - determine cancelled
-      }
-    - if %targetList% == li@all {
-      - inject %FlagScript% p:event-cleanup
-      - determine cancelled
-      }
-    - if %targetList% contains %target% {
-      - inject %FlagScript% p:event-cleanup
-      - determine cancelled
-      }
+#  state-process-Global-WithTargetNoGroup_deny:
+#    - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag-targetList%].replace[, ].with[|].as_list>'
+#    - if %targetList% == li@null {
+#      - inject %FlagScript% p:event-cleanup
+#      - determine cancelled
+#      }
+#    - if %targetList% == li@all {
+#      - inject %FlagScript% p:event-cleanup
+#      - determine cancelled
+#      }
+#    - if %targetList% contains %target% {
+#      - inject %FlagScript% p:event-cleanup
+#      - determine cancelled
+#      }
 
 
 #-------------------
 # Region WithGroup Flag Processors
 #
-  state-process-WithGroup_null:
-    - define flagObj '<def[FlagScript].yaml_key[flag_defaultValue]||none>'
-    - inject locally state-process-WithGroup_<def[flagObj].split[/].get[1]>
+#  state-process-WithGroup_null:
+#    - define flagObj '<def[FlagScript].yaml_key[flag_defaultValue]||none>'
+#    - inject locally state-process-WithGroup_<def[flagObj].split[/].get[1]>
 
-  state-process-WithGroup_none:
-    - foreach next
-    - queue clear
+#  state-process-WithGroup_none:
+#    - foreach next
+#    - queue clear
 
-  state-process-WithGroup_allow:
-    - define group '<def[flagObj].split[/].get[2]||all>'
-    - inject locally state-process-WithGroup_deny-<proc[dRegions_PlayerMatchRegionGroup].context[%group%|<def[orderedRegions].get[1]>|%world%|%player%].not>
+#  state-process-WithGroup_allow:
+#    - define group '<def[flagObj].split[/].get[2]||all>'
+#    - inject locally state-process-WithGroup_deny-<proc[dRegions_PlayerMatchRegionGroup].context[%group%|<def[orderedRegions].get[1]>|%world%|%player%].not>
 
-  state-process-WithGroup_deny:
-    - define group '<def[flagObj].split[/].get[2]||all>'
-    - inject locally state-process-WithGroup_deny-<proc[dRegions_PlayerMatchRegionGroup].context[%group%|<def[orderedRegions].get[1]>|%world%|%player%]>
+#  state-process-WithGroup_deny:
+#    - define group '<def[flagObj].split[/].get[2]||all>'
+#    - inject locally state-process-WithGroup_deny-<proc[dRegions_PlayerMatchRegionGroup].context[%group%|<def[orderedRegions].get[1]>|%world%|%player%]>
 
-  state-process-WithGroup_deny-true:
-    - inject %FlagScript% p:event-cleanup
-    - determine cancelled
+#  state-process-WithGroup_deny-true:
+#    - inject %FlagScript% p:event-cleanup
+#    - determine cancelled
 
 
 #-------------------
 # Region WithTargetWithGroup Flag Processors
 #
-  state-process-WithTargetWithGroup_null:
-    - define flagObj '<def[FlagScript].yaml_key[flag_defaultValue]||none>'
-    - inject locally state-process-WithTargetWithGroup_<def[flagObj].split[/].get[1]>
+#  state-process-WithTargetWithGroup_null:
+#    - define flagObj '<def[FlagScript].yaml_key[flag_defaultValue]||none>'
+#    - inject locally state-process-WithTargetWithGroup_<def[flagObj].split[/].get[1]>
 
-  state-process-WithTargetWithGroup_none:
-    - foreach next
-    - queue clear
+#  state-process-WithTargetWithGroup_none:
+#    - foreach next
+#    - queue clear
 
-  state-process-WithTargetWithGroup_allow:
-    - define group '<def[flagObj].split[/].get[2]||all>'
-    - inject locally state-process-WithTargetWithGroup_allow-<proc[dRegions_PlayerMatchRegionGroup].context[%group%|<def[orderedRegions].get[1]>|%world%|%player%]>
+#  state-process-WithTargetWithGroup_allow:
+#    - define group '<def[flagObj].split[/].get[2]||all>'
+#    - inject locally state-process-WithTargetWithGroup_allow-<proc[dRegions_PlayerMatchRegionGroup].context[%group%|<def[orderedRegions].get[1]>|%world%|%player%]>
 
-  state-process-WithTargetWithGroup_allow-true:
-    - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|%flag-targetList%].replace[, ].with[|].as_list>'
-    - if %targetList% == li@null {
-      - queue clear
-      }
-    - if %targetList% != li@all {
-      - if %targetList% !contains %target% {
-        - inject %FlagScript% p:event-cleanup
-        - determine cancelled
-        }
-      }
+#  state-process-WithTargetWithGroup_allow-true:
+#    - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|%flag-targetList%].replace[, ].with[|].as_list>'
+#    - if %targetList% == li@null {
+#      - queue clear
+#      }
+#    - if %targetList% != li@all {
+#      - if %targetList% !contains %target% {
+#        - inject %FlagScript% p:event-cleanup
+#        - determine cancelled
+#        }
+#      }
 
-  state-process-WithTargetWithGroup_allow-false:
-    - inject %FlagScript% p:event-cleanup
-    - determine cancelled
+#  state-process-WithTargetWithGroup_allow-false:
+#    - inject %FlagScript% p:event-cleanup
+#    - determine cancelled
 
-  state-process-WithTargetWithGroup_deny:
-    - define group '<def[flagObj].split[/].get[2]||all>'
-    - inject locally state-process-WithTargetWithGroup_deny-<proc[dRegions_PlayerMatchRegionGroup].context[%group%|<def[orderedRegions].get[1]>|%world%|%player%]>
+#  state-process-WithTargetWithGroup_deny:
+#    - define group '<def[flagObj].split[/].get[2]||all>'
+#    - inject locally state-process-WithTargetWithGroup_deny-<proc[dRegions_PlayerMatchRegionGroup].context[%group%|<def[orderedRegions].get[1]>|%world%|%player%]>
 
-  state-process-WithTargetWithGroup_deny-true:
-    - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|%flag-targetList%].replace[, ].with[|].as_list>'
-    - if %targetList% == li@null {
-      - inject %FlagScript% p:event-cleanup
-      - determine cancelled
-      }
-    - if %targetList% == li@all {
-      - inject %FlagScript% p:event-cleanup
-      - determine cancelled
-      }
-    - if %targetList% contains %target% {
-      - inject %FlagScript% p:event-cleanup
-      - determine cancelled
-      }
+#  state-process-WithTargetWithGroup_deny-true:
+#    - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|%flag-targetList%].replace[, ].with[|].as_list>'
+#    - if %targetList% == li@null {
+#      - inject %FlagScript% p:event-cleanup
+#      - determine cancelled
+#      }
+#    - if %targetList% == li@all {
+#      - inject %FlagScript% p:event-cleanup
+#      - determine cancelled
+#      }
+#    - if %targetList% contains %target% {
+#      - inject %FlagScript% p:event-cleanup
+#      - determine cancelled
+#      }
 
 #-------------------
 # Region WithTargetNoGroup Flag Processors
 #
-  state-process-WithTargetNoGroup_null:
-    - inject locally state-process-WithTargetNoGroup_<def[FlagScript].yaml_key[flag_defaultValue]||none>
+#  state-process-WithTargetNoGroup_null:
+#    - inject locally state-process-WithTargetNoGroup_<def[FlagScript].yaml_key[flag_defaultValue]||none>
 
-  state-process-WithTargetNoGroup_none:
-    - foreach next
-    - queue clear
+#  state-process-WithTargetNoGroup_none:
+#    - foreach next
+#    - queue clear
 
-  state-process-WithTargetNoGroup_allow:
-    - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|%flag-targetList%].replace[, ].with[|].as_list>'
-    - if %targetList% == 'li@null' {
-      - queue clear
-      }
-    - if %targetList% != li@all {
-      - if %targetList% !contains %target% {
-        - inject %FlagScript% p:event-cleanup
-        - determine cancelled
-        }
-      }
+#  state-process-WithTargetNoGroup_allow:
+#    - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|%flag-targetList%].replace[, ].with[|].as_list>'
+#    - if %targetList% == 'li@null' {
+#      - queue clear
+#      }
+#    - if %targetList% != li@all {
+#      - if %targetList% !contains %target% {
+#        - inject %FlagScript% p:event-cleanup
+#        - determine cancelled
+#        }
+#      }
 
-  state-process-WithTargetNoGroup_deny:
-    - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|%flag-targetList%].replace[, ].with[|].as_list>'
-    - if %targetList% == li@null {
-      - inject %FlagScript% p:event-cleanup
-      - determine cancelled
-      }
-    - if %targetList% == li@all {
-      - inject %FlagScript% p:event-cleanup
-      - determine cancelled
-      }
-    - if %targetList% contains %target% {
-      - inject %FlagScript% p:event-cleanup
-      - determine cancelled
-      }
+#  state-process-WithTargetNoGroup_deny:
+#    - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|%flag-targetList%].replace[, ].with[|].as_list>'
+#    - if %targetList% == li@null {
+#      - inject %FlagScript% p:event-cleanup
+#      - determine cancelled
+#      }
+#    - if %targetList% == li@all {
+#      - inject %FlagScript% p:event-cleanup
+#      - determine cancelled
+#      }
+#    - if %targetList% contains %target% {
+#      - inject %FlagScript% p:event-cleanup
+#      - determine cancelled
+#      }
 
 
 
