@@ -45,7 +45,7 @@ dRegions_Flag_Entry:
       - define vehicle '<player.get_vehicle>'
       - run locally vehicle 'def:%vehicle%|<c.from>' delay:1t
       }
-    - run locally msg
+    - run locally msg delay:1t
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
@@ -145,7 +145,7 @@ dRegions_Flag_Exit:
       - define vehicle '<player.get_vehicle>'
       - run locally vehicle 'def:%vehicle%|<c.from>' delay:1t
       }
-    - run locally msg
+    - run locally msg delay:1t
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
@@ -581,7 +581,7 @@ dRegions_Flag_Vehicle-Place:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event-cleanup:
-    - run locally msg 'def:<c.item.material.name.replace[_].with[ ]>'
+    - run locally msg delay:1t 'def:<c.item.material.name.replace[_].with[ ]>'
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
@@ -628,7 +628,7 @@ dRegions_Flag_Vehicle-Destroy:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event-cleanup:
-    - run locally msg 'def:<c.vehicle.entity_type.to_lowercase.replace[_].with[ ]>'
+    - run locally msg delay:1t 'def:<c.vehicle.entity_type.to_lowercase.replace[_].with[ ]>'
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
@@ -675,7 +675,7 @@ dRegions_Flag_Send-Chat:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event-cleanup:
-    - run locally msg
+    - run locally msg delay:1t
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
@@ -769,8 +769,18 @@ dRegions_Flag_Mob-Target:
     - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup-Global
 
   event-cleanup:
+    - run locally flags delay:1t def:<def[defender].uuid||null>
     - remove <c.projectile||li@>
     - attack %attacker% target:cancel
+
+  flags:
+    - ^if %1% == null {
+      - queue clear
+      }
+    - ^flag server dRegions_NoTarget:->:%1%
+    - ^wait 3s
+    - ^flag server dRegions_NoTarget:<-:%1%
+
 
 
 dRegions_Flag_Mob-TargetList:
@@ -834,8 +844,17 @@ dRegions_Flag_Mob-Damage:
     - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup-Global
 
   event-cleanup:
+    - run locally flags delay:1t def:<def[defender].uuid||null>
     - remove <c.projectile||li@>
     - attack %attacker% target:cancel
+
+  flags:
+    - ^if %1% == null {
+      - queue clear
+      }
+    - ^flag server dRegions_NoTarget:->:%1%
+    - ^wait 3s
+    - ^flag server dRegions_NoTarget:<-:%1%
 
 
 dRegions_Flag_Mob-Damagelist:
@@ -954,8 +973,17 @@ dRegions_Flag_EVE:
     - inject s@dRegions_Flags_Processors p:state-withTarget-Global
 
   event-cleanup:
+    - run locally flags delay:1t def:<def[defender].uuid||null>
     - remove <c.projectile||li@>
     - attack %attacker% target:cancel
+
+  flags:
+    - ^if %1% == null {
+      - queue clear
+      }
+    - ^flag server dRegions_NoTarget:->:%1%
+    - ^wait 3s
+    - ^flag server dRegions_NoTarget:<-:%1%
 
 
 dRegions_Flag_EVE-Moblist:
@@ -1017,8 +1045,17 @@ dRegions_Flag_Mob-Attack:
     - inject s@dRegions_Flags_Processors p:state-withTarget-Global
 
   event-cleanup:
+    - run locally flags delay:1t def:<def[defender].uuid||null>
     - remove <c.projectile||li@>
     - attack %attacker% target:cancel
+
+  flags:
+    - ^if %1% == null {
+      - queue clear
+      }
+    - ^flag server dRegions_NoTarget:->:%1%
+    - ^wait 3s
+    - ^flag server dRegions_NoTarget:<-:%1%
 
 
 dRegions_Flag_Mob-Attack-Moblist:
@@ -1086,8 +1123,17 @@ dRegions_Flag_PVE:
       }
 
   event-cleanup:
+    - run locally flags delay:1t def:<def[defender].uuid||null>
     - remove <c.projectile||li@>
-    - run locally msg 'def:<def[target].to_lowercase.replace[_].with[ ]>'
+    - run locally msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
+
+  flags:
+    - ^if %1% == null {
+      - queue clear
+      }
+    - ^flag server dRegions_NoTarget:->:%1%
+    - ^wait 3s
+    - ^flag server dRegions_NoTarget:<-:%1%
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
@@ -1157,7 +1203,7 @@ dRegions_Flag_Npc-Interact:
       }
 
   event-cleanup:
-    - run locally msg 'def:<def[target].to_lowercase.replace[_].with[ ]>'
+    - run locally msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
@@ -1207,7 +1253,7 @@ dRegions_Flag_Entity-Interact:
       }
 
   event-cleanup:
-    - run locally msg 'def:<def[target].to_lowercase.replace[_].with[ ]>'
+    - run locally msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
@@ -1262,12 +1308,6 @@ dRegions_Flag_Entity-Explode:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
-  event-cleanup:
-    - determine passively cancelled
-    - foreach <def[attacker].location.find.entities.within[5].exclude[%attacker%]> {
-      - adjust %value% 'velocity:l@0,0,0,%world%'
-      }
-
   event:
     - define flag 'entity-explode'
     - define flag-targetList 'entity-explodelist'
@@ -1277,6 +1317,12 @@ dRegions_Flag_Entity-Explode:
     - define flag 'entity-explode'
     - define flag-targetList 'entity-explodelist'
     - inject s@dRegions_Flags_Processors p:state-withTarget-Global
+
+  event-cleanup:
+    - determine passively cancelled
+    - foreach <def[attacker].location.find.entities.within[5].exclude[%attacker%]> {
+      - adjust %value% 'velocity:l@0,0,0,%world%'
+      }
 
 
 dRegions_Flag_Entity-ExplodeList:
@@ -1327,7 +1373,7 @@ dRegions_Flag_Entity-Grief:
 
   event-cleanup:
 #    - run locally flags def:<c.entity.uuid>|<c.entity.location>
-    - run locally flags def:<c.entity.uuid> delay:1t
+    - run locally flags delay:1t def:<c.entity.uuid||null>
 
   event:
     - define flag 'entity-grief'
@@ -1340,6 +1386,9 @@ dRegions_Flag_Entity-Grief:
     - inject s@dRegions_Flags_Processors p:state-withTarget-Global
 
   flags:
+    - ^if %1% == null {
+      - queue clear
+      }
     - ^flag server dRegions_EntityGrief:->:%1%
     - ^wait 3s
     - ^flag server dRegions_EntityGrief:<-:%1%
@@ -1464,6 +1513,14 @@ dRegions_Flag_Fire-Spread:
     - define flag 'fire-spread'
     - define flag-targetList 'fire-spreadblocks'
     - inject s@dRegions_Flags_Processors p:state-withTarget-Global
+
+  event-cleanup:
+    - run locally flags delay:1t def:<c.location>
+
+  flags:
+    - ^flag server dRegions_BlockIgnite:->:%1%
+    - ^wait 10s
+    - ^flag server dRegions_BlockIgnite:<-:%1%
 
 
 dRegions_Flag_Fire-SpreadBlocks:
@@ -2226,7 +2283,7 @@ dRegions_Flag_Lighter:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event-cleanup:
-    - run locally msg
+    - run locally msg delay:1t
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
@@ -2271,7 +2328,7 @@ dRegions_Flag_Bucket-Fill:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event-cleanup:
-    - run locally msg
+    - run locally msg delay:1t
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
@@ -2322,7 +2379,7 @@ dRegions_Flag_Bucket-Empty:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event-cleanup:
-    - run locally msg
+    - run locally msg delay:1t
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
@@ -2367,7 +2424,7 @@ dRegions_Flag_Hanging-Place:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event-cleanup:
-    - run locally msg
+    - run locally msg delay:1t
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
@@ -2412,7 +2469,7 @@ dRegions_Flag_Hanging-Break:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event-cleanup:
-    - run locally msg
+    - run locally msg delay:1t
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
@@ -2457,7 +2514,7 @@ dRegions_Flag_Sleep:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event-cleanup:
-    - run locally msg
+    - run locally msg delay:1t
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
@@ -2502,7 +2559,7 @@ dRegions_Flag_Player-Drops:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event-cleanup:
-    - run locally msg
+    - run locally msg delay:1t
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
@@ -2667,7 +2724,7 @@ dRegions_Flag_Player-Pickup:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event-cleanup:
-    - run locally msg
+    - run locally msg delay:1t
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
@@ -2774,16 +2831,6 @@ dRegions_Flag_PVP:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
-  event-cleanup:
-    - remove <c.projectile||li@>
-    - run locally msg
-
-  msg:
-    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
-      - flag player dRegions_Message_Cooldown duration:3s
-      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You are in a no PVP zone.'
-      }
-
   event:
     - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
       - define flag 'pvp'
@@ -2795,6 +2842,25 @@ dRegions_Flag_PVP:
       - define flag 'pvp'
       - inject s@dRegions_Flags_Processors p:boolean-Global
       }
+
+  event-cleanup:
+    - run locally flags delay:1t def:<def[defender].uuid||null>
+    - remove <c.projectile||li@>
+    - run locally msg delay:1t
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
+      - flag player dRegions_Message_Cooldown duration:3s
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You are in a no PVP zone.'
+      }
+
+  flags:
+    - ^if %1% == null {
+      - queue clear
+      }
+    - ^flag server dRegions_NoTarget:->:%1%
+    - ^wait 3s
+    - ^flag server dRegions_NoTarget:<-:%1%
 
 
 dRegions_Flag_Potion-Throw:
@@ -2821,7 +2887,7 @@ dRegions_Flag_Potion-Throw:
 
   event-cleanup:
     - if <player.is[!=].to[null]||false> {
-      - run locally msg
+      - run locally msg delay:1t
       }
 
   msg:
@@ -2861,7 +2927,7 @@ dRegions_Flag_Potion-Drink:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event-cleanup:
-    - run locally msg
+    - run locally msg delay:1t
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
@@ -2906,7 +2972,7 @@ dRegions_Flag_Enderpearl:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event-cleanup:
-    - run locally msg
+    - run locally msg delay:1t
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
@@ -3049,7 +3115,7 @@ dRegions_Flag_Block-Place:
       }
 
   event-cleanup:
-    - run locally msg 'def:%target%' delay:1t
+    - run locally msg delay:1t 'def:%target%'
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
@@ -3122,7 +3188,7 @@ dRegions_Flag_Block-Break:
       }
 
   event-cleanup:
-    - run locally msg 'def:%target%' delay:1t
+    - run locally msg delay:1t 'def:%target%'
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
@@ -3197,7 +3263,7 @@ dRegions_Flag_Chest-Access:
       }
 
   event-cleanup:
-    - run locally msg 'def:<c.location.material.name.replace[_].with[ ]>'
+    - run locally msg delay:1t 'def:<c.location.material.name.replace[_].with[ ]>'
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
@@ -3271,7 +3337,7 @@ dRegions_Flag_Door-Access:
       }
 
   event-cleanup:
-    - run locally msg 'def:<c.location.material.name.replace[_].with[ ]>'
+    - run locally msg delay:1t 'def:<c.location.material.name.replace[_].with[ ]>'
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
@@ -3346,7 +3412,7 @@ dRegions_Flag_Use-Switches:
       }
 
   event-cleanup:
-    - run locally msg 'def:<c.location.material.name.replace[_].with[ ]>' delay:1t
+    - run locally msg delay:1t 'def:<c.location.material.name.replace[_].with[ ]>'
 
   msg:
     - ^flag <player> dRegions_UseSwitch
@@ -3424,7 +3490,7 @@ dRegions_Flag_Use-Utilities:
       }
 
   event-cleanup:
-    - run locally msg 'def:<c.location.material.name.replace[_].with[ ]>'
+    - run locally msg delay:1t 'def:<c.location.material.name.replace[_].with[ ]>'
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
@@ -3481,7 +3547,7 @@ dRegions_Flag_Player-Damage:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event-cleanup:
-    - run locally offthread 'def:<c.cause>'
+    - run locally offthread delay:1t 'def:<c.cause>'
 
   offtread:
     - ^flag player dRegions_cancelDamage_%1% duration:1s
@@ -3556,8 +3622,17 @@ dRegions_Flag_Commands:
       - inject s@dRegions_Flags_Processors p:state-withTargetString-withGroup
       }
 
+  event-global:
+    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+      - define player <player>
+      - define flag 'commands'
+      - define flag-targetList 'commands-list'
+      - define delimiter ' ; '
+      - inject s@dRegions_Flags_Processors p:state-withTargetString-withGroup-Global
+      }
+
   event-cleanup:
-    - run locally msg 'def:<def[target].split[ ].parse[replace[regex:^].with[<&e>]].as_string>'
+    - run locally msg delay:1t 'def:<def[target].split[ ].parse[replace[regex:^].with[<&e>]].as_string>'
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
@@ -3631,7 +3706,7 @@ dRegions_Flag_Heal-Amount:
       - if <queue.exists[dRegions_Heal_<player.name>]> {
         - queue q@dRegions_Heal_<player.name> clear
         }
-      - run locally healTask 'def:%region%|%healAmount%|%healDelay%|%healMax%|%healMin%' id:dRegions_Heal_<player.name>
+      - run locally healTask delay:1t 'def:%region%|%healAmount%|%healDelay%|%healMax%|%healMin%' id:dRegions_Heal_<player.name>
       }
 
   event-global:
@@ -3653,7 +3728,7 @@ dRegions_Flag_Heal-Amount:
       - if <queue.exists[dRegions_Heal_<player.name>]> {
         - queue q@dRegions_Heal_<player.name> clear
         }
-      - run locally healTask 'def:__global__|%healAmount%|%healDelay%|%healMax%|%healMin%' id:dRegions_Heal_<player.name>
+      - run locally healTask delay:1t 'def:__global__|%healAmount%|%healDelay%|%healMax%|%healMin%' id:dRegions_Heal_<player.name>
       }
 
   healTask:
@@ -3820,7 +3895,7 @@ dRegions_Flag_Feed-Amount:
       - if <queue.exists[dRegions_Feed_<player.name>]> {
         - queue q@dRegions_Feed_<player.name> clear
         }
-      - run locally feedTask 'def:%region%|%feedAmount%|%feedDelay%|%feedMax%|%feedMin%' id:dRegions_Feed_<player.name>
+      - run locally feedTask delay:1t 'def:%region%|%feedAmount%|%feedDelay%|%feedMax%|%feedMin%' id:dRegions_Feed_<player.name>
       }
 
   event-global:
@@ -3841,7 +3916,7 @@ dRegions_Flag_Feed-Amount:
       - if <queue.exists[dRegions_Feed_<player.name>]> {
         - queue q@dRegions_Feed_<player.name> clear
         }
-      - run locally feedTask 'def:__global__|%feedAmount%|%feedDelay%|%feedMax%|%feedMin%' id:dRegions_Feed_<player.name>
+      - run locally feedTask delay:1t 'def:__global__|%feedAmount%|%feedDelay%|%feedMax%|%feedMin%' id:dRegions_Feed_<player.name>
       }
 
   feedTask:
@@ -4299,6 +4374,45 @@ dRegions_Flags_Processors:
           - if ( %targetList% == li@null ) || ( %targetList% == li@all ) || ( %targetList% contains %target% ) {
             - inject %FlagScript% p:event-cleanup
             - determine cancelled
+            }
+          }
+        }
+      }
+
+
+  state-withTargetString-withGroup-Global:
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag%]>'
+    - if %flagObj% == null {
+      - define flagObj '<def[FlagScript].yaml_key[flag_defaultValue]||none>'
+      }
+    - if %flagObj% != none {
+      - if <def[flagObj].split[/].get[1]> == allow {
+        - if !<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|__global__|%world%|%player%]> {
+          - inject %FlagScript% p:event-cleanup
+          - determine cancelled
+          }
+        - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag-targetList%].replace[<def[delimiter]||, >].with[|].as_list>'
+        - if ( %targetList% != li@null ) && ( %targetList% != li@all ) {
+          - foreach %targetList% {
+            - if <def[target].starts_with[%value%]> {
+              - inject %FlagScript% p:event-cleanup
+              - determine cancelled
+              }
+            }
+          }
+        }
+        else {
+        - if <proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|__global__|%world%|%player%]> {
+          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag-targetList%].replace[<def[delimiter]||, >].with[|].as_list>'
+          - if ( %targetList% == li@null ) || ( %targetList% == li@all ) {
+            - inject %FlagScript% p:event-cleanup
+            - determine cancelled
+            }
+          - foreach %targetList% {
+            - if <def[target].starts_with[%value%]> {
+              - inject %FlagScript% p:event-cleanup
+              - determine cancelled
+              }
             }
           }
         }

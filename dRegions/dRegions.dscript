@@ -127,27 +127,18 @@ dRegions:
       }
     - define world '<player.world.name.to_lowercase>'
     - define target '<c.command.to_lowercase> <c.raw_args.to_lowercase>'
-#    - define cuboids '<c.cuboids>'
-#    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
-#    - define eventHooks 'playerCommand'
-#    - inject s@dRegions p:event_PreProc_RunEvent
-#    - if <c.cuboids.is_empty||true> {
-#      - foreach <server.flag[dRegions_FlagMap].filter[starts_with[playerCommand]].parse[after[/]].alphanumeric.parse[split[/].get[2]]> {
-#        - define FlagScript '%value%'
-#        - inject %value% p:event
-#        }
-#      - queue clear
-#      }
+    - if <c.cuboids.is_empty||true> {
+      - define FlagScript 's@dRegions_Flag_Commands'
+      - inject %FlagScript% p:event-global
+      - queue clear
+      }
     - define regionPri 'li@'
     - foreach <c.cuboids.parse[notable_name].filter[starts_with[dRegions_]].parse[after[dregions_%world%_]].include[__global__]> {
       - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
       }
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
-
-    - foreach <server.flag[dRegions_FlagMap].filter[starts_with[playerCommand]].parse[after[/]].alphanumeric.parse[split[/].get[2]]> {
-      - define FlagScript '%value%'
-      - inject %value% p:event
-      }
+    - define FlagScript 's@dRegions_Flag_Commands'
+    - inject %FlagScript% p:event
 
 
 #    on structure grows:
@@ -155,6 +146,9 @@ dRegions:
 #    - announce "<player.name||unknown>"
 
     on block ignites:
+    - if <server.flag[dRegions_BlockIgnite].as_list.contains[<c.location>]||false> {
+      - determine cancelled
+      }
     - define world '<c.location.world.name.to_lowercase>'
     - define target '<c.location.material.bukkit_enum>'
     - define readPath 'fire.<c.cause||spread>'
@@ -173,6 +167,9 @@ dRegions:
     - inject %FlagScript% p:event
 
     on block burns:
+    - if <server.flag[dRegions_BlockIgnite].as_list.contains[<c.location>]||false> {
+      - determine cancelled
+      }
     - define world '<c.location.world.name.to_lowercase>'
     - define target '<c.location.material.bukkit_enum.to_lowercase>'
     - define readPath 'fire.destroyBlocks'
@@ -1063,9 +1060,10 @@ dRegions:
     - if <c.target.uuid||null> == null {
       - queue clear
       }
-#    - if <c.entity.flag[dRegions_NoTarget]> contains <c.target.uuid> {
-#      - determine cancelled
-#      }
+    - if !<server.flag[dRegions_NoTarget].as_list.filter[is[==].to[<c.target.uuid>]].is_empty||true> {
+      - attack <c.entity> target:cancel
+      - determine cancelled
+      }
     - define world '<c.entity.world.name.to_lowercase>'
     - define attacker '<c.entity>'
     - define defender '<c.target>'
@@ -1101,7 +1099,65 @@ dRegions:
     on entity damaged by block_explosion:
     - define world '<c.entity.world.name.to_lowercase>'
     - if <c.entity.location.cuboids.is_empty||true> {
-      - foreach <server.flag[dRegions_FlagMap].filter[starts_with[entity-explode]].parse[after[/]].alphanumeric.parse[split[/].get[2]]> {
+      - define FlagScript 's@dRegions_Flag_Entity-Explode'
+      - inject %FlagScript% p:event-global
+      - queue clear
+      }
+    - define regionPri 'li@'
+    - foreach <c.entity.location.cuboids.parse[notable_name].filter[starts_with[dRegions_]].parse[after[dregions_%world%_]].include[__global__]> {
+      - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
+      }
+    - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
+    - define FlagScript 's@dRegions_Flag_Entity-Explode'
+    - inject %FlagScript% p:event
+
+    on player damages entity:
+    - if !<server.flag[dRegions_NoTarget].as_list.filter[is[==].to[<c.entity.uuid>]].is_empty||true> {
+      - determine cancelled
+      }
+    - define world '<c.entity.world.name.to_lowercase>'
+    - if <c.entity.prefix> == player {
+      - define FlagScript 's@dRegions_Flag_PVP'
+      }
+      else {
+      - if <c.entity.entity_type> == armor_stand {
+        - define FlagScript 's@dRegions_Flag_Build'
+        }
+        else {
+        - define attacker '<c.damager>'
+        - define defender '<c.entity>'
+        - define FlagScript 's@dRegions_Flag_PVE'
+        }
+      }
+    - if <c.entity.location.cuboids.is_empty||true> {
+      - inject %FlagScript% p:event-global
+      - queue clear
+      }
+    - define regionPri 'li@'
+    - foreach <c.entity.location.cuboids.parse[notable_name].filter[starts_with[dRegions_]].parse[after[dregions_%world%_]].include[__global__]> {
+      - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
+      }
+    - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
+    - inject %FlagScript% p:event
+
+    on entity damages entity:
+    - if li@<c.damager.prefix>|<c.entity.prefix> contains player {
+      - queue clear
+      }
+    - if !<server.flag[dRegions_NoTarget].as_list.filter[is[==].to[<c.entity.uuid>]].is_empty||true> {
+      - attack <c.damager> target:cancel
+      - determine cancelled
+      }
+    - define world '<c.entity.world.name.to_lowercase>'
+    - define attacker '<c.damager>'
+    - define defender '<c.entity>'
+    - define FlagScripts 'li@'
+    - if <c.cause.is[==].to[entity_explosion]> {
+      - define FlagScripts '%FlagScripts%s@dRegions_Flag_Entity-Explode|'
+      }
+    - define FlagScripts '%FlagScripts%s@dRegions_Flag_Mob-Attack|s@dRegions_Flag_EVE|'
+    - if <c.entity.location.cuboids.is_empty||true> {
+      - foreach %FlagScripts% {
         - define FlagScript '%value%'
         - inject %value% p:event-global
         }
@@ -1112,27 +1168,29 @@ dRegions:
       - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
       }
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
-    - foreach <server.flag[dRegions_FlagMap].filter[starts_with[entity-explode]].parse[after[/]].alphanumeric.parse[split[/].get[2]]> {
+    - foreach %FlagScripts% {
       - define FlagScript '%value%'
       - inject %value% p:event
       }
 
-    on entity damages entity:
+    on entity damages player:
+    - if <c.damager.prefix> == player {
+      - queue clear
+      }
+    - if !<server.flag[dRegions_NoTarget].as_list.filter[is[==].to[<c.entity.uuid>]].is_empty||true> {
+      - attack <c.damager> target:cancel
+      - determine cancelled
+      }
     - define world '<c.entity.world.name.to_lowercase>'
-#    - define cuboids '<c.entity.location.cuboids>'
-#    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
     - define attacker '<c.damager>'
     - define defender '<c.entity>'
+    - define FlagScripts 'li@'
     - if <c.cause.is[==].to[entity_explosion]> {
-      - define target '<def[attacker].entity_type||other>'
-      - define eventHooks 'entity-explode|Entity_Target_Entity|Entity_Damage_Entity'
+      - define FlagScripts '%FlagScripts%s@dRegions_Flag_Entity-Explode|'
       }
-      else {
-      - define eventHooks '<tern[<c.entity.entity_type.is[==].to[armor_stand]>]:<tern[<c.damager.prefix.is[==].to[player]>]:Build||Entity_Target_Entity|Entity_Damage_Entity>||<c.damager.prefix>_Target_<c.entity.prefix>|<c.damager.prefix>_Damage_<c.entity.prefix>>'
-      }
-#    - inject s@dRegions p:event_PreProc_RunEvent
+    - define FlagScripts '%FlagScripts%s@dRegions_Flag_Mob-Target|s@dRegions_Flag_Mob-Damage|'
     - if <c.entity.location.cuboids.is_empty||true> {
-      - foreach <server.flag[dRegions_FlagMap].filter[contains_any[%eventHooks%]].parse[after[/]].alphanumeric.parse[split[/].get[2]]> {
+      - foreach %FlagScripts% {
         - define FlagScript '%value%'
         - inject %value% p:event-global
         }
@@ -1143,7 +1201,7 @@ dRegions:
       - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
       }
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
-    - foreach <server.flag[dRegions_FlagMap].filter[contains_any[%eventHooks%]].parse[after[/]].alphanumeric.parse[split[/].get[2]]> {
+    - foreach %FlagScripts% {
       - define FlagScript '%value%'
       - inject %value% p:event
       }
@@ -1197,7 +1255,7 @@ dRegions:
     - inject s@dRegions p:event_PreProc_Config
 
     on entity changes block:
-    - if <server.flag[dRegions_EntityGrief].as_list.contains[<c.entity.uuid>]||false> {
+    - if !<server.flag[dRegions_EntityGrief].as_list.filter[is[==].to[<c.entity.uuid>]].is_empty||true> {
       - determine cancelled
       }
     - define world '<c.location.world.name.to_lowercase>'
@@ -1232,7 +1290,6 @@ dRegions:
     - if !<server.flag[dRegions_EntityGrief].as_list.filter[is[==].to[<c.entity.uuid>]].is_empty||true> {
       - determine cancelled
       }
-#    - if <server.flag[dRegions_EntityGrief].as_list||li@> contains <c.entity.uuid> determine cancelled
     - define world '<c.location.world.name.to_lowercase>'
     - define readPath 'entity.changeBlock'
     - define target '<c.entity.entity_type||other>'
@@ -1264,10 +1321,6 @@ dRegions:
     - define attacker '<c.entity>'
     - define target '<c.entity.entity_type||other>'
     - inject s@dRegions p:event_PreProc_Config
-#    - define cuboids '<c.location.cuboids>'
-#    - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
-#    - define eventHooks 'entity-explode'
-#    - inject s@dRegions p:event_PreProc_RunEvent
     - if <c.location.cuboids.is_empty||true> {
       - foreach <server.flag[dRegions_FlagMap].filter[starts_with[entity-explode]].parse[after[/]].alphanumeric.parse[split[/].get[2]]> {
         - define FlagScript '%value%'
