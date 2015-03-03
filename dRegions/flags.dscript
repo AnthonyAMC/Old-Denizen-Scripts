@@ -40,10 +40,52 @@ dRegions_Flag_Entry:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
+  event:
+    - define player <player>
+    - define region '<def[orderedRegions].get[1]>'
+    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|entry]>'
+      - if %flagObj% != null {
+        - inject s@dRegions_Flags_Processors p:NEW-state-withGroup
+        }
+      }
+    - run locally entered delay:1t player:<player> def:%world%|%region%|<def[orderedRegions].escaped>
+
+  event-global:
+    - define player <player>
+    - define flag 'entry'
+    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|entry]>'
+      - inject s@dRegions_Flags_Processors p:NEW-state-withGroup-Global
+      }
+    - run locally entered-global delay:1t player:<player> def:%world%|__global__
+
+  entered:
+    - ^define world '%1%'
+    - ^define region '%2%'
+    - ^define orderedRegions '<def[3].unescaped>'
+    - ^define player '<player>'
+    - ^inject s@dRegions_Flag_Notify-Enter p:event
+    - ^inject s@dRegions_Flag_Greeting p:event
+    - ^inject s@dRegions_Flag_Inventory p:event-enter
+    - ^inject s@dRegions_Flag_Gamemode p:event-enter
+    - ^inject s@dRegions_Flag_Heal-Amount p:event
+    - ^inject s@dRegions_Flag_Feed-Amount p:event
+
+  entered-global:
+    - ^define world '%1%'
+    - ^define region '%2%'
+    - ^define player '<player>'
+    - ^inject s@dRegions_Flag_Notify-Enter p:event-global
+    - ^inject s@dRegions_Flag_Greeting p:event-global
+    - ^inject s@dRegions_Flag_Inventory p:event-enter
+    - ^inject s@dRegions_Flag_Gamemode p:event-enter
+    - ^inject s@dRegions_Flag_Heal-Amount p:event-global
+    - ^inject s@dRegions_Flag_Feed-Amount p:event-global
+
   event-cleanup:
     - if <player.is_inside_vehicle||false> {
-      - define vehicle '<player.get_vehicle>'
-      - run locally vehicle 'def:%vehicle%|<c.from>' delay:1t
+      - run locally vehicle 'def:<player.get_vehicle>|<c.from>' delay:1t
       }
     - run locally msg delay:1t
 
@@ -51,20 +93,6 @@ dRegions_Flag_Entry:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
       - run s@dRegions_Msg delay:1t 'def:<&c><&o>You do not have permission to enter this region'
-      }
-
-  event:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
-      - define player <player>
-      - define flag 'entry'
-      - inject s@dRegions_Flags_Processors p:state-withGroup
-      }
-
-  event-global:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
-      - define player <player>
-      - define flag 'entry'
-      - inject s@dRegions_Flags_Processors p:state-withGroup-Global
       }
 
   vehicle:
@@ -79,44 +107,6 @@ dRegions_Flag_Entry:
     - ^wait 20t
     - ^adjust %1% 'velocity:l@0,0,0,<def[1].world>'
     - ^teleport %1% '<t[<def[1].is_living>]:<player.location>||<def[2].above>>'
-
-
-dRegions_Flag_Greeting:
-  type: item
-  speed: 0
-  debug: false
-  material: i@paper
-  display name: "<&4>[<&6>Greeting<&4>]"
-  lore:
-  - <&5>Message on enter region
-  event_hook: regionEnter
-  event_priority: 10
-  flag_type: string
-  flag_takeGroup: false
-  script:
-    - narrate "A handy container for region flags."
-    - narrate "We<&sq>ll have subscripts for various tasks."
-
-  button_click:
-    - narrate "This will be useful when it comes time to make the GUI for region management."
-
-  event:
-  # We should only get a message from the highest priority region, but let's inherit from parents.
-    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|<def[orderedRegions].get[1]>|greeting]>'
-    - if %flagVal% != null {
-#      - narrate "<def[flagVal].replace[regex:&([0-9a-fA-Fk-oK-OrR])].with[<&r.before[r]>$1]>
-      - narrate "<parse:%flagVal%>"
-      - adjust <player> 'action_bar:<parse:%flagVal%>'
-      }
-
-  event-global:
-  # We should only get a message from the highest priority region, but let's inherit from parents.
-    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|greeting]>'
-    - if %flagVal% != null {
-#      - narrate "<def[flagVal].replace[regex:&([0-9a-fA-Fk-oK-OrR])].with[<&r.before[r]>$1]>
-      - narrate "<parse:%flagVal%>"
-      - adjust <player> 'action_bar:<parse:%flagVal%>'
-      }
 
 
 dRegions_Flag_Exit:
@@ -140,6 +130,45 @@ dRegions_Flag_Exit:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
+  event:
+    - define player <player>
+    - define region '<def[orderedRegions].get[1]>'
+    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|exit]>'
+      - if %flagObj% != null {
+        - inject s@dRegions_Flags_Processors p:NEW-state-withGroup
+        }
+      }
+    - run locally exited delay:1t player:<player> def:%world%|%region%|<def[orderedRegions].escaped>
+
+  event-global:
+    - define player <player>
+    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|exit]>'
+      - inject s@dRegions_Flags_Processors p:NEW-state-withGroup-Global
+      }
+    - run locally exited-global delay:1t player:<player> def:%world%|__global__
+
+  exited:
+    - ^define world '%1%'
+    - ^define region '%2%'
+    - ^define orderedRegions '<def[3].unescaped>'
+    - ^define player '<player>'
+    - ^inject s@dRegions_Flag_Notify-Exit p:event
+    - ^inject s@dRegions_Flag_Farewell p:event
+    - ^inject s@dRegions_Flag_Inventory p:event-exit
+    - ^inject s@dRegions_Flag_Gamemode p:event-exit
+
+  exited-global:
+    - ^define world '%1%'
+    - ^define region '%2%'
+    - ^define player '<player>'
+    - ^inject s@dRegions_Flag_Notify-Exit p:event-global
+    - ^inject s@dRegions_Flag_Farewell p:event-global
+    - ^inject s@dRegions_Flag_Inventory p:event-Exit
+    - ^inject s@dRegions_Flag_Gamemode p:event-Exit
+
+
   event-cleanup:
     - if <player.is_inside_vehicle||false> {
       - define vehicle '<player.get_vehicle>'
@@ -151,20 +180,6 @@ dRegions_Flag_Exit:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
       - run s@dRegions_Msg delay:1t 'def:<&c><&o>You do not have permission to exit this region'
-      }
-
-  event:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
-      - define player <player>
-      - define flag 'exit'
-      - inject s@dRegions_Flags_Processors p:state-withGroup
-      }
-
-  event-global:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
-      - define player <player>
-      - define flag 'exit'
-      - inject s@dRegions_Flags_Processors p:state-withGroup-Global
       }
 
   vehicle:
@@ -179,6 +194,124 @@ dRegions_Flag_Exit:
     - ^wait 20t
     - ^adjust %1% 'velocity:l@0,0,0,<def[1].world>'
     - ^teleport %1% '<t[<def[1].is_living>]:<player.location>||<def[2].above>>'
+
+
+dRegions_Flag_Notify-Enter:
+  type: item
+  speed: 0
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Notify-Enter<&4>]"
+  lore:
+  - <&5>Send notification to marked players
+  event_hook: regionEnter
+  event_priority: 5
+  flag_type: boolean
+  flag_takeGroup: false
+  flag_defaultValue: false
+  flag_help: Boolean flag controlling whether notifications are sent for entering this region. Set to true or false. Defaults to false.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event:
+  # We only notify for the highest priority region, but we inherit the flag value from parents.
+    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|notify-enter]>'
+    - if %flagVal% == true {
+      - foreach <server.list_online_players.filter[has_permission[dregions.notify]].include[<server.list_online_ops>].deduplicate> {
+        - run player:%value% s@dRegions_Msg 'def:<&5><&o><def[player].name> entered %region% in %world%'
+        }
+      }
+
+  event-global:
+  # We only notify for the highest priority region, but we inherit the flag value from parents.
+    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|notify-enter]>'
+    - if %flagVal% = true {
+      - foreach <server.list_online_players.filter[has_permission[dregions.notify]].include[<server.list_online_ops>].deduplicate> {
+        - run player:%value% s@dRegions_Msg 'def:<&5><&o><def[player].name> entered the global region in %world%'
+        }
+      }
+
+
+dRegions_Flag_Notify-Exit:
+  type: item
+  speed: 0
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Notify-Exit<&4>]"
+  lore:
+  - <&5>Send notification to marked players
+  event_hook: regionExit
+  event_priority: 5
+  flag_type: boolean
+  flag_takeGroup: false
+  flag_defaultValue: false
+  flag_help: Boolean flag controlling whether notifications are sent for exiting this region. Set to true or false. Defaults to false.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event:
+  # We only notify for the highest priority region, but we inherit the flag value from parents.
+    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|notify-exit]>'
+    - if %flagVal% == true {
+      - foreach <server.list_online_players.filter[has_permission[dregions.notify]].include[<server.list_online_ops>].deduplicate> {
+        - run player:%value% s@dRegions_Msg 'def:<&5><&o><def[player].name> left %region% in %world%'
+        }
+      }
+
+  event-global:
+  # We only notify for the highest priority region, but we inherit the flag value from parents.
+    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|notify-exit]>'
+    - if %flagVal% = true {
+      - foreach <server.list_online_players.filter[has_permission[dregions.notify]].include[<server.list_online_ops>].deduplicate> {
+        - run player:%value% s@dRegions_Msg 'def:<&5><&o><def[player].name> left the global region in %world%'
+        }
+      }
+
+
+dRegions_Flag_Greeting:
+  type: item
+  speed: 0
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Greeting<&4>]"
+  lore:
+  - <&5>Message on enter region
+  event_hook: regionEnter
+  event_priority: 10
+  flag_type: string
+  flag_takeGroup: false
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event:
+  # We should only get a message from the highest priority region, but let's inherit from parents.
+    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|greeting]>'
+    - if %flagVal% != null {
+#      - narrate "<def[flagVal].replace[regex:&([0-9a-fA-Fk-oK-OrR])].with[<&r.before[r]>$1]>
+      - narrate "<parse:%flagVal%>"
+      - adjust <player> 'action_bar:<parse:%flagVal%>'
+      }
+
+  event-global:
+  # We should only get a message from the highest priority region, but let's inherit from parents.
+    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|greeting]>'
+    - if %flagVal% != null {
+#      - narrate "<def[flagVal].replace[regex:&([0-9a-fA-Fk-oK-OrR])].with[<&r.before[r]>$1]>
+      - narrate "<parse:%flagVal%>"
+      - adjust <player> 'action_bar:<parse:%flagVal%>'
+      }
 
 
 dRegions_Flag_Farewell:
@@ -202,7 +335,7 @@ dRegions_Flag_Farewell:
 
   event:
   # We should only get a message from the highest priority region, but let's inherit from parents.
-    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|<def[orderedRegions].get[1]>|farewell]>'
+    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|farewell]>'
     - if %flagVal% != null {
 #      - narrate "<def[flagVal].replace[regex:&([0-9a-fA-Fk-oK-OrR])].with[<&r.before[r]>$1]>
       - narrate "<parse:%flagVal%>"
@@ -216,161 +349,6 @@ dRegions_Flag_Farewell:
 #      - narrate "<def[flagVal].replace[regex:&([0-9a-fA-Fk-oK-OrR])].with[<&r.before[r]>$1]>
       - narrate "<parse:%flagVal%>"
       - adjust <player> 'action_bar:<parse:%flagVal%>'
-      }
-
-
-dRegions_Flag_Spawn:
-  type: item
-  speed: 0
-  debug: false
-  material: i@paper
-  display name: "<&4>[<&6>Spawn<&4>]"
-  lore:
-  - <&5>Region spawn point.
-  event_hook: playerDies
-  event_priority: 5
-  flag_type: location
-  flag_takeGroup: true
-  flag_help: Set the location players will respawn at if they die in this region. Default is to have no effect so normal respawn mechanics will apply. Takes the -g group switch. Specify the value as `here` to use your current location, or specify a valid location in the `x,y,z,world` format.
-  script:
-    - narrate "A handy container for region flags."
-    - narrate "We<&sq>ll have subscripts for various tasks."
-
-  button_click:
-    - narrate "This will be useful when it comes time to make the GUI for region management."
-
-  command_handler:
-    - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
-      - if <proc[dRegions_RegionOverlaps].context[<def[flagValue]>/<def[flagValue]>|%world%|<player>]> {
-        - run s@dRegions_Msg delay:1t 'def:<&c>You can not use that location!'
-        - queue clear
-        }
-      }
-
-  event:
-    - foreach %orderedRegions% {
-      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|spawn]>'
-      - if %flagObj% != null {
-        - define region '%value%'
-        - foreach stop
-        }
-      }
-    - if %flagObj% == null {
-      - foreach next
-      - queue stop
-      }
-    - define spawnLoc '<def[flagObj].split[/].get[1].as_location>'
-    - define group '<def[flagObj].split[/].get[2]||all>'
-    - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|%region%|%world%|<player>]>'
-
-    - if %isGroup% {
-      - adjust <player> 'location:%spawnLoc%'
-      - flag <player> 'dRegions_Respawn:%spawnLoc%'
-      }
-
-  event-global:
-    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|spawn]>'
-    - if %flagObj% == null {
-      - foreach next
-      - queue stop
-      }
-    - define spawnLoc '<def[flagObj].split[/].get[1].as_location>'
-    - define group '<def[flagObj].split[/].get[2]||all>'
-    - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|__global__|%world%|<player>]>'
-
-    - if %isGroup% {
-      - adjust <player> 'location:%spawnLoc%'
-      - flag <player> 'dRegions_Respawn:%spawnLoc%'
-      }
-
-
-dRegions_Flag_Gamemode:
-  type: item
-  speed: 0
-  debug: false
-  material: i@paper
-  display name: "<&4>[<&6>Gamemode<&4>]"
-  lore:
-  - <&5>Change gamemode inside a region
-  event_hook: regionToggle
-  event_priority: 20
-  flag_type: custom
-  flag_type_customVal: creative|survival|adventure
-  flag_help: Gamemode flag can be set to creative, survival, or adventure
-  flag_takeGroup: true
-  script:
-    - narrate "A handy container for region flags."
-    - narrate "We<&sq>ll have subscripts for various tasks."
-
-  button_click:
-    - narrate "This will be useful when it comes time to make the GUI for region management."
-
-  event:
-    - foreach %orderedRegions% {
-      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|gamemode]>'
-      - if %flagObj% != null {
-        - define region '%value%'
-        - foreach stop
-        }
-      }
-    - if %flagObj% == null {
-      - foreach next
-      - queue stop
-      }
-    - define gm '<def[flagObj].split[/].get[1]>'
-    - define group '<def[flagObj].split[/].get[2]||all>'
-#    - define isOwner '<proc[dRegions_IsOwner].context[%region%|%world%|<player>]>'
-#    - define isMember '<proc[dRegions_isMember].context[%region%|%world%|<player>]>'
-    - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|%region%|%world%|<player>]>'
-
-    - if !%isGroup% {
-      - foreach next
-      - queue stop
-      }
-    - if <def[isExit].exists> {
-      - if <player.flag[dRegions_%world%_%region%_PreviousGamemode]||null> != <player.gamemode> {
-        - adjust <player> 'gamemode:<player.flag[dRegions_%world%_%region%_PreviousGamemode]||survival>'
-        - run s@dRegions_Msg delay:1t 'def:<&7><&o>Your gamemode has been updated.'
-        }
-      - flag <player> 'dRegions_%world%_%region%_PreviousGamemode:!'
-      - foreach next
-      - queue stop
-      }
-    - if %gm% != <player.gamemode> {
-      - flag <player> 'dRegions_%world%_%region%_PreviousGamemode:<player.gamemode>'
-      - adjust <player> 'gamemode:%gm%'
-      - run s@dRegions_Msg delay:1t 'def:<&7><&o>Your gamemode has been updated.'
-      }
-
-  event-global:
-    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|gamemode]>'
-    - if %flagObj% == null {
-      - foreach next
-      - queue stop
-      }
-    - define gm '<def[flagObj].split[/].get[1]>'
-    - define group '<def[flagObj].split[/].get[2]||all>'
-#    - define isOwner '<proc[dRegions_IsOwner].context[__global__|%world%|<player>]>'
-#    - define isMember '<proc[dRegions_isMember].context[__global__|%world%|<player>]>'
-    - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|__global__|%world%|<player>]>'
-
-    - if !%isGroup% {
-      - foreach next
-      - queue stop
-      }
-    - if <def[isExit].exists> {
-      - if <player.flag[dRegions_%world%___global___PreviousGamemode]||null> != <player.gamemode> {
-        - adjust <player> 'gamemode:<player.flag[dRegions_%world%___global___PreviousGamemode]||survival>'
-        - run s@dRegions_Msg delay:1t 'def:<&7><&o>Your gamemode has been updated.'
-        }
-      - flag <player> 'dRegions_%world%___global___PreviousGamemode:!'
-      - foreach next
-      - queue stop
-      }
-    - if %gm% != <player.gamemode> {
-      - flag <player> 'dRegions_%world%___global___PreviousGamemode:<player.gamemode>'
-      - adjust <player> 'gamemode:%gm%'
-      - run s@dRegions_Msg delay:1t 'def:<&7><&o>Your gamemode has been updated.'
       }
 
 
@@ -410,98 +388,106 @@ dRegions_Flag_Inventory:
       }
     - yaml 'savefile:dRegions/worlds/%world%/inventories.yml' 'id:dRegions_%world%_inventories'
 
-  event:
-    - foreach %orderedRegions% {
-      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|inventory]>'
-      - if %flagObj% != null {
-        - define region '%value%'
-        - foreach stop
+  event-enter:
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|inventory]>'
+    - if %flagObj% != null {
+      - if <proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|%region%|%world%|<player>]> {
+        - inject locally <def[flagObj].split[/].get[1]>-enter
         }
       }
-    - if %flagObj% == null {
-      - foreach next
-      - queue stop
-      }
-    - define inv '<def[flagObj].split[/].get[1]>'
-    - define group '<def[flagObj].split[/].get[2]||all>'
-#    - define isOwner '<proc[dRegions_IsOwner].context[%region%|%world%|<player>]>'
-#    - define isMember '<proc[dRegions_isMember].context[%region%|%world%|<player>]>'
-    - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|%region%|%world%|<player>]>'
-    - if !%isGroup% {
-      - foreach next
-      - queue stop
-      }
-    - inject locally updateInv
 
-  event-global:
-    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|inventory]>'
-    - if %flagObj% == null {
-      - foreach next
-      - queue stop
+  event-exit:
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|inventory]>'
+    - if %flagObj% != null {
+      - if <proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|%region%|%world%|<player>]> {
+        - inject locally <def[flagObj].split[/].get[1]>-exit
+        }
       }
-    - define region '__global__'
-    - define inv '<def[flagObj].split[/].get[1]>'
-    - define group '<def[flagObj].split[/].get[2]||all>'
-#    - define isOwner '<proc[dRegions_IsOwner].context[__global__|%world%|<player>]>'
-#    - define isMember '<proc[dRegions_isMember].context[__global__|%world%|<player>]>'
-    - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|__global__|%world%|<player>]>'
-    - if !%isGroup% {
-      - foreach next
-      - queue stop
-      }
-    - inject locally updateInv
 
-  udateInv:
-    - if <def[isEnter].exists> {
-      - if %inv% == kit {
-        - yaml set 'inventories.regions.%region%.exit.players.<player.uuid>.equip:<player.equipment>' 'id:dRegions_%world%_inventories'
-        - yaml set 'inventories.regions.%region%.exit.players.<player.uuid>.inv:<player.inventory.list_contents>' 'id:dRegions_%world%_inventories'
-        - yaml 'savefile:dRegions/worlds/%world%/inventories.yml' 'id:dRegions_%world%_inventories'
-        - inventory clear
-        - inventory set 'd:<player.inventory>' 'o:<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.entry.kit.inv]||li@>'
-        - define equipment '<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.entry.kit.equip]||li@>'
-        - equip <player> 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>'
-        - run s@dRegions_Msg delay:1t 'def:<&7><&o>Your inventory has been updated.'
-        - foreach next
-        - queue stop
-        }
-      - if %inv% == unique {
-        - yaml set 'inventories.regions.%region%.exit.players.<player.uuid>.equip:<player.equipment>' 'id:dRegions_%world%_inventories'
-        - yaml set 'inventories.regions.%region%.exit.players.<player.uuid>.inv:<player.inventory.list_contents>' 'id:dRegions_%world%_inventories'
-        - yaml 'savefile:dRegions/worlds/%world%/inventories.yml' 'id:dRegions_%world%_inventories'
-        - inventory clear
-        - inventory set 'd:<player.inventory>' 'o:<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.entry.players.<player.uuid>.inv]||li@>'
-        - define equipment '<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.entry.players.<player.uuid>.equip]||li@>'
-        - equip <player> 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>'
-        - run s@dRegions_Msg delay:1t 'def:<&7><&o>Your inventory has been updated.'
-        - foreach next
-        - queue stop
+  kit-enter:
+    - yaml set 'inventories.regions.%region%.exit.players.<player.uuid>.equip:<player.equipment>' 'id:dRegions_%world%_inventories'
+    - yaml set 'inventories.regions.%region%.exit.players.<player.uuid>.inv:<player.inventory.list_contents>' 'id:dRegions_%world%_inventories'
+    - yaml 'savefile:dRegions/worlds/%world%/inventories.yml' 'id:dRegions_%world%_inventories'
+    - inventory clear
+    - inventory set 'd:<player.inventory>' 'o:<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.entry.kit.inv]||li@>'
+    - define equipment '<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.entry.kit.equip]||li@>'
+    - equip <player> 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>'
+    - run s@dRegions_Msg delay:1t 'def:<&7><&o>Your inventory has been updated.'
+
+  kit-exit:
+    - define equipment '<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.exit.players.<player.uuid>.equip]||li@>'
+    - inventory clear
+    - inventory set 'd:<player.inventory>' 'o:<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.exit.players.<player.uuid>.inv]||li@>'
+    - equip <player> 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>'
+    - yaml set 'inventories.regions.%region%.exit.players.<player.uuid>:!' 'id:dRegions_%world%_inventories'
+    - yaml 'savefile:dRegions/worlds/%world%/inventories.yml' 'id:dRegions_%world%_inventories'
+    - run s@dRegions_Msg delay:1t 'def:<&7><&o>Your inventory has been updated.'
+
+  unique-enter:
+    - yaml set 'inventories.regions.%region%.exit.players.<player.uuid>.equip:<player.equipment>' 'id:dRegions_%world%_inventories'
+    - yaml set 'inventories.regions.%region%.exit.players.<player.uuid>.inv:<player.inventory.list_contents>' 'id:dRegions_%world%_inventories'
+    - yaml 'savefile:dRegions/worlds/%world%/inventories.yml' 'id:dRegions_%world%_inventories'
+    - inventory clear
+    - inventory set 'd:<player.inventory>' 'o:<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.entry.players.<player.uuid>.inv]||li@>'
+    - define equipment '<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.entry.players.<player.uuid>.equip]||li@>'
+    - equip <player> 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>'
+    - run s@dRegions_Msg delay:1t 'def:<&7><&o>Your inventory has been updated.'
+
+  unique-exit:
+    - yaml set 'inventories.regions.%region%.entry.players.<player.uuid>.equip:<player.equipment>' 'id:dRegions_%world%_inventories'
+    - yaml set 'inventories.regions.%region%.entry.players.<player.uuid>.inv:<player.inventory.list_contents>' 'id:dRegions_%world%_inventories'
+    - define equipment '<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.exit.players.<player.uuid>.equip]||li@>'
+    - inventory clear
+    - inventory set 'd:<player.inventory>' 'o:<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.exit.players.<player.uuid>.inv]||li@>'
+    - equip <player> 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>'
+    - yaml set 'inventories.regions.%region%.exit.players.<player.uuid>:!' 'id:dRegions_%world%_inventories'
+    - yaml 'savefile:dRegions/worlds/%world%/inventories.yml' 'id:dRegions_%world%_inventories'
+    - run s@dRegions_Msg delay:1t 'def:<&7><&o>Your inventory has been updated.'
+
+
+dRegions_Flag_Gamemode:
+  type: item
+  speed: 0
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Gamemode<&4>]"
+  lore:
+  - <&5>Change gamemode inside a region
+  event_hook: regionToggle
+  event_priority: 20
+  flag_type: custom
+  flag_type_customVal: creative|survival|adventure
+  flag_help: Gamemode flag can be set to creative, survival, or adventure
+  flag_takeGroup: true
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event-enter:
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|gamemode]>'
+    - if %flagObj% != null {
+      - if <proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|%region%|%world%|<player>]> {
+        - define gm '<def[flagObj].split[/].get[1]>'
+        - if %gm% != <player.gamemode> {
+          - flag <player> 'dRegions_%world%_%region%_PreviousGamemode:<player.gamemode>'
+          - adjust <player> 'gamemode:%gm%'
+          - run s@dRegions_Msg delay:1t 'def:<&7><&o>Your gamemode has been updated.'
+          }
         }
       }
-    - if <def[isExit].exists> {
-      - if %inv% == kit {
-        - define equipment '<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.exit.players.<player.uuid>.equip]||li@>'
-        - inventory clear
-        - inventory set 'd:<player.inventory>' 'o:<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.exit.players.<player.uuid>.inv]||li@>'
-        - equip <player> 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>'
-        - yaml set 'inventories.regions.%region%.exit.players.<player.uuid>:!' 'id:dRegions_%world%_inventories'
-        - yaml 'savefile:dRegions/worlds/%world%/inventories.yml' 'id:dRegions_%world%_inventories'
-        - run s@dRegions_Msg delay:1t 'def:<&7><&o>Your inventory has been updated.'
-        - foreach next
-        - queue stop
-        }
-      - if %inv% == unique {
-        - yaml set 'inventories.regions.%region%.entry.players.<player.uuid>.equip:<player.equipment>' 'id:dRegions_%world%_inventories'
-        - yaml set 'inventories.regions.%region%.entry.players.<player.uuid>.inv:<player.inventory.list_contents>' 'id:dRegions_%world%_inventories'
-        - define equipment '<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.exit.players.<player.uuid>.equip]||li@>'
-        - inventory clear
-        - inventory set 'd:<player.inventory>' 'o:<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.exit.players.<player.uuid>.inv]||li@>'
-        - equip <player> 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>'
-        - yaml set 'inventories.regions.%region%.exit.players.<player.uuid>:!' 'id:dRegions_%world%_inventories'
-        - yaml 'savefile:dRegions/worlds/%world%/inventories.yml' 'id:dRegions_%world%_inventories'
-        - run s@dRegions_Msg delay:1t 'def:<&7><&o>Your inventory has been updated.'
-        - foreach next
-        - queue stop
+
+  event-exit:
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|gamemode]>'
+    - if %flagObj% != null {
+      - if <proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|%region%|%world%|<player>]> {
+        - if <player.flag[dRegions_%world%_%region%_PreviousGamemode]||null> != <player.gamemode> {
+          - adjust <player> 'gamemode:<player.flag[dRegions_%world%_%region%_PreviousGamemode]||survival>'
+          - run s@dRegions_Msg delay:1t 'def:<&7><&o>Your gamemode has been updated.'
+          }
+        - flag <player> 'dRegions_%world%_%region%_PreviousGamemode:!'
         }
       }
 
@@ -2642,56 +2628,40 @@ dRegions_Flag_Player-KeepItems:
     - foreach %orderedRegions% {
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|player-keepitems]>'
       - if %flagObj% != null {
-        - define region '%value%'
-        - foreach stop
+        - if <def[flagObj].split[/].get[1]> == allow {
+          - if <proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|%value%|%world%|<player>]> {
+            - run locally returnItems 'def:<player.inventory.list_contents.escaped>|<player.equipment.escaped>' delay:2t
+            - determine NO_DROPS_NO_XP
+            - foreach stop
+            }
+          }
+          else {
+          - if !<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|%value%|%world%|<player>]> {
+            - run locally returnItems 'def:<player.inventory.list_contents.escaped>|<player.equipment.escaped>' delay:2t
+            - determine NO_DROPS_NO_XP
+            - foreach stop
+            }
+          }
         }
-      }
-    - if %flagObj% == null {
-      - foreach next
-      - queue stop
-      }
-    - define flagVal '<def[flagObj].split[/].get[1]>'
-    - define group '<def[flagObj].split[/].get[2]||all>'
-#    - define isOwner '<proc[dRegions_IsOwner].context[%region%|%world%|<player>]>'
-#    - define isMember '<proc[dRegions_isMember].context[%region%|%world%|<player>]>'
-    - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|%region%|%world%|<player>]>'
-
-    - if %flagVal% == allow {
-      - if %isGroup% {
-        - run locally returnItems 'def:<player.inventory.list_contents.escaped>|<player.equipment.escaped>' delay:2t
-        - determine NO_DROPS_NO_XP
-        }
-      - foreach next
-      - queue stop
-      }
-    - if !%isGroup% {
-      - run locally returnItems 'def:<player.inventory.list_contents.escaped>|<player.equipment.escaped>' delay:2t
-      - determine NO_DROPS_NO_XP
       }
 
   event-global:
     - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|player-keepitems]>'
-    - if %flagObj% == null {
-      - foreach next
-      - queue stop
-      }
-    - define flagVal '<def[flagObj].split[/].get[1]>'
-    - define group '<def[flagObj].split[/].get[2]||all>'
-#    - define isOwner '<proc[dRegions_IsOwner].context[__global__|%world%|<player>]>'
-#    - define isMember '<proc[dRegions_isMember].context[__global__|%world%|<player>]>'
-    - define isGroup '<proc[dRegions_PlayerMatchRegionGroup].context[%group%|__global__|%world%|<player>]>'
-
-    - if %flagVal% == allow {
-      - if %isGroup% {
-        - run locally returnItems 'def:<player.inventory.list_contents.escaped>|<player.equipment.escaped>' delay:2t
-        - determine NO_DROPS_NO_XP
+    - if %flagObj% != null {
+      - if <def[flagObj].split[/].get[1]> == allow {
+        - if <proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|__global__|%world%|<player>]> {
+          - run locally returnItems 'def:<player.inventory.list_contents.escaped>|<player.equipment.escaped>' delay:2t
+          - determine NO_DROPS_NO_XP
+          - foreach stop
+          }
         }
-      - foreach next
-      - queue stop
-      }
-    - if !%isGroup% {
-      - run locally returnItems 'def:<player.inventory.list_contents.escaped>|<player.equipment.escaped>' delay:2t
-      - determine NO_DROPS_NO_XP
+        else {
+        - if !<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|__global__|%world%|<player>]> {
+          - run locally returnItems 'def:<player.inventory.list_contents.escaped>|<player.equipment.escaped>' delay:2t
+          - determine NO_DROPS_NO_XP
+          - foreach stop
+          }
+        }
       }
 
   returnItems:
@@ -2700,6 +2670,52 @@ dRegions_Flag_Player-KeepItems:
     - inventory set 'd:<player.inventory>' 'o:<def[1].unescaped>'
     - define equipment '<def[2].unescaped>'
     - equip <player> 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>'
+
+
+dRegions_Flag_Spawn:
+  type: item
+  speed: 0
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Spawn<&4>]"
+  lore:
+  - <&5>Region spawn point.
+  event_hook: playerDies
+  event_priority: 5
+  flag_type: location
+  flag_takeGroup: true
+  flag_help: Set the location players will respawn at if they die in this region. Default is to have no effect so normal respawn mechanics will apply. Takes the -g group switch. Specify the value as `here` to use your current location, or specify a valid location in the `x,y,z,world` format.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  command_handler:
+    - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
+      - if <proc[dRegions_RegionOverlaps].context[<def[flagValue]>/<def[flagValue]>|%world%|<player>]> {
+        - run s@dRegions_Msg delay:1t 'def:<&c>You can not use that location!'
+        - queue clear
+        }
+      }
+
+  event:
+    - ^foreach <def[2].unescaped> {
+      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%1%|%value%|spawn]>'
+      - if ( %flagObj% != null ) && <proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|%value%|%1%|<player>]> {
+#        - adjust <player> 'location:<def[flagObj].split[/].get[1].as_location>'
+        - flag <player> 'dRegions_Respawn:<def[flagObj].split[/].get[1].as_location>'
+        - foreach stop
+        }
+      }
+
+  event-global:
+    - ^define flagObj '<proc[dRegions_GetInheritedFlag].context[%1%|__global__|spawn]>'
+    - ^if ( %flagObj% != null ) && <proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|__global__|%1%|<player>]> {
+#      - adjust <player> 'location:<def[flagObj].split[/].get[1].as_location>'
+      - flag <player> 'dRegions_Respawn:<def[flagObj].split[/].get[1].as_location>'
+      }
 
 
 dRegions_Flag_Player-Pickup:
@@ -2992,86 +3008,6 @@ dRegions_Flag_Enderpearl:
       - define player <player>
       - define flag 'enderpearl'
       - inject s@dRegions_Flags_Processors p:state-withGroup-Global
-      }
-
-
-dRegions_Flag_Notify-Enter:
-  type: item
-  speed: 0
-  debug: false
-  material: i@paper
-  display name: "<&4>[<&6>Notify-Enter<&4>]"
-  lore:
-  - <&5>Send notification to marked players
-  event_hook: regionEnter
-  event_priority: 5
-  flag_type: boolean
-  flag_takeGroup: false
-  flag_defaultValue: false
-  flag_help: Boolean flag controlling whether notifications are sent for entering this region. Set to true or false. Defaults to false.
-  script:
-    - narrate "A handy container for region flags."
-    - narrate "We<&sq>ll have subscripts for various tasks."
-
-  button_click:
-    - narrate "This will be useful when it comes time to make the GUI for region management."
-
-  event:
-  # We only notify for the highest priority region, but we inherit the flag value from parents.
-    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|<def[orderedRegions].get[1]>|notify-enter]>'
-    - if %flagVal% == true {
-      - foreach <server.list_online_players.filter[has_permission[dregions.notify]].include[<server.list_online_ops>].deduplicate> {
-        - run player:%value% s@dRegions_Msg 'def:<&5><&o><def[player].name> entered <def[orderedRegions].get[1]> in %world%'
-        }
-      }
-
-  event-global:
-  # We only notify for the highest priority region, but we inherit the flag value from parents.
-    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|notify-enter]>'
-    - if %flagVal% = true {
-      - foreach <server.list_online_players.filter[has_permission[dregions.notify]].include[<server.list_online_ops>].deduplicate> {
-        - run player:%value% s@dRegions_Msg 'def:<&5><&o><def[player].name> entered <def[orderedRegions].get[1]> in %world%'
-        }
-      }
-
-
-dRegions_Flag_Notify-Exit:
-  type: item
-  speed: 0
-  debug: false
-  material: i@paper
-  display name: "<&4>[<&6>Notify-Exit<&4>]"
-  lore:
-  - <&5>Send notification to marked players
-  event_hook: regionExit
-  event_priority: 5
-  flag_type: boolean
-  flag_takeGroup: false
-  flag_defaultValue: false
-  flag_help: Boolean flag controlling whether notifications are sent for exiting this region. Set to true or false. Defaults to false.
-  script:
-    - narrate "A handy container for region flags."
-    - narrate "We<&sq>ll have subscripts for various tasks."
-
-  button_click:
-    - narrate "This will be useful when it comes time to make the GUI for region management."
-
-  event:
-  # We only notify for the highest priority region, but we inherit the flag value from parents.
-    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|<def[orderedRegions].get[1]>|notify-exit]>'
-    - if %flagVal% == true {
-      - foreach <server.list_online_players.filter[has_permission[dregions.notify]].include[<server.list_online_ops>].deduplicate> {
-        - run player:%value% s@dRegions_Msg 'def:<&5><&o><def[player].name> entered <def[orderedRegions].get[1]> in %world%'
-        }
-      }
-
-  event-global:
-  # We only notify for the highest priority region, but we inherit the flag value from parents.
-    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|notify-exit]>'
-    - if %flagVal% = true {
-      - foreach <server.list_online_players.filter[has_permission[dregions.notify]].include[<server.list_online_ops>].deduplicate> {
-        - run player:%value% s@dRegions_Msg 'def:<&5><&o><def[player].name> entered <def[orderedRegions].get[1]> in %world%'
-        }
       }
 
 
@@ -3687,7 +3623,6 @@ dRegions_Flag_Heal-Amount:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - define region '<def[orderedRegions].get[1]>'
     - define healAmount '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|heal-amount]>'
     - if %healAmount% != null {
       - define healDelay '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|heal-delay]>'
@@ -3706,7 +3641,7 @@ dRegions_Flag_Heal-Amount:
       - if <queue.exists[dRegions_Heal_<player.name>]> {
         - queue q@dRegions_Heal_<player.name> clear
         }
-      - run locally healTask delay:1t 'def:%region%|%healAmount%|%healDelay%|%healMax%|%healMin%' id:dRegions_Heal_<player.name>
+      - run locally healTask delay:1t 'def:%world%|%region%|%healAmount%|%healDelay%|%healMax%|%healMin%' id:dRegions_Heal_<player.name>
       }
 
   event-global:
@@ -3728,57 +3663,55 @@ dRegions_Flag_Heal-Amount:
       - if <queue.exists[dRegions_Heal_<player.name>]> {
         - queue q@dRegions_Heal_<player.name> clear
         }
-      - run locally healTask delay:1t 'def:__global__|%healAmount%|%healDelay%|%healMax%|%healMin%' id:dRegions_Heal_<player.name>
+      - run locally healTask delay:1t 'def:%world%|__global__|%healAmount%|%healDelay%|%healMax%|%healMin%' id:dRegions_Heal_<player.name>
       }
 
   healTask:
     - while <player.is_online> {
-      - define world '<player.world.name.to_lowercase>'
-#      - define cuboids '<player.location.cuboids>'
-#      - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
+      - define world '<player.world.name>'
+      - if %world% != %1% {
+        - while stop
+        }
       - define regionPri 'li@'
       - foreach <player.location.cuboids.parse[notable_name].filter[starts_with[dRegions_]].parse[after[dregions_%world%_]].include[__global__]> {
-        - define regionPri '<def[regionPri].include[<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%]>'
+        - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
         }
-      - define region '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]].get[1]>'
-      - if %region% == %1% {
-        - if <player.gamemode.id> == 1 {
-          - wait 1s
-          - while next
-          }
-        - if %3% OR_LESS 0 {
-          - if %2% MORE 0 {
-            - if <player.health> LESS %4% {
-              - adjust <player> 'health:%4%'
-              }
-            }
-            else {
-            - if <player.health> MORE %5% {
-              - animate <player> animation:hurt
-              - adjust <player> 'health:%5%'
-              }
-            }
-          - wait 1s
-          - while next
-          }
-        - if %2% MORE 0 {
-          - if <player.health> LESS %4% {
-            - define newHealth '<player.health.add[%2%]>'
-            - adjust <player> 'health:<tern[<def[newHealth].is[MORE].than[%4%]>]:%4%||%newHealth%>'
+      - if <def[regionPri].alphanumeric.reverse.parse[split[/].get[2]].get[1]> != %2% {
+        - while stop
+        }
+      - if <player.gamemode.id> == 1 {
+        - wait 1s
+        - while next
+        }
+      - if %4% OR_LESS 0 {
+        - if %3% MORE 0 {
+          - if <player.health> LESS %5% {
+            - adjust <player> 'health:%5%'
             }
           }
           else {
-          - if <player.health> MORE %5% {
+          - if <player.health> MORE %6% {
             - animate <player> animation:hurt
-            - define newHealth '<player.health.add[%2%]>'
-            - adjust <player> 'health:<tern[<def[newHealth].is[LESS].than[%5%]>]:%5%||%newHealth%>'
+            - adjust <player> 'health:%6%'
             }
           }
-        - wait <def[3].as_duration>
+        - wait 1s
+        - while next
+        }
+      - if %3% MORE 0 {
+        - if <player.health> LESS %5% {
+          - define newHealth '<player.health.add[%3%]>'
+          - adjust <player> 'health:<tern[<def[newHealth].is[MORE].than[%5%]>]:%5%||%newHealth%>'
+          }
         }
         else {
-        - queue clear
+        - if <player.health> MORE %6% {
+          - animate <player> animation:hurt
+          - define newHealth '<player.health.add[%3%]>'
+          - adjust <player> 'health:<tern[<def[newHealth].is[LESS].than[%6%]>]:%6%||%newHealth%>'
+          }
         }
+      - wait <def[4].as_duration>
       }
 
 
@@ -3877,7 +3810,6 @@ dRegions_Flag_Feed-Amount:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - define region '<def[orderedRegions].get[1]>'
     - define feedAmount '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|feed-amount]>'
     - if %feedAmount% != null {
       - define feedDelay '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|feed-delay]>'
@@ -3895,7 +3827,7 @@ dRegions_Flag_Feed-Amount:
       - if <queue.exists[dRegions_Feed_<player.name>]> {
         - queue q@dRegions_Feed_<player.name> clear
         }
-      - run locally feedTask delay:1t 'def:%region%|%feedAmount%|%feedDelay%|%feedMax%|%feedMin%' id:dRegions_Feed_<player.name>
+      - run locally feedTask delay:1t 'def:%world%|%region%|%feedAmount%|%feedDelay%|%feedMax%|%feedMin%' id:dRegions_Feed_<player.name>
       }
 
   event-global:
@@ -3916,61 +3848,61 @@ dRegions_Flag_Feed-Amount:
       - if <queue.exists[dRegions_Feed_<player.name>]> {
         - queue q@dRegions_Feed_<player.name> clear
         }
-      - run locally feedTask delay:1t 'def:__global__|%feedAmount%|%feedDelay%|%feedMax%|%feedMin%' id:dRegions_Feed_<player.name>
+      - run locally feedTask delay:1t 'def:%world%|__global__|%feedAmount%|%feedDelay%|%feedMax%|%feedMin%' id:dRegions_Feed_<player.name>
       }
 
   feedTask:
     - while <player.is_online> {
-      - define world '<player.world.name.to_lowercase>'
-#      - define cuboids '<player.location.cuboids>'
-#      - inject s@dRegions p:event_PreProc_OrderRegionsGlobal
+      - define world '<player.world.name>'
+      - if %world% != %1% {
+        - while stop
+        }
       - define regionPri 'li@'
       - foreach <player.location.cuboids.parse[notable_name].filter[starts_with[dRegions_]].parse[after[dregions_%world%_]].include[__global__]> {
-        - define regionPri '<def[regionPri].include[<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%]>'
+        - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
         }
       - define region '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]].get[1]>'
-      - if %region% == %1% {
-        - if <player.gamemode.id> == 1 {
-          - wait 1s
-          - while next
-          }
-        - if %3% OR_LESS 0 {
-          - if %2% MORE 0 {
-            - if <player.food_level> LESS %4% {
-              - adjust <player> 'food_level:%4%'
-              - adjust <player> 'saturation:<player.food_level>'
-              }
-            }
-            else {
-            - if <player.food_level> MORE %5% {
-              - animate <player> animation:hurt
-              - adjust <player> 'food_level:%5%'
-              - adjust <player> 'saturation:<player.food_level>'
-              }
-            }
-          - wait 1s
-          - while next
-          }
-        - if %2% MORE 0 {
-          - if <player.food_level> LESS %4% {
-            - define newFood '<player.food_level.add[%2%]>'
-            - adjust <player> 'food_level:<tern[<def[newFood].is[MORE].than[%4%]>]:%4%||%newFood%>'
+      - if <def[regionPri].alphanumeric.reverse.parse[split[/].get[2]].get[1]> != %2% {
+        - while stop
+        }
+
+      - if <player.gamemode.id> == 1 {
+        - wait 1s
+        - while next
+        }
+      - if %4% OR_LESS 0 {
+        - if %3% MORE 0 {
+          - if <player.food_level> LESS %5% {
+            - adjust <player> 'food_level:%5%'
             - adjust <player> 'saturation:<player.food_level>'
             }
           }
           else {
-          - if <player.food_level> MORE %5% {
-            - define newFood '<player.food_level.add[%2%]>'
-            - adjust <player> 'food_level:<tern[<def[newFood].is[LESS].than[%5%]>]:%5%||%newFood%>'
-            - adjust <player> 'saturation:<player.food_level>'
+          - if <player.food_level> MORE %6% {
             - animate <player> animation:hurt
+            - adjust <player> 'food_level:%6%'
+            - adjust <player> 'saturation:<player.food_level>'
             }
           }
-        - wait <def[3].as_duration>
+        - wait 1s
+        - while next
+        }
+      - if %3% MORE 0 {
+        - if <player.food_level> LESS %5% {
+          - define newFood '<player.food_level.add[%2%]>'
+          - adjust <player> 'food_level:<tern[<def[newFood].is[MORE].than[%5%]>]:%5%||%newFood%>'
+          - adjust <player> 'saturation:<player.food_level>'
+          }
         }
         else {
-        - queue clear
+        - if <player.food_level> MORE %6% {
+          - define newFood '<player.food_level.add[%3%]>'
+          - adjust <player> 'food_level:<tern[<def[newFood].is[LESS].than[%6%]>]:%6%||%newFood%>'
+          - adjust <player> 'saturation:<player.food_level>'
+          - animate <player> animation:hurt
+          }
         }
+      - wait <def[4].as_duration>
       }
 
 
@@ -4063,6 +3995,40 @@ dRegions_Flags_Processors:
 #---------------------------------------
 # Region flag pre-processors
 #
+
+  NEW-state-withGroup:
+  # Requires each flag to build the flag object.
+  # Allows for iterating over %orderedRegions% from within the flag
+  # Membership is checked against the highest priority region while flag value
+  # can be set in any region in %orderedRegions%
+    - if <def[flagObj].split[/].get[1]> == allow {
+      - if !<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|<def[orderedRegions].get[1]>|%world%|%player%]> {
+        - inject %FlagScript% p:event-cleanup
+        - determine cancelled
+        }
+      }
+      else {
+      - if <proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|<def[orderedRegions].get[1]>|%world%|%player%]> {
+        - inject %FlagScript% p:event-cleanup
+        - determine cancelled
+        }
+      }
+
+  NEW-state-withGroup-Global:
+    - if <def[flagObj].split[/].get[1]> == allow {
+      - if !<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|__global__|%world%|%player%]> {
+        - inject %FlagScript% p:event-cleanup
+        - determine cancelled
+        }
+      }
+      else {
+      - if <proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|__global__|%world%|%player%]> {
+        - inject %FlagScript% p:event-cleanup
+        - determine cancelled
+        }
+      }
+
+
   boolean:
     - if <def[FlagScript].yaml_key[region_highestOnly]||false> {
       - define region '<def[orderedRegions].get[1]>'
