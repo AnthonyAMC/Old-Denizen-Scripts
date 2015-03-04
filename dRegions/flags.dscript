@@ -1896,12 +1896,27 @@ dRegions_Flag_Ice-Form:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - define flag 'ice-form'
-    - inject s@dRegions_Flags_Processors p:boolean
+#    - define flag 'ice-form'
+#    - inject s@dRegions_Flags_Processors p:boolean
+    - foreach %orderedRegions% {
+      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|ice-form]>'
+      - if %flagVal% != null {
+        - if !%flagVal% {
+          - determine cancelled
+          }
+        - foreach stop
+        }
+      }
 
   event-global:
-    - define flag 'ice-form'
-    - inject s@dRegions_Flags_Processors p:boolean-global
+#    - define flag 'ice-form'
+#    - inject s@dRegions_Flags_Processors p:boolean-global
+    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|ice-form]>'
+    - if %flagVal% != null {
+      - if !%flagVal% {
+        - determine cancelled
+        }
+      }
 
 
 dRegions_Flag_Ice-Melt:
@@ -1926,12 +1941,27 @@ dRegions_Flag_Ice-Melt:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - define flag 'ice-melt'
-    - inject s@dRegions_Flags_Processors p:boolean
+#    - define flag 'ice-melt'
+#    - inject s@dRegions_Flags_Processors p:boolean
+    - foreach %orderedRegions% {
+      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|ice-melt]>'
+      - if %flagVal% != null {
+        - if !%flagVal% {
+          - determine cancelled
+          }
+        - foreach stop
+        }
+      }
 
   event-global:
-    - define flag 'ice-melt'
-    - inject s@dRegions_Flags_Processors p:boolean-Global
+#    - define flag 'ice-melt'
+#    - inject s@dRegions_Flags_Processors p:boolean-Global
+    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|ice-melt]>'
+    - if %flagVal% != null {
+      - if !%flagVal% {
+        - determine cancelled
+        }
+      }
 
 
 dRegions_Flag_Snow-Melt:
@@ -1956,12 +1986,27 @@ dRegions_Flag_Snow-Melt:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - define flag 'snow-melt'
-    - inject s@dRegions_Flags_Processors p:boolean
+#    - define flag 'snow-melt'
+#    - inject s@dRegions_Flags_Processors p:boolean
+    - foreach %orderedRegions% {
+      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|snow-melt]>'
+      - if %flagVal% != null {
+        - if !%flagVal% {
+          - determine cancelled
+          }
+        - foreach stop
+        }
+      }
 
   event-global:
-    - define flag 'snow-melt'
-    - inject s@dRegions_Flags_Processors p:boolean-Global
+#    - define flag 'snow-melt'
+#    - inject s@dRegions_Flags_Processors p:boolean-Global
+    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|snow-melt]>'
+    - if %flagVal% != null {
+      - if !%flagVal% {
+        - determine cancelled
+        }
+      }
 
 
 dRegions_Flag_Soil-Dry:
@@ -1986,12 +2031,27 @@ dRegions_Flag_Soil-Dry:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - define flag 'soil-dry'
-    - inject s@dRegions_Flags_Processors p:boolean
+#    - define flag 'soil-dry'
+#    - inject s@dRegions_Flags_Processors p:boolean
+    - foreach %orderedRegions% {
+      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|soil-dry]>'
+      - if %flagVal% != null {
+        - if !%flagVal% {
+          - determine cancelled
+          }
+        - foreach stop
+        }
+      }
 
   event-global:
-    - define flag 'soil-dry'
-    - inject s@dRegions_Flags_Processors p:boolean-Global
+#    - define flag 'soil-dry'
+#    - inject s@dRegions_Flags_Processors p:boolean-Global
+    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|soil-dry]>'
+    - if %flagVal% != null {
+      - if !%flagVal% {
+        - determine cancelled
+        }
+      }
 
 
 dRegions_Flag_Trample-Crops-Player:
@@ -2016,12 +2076,27 @@ dRegions_Flag_Trample-Crops-Player:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - define flag 'trample-crops-player'
-    - inject s@dRegions_Flags_Processors p:boolean
+#    - define flag 'trample-crops-player'
+#    - inject s@dRegions_Flags_Processors p:boolean
+    - foreach %orderedRegions% {
+      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|trample-crops-player]>'
+      - if %flagVal% != null {
+        - if !%flagVal% {
+          - determine cancelled
+          }
+        - foreach stop
+        }
+      }
 
   event-global:
-    - define flag 'trample-crops-player'
-    - inject s@dRegions_Flags_Processors p:boolean-Global
+#    - define flag 'trample-crops-player'
+#    - inject s@dRegions_Flags_Processors p:boolean-Global
+    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|trample-crops-player]>'
+    - if %flagVal% != null {
+      - if !%flagVal% {
+        - determine cancelled
+        }
+      }
 
 
 dRegions_Flag_Trample-Crops-Entity:
@@ -2046,12 +2121,27 @@ dRegions_Flag_Trample-Crops-Entity:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - define flag 'trample-crops-entity'
-    - inject s@dRegions_Flags_Processors p:boolean
+#    - define flag 'trample-crops-entity'
+#    - inject s@dRegions_Flags_Processors p:boolean
+    - foreach %orderedRegions% {
+      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|trample-crops-entity]>'
+      - if %flagVal% != null {
+        - if !%flagVal% {
+          - determine cancelled
+          }
+        - foreach stop
+        }
+      }
 
   event-global:
-    - define flag 'trample-crops-entity'
-    - inject s@dRegions_Flags_Processors p:boolean-Global
+#    - define flag 'trample-crops-entity'
+#    - inject s@dRegions_Flags_Processors p:boolean-Global
+    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|trample-crops-entity]>'
+    - if %flagVal% != null {
+      - if !%flagVal% {
+        - determine cancelled
+        }
+      }
 
 
 dRegions_Flag_Mushroom-Spread:
@@ -2077,12 +2167,27 @@ dRegions_Flag_Mushroom-Spread:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - define flag 'mushroom-spread'
-    - inject s@dRegions_Flags_Processors p:boolean
+#    - define flag 'mushroom-spread'
+#    - inject s@dRegions_Flags_Processors p:boolean
+    - foreach %orderedRegions% {
+      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|mushroom-spread]>'
+      - if %flagVal% != null {
+        - if !%flagVal% {
+          - determine cancelled
+          }
+        - foreach stop
+        }
+      }
 
   event-Global:
-    - define flag 'mushroom-spread'
-    - inject s@dRegions_Flags_Processors p:boolean-Global
+#    - define flag 'mushroom-spread'
+#    - inject s@dRegions_Flags_Processors p:boolean-Global
+    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|mushroom-spread]>'
+    - if %flagVal% != null {
+      - if !%flagVal% {
+        - determine cancelled
+        }
+      }
 
 
 dRegions_Flag_Grass-Spread:
@@ -2108,12 +2213,27 @@ dRegions_Flag_Grass-Spread:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - define flag 'grass-spread'
-    - inject s@dRegions_Flags_Processors p:boolean
+#    - define flag 'grass-spread'
+#    - inject s@dRegions_Flags_Processors p:boolean
+    - foreach %orderedRegions% {
+      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|grass-spread]>'
+      - if %flagVal% != null {
+        - if !%flagVal% {
+          - determine cancelled
+          }
+        - foreach stop
+        }
+      }
 
   event-global:
-    - define flag 'grass-spread'
-    - inject s@dRegions_Flags_Processors p:boolean-Global
+#    - define flag 'grass-spread'
+#    - inject s@dRegions_Flags_Processors p:boolean-Global
+    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|grass-spread]>'
+    - if %flagVal% != null {
+      - if !%flagVal% {
+        - determine cancelled
+        }
+      }
 
 
 dRegions_Flag_Mycel-Spread:
@@ -2139,12 +2259,27 @@ dRegions_Flag_Mycel-Spread:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - define flag 'mycel-spread'
-    - inject s@dRegions_Flags_Processors p:boolean
+#    - define flag 'mycel-spread'
+#    - inject s@dRegions_Flags_Processors p:boolean
+    - foreach %orderedRegions% {
+      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|mycel-spread]>'
+      - if %flagVal% != null {
+        - if !%flagVal% {
+          - determine cancelled
+          }
+        - foreach stop
+        }
+      }
 
   event-global:
-    - define flag 'mycel-spread'
-    - inject s@dRegions_Flags_Processors p:boolean-Global
+#    - define flag 'mycel-spread'
+#    - inject s@dRegions_Flags_Processors p:boolean-Global
+    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|mycel-spread]>'
+    - if %flagVal% != null {
+      - if !%flagVal% {
+        - determine cancelled
+        }
+      }
 
 
 dRegions_Flag_Vine-Growth:
@@ -2170,12 +2305,27 @@ dRegions_Flag_Vine-Growth:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - define flag 'vine-growth'
-    - inject s@dRegions_Flags_Processors p:boolean
+#    - define flag 'vine-growth'
+#    - inject s@dRegions_Flags_Processors p:boolean
+    - foreach %orderedRegions% {
+      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|vine-growth]>'
+      - if %flagVal% != null {
+        - if !%flagVal% {
+          - determine cancelled
+          }
+        - foreach stop
+        }
+      }
 
   event-global:
-    - define flag 'vine-growth'
-    - inject s@dRegions_Flags_Processors p:boolean-Global
+#    - define flag 'vine-growth'
+#    - inject s@dRegions_Flags_Processors p:boolean-Global
+    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|vine-growth]>'
+    - if %flagVal% != null {
+      - if !%flagVal% {
+        - determine cancelled
+        }
+      }
 
 
 dRegions_Flag_Leaf-Decay:
@@ -2192,7 +2342,6 @@ dRegions_Flag_Leaf-Decay:
   flag_takeGroup: false
   flag_defaultValue: true
   flag_globalDefault: true
-  flag_global: true
   flag_help: Boolean flag controlling whether leaves will be able to decay in this region. Set to true or false. Defaults to true.
   script:
     - narrate "A handy container for region flags."
@@ -2202,12 +2351,27 @@ dRegions_Flag_Leaf-Decay:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - define flag 'leaf-decay'
-    - inject s@dRegions_Flags_Processors p:boolean
+#    - define flag 'leaf-decay'
+#    - inject s@dRegions_Flags_Processors p:boolean
+    - foreach %orderedRegions% {
+      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|leaf-decay]>'
+      - if %flagVal% != null {
+        - if !%flagVal% {
+          - determine cancelled
+          }
+        - foreach stop
+        }
+      }
 
   event-global:
-    - define flag 'leaf-decay'
-    - inject s@dRegions_Flags_Processors p:boolean-Global
+#    - define flag 'leaf-decay'
+#    - inject s@dRegions_Flags_Processors p:boolean-Global
+    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|leaf-decay]>'
+    - if %flagVal% != null {
+      - if !%flagVal% {
+        - determine cancelled
+        }
+      }
 
 
 dRegions_Flag_Falling-Sand:
@@ -2233,12 +2397,27 @@ dRegions_Flag_Falling-Sand:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - define flag 'falling-sand'
-    - inject s@dRegions_Flags_Processors p:boolean
+#    - define flag 'falling-sand'
+#    - inject s@dRegions_Flags_Processors p:boolean
+    - foreach %orderedRegions% {
+      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|falling-sand]>'
+      - if %flagVal% != null {
+        - if !%flagVal% {
+          - determine cancelled
+          }
+        - foreach stop
+        }
+      }
 
   event-global:
-    - define flag 'falling-sand'
-    - inject s@dRegions_Flags_Processors p:boolean-Global
+#    - define flag 'falling-sand'
+#    - inject s@dRegions_Flags_Processors p:boolean-Global
+    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|falling-sand]>'
+    - if %flagVal% != null {
+      - if !%flagVal% {
+        - determine cancelled
+        }
+      }
 
 
 dRegions_Flag_Falling-Gravel:
@@ -2264,12 +2443,27 @@ dRegions_Flag_Falling-Gravel:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - define flag 'falling-gravel'
-    - inject s@dRegions_Flags_Processors p:boolean
+#    - define flag 'falling-gravel'
+#    - inject s@dRegions_Flags_Processors p:boolean
+    - foreach %orderedRegions% {
+      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|falling-gravel]>'
+      - if %flagVal% != null {
+        - if !%flagVal% {
+          - determine cancelled
+          }
+        - foreach stop
+        }
+      }
 
   event-global:
-    - define flag 'falling-gravel'
-    - inject s@dRegions_Flags_Processors p:boolean-Global
+#    - define flag 'falling-gravel'
+#    - inject s@dRegions_Flags_Processors p:boolean-Global
+    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|falling-gravel]>'
+    - if %flagVal% != null {
+      - if !%flagVal% {
+        - determine cancelled
+        }
+      }
 
 
 dRegions_Flag_Pistons:
@@ -2295,12 +2489,27 @@ dRegions_Flag_Pistons:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - define flag 'pistons'
-    - inject s@dRegions_Flags_Processors p:boolean
+#    - define flag 'pistons'
+#    - inject s@dRegions_Flags_Processors p:boolean
+    - foreach %orderedRegions% {
+      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|pistons]>'
+      - if %flagVal% != null {
+        - if !%flagVal% {
+          - determine cancelled
+          }
+        - foreach stop
+        }
+      }
 
   event-global:
-    - define flag 'pistons'
-    - inject s@dRegions_Flags_Processors p:boolean-Global
+#    - define flag 'pistons'
+#    - inject s@dRegions_Flags_Processors p:boolean-Global
+    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|pistons]>'
+    - if %flagVal% != null {
+      - if !%flagVal% {
+        - determine cancelled
+        }
+      }
 
 
 dRegions_Flag_Lighter:
@@ -2920,12 +3129,27 @@ dRegions_Flag_Entity-Break-Painting:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - define flag 'entity-break-painting'
-    - inject s@dRegions_Flags_Processors p:boolean
+#    - define flag 'entity-break-painting'
+#    - inject s@dRegions_Flags_Processors p:boolean
+    - foreach %orderedRegions% {
+      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|entity-break-painting]>'
+      - if %flagVal% != null {
+        - if !%flagVal% {
+          - determine cancelled
+          }
+        - foreach stop
+        }
+      }
 
   event-global:
-    - define flag 'entity-break-painting'
-    - inject s@dRegions_Flags_Processors p:boolean-Global
+#    - define flag 'entity-break-painting'
+#    - inject s@dRegions_Flags_Processors p:boolean-Global
+    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|entity-break-painting]>'
+    - if %flagVal% != null {
+      - if !%flagVal% {
+        - determine cancelled
+        }
+      }
 
 
 dRegions_Flag_Entity-Break-ItemFrame:
@@ -2951,12 +3175,27 @@ dRegions_Flag_Entity-Break-ItemFrame:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - define flag 'entity-break-itemframe'
-    - inject s@dRegions_Flags_Processors p:boolean
+#    - define flag 'entity-break-itemframe'
+#    - inject s@dRegions_Flags_Processors p:boolean
+    - foreach %orderedRegions% {
+      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|entity-break-itemframe]>'
+      - if %flagVal% != null {
+        - if !%flagVal% {
+          - determine cancelled
+          }
+        - foreach stop
+        }
+      }
 
   event-global:
-    - define flag 'entity-break-itemframe'
-    - inject s@dRegions_Flags_Processors p:boolean-Global
+#    - define flag 'entity-break-itemframe'
+#    - inject s@dRegions_Flags_Processors p:boolean-Global
+    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|entity-break-itemframe]>'
+    - if %flagVal% != null {
+      - if !%flagVal% {
+        - determine cancelled
+        }
+      }
 
 
 dRegions_Flag_PVP:
@@ -2982,15 +3221,40 @@ dRegions_Flag_PVP:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
+#    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+#      - define flag 'pvp'
+#      - inject s@dRegions_Flags_Processors p:boolean
+#      }
     - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
-      - define flag 'pvp'
-      - inject s@dRegions_Flags_Processors p:boolean
+      - foreach %orderedRegions% {
+        - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|pvp]>'
+        - if %flagVal% != null {
+          - if !%flagVal% {
+            - run locally flags delay:1t def:<def[defender].uuid||null>
+            - remove <c.projectile||li@>
+            - run locally msg delay:1t
+            - determine cancelled
+            }
+          - foreach stop
+          }
+        }
       }
 
   event-global:
+#    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+#      - define flag 'pvp'
+#      - inject s@dRegions_Flags_Processors p:boolean-Global
+#      }
     - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
-      - define flag 'pvp'
-      - inject s@dRegions_Flags_Processors p:boolean-Global
+      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|pvp]>'
+      - if %flagVal% != null {
+        - if !%flagVal% {
+          - run locally flags delay:1t def:<def[defender].uuid||null>
+          - remove <c.projectile||li@>
+          - run locally msg delay:1t
+          - determine cancelled
+          }
+        }
       }
 
   event-cleanup:
@@ -3047,12 +3311,33 @@ dRegions_Flag_Potion-Throw:
       }
 
   event:
-    - define flag 'potion-throw'
-    - inject s@dRegions_Flags_Processors p:boolean
+#    - define flag 'potion-throw'
+#    - inject s@dRegions_Flags_Processors p:boolean
+    - foreach %orderedRegions% {
+      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|potion-throw]>'
+      - if %flagVal% != null {
+        - if !%flagVal% {
+          - if <player.is[!=].to[null]||false> {
+            - run locally msg delay:1t
+            }
+          - determine cancelled
+          }
+        - foreach stop
+        }
+      }
 
   event-global:
-    - define flag 'potion-throw'
-    - inject s@dRegions_Flags_Processors p:boolean-Global
+#    - define flag 'potion-throw'
+#    - inject s@dRegions_Flags_Processors p:boolean-Global
+    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|potion-throw]>'
+    - if %flagVal% != null {
+      - if !%flagVal% {
+        - if <player.is[!=].to[null]||false> {
+          - run locally msg delay:1t
+          }
+        - determine cancelled
+        }
+      }
 
 
 dRegions_Flag_Potion-Drink:
