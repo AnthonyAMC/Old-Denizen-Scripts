@@ -175,8 +175,10 @@ dRegions:
     - define readPath 'fire.destroyBlocks'
     - inject s@dRegions p:event_PreProc_Config
     - if <c.location.cuboids.is_empty||true> {
-      - define FlagScript 's@dRegions_Flag_<t[<c.cause.is[==].to[flint_and_steel]>]:Lighter||Fire-Spread>'
-      - inject %FlagScript% p:event-global
+      - define FlagScript 's@dRegions_Flag_Fire-Spread'
+      - inject s@dRegions_Flag_Fire-Spread p:event-global
+      - define FlagScript 's@dRegions_Flag_Fire-Destroy'
+      - inject s@dRegions_Flag_Fire-Destroy p:event-global
       - queue clear
       }
     - define regionPri 'li@'
@@ -184,8 +186,10 @@ dRegions:
       - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
       }
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
-    - define FlagScript 's@dRegions_Flag_<t[<c.cause.is[==].to[flint_and_steel]>]:Lighter||Fire-Spread>'
-    - inject %FlagScript% p:event
+    - define FlagScript 's@dRegions_Flag_Fire-Spread'
+    - inject s@dRegions_Flag_Fire-Spread p:event
+    - define FlagScript 's@dRegions_Flag_Fire-Destroy'
+    - inject s@dRegions_Flag_Fire-Destroy p:event
 
     on ice forms:
 #    - if <server.flag[dRegions_LocationGrief].contains[<c.location.simple>]||false> {
@@ -819,7 +823,7 @@ dRegions:
     on player empties bucket:
     - define world '<player.world.name>'
     - if <c.relative.cuboids.is_empty||true> {
-      - define FlagScript 's@dRegions_Flag_dRegions_Flag_Bucket-Empty'
+      - define FlagScript 's@dRegions_Flag_Bucket-Empty'
       - inject s@dRegions_Flag_Bucket-Empty p:event-global
       - queue clear
       }
@@ -828,13 +832,13 @@ dRegions:
       - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
       }
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
-    - define FlagScript 's@dRegions_Flag_dRegions_Flag_Bucket-Empty'
+    - define FlagScript 's@dRegions_Flag_Bucket-Empty'
     - inject s@dRegions_Flag_Bucket-Empty p:event
 
     on player fills bucket:
     - define world '<player.world.name>'
     - if <c.location.cuboids.is_empty||true> {
-      - define FlagScript 's@dRegions_Flag_dRegions_Flag_Bucket-Fill'
+      - define FlagScript 's@dRegions_Flag_Bucket-Fill'
       - inject s@dRegions_Flag_Bucket-Fill p:event-global
       - queue clear
       }
@@ -843,7 +847,7 @@ dRegions:
       - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
       }
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
-    - define FlagScript 's@dRegions_Flag_dRegions_Flag_Bucket-Fill'
+    - define FlagScript 's@dRegions_Flag_Bucket-Fill'
     - inject s@dRegions_Flag_Bucket-Fill p:event
 
     on player drops item:
