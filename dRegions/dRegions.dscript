@@ -196,8 +196,7 @@ dRegions:
 #      - determine cancelled
 #      }
     - define world '<c.location.world.name>'
-    - define mat '<c.material.bukkit_enum>'
-    - define readPath 'blockform.%mat%'
+    - define readPath 'blockform.ice'
     - inject s@dRegions p:event_PreProc_Config
     - if <c.location.cuboids.is_empty||true> {
       - define FlagScript 's@dRegions_Flag_Ice-Form'
@@ -217,17 +216,20 @@ dRegions:
 #      - determine cancelled
 #      }
     - define world '<c.location.world.name>'
-    - define mat '<c.material.bukkit_enum>'
     - define target '<c.location.sub[0,1,0].material.bukkit_enum>'
-    - define readPath 'blockform.%mat%'
+    - define readPath 'blockform.snow'
     - inject s@dRegions p:event_PreProc_Config
     - if <c.location.cuboids.is_empty||true> {
+      - if <server.has_flag[dRegions_NoSnow_global_%target%]> determine cancelled
+      - if <server.has_flag[dRegions_AllowSnow_%world%_global_%target%]> queue clear
       - define FlagScript 's@dRegions_Flag_Snow-Fall'
       - inject s@dRegions_Flag_Snow-Fall p:event-global
       - queue clear
       }
     - define regionPri 'li@'
     - foreach <c.location.cuboids.parse[notable_name].filter[starts_with[dRegions_]].parse[after[dregions_%world%_]].include[__global__]> {
+      - if <server.has_flag[dRegions_NoSnow_%world%_%value%_%target%]> determine cancelled
+      - if <server.has_flag[dRegions_AllowSnow_%world%_%value%_%target%]> queue clear
       - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
       }
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
@@ -236,8 +238,7 @@ dRegions:
 
     on soil fades:
     - define world '<c.location.world.name>'
-    - define mat '<c.material.bukkit_enum>'
-    - define readPath 'blockfade.%mat%'
+    - define readPath 'blockfade.soil'
     - inject s@dRegions p:event_PreProc_Config
     - if <c.location.cuboids.is_empty||true> {
       - define FlagScript 's@dRegions_Flag_Soil-Dry'
@@ -254,8 +255,7 @@ dRegions:
 
     on ice fades:
     - define world '<c.location.world.name>'
-    - define mat '<c.material.bukkit_enum>'
-    - define readPath 'blockfade.%mat%'
+    - define readPath 'blockfade.ice'
     - inject s@dRegions p:event_PreProc_Config
     - if <c.location.cuboids.is_empty||true> {
       - define FlagScript 's@dRegions_Flag_Ice-Melt'
@@ -272,8 +272,7 @@ dRegions:
 
     on snow fades:
     - define world '<c.location.world.name>'
-    - define mat '<c.material.bukkit_enum>'
-    - define readPath 'blockfade.%mat%'
+    - define readPath 'blockfade.snow'
     - inject s@dRegions p:event_PreProc_Config
     - if <c.location.cuboids.is_empty||true> {
       - define FlagScript 's@dRegions_Flag_Snow-Melt'
@@ -1464,16 +1463,51 @@ dRegions:
   # it will always allow the event. If there are blocks specifed, it will only
   # allow events involving those blocks listed.
   #
-    - foreach '<el@val[%world%|global].as_list>' {
-      - define settingValue '<yaml[dRegions_%value%_config].read[config.%readPath%]||true>'
-      - define targetList '<yaml[dRegions_%value%_config].read[config.%readPath%-list]||li@>'
-      - if %settingValue% && <def[targetList].is_empty.not> && %targetList% !contains <def[target]||all> {
+    - define targetList '<yaml[dRegions_%world%_config].read[config.%readPath%-list]||li@>'
+    - if <yaml[dRegions_%world%_config].read[config.%readPath%]||true> {
+      - if !<def[targetList].is_empty> {
+        - if %targetList% !contains <def[target]||all> {
+          - determine cancelled
+          }
+        }
+      }
+      else {
+      - if <def[targetList].is_empty> {
         - determine cancelled
         }
-      - if !%settingValue% && ( <def[targetList].is_empty> || %targetList% contains <def[target]||all> ) {
+      - if %targetList% contains <def[target]||all> {
         - determine cancelled
         }
       }
+
+    - define targetList '<yaml[dRegions_global_config].read[config.%readPath%-list]||li@>'
+    - if <yaml[dRegions_global_config].read[config.%readPath%]||true> {
+      - if !<def[targetList].is_empty> {
+        - if %targetList% !contains <def[target]||all> {
+          - determine cancelled
+          }
+        }
+      }
+      else {
+      - if <def[targetList].is_empty> {
+        - determine cancelled
+        }
+      - if %targetList% contains <def[target]||all> {
+        - determine cancelled
+        }
+      }
+
+#    - define targetList '<yaml[dRegions_global_config].read[config.%readPath%-list]||li@>'
+#    - if <yaml[dRegions_global_config].read[config.%readPath%]||true> {
+#      - if !<def[targetList].is_empty> && %targetList% !contains <def[target]||all> {
+#        - determine cancelled
+#        }
+#      }
+#      else {
+#      - if <def[targetList].is_empty> || %targetList% contains <def[target]||all> {
+#        - determine cancelled
+#        }
+#      }
 
 
   event_PreProc_OrderRegionsGlobal:
@@ -4245,6 +4279,105 @@ dRegions_GetInheritedFlag:
       - define return '<yaml[dRegions_%world%_regions].read[regions.%region%.flags.%flag%]||null>'
       }
     - determine '%return%'
+
+
+dRegions_CanUse_Block:
+# Procedure script to determine if a player can use a block at a location.
+# Will work for any block that can be interacted with (chests, doors, levers, etc.)
+# <proc[dRegions_CanUse_Block].context[player|location]>
+  type: procedure
+  speed: 0
+  debug: false
+  definitions: player|location
+
+  script:
+    - define world '<def[location].world.name>'
+    - define target '<def[location].material.bukkit_enum>'
+    - define FlagScript '<s@dRegions_Map_Interactions.yaml_key[block.%target%]||s@dRegions_Map_Interactions>'
+    - define flag '<def[FlagScript].yaml_key[flag_name]||null>'
+    - if %flag% == null determine false
+    - if <def[player].has_permission[dregions.admin]||<def[player].is_op>> determine true
+    - define flag-targetList '<def[FlagScript].yaml_key[flag_targetList]||null>'
+    - if <def[location].cuboids.is_empty||true> {
+      - inject locally check-global
+      - determine 'true'
+      - queue clear
+      }
+    - define regionPri 'li@'
+    - foreach <def[location].cuboids.parse[notable_name].filter[starts_with[dRegions_]].parse[after[dregions_%world%_]].include[__global__]> {
+      - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
+      }
+    - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
+    - inject locally check-region
+    - determine 'true'
+
+  check-global:
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag%]>'
+    - if %flagObj% == null {
+      - define flagObj '<def[FlagScript].yaml_key[flag_globalDefault]||none>'
+      }
+    - if %flagObj% != none {
+      - if <def[flagObj].split[/].get[1]> == allow {
+        - if !<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|__global__|%world%|%player%]> {
+#          - inject %FlagScript% p:event-cleanup
+          - determine false
+          }
+        - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag-targetList%].replace[, ].with[|].as_list>'
+        - if ( %targetList% != li@null ) && ( %targetList% != li@all ) && ( %targetList% !contains %target% ) {
+#          - inject %FlagScript% p:event-cleanup
+          - determine false
+          }
+        }
+        else {
+        - if <proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|__global__|%world%|%player%]> {
+          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag-targetList%].replace[, ].with[|].as_list>'
+          - if ( %targetList% == li@null ) || ( %targetList% == li@all ) || ( %targetList% contains %target% ) {
+#            - inject %FlagScript% p:event-cleanup
+            - determine false
+            }
+          }
+        }
+      }
+
+  check-region:
+    - if <def[FlagScript].yaml_key[region_highestOnly]||false> {
+      - define region '<def[orderedRegions].get[1]>'
+      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|%flag%]>'
+      }
+      else {
+      - foreach %orderedRegions% {
+        - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|%flag%]>'
+        - define region '%value%'
+        - if %flagObj% != null {
+          - foreach stop
+          }
+        }
+      }
+    - if %flagObj% == null {
+      - define flagObj '<def[FlagScript].yaml_key[flag_defaultValue]||none>'
+      }
+    - if %flagObj% != none {
+      - if <def[flagObj].split[/].get[1]> == allow {
+        - if !<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|<def[orderedRegions].get[1]>|%world%|%player%]> {
+#          - inject %FlagScript% p:event-cleanup
+          - determine false
+          }
+        - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|%flag-targetList%].replace[, ].with[|].as_list>'
+        - if ( %targetList% != li@null ) && ( %targetList% != li@all ) && ( %targetList% !contains %target% ) {
+#          - inject %FlagScript% p:event-cleanup
+          - determine false
+          }
+        }
+        else {
+        - if <proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|<def[orderedRegions].get[1]>|%world%|%player%]> {
+          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|%flag-targetList%].replace[, ].with[|].as_list>'
+          - if ( %targetList% == li@null ) || ( %targetList% == li@all ) || ( %targetList% contains %target% ) {
+#            - inject %FlagScript% p:event-cleanup
+            - determine false
+            }
+          }
+        }
+      }
 
 
 dRegions_getRelativeLocation:
