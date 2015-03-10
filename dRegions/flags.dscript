@@ -790,31 +790,31 @@ dRegions_Flag_Mob-Target:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - define target '<def[attacker].entity_type>'
-    - define player '%defender%'
-    - define flag 'mob-target'
-    - define flag-targetList 'mob-targetlist'
-    - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
+    - foreach %orderedRegions% {
+      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|mob-target]>'
+      - define region '%value%'
+      - if %flagObj% != null {
+        - foreach stop
+        }
+      }
+    - if %flagObj% != null {
+      - define player '%defender%'
+      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|mob-targetlist].replace[, ].with[|].as_list>'
+      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
+      }
 
   event-global:
-    - define target '<def[attacker].entity_type>'
-    - define player '%defender%'
-    - define flag 'mob-target'
-    - define flag-targetList 'mob-targetlist'
-    - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup-Global
+    - define orderedRegions 'li@global'
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|mob-target]>'
+    - if %flagObj% != null {
+      - define player '%defender%'
+      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|mob-targetlist].replace[, ].with[|].as_list>'
+      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
+      }
 
   event-cleanup:
-    - run locally flags delay:1t def:<def[defender].uuid||null>
     - remove <c.projectile||li@>
     - attack %attacker% target:cancel
-
-  flags:
-    - ^if %1% == null {
-      - queue clear
-      }
-    - ^flag server dRegions_NoTarget:->:%1%
-    - ^wait 3s
-    - ^flag server dRegions_NoTarget:<-:%1%
 
 
 
@@ -865,31 +865,31 @@ dRegions_Flag_Mob-Damage:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - define target '<def[attacker].entity_type>'
-    - define player '%defender%'
-    - define flag 'mob-damage'
-    - define flag-targetList 'mob-damagelist'
-    - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
+    - foreach %orderedRegions% {
+      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|mob-damage]>'
+      - define region '%value%'
+      - if %flagObj% != null {
+        - foreach stop
+        }
+      }
+    - if %flagObj% != null {
+      - define player '%defender%'
+      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|mob-damagelist].replace[, ].with[|].as_list>'
+      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
+      }
 
   event-global:
-    - define target '<def[attacker].entity_type>'
-    - define player '%defender%'
-    - define flag 'mob-damage'
-    - define flag-targetList 'mob-damagelist'
-    - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup-Global
+    - define orderedRegions 'li@global'
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|mob-damage]>'
+    - if %flagObj% != null {
+      - define player '%defender%'
+      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|mob-damagelist].replace[, ].with[|].as_list>'
+      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
+      }
 
   event-cleanup:
-    - run locally flags delay:1t def:<def[defender].uuid||null>
     - remove <c.projectile||li@>
     - attack %attacker% target:cancel
-
-  flags:
-    - ^if %1% == null {
-      - queue clear
-      }
-    - ^flag server dRegions_NoTarget:->:%1%
-    - ^wait 3s
-    - ^flag server dRegions_NoTarget:<-:%1%
 
 
 dRegions_Flag_Mob-Damagelist:
@@ -950,7 +950,6 @@ dRegions_Flag_Mob-Spawn:
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|mob-spawnlist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
       }
-    - flag server dRegions.%world%.<def[orderedRegions].get[1]>.mob-spawn.%target% d:300s
 
   event-global:
     - define orderedRegions 'li@global'
@@ -959,10 +958,6 @@ dRegions_Flag_Mob-Spawn:
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|mob-spawnlist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
       }
-    - flag server dRegions.%world%.global.mob-spawn.%target% d:300s
-
-  event-cleanup:
-    - flag server dRegions.%world%.<def[orderedRegions].get[1]>.mob-spawn.%target%:false d:300s
 
 
 dRegions_Flag_Mob-SpawnList:
@@ -1024,7 +1019,6 @@ dRegions_Flag_EVE:
       - define target '%dtarget%'
       - inject s@dRegions_Flags_Processors p:state-withTarget
       }
-    - flag server dRegions.%world%.<def[orderedRegions].get[1]>.eve.%dtarget% d:300s
 
   event-global:
     - define orderedRegions 'li@global'
@@ -1034,10 +1028,8 @@ dRegions_Flag_EVE:
       - define target '%dtarget%'
       - inject s@dRegions_Flags_Processors p:state-withTarget
       }
-    - flag server dRegions.%world%.global.eve.%dtarget%:false d:300s
 
   event-cleanup:
-    - flag server dRegions.%world%.<def[orderedRegions].get[1]>.eve.%dtarget%:false d:300s
     - remove <c.projectile||li@>
     - attack %attacker% target:cancel
 
@@ -1101,7 +1093,6 @@ dRegions_Flag_Mob-Attack:
       - define target '%atarget%'
       - inject s@dRegions_Flags_Processors p:state-withTarget
       }
-    - flag server dRegions.%world%.<def[orderedRegions].get[1]>.mob-attack.%atarget% d:300s
 
   event-global:
     - define orderedRegions 'li@global'
@@ -1111,10 +1102,8 @@ dRegions_Flag_Mob-Attack:
       - define target '%atarget%'
       - inject s@dRegions_Flags_Processors p:state-withTarget
       }
-    - flag server dRegions.%world%.global.mob-attack.%atarget% d:300s
 
   event-cleanup:
-    - flag server dRegions.%world%.<def[orderedRegions].get[1]>.mob-attack.%atarget%:false d:300s
     - remove <c.projectile||li@>
     - attack %attacker% target:cancel
 
@@ -1166,35 +1155,29 @@ dRegions_Flag_PVE:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
-      - define player '<def[attacker]>'
-      - define target '<def[defender].entity_type>'
-      - define flag 'pve'
-      - define flag-targetList 'pve-moblist'
+    - foreach %orderedRegions% {
+      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|pve]>'
+      - define region '%value%'
+      - if %flagObj% != null {
+        - foreach stop
+        }
+      }
+    - if %flagObj% != null {
+      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|pve-moblist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
       }
 
   event-global:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
-      - define player '<def[attacker]>'
-      - define target '<def[defender].entity_type>'
-      - define flag 'pve'
-      - define flag-targetList 'pve-moblist'
-      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup-Global
+    - define orderedRegions 'li@global'
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|pve]>'
+    - if %flagObj% != null {
+      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|pve-moblist].replace[, ].with[|].as_list>'
+      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
       }
 
   event-cleanup:
-    - run locally flags delay:1t def:<def[defender].uuid||null>
     - remove <c.projectile||li@>
     - run locally msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
-
-  flags:
-    - ^if %1% == null {
-      - queue clear
-      }
-    - ^flag server dRegions_NoTarget:->:%1%
-    - ^wait 3s
-    - ^flag server dRegions_NoTarget:<-:%1%
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
@@ -1255,10 +1238,12 @@ dRegions_Flag_Npc-Interact:
         - define region '%value%'
         - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|npc-interact]>'
         - if %flagObj% != null {
-          - define player <player>
-          - inject s@dRegions_Flags_Processors p:state-withGroup
           - foreach stop
           }
+        }
+      - if %flagObj% != null {
+        - define player <player>
+        - inject s@dRegions_Flags_Processors p:state-withGroup
         }
       }
 
@@ -1304,21 +1289,28 @@ dRegions_Flag_Entity-Interact:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - foreach %orderedRegions% {
+      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|entity-interact]>'
+      - define region '%value%'
+      - if %flagObj% != null {
+        - foreach stop
+        }
+      }
+    - if %flagObj% != null {
       - define player '<player>'
       - define target '<c.entity.entity_type>'
-      - define flag 'entity-interact'
-      - define flag-targetList 'entity-interactlist'
+      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|entity-interactlist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
       }
 
   event-global:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - define orderedRegions 'li@global'
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|entity-interact]>'
+    - if %flagObj% != null {
       - define player '<player>'
       - define target '<c.entity.entity_type>'
-      - define flag 'entity-interact'
-      - define flag-targetList 'entity-interactlist'
-      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup-Global
+      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|entity-interactlist].replace[, ].with[|].as_list>'
+      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
       }
 
   event-cleanup:
@@ -1389,23 +1381,19 @@ dRegions_Flag_Entity-Explode:
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|entity-explodelist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
       }
-    - flag server dRegions.%world%.<def[orderedRegions].get[1]>.entity-explode.%target% d:300s
 
   event-global:
-    - define region global
+    - define orderedRegions 'li@global'
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|entity-explode]>'
     - if %flagVal% != null {
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|entity-explodelist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
       }
-    - flag server dRegions.%world%.global.entity-explode.%target% d:300s
 
   event-cleanup:
-    - determine passively cancelled
     - foreach <def[attacker].location.find.entities.within[5].exclude[%attacker%]> {
       - adjust %value% 'velocity:l@0,0,0,%world%'
       }
-    - flag server dRegions.%world%.<def[orderedRegions].get[1]>.entity-explode.%target%:false d:300s
 
 
 dRegions_Flag_Entity-ExplodeList:
@@ -1466,7 +1454,6 @@ dRegions_Flag_Entity-Grief:
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|entity-grieflist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
       }
-    - flag server dRegions.%world%.<def[orderedRegions].get[1]>.entity-grief.%target% d:300s
 
   event-global:
     - define orderedRegions 'li@global'
@@ -1475,10 +1462,14 @@ dRegions_Flag_Entity-Grief:
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|entity-grieflist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
       }
-    - flag server dRegions.%world%.global.entity-grief.%target% d:300s
 
   event-cleanup:
-    - flag server dRegions.%world%.<def[orderedRegions].get[1]>.entity-grief.%target%:false d:300s
+    - run locally offthread delay:1t def:<c.entity.uuid>
+
+  offthread:
+    - ^flag server dRegions.EntityGrief.%1%
+    - ^wait 3s
+    - ^flag server dRegions.EntityGrief.%1%:!
 
 
 dRegions_Flag_Entity-GriefList:
@@ -1538,7 +1529,6 @@ dRegions_Flag_Entity-Drops-OnDeath:
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|entity-drops-ondeathlist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
       }
-    - flag server dRegions.%world%.<def[orderedRegions].get[1]>.entity-drops-ondeath.%target% d:300s
 
   event-global:
     - define orderedRegions 'li@global'
@@ -1547,10 +1537,8 @@ dRegions_Flag_Entity-Drops-OnDeath:
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|entity-drops-ondeathlist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
       }
-    - flag server dRegions.%world%.global.entity-drops-ondeath.%target% d:300s
 
   event-cleanup:
-    - flag server dRegions.%world%.<def[orderedRegions].get[1]>.entity-drops-ondeath.%target%:false d:300s
     - determine no_drops
 
 
@@ -1613,7 +1601,6 @@ dRegions_Flag_Fire-Spread:
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|fire-spreadblocks].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
       }
-    - flag server dRegions.%world%.<def[orderedRegions].get[1]>.fire-spread.%target% d:300s
 
   event-global:
     - define orderedRegions 'li@global'
@@ -1622,10 +1609,6 @@ dRegions_Flag_Fire-Spread:
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|fire-spreadblocks].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
       }
-    - flag server dRegions.%world%.global.fire-spread.%target% d:300s
-
-  event-cleanup:
-    - flag server dRegions.%world%.<def[orderedRegions].get[1]>.fire-spread.%target%:false d:300s
 
 
 dRegions_Flag_Fire-SpreadBlocks:
@@ -1686,7 +1669,6 @@ dRegions_Flag_Fire-Destroy:
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|fire-destroyblocks].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
       }
-    - flag server dRegions.%world%.<def[orderedRegions].get[1]>.fire-destroy.%target% d:300s
 
   event-global:
     - define orderedRegions 'li@global'
@@ -1695,11 +1677,6 @@ dRegions_Flag_Fire-Destroy:
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|fire-destroyblocks].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
       }
-    - flag server dRegions.%world%.global.fire-destroy.%target% d:300s
-
-
-  event-cleanup:
-    - flag server dRegions.%world%.<def[orderedRegions].get[1]>.fire-destroy.%target%:false d:300s
 
 
 dRegions_Flag_Fire-DestroyBlocks:
@@ -1760,7 +1737,6 @@ dRegions_Flag_Lightning-Strikes:
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|lightning-strikesblocks].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
       }
-    - flag server dRegions.%world%.<def[orderedRegions].get[1]>.lightning-strikes.%target% d:300s
 
   event-global:
     - define orderedRegions 'li@global'
@@ -1769,10 +1745,6 @@ dRegions_Flag_Lightning-Strikes:
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|lightning-strikesblocks].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
       }
-    - flag server dRegions.%world%.global.lightning-strikes.%target% d:300s
-
-  event-cleanup:
-    - flag server dRegions.%world%.<def[orderedRegions].get[1]>.lightning-strikes.%target%:false d:300s
 
 
 dRegions_Flag_Lightning-StrikesBlocks:
@@ -1833,7 +1805,6 @@ dRegions_Flag_Water-Spread:
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|water-spreadblocks].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
       }
-    - flag server dRegions.%world%.<def[orderedRegions].get[1]>.water-spread.%target% d:300s
 
   event-global:
     - define orderedRegions 'li@global'
@@ -1842,10 +1813,6 @@ dRegions_Flag_Water-Spread:
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|water-spreadblocks].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
       }
-    - flag server dRegions.%world%.global.water-spread.%target% d:300s
-
-  event-cleanup:
-    - flag server dRegions.%world%.<def[orderedRegions].get[1]>.water-spread.%target%:false d:300s
 
 
 dRegions_Flag_Water-SpreadBlocks:
@@ -1906,7 +1873,6 @@ dRegions_Flag_Lava-Spread:
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|lava-spreadblocks].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
       }
-    - flag server dRegions.%world%.<def[orderedRegions].get[1]>.lava-spread.%target% d:300s
 
   event-global:
     - define orderedRegions 'li@global'
@@ -1915,11 +1881,6 @@ dRegions_Flag_Lava-Spread:
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|lava-spreadblocks].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
       }
-    - flag server dRegions.%world%.global.lava-spread.%target% d:300s
-
-
-  event-cleanup:
-    - flag server dRegions.%world%.<def[orderedRegions].get[1]>.lava-spread.%target%:false d:300s
 
 
 dRegions_Flag_Lava-SpreadBlocks:
@@ -1973,27 +1934,23 @@ dRegions_Flag_Snow-Fall:
       - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|snow-fall]>'
       - define region '%value%'
       - if %flagVal% != null {
-        - foreach stop
+        - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|snow-fallblocks].replace[, ].with[|].as_list>'
+        - inject s@dRegions_Flags_Processors p:state-withTarget
+#        - yaml set 'cache.state-withTarget.%region%.snow-fall.%target%:true' 'id:dRegions_%world%_cache'
         }
       }
-    - if %flagVal% != null {
-      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|snow-fallblocks].replace[, ].with[|].as_list>'
-      - define region '<def[orderedRegions].get[1]>'
-      - inject s@dRegions_Flags_Processors p:state-withTarget
-      }
-    - flag server dRegions.%world%.<def[orderedRegions].get[1]>.snow-fall.%target% d:300s
 
   event-global:
-    - define orderedRegions 'li@global'
+    - define region '__global__'
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|snow-fall]>'
     - if %flagVal% != null {
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|snow-fallblocks].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
       }
-    - flag server dRegions.%world%.global.snow-fall.%target% d:300s
+#    - yaml set 'cache.state-withTarget.__global__.snow-fall.%target%:true' 'id:dRegions_%world%_cache'
 
-  event-cleanup:
-    - flag server dRegions.%world%.<def[orderedRegions].get[1]>.snow-fall.%target%:false d:300s
+#  event-cleanup:
+#    - yaml set 'cache.state-withTarget.%region%.snow-fall.%target%:false' 'id:dRegions_%world%_cache'
 
 
 dRegions_Flag_Snow-FallBlocks:
@@ -2045,26 +2002,24 @@ dRegions_Flag_Ice-Form:
     - foreach %orderedRegions% {
       - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|ice-form]>'
       - if %flagVal% != null {
-        - if !%flagVal% {
-          - flag server dRegions.%world%.<def[orderedRegions].get[1]>.ice-form:false d:300s
-          - determine cancelled
+        - if %flagVal% {
+#          - yaml set 'cache.boolean.%value%.ice-form:true' 'id:dRegions_%world%_cache'
+          - foreach stop
           }
-        - foreach stop
-        }
-      }
-    - flag server dRegions.%world%.<def[orderedRegions].get[1]>.ice-form d:300s
-
-  event-global:
-#    - define flag 'ice-form'
-#    - inject s@dRegions_Flags_Processors p:boolean-global
-    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|ice-form]>'
-    - if %flagVal% != null {
-      - if !%flagVal% {
-        - flag server dRegions.%world%.global.ice-form:false d:300s
+#        - yaml set 'cache.boolean.%value%.ice-form:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
       }
-    - flag server dRegions.%world%.global.ice-form d:300s
+
+  event-global:
+    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|ice-form]>'
+    - if %flagVal% != null {
+      - if !%flagVal% {
+#        - yaml set 'cache.boolean.__global__.ice-form:false' 'id:dRegions_%world%_cache'
+        - determine cancelled
+        }
+      }
+#    - yaml set 'cache.boolean.__global__.ice-form:true' 'id:dRegions_%world%_cache'
 
 
 dRegions_Flag_Ice-Melt:
@@ -2089,27 +2044,27 @@ dRegions_Flag_Ice-Melt:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-#    - define flag 'ice-melt'
-#    - inject s@dRegions_Flags_Processors p:boolean
     - foreach %orderedRegions% {
       - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|ice-melt]>'
       - if %flagVal% != null {
         - if !%flagVal% {
+#          - yaml set 'cache.boolean.%value%.ice-melt:false' 'id:dRegions_%world%_cache'
           - determine cancelled
           }
+#        - yaml set 'cache.boolean.%value%.ice-melt:true' 'id:dRegions_%world%_cache'
         - foreach stop
         }
       }
 
   event-global:
-#    - define flag 'ice-melt'
-#    - inject s@dRegions_Flags_Processors p:boolean-Global
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|ice-melt]>'
     - if %flagVal% != null {
       - if !%flagVal% {
+#        - yaml set 'cache.boolean.__global__.ice-melt:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
       }
+#    - yaml set 'cache.boolean.__global__.ice-melt:true' 'id:dRegions_%world%_cache'
 
 
 dRegions_Flag_Snow-Melt:
@@ -2134,27 +2089,27 @@ dRegions_Flag_Snow-Melt:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-#    - define flag 'snow-melt'
-#    - inject s@dRegions_Flags_Processors p:boolean
     - foreach %orderedRegions% {
       - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|snow-melt]>'
       - if %flagVal% != null {
         - if !%flagVal% {
+#          - yaml set 'cache.boolean.%value%.snow-melt:false' 'id:dRegions_%world%_cache'
           - determine cancelled
           }
+#        - yaml set 'cache.boolean.%value%.snow-melt:true' 'id:dRegions_%world%_cache'
         - foreach stop
         }
       }
 
   event-global:
-#    - define flag 'snow-melt'
-#    - inject s@dRegions_Flags_Processors p:boolean-Global
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|snow-melt]>'
     - if %flagVal% != null {
       - if !%flagVal% {
+#        - yaml set 'cache.boolean.__global__.snow-melt:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
       }
+#    - yaml set 'cache.boolean.__global__.snow-melt:true' 'id:dRegions_%world%_cache'
 
 
 dRegions_Flag_Soil-Dry:
@@ -2179,8 +2134,6 @@ dRegions_Flag_Soil-Dry:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-#    - define flag 'soil-dry'
-#    - inject s@dRegions_Flags_Processors p:boolean
     - foreach %orderedRegions% {
       - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|soil-dry]>'
       - if %flagVal% != null {
@@ -2192,8 +2145,6 @@ dRegions_Flag_Soil-Dry:
       }
 
   event-global:
-#    - define flag 'soil-dry'
-#    - inject s@dRegions_Flags_Processors p:boolean-Global
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|soil-dry]>'
     - if %flagVal% != null {
       - if !%flagVal% {
@@ -2224,31 +2175,23 @@ dRegions_Flag_Trample-Crops-Player:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-#    - define flag 'trample-crops-player'
-#    - inject s@dRegions_Flags_Processors p:boolean
     - foreach %orderedRegions% {
       - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|trample-crops-player]>'
       - if %flagVal% != null {
         - if !%flagVal% {
-          - flag server dRegions.%world%.<def[orderedRegions].get[1]>.trample-crops-player:false d:300s
           - determine cancelled
           }
         - foreach stop
         }
       }
-    - flag server dRegions.%world%.<def[orderedRegions].get[1]>.trample-crops-player d:300s
 
   event-global:
-#    - define flag 'trample-crops-player'
-#    - inject s@dRegions_Flags_Processors p:boolean-Global
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|trample-crops-player]>'
     - if %flagVal% != null {
       - if !%flagVal% {
-        - flag server dRegions.%world%.global.trample-crops-player:false d:300s
         - determine cancelled
         }
       }
-    - flag server dRegions.%world%.global.trample-crops-player d:300s
 
 
 dRegions_Flag_Trample-Crops-Entity:
@@ -2273,31 +2216,23 @@ dRegions_Flag_Trample-Crops-Entity:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-#    - define flag 'trample-crops-entity'
-#    - inject s@dRegions_Flags_Processors p:boolean
     - foreach %orderedRegions% {
       - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|trample-crops-entity]>'
       - if %flagVal% != null {
         - if !%flagVal% {
-          - flag server dRegions.%world%.<def[orderedRegions].get[1]>.trample-crops-entity:false d:300s
           - determine cancelled
           }
         - foreach stop
         }
       }
-    - flag server dRegions.%world%.<def[orderedRegions].get[1]>.trample-crops-entity d:300s
 
   event-global:
-#    - define flag 'trample-crops-entity'
-#    - inject s@dRegions_Flags_Processors p:boolean-Global
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|trample-crops-entity]>'
     - if %flagVal% != null {
       - if !%flagVal% {
-        - flag server dRegions.%world%.global.trample-crops-entity:false d:300s
         - determine cancelled
         }
       }
-    - flag server dRegions.%world%.global.trample-crops-entity d:300s
 
 
 dRegions_Flag_Mushroom-Spread:
@@ -2323,8 +2258,6 @@ dRegions_Flag_Mushroom-Spread:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-#    - define flag 'mushroom-spread'
-#    - inject s@dRegions_Flags_Processors p:boolean
     - foreach %orderedRegions% {
       - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|mushroom-spread]>'
       - if %flagVal% != null {
@@ -2336,8 +2269,6 @@ dRegions_Flag_Mushroom-Spread:
       }
 
   event-Global:
-#    - define flag 'mushroom-spread'
-#    - inject s@dRegions_Flags_Processors p:boolean-Global
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|mushroom-spread]>'
     - if %flagVal% != null {
       - if !%flagVal% {
@@ -2369,8 +2300,6 @@ dRegions_Flag_Grass-Spread:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-#    - define flag 'grass-spread'
-#    - inject s@dRegions_Flags_Processors p:boolean
     - foreach %orderedRegions% {
       - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|grass-spread]>'
       - if %flagVal% != null {
@@ -2382,8 +2311,6 @@ dRegions_Flag_Grass-Spread:
       }
 
   event-global:
-#    - define flag 'grass-spread'
-#    - inject s@dRegions_Flags_Processors p:boolean-Global
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|grass-spread]>'
     - if %flagVal% != null {
       - if !%flagVal% {
@@ -2415,8 +2342,6 @@ dRegions_Flag_Mycel-Spread:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-#    - define flag 'mycel-spread'
-#    - inject s@dRegions_Flags_Processors p:boolean
     - foreach %orderedRegions% {
       - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|mycel-spread]>'
       - if %flagVal% != null {
@@ -2428,8 +2353,6 @@ dRegions_Flag_Mycel-Spread:
       }
 
   event-global:
-#    - define flag 'mycel-spread'
-#    - inject s@dRegions_Flags_Processors p:boolean-Global
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|mycel-spread]>'
     - if %flagVal% != null {
       - if !%flagVal% {
@@ -2461,8 +2384,6 @@ dRegions_Flag_Vine-Growth:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-#    - define flag 'vine-growth'
-#    - inject s@dRegions_Flags_Processors p:boolean
     - foreach %orderedRegions% {
       - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|vine-growth]>'
       - if %flagVal% != null {
@@ -2474,8 +2395,6 @@ dRegions_Flag_Vine-Growth:
       }
 
   event-global:
-#    - define flag 'vine-growth'
-#    - inject s@dRegions_Flags_Processors p:boolean-Global
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|vine-growth]>'
     - if %flagVal% != null {
       - if !%flagVal% {
@@ -2507,31 +2426,27 @@ dRegions_Flag_Leaf-Decay:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-#    - define flag 'leaf-decay'
-#    - inject s@dRegions_Flags_Processors p:boolean
     - foreach %orderedRegions% {
       - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|leaf-decay]>'
       - if %flagVal% != null {
         - if !%flagVal% {
-          - flag server dRegions.%world%.<def[orderedRegions].get[1]>.leaf-decay:false d:300s
+#          - yaml set 'cache.boolean.%value%.leaf-decay:false' 'id:dRegions_%world%_cache'
           - determine cancelled
           }
+#        - yaml set 'cache.boolean.%value%.leaf-decay:true' 'id:dRegions_%world%_cache'
         - foreach stop
         }
       }
-    - flag server dRegions.%world%.<def[orderedRegions].get[1]>.leaf-decay d:300s
 
   event-global:
-#    - define flag 'leaf-decay'
-#    - inject s@dRegions_Flags_Processors p:boolean-Global
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|leaf-decay]>'
     - if %flagVal% != null {
       - if !%flagVal% {
-        - flag server dRegions.%world%.global.leaf-decay:false d:300s
+#        - yaml set 'cache.boolean.__global__.leaf-decay:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
       }
-    - flag server dRegions.%world%.global.leaf-decay d:300s
+#    - yaml set 'cache.boolean.__global__.leaf-decay:true' 'id:dRegions_%world%_cache'
 
 
 dRegions_Flag_Falling-Sand:
@@ -2561,23 +2476,19 @@ dRegions_Flag_Falling-Sand:
       - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|falling-sand]>'
       - if %flagVal% != null {
         - if !%flagVal% {
-          - flag server dRegions.%world%.<def[orderedRegions].get[1]>.falling-sand:false d:300s
           - determine cancelled
           }
         - foreach stop
         }
       }
-    - flag server dRegions.%world%.<def[orderedRegions].get[1]>.falling-sand d:300s
 
   event-global:
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|falling-sand]>'
     - if %flagVal% != null {
       - if !%flagVal% {
-        - flag server dRegions.%world%.Global.falling-sand:false d:300s
         - determine cancelled
         }
       }
-    - flag server dRegions.%world%.Global.falling-sand d:300s
 
 
 dRegions_Flag_Falling-Gravel:
@@ -2607,23 +2518,19 @@ dRegions_Flag_Falling-Gravel:
       - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|falling-gravel]>'
       - if %flagVal% != null {
         - if !%flagVal% {
-          - flag server dRegions.%world%.<def[orderedRegions].get[1]>.falling-gravel:false d:300s
           - determine cancelled
           }
         - foreach stop
         }
       }
-    - flag server dRegions.%world%.<def[orderedRegions].get[1]>.falling-gravel d:300s
 
   event-global:
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|falling-gravel]>'
     - if %flagVal% != null {
       - if !%flagVal% {
-        - flag server dRegions.%world%.global.falling-gravel:false d:300s
         - determine cancelled
         }
       }
-    - flag server dRegions.%world%.Global.falling-gravel d:300s
 
 
 dRegions_Flag_Pistons:
@@ -2649,8 +2556,6 @@ dRegions_Flag_Pistons:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-#    - define flag 'pistons'
-#    - inject s@dRegions_Flags_Processors p:boolean
     - foreach %orderedRegions% {
       - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|pistons]>'
       - if %flagVal% != null {
@@ -2662,8 +2567,6 @@ dRegions_Flag_Pistons:
       }
 
   event-global:
-#    - define flag 'pistons'
-#    - inject s@dRegions_Flags_Processors p:boolean-Global
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|pistons]>'
     - if %flagVal% != null {
       - if !%flagVal% {
@@ -3386,7 +3289,6 @@ dRegions_Flag_PVP:
       - if %flagVal% != null {
         - if !%flagVal% {
           - run locally flags delay:1t def:<def[defender].uuid||null>
-          - flag server dRegsion.%world%.<def[orderedRegions].get[1]>.PVP:false d:300s
           - remove <c.projectile||li@>
           - run locally msg delay:1t
           - determine cancelled
@@ -3394,24 +3296,17 @@ dRegions_Flag_PVP:
           - foreach stop
         }
       }
-    - flag server dRegsion.%world%.<def[orderedRegions].get[1]>.PVP d:300s
 
   event-global:
-#    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
-#      - define flag 'pvp'
-#      - inject s@dRegions_Flags_Processors p:boolean-Global
-#      }
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|pvp]>'
     - if %flagVal% != null {
       - if !%flagVal% {
         - run locally flags delay:1t def:<def[defender].uuid||null>
-        - flag server dRegsion.%world%.global.PVP:false d:300s
         - remove <c.projectile||li@>
         - run locally msg delay:1t
         - determine cancelled
         }
       }
-    - flag server dRegsion.%world%.global.PVP d:300s
 
   event-cleanup:
     - run locally flags delay:1t def:<def[defender].uuid||null>
@@ -3467,8 +3362,6 @@ dRegions_Flag_Potion-Throw:
       }
 
   event:
-#    - define flag 'potion-throw'
-#    - inject s@dRegions_Flags_Processors p:boolean
     - foreach %orderedRegions% {
       - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|potion-throw]>'
       - if %flagVal% != null {
@@ -3483,8 +3376,6 @@ dRegions_Flag_Potion-Throw:
       }
 
   event-global:
-#    - define flag 'potion-throw'
-#    - inject s@dRegions_Flags_Processors p:boolean-Global
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|potion-throw]>'
     - if %flagVal% != null {
       - if !%flagVal% {
@@ -3626,19 +3517,26 @@ dRegions_Flag_Block-Place:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - foreach %orderedRegions% {
+      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|block-place]>'
+      - define region '%value%'
+      - if %flagObj% != null {
+        - foreach stop
+        }
+      }
+    - if %flagObj% != null {
       - define player <player>
-      - define flag 'block-place'
-      - define flag-targetList 'block-placelist'
+      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|block-placelist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
       }
 
   event-global:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - define orderedRegions 'li@global'
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|block-place]>'
+    - if %flagObj% != null {
       - define player <player>
-      - define flag 'block-place'
-      - define flag-targetList 'block-placelist'
-      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup-Global
+      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|block-placelist].replace[, ].with[|].as_list>'
+      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
       }
 
   event-cleanup:
@@ -3699,19 +3597,26 @@ dRegions_Flag_Block-Break:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - foreach %orderedRegions% {
+      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|block-break]>'
+      - define region '%value%'
+      - if %flagObj% != null {
+        - foreach stop
+        }
+      }
+    - if %flagObj% != null {
       - define player <player>
-      - define flag 'block-break'
-      - define flag-targetList 'block-breaklist'
+      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|block-breaklist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
       }
 
   event-global:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - define orderedRegions 'li@global'
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|block-break]>'
+    - if %flagObj% != null {
       - define player <player>
-      - define flag 'block-break'
-      - define flag-targetList 'block-breaklist'
-      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup-global
+      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|block-breaklist].replace[, ].with[|].as_list>'
+      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
       }
 
   event-cleanup:
@@ -3774,21 +3679,28 @@ dRegions_Flag_Chest-Access:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - foreach %orderedRegions% {
+      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|chest-access]>'
+      - define region '%value%'
+      - if %flagObj% != null {
+        - foreach stop
+        }
+      }
+    - if %flagObj% != null {
       - define player <player>
       - define target <c.location.material.bukkit_enum>
-      - define flag 'chest-access'
-      - define flag-targetList 'chest-access-blocks'
+      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|chest-access-blocks].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
       }
 
   event-global:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - define orderedRegions 'li@global'
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|chest-access]>'
+    - if %flagObj% != null {
       - define player <player>
       - define target <c.location.material.bukkit_enum>
-      - define flag 'chest-access'
-      - define flag-targetList 'chest-access-blocks'
-      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup-Global
+      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|chest-access-blocks].replace[, ].with[|].as_list>'
+      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
       }
 
   event-cleanup:
@@ -3850,21 +3762,28 @@ dRegions_Flag_Door-Access:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - foreach %orderedRegions% {
+      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|door-access]>'
+      - define region '%value%'
+      - if %flagObj% != null {
+        - foreach stop
+        }
+      }
+    - if %flagObj% != null {
       - define player <player>
       - define target <c.location.material.bukkit_enum>
-      - define flag 'door-access'
-      - define flag-targetList 'door-access-doors'
+      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|door-access-doors].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
       }
 
   event-global:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - define orderedRegions 'li@global'
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|door-access]>'
+    - if %flagObj% != null {
       - define player <player>
       - define target <c.location.material.bukkit_enum>
-      - define flag 'door-access'
-      - define flag-targetList 'door-access-doors'
-      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup-Global
+      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|door-access-doors].replace[, ].with[|].as_list>'
+      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
       }
 
   event-cleanup:
@@ -3927,21 +3846,28 @@ dRegions_Flag_Use-Switches:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - foreach %orderedRegions% {
+      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|use-switches]>'
+      - define region '%value%'
+      - if %flagObj% != null {
+        - foreach stop
+        }
+      }
+    - if %flagObj% != null {
       - define player <player>
       - define target <c.location.material.bukkit_enum>
-      - define flag 'use-switches'
-      - define flag-targetList 'use-switches-list'
+      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|use-switches-list].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
       }
 
   event-global:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - define orderedRegions 'li@global'
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|use-switches]>'
+    - if %flagObj% != null {
       - define player <player>
       - define target <c.location.material.bukkit_enum>
-      - define flag 'use-switches'
-      - define flag-targetList 'use-switches-list'
-      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup-Global
+      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|use-switches-list].replace[, ].with[|].as_list>'
+      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
       }
 
   event-cleanup:
@@ -4007,21 +3933,28 @@ dRegions_Flag_Use-Utilities:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - foreach %orderedRegions% {
+      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|use-utilities]>'
+      - define region '%value%'
+      - if %flagObj% != null {
+        - foreach stop
+        }
+      }
+    - if %flagObj% != null {
       - define player <player>
       - define target <c.location.material.bukkit_enum>
-      - define flag 'use-utilities'
-      - define flag-targetList 'use-utilities-blocks'
+      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|use-utilities-blocks].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
       }
 
   event-global:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - define orderedRegions 'li@global'
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|use-utilities]>'
+    - if %flagObj% != null {
       - define player <player>
       - define target <c.location.material.bukkit_enum>
-      - define flag 'use-utilities'
-      - define flag-targetList 'use-utilities-blocks'
-      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup-Global
+      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|use-utilities-blocks].replace[, ].with[|].as_list>'
+      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
       }
 
   event-cleanup:
@@ -4081,24 +4014,34 @@ dRegions_Flag_Player-Damage:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
-  event-cleanup:
-    - run locally offthread delay:1t 'def:<c.cause>'
-
-  offthread:
-    - ^flag player dRegions_cancelDamage_%1% duration:1s
-    - ^adjust <player> 'fire_time:0'
-
   event:
-    - define player <player>
-    - define flag 'player-damage'
-    - define flag-targetList 'player-damage-types'
-    - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
+    - foreach %orderedRegions% {
+      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|player-damage]>'
+      - define region '%value%'
+      - if %flagObj% != null {
+        - define player <player>
+        - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|player-damage-types].replace[, ].with[|].as_list>'
+        - foreach stop
+        }
+      }
+    - if %flagObj% != null {
+      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
+      }
 
   event-global:
-    - define player <player>
-    - define flag 'player-damage'
-    - define flag-targetList 'player-damage-types'
-    - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup-Global
+    - define orderedRegions 'li@global'
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|player-damage]>'
+    - if %flagObj% != null {
+      - define player '<player>'
+      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|player-damage-types].replace[, ].with[|].as_list>'
+      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
+      }
+#    - yaml set 'cache.state-withTarget-withGroup.__global__.player-damage.%puuid%.%target%:true' 'id:dRegions_%world%_cache'
+
+  event-cleanup:
+#    - yaml set 'cache.state-withTarget-withGroup.%region%.player-damage.%puuid%.%target%:false' 'id:dRegions_%world%_cache'
+    - flag player dRegions_cancelDamage_%target% d:2s
+    - adjust <player> 'fire_time:0'
 
 
 dRegions_Flag_Player-Damage-Types:
@@ -4630,41 +4573,21 @@ dRegions_Flags_Processors:
 
 
   state-withTarget-withGroup:
-    - if <def[FlagScript].yaml_key[region_highestOnly]||false> {
-      - define region '<def[orderedRegions].get[1]>'
-      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|%flag%]>'
+    - if <def[flagObj].split[/].get[1]> == allow {
+      - if !<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|<def[orderedRegions].get[1]>|%world%|%player%]> {
+        - inject %FlagScript% p:event-cleanup
+        - determine cancelled
+        }
+      - if %targetList% != li@null && %targetList% != li@all && %targetList% !contains %target% {
+        - inject %FlagScript% p:event-cleanup
+        - determine cancelled
+        }
       }
       else {
-      - foreach %orderedRegions% {
-        - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|%flag%]>'
-        - define region '%value%'
-        - if %flagObj% != null {
-          - foreach stop
-          }
-        }
-      }
-    - if %flagObj% == null {
-      - define flagObj '<def[FlagScript].yaml_key[flag_defaultValue]||none>'
-      }
-    - if %flagObj% != none {
-      - if <def[flagObj].split[/].get[1]> == allow {
-        - if !<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|<def[orderedRegions].get[1]>|%world%|%player%]> {
+      - if <proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|<def[orderedRegions].get[1]>|%world%|%player%]> {
+        - if %targetList% == li@null || %targetList% == li@all || %targetList% contains %target% {
           - inject %FlagScript% p:event-cleanup
           - determine cancelled
-          }
-        - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|%flag-targetList%].replace[, ].with[|].as_list>'
-        - if ( %targetList% != li@null ) && ( %targetList% != li@all ) && ( %targetList% !contains %target% ) {
-          - inject %FlagScript% p:event-cleanup
-          - determine cancelled
-          }
-        }
-        else {
-        - if <proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|<def[orderedRegions].get[1]>|%world%|%player%]> {
-          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|%flag-targetList%].replace[, ].with[|].as_list>'
-          - if ( %targetList% == li@null ) || ( %targetList% == li@all ) || ( %targetList% contains %target% ) {
-            - inject %FlagScript% p:event-cleanup
-            - determine cancelled
-            }
           }
         }
       }
@@ -4797,76 +4720,6 @@ dRegions_Flags_Processors:
       - if <proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|__global__|%world%|%player%]> {
         - inject %FlagScript% p:event-cleanup
         - determine cancelled
-        }
-      }
-
-#  state-withGroup-Global:
-#    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag%]>'
-#    - if %flagObj% == null {
-#      - define flagObj '<def[FlagScript].yaml_key[flag_globalDefault]||none>'
-#      }
-#    - if %flagObj% != none {
-#      - if <def[flagObj].split[/].get[1]> == allow {
-#        - if !<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|__global__|%world%|%player%]> {
-#          - inject %FlagScript% p:event-cleanup
-#          - determine cancelled
-#          }
-#        }
-#        else {
-#        - if <proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|__global__|%world%|%player%]> {
-#          - inject %FlagScript% p:event-cleanup
-#          - determine cancelled
-#          }
-#        }
-#      }
-
-  state-withTarget-Global:
-    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag%]>'
-    - if %flagVal% == null {
-      - define flagVal '<def[FlagScript].yaml_key[flag_globalDefault]||none>'
-      }
-    - if %flagVal% != none {
-      - if %flagVal% == allow {
-        - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag-targetList%].replace[, ].with[|].as_list>'
-        - if ( %targetList% != li@null ) && ( %targetList% != li@all ) && ( %targetList% !contains %target% ) {
-          - inject %FlagScript% p:event-cleanup
-          - determine cancelled
-          }
-        }
-        else {
-        - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag-targetList%].replace[, ].with[|].as_list>'
-        - if ( %targetList% == li@null ) || ( %targetList% == li@all ) || ( %targetList% contains %target% ) {
-          - inject %FlagScript% p:event-cleanup
-          - determine cancelled
-          }
-        }
-      }
-
-  state-withTarget-withGroup-Global:
-    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag%]>'
-    - if %flagObj% == null {
-      - define flagObj '<def[FlagScript].yaml_key[flag_globalDefault]||none>'
-      }
-    - if %flagObj% != none {
-      - if <def[flagObj].split[/].get[1]> == allow {
-        - if !<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|__global__|%world%|%player%]> {
-          - inject %FlagScript% p:event-cleanup
-          - determine cancelled
-          }
-        - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag-targetList%].replace[, ].with[|].as_list>'
-        - if ( %targetList% != li@null ) && ( %targetList% != li@all ) && ( %targetList% !contains %target% ) {
-          - inject %FlagScript% p:event-cleanup
-          - determine cancelled
-          }
-        }
-        else {
-        - if <proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|__global__|%world%|%player%]> {
-          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|%flag-targetList%].replace[, ].with[|].as_list>'
-          - if ( %targetList% == li@null ) || ( %targetList% == li@all ) || ( %targetList% contains %target% ) {
-            - inject %FlagScript% p:event-cleanup
-            - determine cancelled
-            }
-          }
         }
       }
 

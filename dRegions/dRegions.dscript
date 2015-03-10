@@ -146,21 +146,12 @@ dRegions:
 #    - announce "<player.name||unknown>"
 
     on block ignites:
-#    - if <server.flag[dRegions_BlockIgnite].as_list.contains[<c.location>]||false> {
-#      - determine cancelled
-#      }
     - define world '<c.location.world.name>'
     - define target '<c.location.material.bukkit_enum>'
     - define readPath 'fire.<c.cause||spread>'
     - define cause '<t[<c.cause.is[==].to[flint_and_steel]>]:Lighter||Fire-Spread>'
     - inject s@dRegions p:event_PreProc_Config
     - if <c.location.cuboids.is_empty||true> {
-      - if <server.has_flag[dRegions.%world%.global.%cause%.%target%]> {
-        - if <server.flag[dRegions.%world%.global.%cause%.%target%]> {
-          - queue clear
-          }
-        - determine cancelled
-        }
       - define FlagScript 's@dRegions_Flag_%cause%'
       - inject %FlagScript% p:event-global
       - queue clear
@@ -170,36 +161,15 @@ dRegions:
       - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
       }
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
-    - if <server.has_flag[dRegions.%world%.<def[orderedRegions].get[1]>.%cause%.%target%]> {
-      - if <server.flag[dRegions.%world%.<def[orderedRegions].get[1]>.%cause%.%target%]> {
-        - queue clear
-        }
-      - determine cancelled
-      }
     - define FlagScript 's@dRegions_Flag_%cause%'
     - inject %FlagScript% p:event
 
     on block burns:
-#    - if <server.flag[dRegions_BlockIgnite].as_list.contains[<c.location>]||false> {
-#      - determine cancelled
-#      }
     - define world '<c.location.world.name>'
     - define target '<c.location.material.bukkit_enum>'
     - define readPath 'fire.destroyBlocks'
     - inject s@dRegions p:event_PreProc_Config
     - if <c.location.cuboids.is_empty||true> {
-      - if <server.has_flag[dRegions.%world%.global.fire-destroy.%target%]> {
-        - if <server.flag[dRegions.%world%.global.fire-destroy.%target%]> {
-          - queue clear
-          }
-        - determine cancelled
-        }
-      - if <server.has_flag[dRegions.%world%.global.fire-spread.%target%]> {
-        - if <server.flag[dRegions.%world%.global.fire-spread.%target%]> {
-          - queue clear
-          }
-        - determine cancelled
-        }
       - define FlagScript 's@dRegions_Flag_Fire-Spread'
       - inject s@dRegions_Flag_Fire-Spread p:event-global
       - define FlagScript 's@dRegions_Flag_Fire-Destroy'
@@ -211,18 +181,6 @@ dRegions:
       - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
       }
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
-    - if <server.has_flag[dRegions.%world%.<def[orderedRegions].get[1]>.fire-destroy.%target%]> {
-      - if <server.flag[dRegions.%world%.<def[orderedRegions].get[1]>.fire-destroy.%target%]> {
-        - queue clear
-        }
-      - determine cancelled
-      }
-    - if <server.has_flag[dRegions.%world%.<def[orderedRegions].get[1]>.fire-spread.%target%]> {
-      - if <server.flag[dRegions.%world%.<def[orderedRegions].get[1]>.fire-spread.%target%]> {
-        - queue clear
-        }
-      - determine cancelled
-      }
     - define FlagScript 's@dRegions_Flag_Fire-Spread'
     - inject s@dRegions_Flag_Fire-Spread p:event
     - define FlagScript 's@dRegions_Flag_Fire-Destroy'
@@ -233,27 +191,43 @@ dRegions:
     - define readPath 'blockform.ice'
     - inject s@dRegions p:event_PreProc_Config-NoTarget
     - if <c.location.cuboids.is_empty||true> {
-      - if <server.has_flag[dRegions.%world%.global.ice-form]> {
-        - if <server.flag[dRegions.%world%.global.ice-form]> {
-          - queue clear
-          }
-        - determine cancelled
-        }
+#      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.__global__.ice-form]||null>'
+#      - if %cache% != null {
+#        - if %cache% {
+#          - queue clear
+#          }
+#        - determine cancelled
+#        }
       - define FlagScript 's@dRegions_Flag_Ice-Form'
       - inject s@dRegions_Flag_Ice-Form p:event-global
       - queue clear
       }
+#    - define lCache '<yaml[dRegions_%world%_cache].read[cache.locations.<c.location.simple>]||null>'
+#    - if %lCache% != null {
+#      - define orderedRegions '%lCache%'
+#      }
+#      else {
+#      - define regionPri 'li@'
+#      - foreach <c.location.cuboids.parse[notable_name].filter[starts_with[dRegions_]].parse[after[dregions_%world%_]].include[__global__]> {
+#        - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
+#        }
+#      - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
+#      - yaml set 'cache.locations.<c.location.simple>:%orderedRegions%' 'id:dRegions_%world%_cache'
+#      }
+#    - foreach %orderedRegions% {
+#      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.ice-form]||null>'
+#      - if %cache% != null {
+#        - if %cache% {
+#          - queue clear
+#          }
+#        - determine cancelled
+#        }
+#      }
     - define regionPri 'li@'
     - foreach <c.location.cuboids.parse[notable_name].filter[starts_with[dRegions_]].parse[after[dregions_%world%_]].include[__global__]> {
       - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
       }
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
-    - if <server.has_flag[dRegions.%world%.<def[orderedRegions].get[1]>.ice-form]> {
-      - if <server.flag[dRegions.%world%.<def[orderedRegions].get[1]>.ice-form]> {
-        - queue clear
-        }
-      - determine cancelled
-      }
     - define FlagScript 's@dRegions_Flag_Ice-Form'
     - inject s@dRegions_Flag_Ice-Form p:event
 
@@ -263,27 +237,43 @@ dRegions:
     - define readPath 'blockform.snow'
     - inject s@dRegions p:event_PreProc_Config
     - if <c.location.cuboids.is_empty||true> {
-      - if <server.has_flag[dRegions.%world%.global.snow-fall.%target%]> {
-        - if <server.flag[dRegions.%world%.global.snow-fall.%target%]> {
-          - queue clear
-          }
-        - determine cancelled
-        }
+#      - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.__global__.snow-fall.%target%]||null>'
+#      - if %cache% != null {
+#        - if %cache% {
+#          - queue clear
+#          }
+#        - determine cancelled
+#        }
       - define FlagScript 's@dRegions_Flag_Snow-Fall'
       - inject s@dRegions_Flag_Snow-Fall p:event-global
       - queue clear
       }
+#    - define lCache '<yaml[dRegions_%world%_cache].read[cache.locations.<c.location.simple>]||null>'
+#    - if %lCache% != null {
+#      - define orderedRegions '%lCache%'
+#      }
+#      else {
+#      - define regionPri 'li@'
+#      - foreach <c.location.cuboids.parse[notable_name].filter[starts_with[dRegions_]].parse[after[dregions_%world%_]].include[__global__]> {
+#        - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
+#        }
+#      - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
+#      - yaml set 'cache.locations.<c.location.simple>:%orderedRegions%' 'id:dRegions_%world%_cache'
+#      }
+#    - foreach %orderedRegions% {
+#      - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%value%.snow-fall.%target%]||null>'
+#      - if %cache% != null {
+#        - if %cache% {
+#          - queue clear
+#          }
+#        - determine cancelled
+#        }
+#      }
     - define regionPri 'li@'
     - foreach <c.location.cuboids.parse[notable_name].filter[starts_with[dRegions_]].parse[after[dregions_%world%_]].include[__global__]> {
       - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
       }
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
-    - if <server.has_flag[dRegions.%world%.<def[orderedRegions].get[1]>.snow-fall.%target%]> {
-      - if <server.flag[dRegions.%world%.<def[orderedRegions].get[1]>.snow-fall.%target%]> {
-        - queue clear
-        }
-      - determine cancelled
-      }
     - define FlagScript 's@dRegions_Flag_Snow-Fall'
     - inject s@dRegions_Flag_Snow-Fall p:event
 
@@ -309,10 +299,38 @@ dRegions:
     - define readPath 'blockfade.ice'
     - inject s@dRegions p:event_PreProc_Config-NoTarget
     - if <c.location.cuboids.is_empty||true> {
+#      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.__global__.ice-melt]||null>'
+#      - if %cache% != null {
+#        - if %cache% {
+#          - queue clear
+#          }
+#        - determine cancelled
+#        }
       - define FlagScript 's@dRegions_Flag_Ice-Melt'
       - inject s@dRegions_Flag_Ice-Melt p:event-global
       - queue clear
       }
+#    - define lCache '<yaml[dRegions_%world%_cache].read[cache.locations.<c.location.simple>]||null>'
+#    - if %lCache% != null {
+#      - define orderedRegions '%lCache%'
+#      }
+#      else {
+#      - define regionPri 'li@'
+#      - foreach <c.location.cuboids.parse[notable_name].filter[starts_with[dRegions_]].parse[after[dregions_%world%_]].include[__global__]> {
+#        - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
+#        }
+#      - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
+#      - yaml set 'cache.locations.<c.location.simple>:%orderedRegions%' 'id:dRegions_%world%_cache'
+#      }
+#    - foreach %orderedRegions% {
+#      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.ice-melt]||null>'
+#      - if %cache% != null {
+#        - if %cache% {
+#          - queue clear
+#          }
+#        - determine cancelled
+#        }
+#      }
     - define regionPri 'li@'
     - foreach <c.location.cuboids.parse[notable_name].filter[starts_with[dRegions_]].parse[after[dregions_%world%_]].include[__global__]> {
       - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
@@ -326,10 +344,38 @@ dRegions:
     - define readPath 'blockfade.snow'
     - inject s@dRegions p:event_PreProc_Config-NoTarget
     - if <c.location.cuboids.is_empty||true> {
+#      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.__global__.snow-melt]||null>'
+#      - if %cache% != null {
+#        - if %cache% {
+#          - queue clear
+#          }
+#        - determine cancelled
+#        }
       - define FlagScript 's@dRegions_Flag_Snow-Melt'
       - inject s@dRegions_Flag_Snow-Melt p:event-global
       - queue clear
       }
+#    - define lCache '<yaml[dRegions_%world%_cache].read[cache.locations.<c.location.simple>]||null>'
+#    - if %lCache% != null {
+#      - define orderedRegions '%lCache%'
+#      }
+#      else {
+#      - define regionPri 'li@'
+#      - foreach <c.location.cuboids.parse[notable_name].filter[starts_with[dRegions_]].parse[after[dregions_%world%_]].include[__global__]> {
+#        - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
+#        }
+#      - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
+#      - yaml set 'cache.locations.<c.location.simple>:%orderedRegions%' 'id:dRegions_%world%_cache'
+#      }
+#    - foreach %orderedRegions% {
+#      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.snow-melt]||null>'
+#      - if %cache% != null {
+#        - if %cache% {
+#          - queue clear
+#          }
+#        - determine cancelled
+#        }
+#      }
     - define regionPri 'li@'
     - foreach <c.location.cuboids.parse[notable_name].filter[starts_with[dRegions_]].parse[after[dregions_%world%_]].include[__global__]> {
       - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
@@ -367,12 +413,6 @@ dRegions:
     - define readPath 'spread.%mat%'
     - inject s@dRegions p:event_PreProc_Config
     - if <c.destination.cuboids.include[<c.location.cuboids>].is_empty||true> {
-      - if <server.has_flag[dRegions.%world%.global.%mat%-spread.%target%]> {
-        - if <server.flag[dRegions.%world%.global.%mat%-spread.%target%]> {
-          - queue clear
-          }
-        - determine cancelled
-        }
       - define FlagScript 's@dRegions_Flag_%mat%-Spread'
       - inject s@dRegions_Flag_%mat%-Spread p:event-global
       - queue clear
@@ -395,12 +435,6 @@ dRegions:
         - determine cancelled
         }
       }
-    - if <server.has_flag[dRegions.%world%.<def[orderedRegions].get[1]>.%mat%-spread.%target%]> {
-      - if <server.flag[dRegions.%world%.<def[orderedRegions].get[1]>.%mat%-spread.%target%]> {
-        - queue clear
-        }
-      - determine cancelled
-      }
     - define FlagScript 's@dRegions_Flag_%mat%-Spread'
     - inject s@dRegions_Flag_%mat%-Spread p:event
 
@@ -410,12 +444,6 @@ dRegions:
     - define readPath 'lightning-strike'
     - inject s@dRegions p:event_PreProc_Config
     - if <c.location.cuboids.is_empty||true> {
-      - if <server.has_flag[dRegions.%world%.global.lightning-strikes.%target%]> {
-        - if <server.flag[dRegions.%world%.global.lightning-strikes.%target%]> {
-          - queue clear
-          }
-        - determine cancelled
-        }
       - define FlagScript 's@dRegions_Flag_Lightning-Strikes'
       - inject s@dRegions_Flag_Lightning-Strikes p:event-global
       - queue clear
@@ -425,12 +453,6 @@ dRegions:
       - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
       }
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
-    - if <server.has_flag[dRegions.%world%.<def[orderedRegions].get[1]>.lightning-strikes.%target%]> {
-      - if <server.flag[dRegions.%world%.<def[orderedRegions].get[1]>.lightning-strikes.%target%]> {
-        - queue clear
-        }
-      - determine cancelled
-      }
     - define FlagScript 's@dRegions_Flag_Lightning-Strikes'
     - inject s@dRegions_Flag_Lightning-Strikes p:event
 
@@ -439,28 +461,43 @@ dRegions:
     - define readPath 'leaf-decay'
     - inject s@dRegions p:event_PreProc_Config-NoTarget
     - if <c.location.cuboids.is_empty||true> {
-      - if <server.has_flag[dRegions.%world%.global.leaf-decay]> {
-        - if <server.flag[dRegions.%world%.global.leaf-decay]> {
-          - queue clear
-          }
-        - announce "dRegions.%world%.global.leaf-decay <server.flag[dRegions.%world%.global.leaf-decay]>"
-        - determine cancelled
-        }
+#      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.__global__.leaf-decay]||null>'
+#      - if %cache% != null {
+#        - if %cache% {
+#          - queue clear
+#          }
+#        - determine cancelled
+#        }
       - define FlagScript 's@dRegions_Flag_Leaf-Decay'
       - inject s@dRegions_Flag_Leaf-Decay p:event-global
       - queue clear
       }
+#    - define lCache '<yaml[dRegions_%world%_cache].read[cache.locations.<c.location.simple>]||null>'
+#    - if %lCache% != null {
+#      - define orderedRegions '%lCache%'
+#      }
+#      else {
+#      - define regionPri 'li@'
+#      - foreach <c.location.cuboids.parse[notable_name].filter[starts_with[dRegions_]].parse[after[dregions_%world%_]].include[__global__]> {
+#        - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
+#        }
+#      - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
+#      - yaml set 'cache.locations.<c.location.simple>:%orderedRegions%' 'id:dRegions_%world%_cache'
+#      }
+#    - foreach %orderedRegions% {
+#      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.leaf-decay]||null>'
+#      - if %cache% != null {
+#        - if %cache% {
+#          - queue clear
+#          }
+#        - determine cancelled
+#        }
+#      }
     - define regionPri 'li@'
     - foreach <c.location.cuboids.parse[notable_name].filter[starts_with[dRegions_]].parse[after[dregions_%world%_]].include[__global__]> {
       - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
       }
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
-    - if <server.has_flag[dRegions.%world%.<def[orderedRegions].get[1]>.leaf-decay.%target%]> {
-      - if <server.flag[dRegions.%world%.<def[orderedRegions].get[1]>.leaf-decay.%target%]> {
-        - queue clear
-        }
-      - determine cancelled
-      }
     - define FlagScript 's@dRegions_Flag_Leaf-Decay'
     - inject s@dRegions_Flag_Leaf-Decay p:event
 
@@ -489,13 +526,12 @@ dRegions:
     on piston extends:
     - define world '<c.location.world.name>'
     - define lastBlock '<tern[<c.length.is[==].to[0]||true>]:<c.relative>||<c.relative.sub[<c.location>].add[<c.blocks.last>]>>'
-#    - if <c.location.cuboids.alphanumeric.unseparated||null> != <c.blocks.include[%lastBlock%].parse[cuboids].deduplicate.alphanumeric.unseparated||null> {
     - if <c.blocks.include[%lastBlock%].parse[cuboids].is_empty||true> {
       - define FlagScript 's@dRegions_Flag_Pistons'
       - inject s@dRegions_Flag_Pistons p:event-global
       - queue clear
       }
-    - while <el@val[<c.location.cuboids.alphanumeric.unseparated||null>].is[!=].to[<c.blocks.include[%lastBlock%].parse[cuboids].deduplicate.alphanumeric.unseparated||null>]> {
+    - if <c.location.cuboids.alphanumeric.unseparated||null> != <c.blocks.include[%lastBlock%].parse[cuboids].deduplicate.alphanumeric.unseparated||null> {
       - define regionPri 'li@'
       - foreach <c.location.cuboids.parse[notable_name].filter[starts_with[dRegions_]].parse[after[dregions_%world%_]].include[__global__]> {
         - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
@@ -513,7 +549,6 @@ dRegions:
           - determine cancelled
           }
         }
-      - while stop
       }
     - if <def[orederedRegions].exists.not> {
       - define regionPri 'li@'
@@ -528,13 +563,12 @@ dRegions:
     on piston retracts:
     - define world '<c.location.world.name>'
     - define lastBlock '<tern[<c.length.is[==].to[0]||true>]:<c.relative>||<c.relative.sub[<c.location>].add[<c.blocks.last>]>>'
-#    - if <c.location.cuboids.alphanumeric.unseparated||null> != <c.blocks.include[%lastBlock%].parse[cuboids].deduplicate.alphanumeric.unseparated||null> {
     - if <c.blocks.include[%lastBlock%].parse[cuboids].is_empty||true> {
       - define FlagScript 's@dRegions_Flag_Pistons'
       - inject s@dRegions_Flag_Pistons p:event-global
       - queue clear
       }
-    - while <el@val[<c.location.cuboids.alphanumeric.unseparated||null>].is[!=].to[<c.blocks.include[%lastBlock%].parse[cuboids].deduplicate.alphanumeric.unseparated||null>]> {
+    - if <c.location.cuboids.alphanumeric.unseparated||null> != <c.blocks.include[%lastBlock%].parse[cuboids].deduplicate.alphanumeric.unseparated||null> {
       - define regionPri 'li@'
       - foreach <c.location.cuboids.parse[notable_name].filter[starts_with[dRegions_]].parse[after[dregions_%world%_]].include[__global__]> {
         - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
@@ -552,7 +586,6 @@ dRegions:
           - determine cancelled
           }
         }
-      - while stop
       }
     - if <def[orederedRegions].exists.not> {
       - define regionPri 'li@'
@@ -726,6 +759,7 @@ dRegions:
     - inject s@dRegions_Flag_Build p:event
 
     on player right clicks:
+    - if <player.has_permission[dRegions.admin]||<player.is_op>> queue clear
     - define mat '<c.location.material.bukkit_enum||air>'
     - define item '<c.item.material.bukkit_enum||air>'
     - define FlagScripts 'li@'
@@ -869,6 +903,7 @@ dRegions:
       }
 
     on player breaks block:
+    - if <player.has_permission[dRegions.admin]||<player.is_op>> queue clear
     - define world '<player.world.name>'
     - define target '<c.material.bukkit_enum>'
     - if <c.cuboids.is_empty||true> {
@@ -889,6 +924,7 @@ dRegions:
     - inject s@dRegions_Flag_Block-Break p:event
 
     on player places block:
+    - if <player.has_permission[dRegions.admin]||<player.is_op>> queue clear
     - define world '<player.world.name>'
     - define target '<c.material.bukkit_enum>'
     - if <c.cuboids.is_empty||true> {
@@ -909,6 +945,7 @@ dRegions:
     - inject s@dRegions_Flag_Block-Place p:event
 
     on player empties bucket:
+    - if <player.has_permission[dRegions.admin]||<player.is_op>> queue clear
     - define world '<player.world.name>'
     - if <c.relative.cuboids.is_empty||true> {
       - define FlagScript 's@dRegions_Flag_Bucket-Empty'
@@ -924,6 +961,7 @@ dRegions:
     - inject s@dRegions_Flag_Bucket-Empty p:event
 
     on player fills bucket:
+    - if <player.has_permission[dRegions.admin]||<player.is_op>> queue clear
     - define world '<player.world.name>'
     - if <c.location.cuboids.is_empty||true> {
       - define FlagScript 's@dRegions_Flag_Bucket-Fill'
@@ -971,6 +1009,7 @@ dRegions:
     - inject s@dRegions_Flag_Player-Pickup p:event
 
     on player places hanging:
+    - if <player.has_permission[dRegions.admin]||<player.is_op>> queue clear
     - define world '<player.world.name>'
     - if <c.location.cuboids.is_empty||true> {
       - define FlagScript 's@dRegions_Flag_Build'
@@ -990,6 +1029,7 @@ dRegions:
     - inject s@dRegions_Flag_Hanging-Place p:event
 
     on player right clicks at armor_stand:
+    - if <player.has_permission[dRegions.admin]||<player.is_op>> queue clear
     - define world '<player.world.name>'
     - if <c.entity.location.cuboids.is_empty||true> {
       - define FlagScript 's@dRegions_Flag_Build'
@@ -1005,6 +1045,7 @@ dRegions:
     - inject s@dRegions_Flag_Build p:event
 
     on player right clicks item_frame:
+    - if <player.has_permission[dRegions.admin]||<player.is_op>> queue clear
     - define world '<player.world.name>'
     - if <c.entity.location.cuboids.is_empty||true> {
       - define FlagScript 's@dRegions_Flag_Build'
@@ -1020,6 +1061,7 @@ dRegions:
     - inject s@dRegions_Flag_Build p:event
 
     on player damages item_frame:
+    - if <player.has_permission[dRegions.admin]||<player.is_op>> queue clear
     - define world '<player.world.name>'
     - if <c.entity.location.cuboids.is_empty||true> {
       - define FlagScript 's@dRegions_Flag_Build'
@@ -1035,17 +1077,10 @@ dRegions:
     - inject s@dRegions_Flag_Build p:event
 
     on player damages player:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> queue clear
+    - if <player.has_permission[dRegions.admin]||<player.is_op>> queue clear
     - define world '<c.entity.world.name>'
     - define FlagScript 's@dRegions_Flag_PVP'
     - if <c.entity.location.cuboids.is_empty||true> {
-      - if <server.has_flag[dRegions.%world%.global.pvp]> {
-        - if <server.flag[dRegions.%world%.global.pvp]> {
-          - queue clear
-          }
-        - inject s@dRegions_Flag_PVP p:msg
-        - determine cancelled
-        }
       - inject s@dRegions_Flag_PVP p:event-global
       - queue clear
       }
@@ -1054,16 +1089,10 @@ dRegions:
       - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
       }
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
-    - if <server.has_flag[dRegions.%world%.<def[orderedRegions].get[1]>.pvp]> {
-      - if <server.flag[dRegions.%world%.<def[orderedRegions].get[1]>.pvp]> {
-        - queue clear
-        }
-      - inject s@dRegions_Flag_PVP p:msg
-      - determine cancelled
-      }
     - inject %FlagScript% p:event
 
     on player damages armor_stand:
+    - if <player.has_permission[dRegions.admin]||<player.is_op>> queue clear
     - define world '<c.entity.world.name>'
     - define FlagScript 's@dRegions_Flag_Build'
     - if <c.entity.location.cuboids.is_empty||true> {
@@ -1082,11 +1111,12 @@ dRegions:
       - queue clear
       }
     - define world '<c.entity.world.name>'
-    - define attacker '<c.damager>'
-    - define defender '<c.entity>'
-    - define FlagScript 's@dRegions_Flag_PVE'
-    - if <c.entity.location.cuboids.is_empty||true> {
-      - inject %FlagScript% p:event-global
+    - define player '<c.damager>'
+    - define puuid '<c.damager.uuid>'
+    - define target '<c.entity.entity_type>'
+    - if <c.entity.location.cuboids.is_empty> {
+      - define FlagScript 's@dRegions_Flag_PVE'
+      - inject s@dRegions_Flag_PVE p:event-global
       - queue clear
       }
     - define regionPri 'li@'
@@ -1094,10 +1124,11 @@ dRegions:
       - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
       }
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
+    - define FlagScript 's@dRegions_Flag_PVE'
     - inject %FlagScript% p:event
 
     on player left clicks block:
-    - if <c.relative.material.name.is[!=].to[fire]> {
+    - if <c.relative.material.name> != fire {
       - queue clear
       }
     - define world '<player.world.name>'
@@ -1130,21 +1161,32 @@ dRegions:
     - inject s@dRegions_Flag_Build p:event
 
     on player damaged:
-    - if ( <player.has_permission[dregions.invincible]||false> || <player.has_permission[dregions.invincible.<c.cause>]||false> ) && !<player.is_op> {
+    - if <player.has_flag[dRegions_cancelDamage_<c.cause>]> {
       - adjust <player> 'fire_time:0'
       - determine cancelled
       }
-    - if <player.has_flag[dRegions_cancelDamage_<c.cause>]||false> {
+    - if ( <player.has_permission[dregions.invincible]> || <player.has_permission[dregions.invincible.<c.cause>]> ) && !<player.is_op> {
+      - flag <player> dRegions_cancelDamage_<c.cause> d:3s
       - adjust <player> 'fire_time:0'
       - determine cancelled
       }
     - define world '<c.entity.world.name>'
     - define target '<c.cause>'
+    - define puuid '<player.uuid>'
     - define readPath 'player-damage'
     - inject s@dRegions p:event_PreProc_Config
     - if <c.entity.location.cuboids.is_empty||true> {
+#      - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget-withGroup.__global__.player-damage.%puuid%.%target%]||null>'
+#      - if %cache% != null {
+#        - if %cache% {
+#          - announce "allow"
+#          - queue clear
+#          }
+#        - adjust <player> 'fire_time:0'
+#        - determine cancelled
+#        }
       - define FlagScript 's@dRegions_Flag_Player-Damage'
-      - inject s@dRegions_Flag_Build p:event-global
+      - inject s@dRegions_Flag_Player-Damage p:event-global
       - queue clear
       }
     - define regionPri 'li@'
@@ -1153,7 +1195,7 @@ dRegions:
       }
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
     - define FlagScript 's@dRegions_Flag_Player-Damage'
-    - inject s@dRegions_Flag_Build p:event
+    - inject s@dRegions_Flag_Player-Damage p:event
 
     on player changes food level:
     - define world '<player.world.name>'
@@ -1213,20 +1255,6 @@ dRegions:
     - define atarget '<c.entity.entity_type>'
     - define dtarget '<c.target.entity_type>'
     - if <c.target.location.cuboids.is_empty||true> {
-      - if <server.has_flag[dRegions.%world%.global.eve.%dtarget%]> {
-        - if <server.flag[dRegions.%world%.global.eve.%dtarget%]> {
-          - queue clear
-          }
-        - attack %attacker% target:cancel
-        - determine cancelled
-        }
-      - if <server.has_flag[dRegions.%world%.global.mob-attack.%atarget%]> {
-        - if <server.flag[dRegions.%world%.global.mob-attack.%atarget%]> {
-          - queue clear
-          }
-        - attack %attacker% target:cancel
-        - determine cancelled
-        }
       - define FlagScript 's@dRegions_Flag_Mob-Attack'
       - inject s@dRegions_Flag_Mob-Attack p:event-global
       - define FlagScript 's@dRegions_Flag_EVE'
@@ -1238,33 +1266,17 @@ dRegions:
       - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
       }
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
-    - if <server.has_flag[dRegions.%world%.<def[orderedRegions].get[1]>.eve.%dtarget%]> {
-      - if <server.flag[dRegions.%world%.<def[orderedRegions].get[1]>.eve.%dtarget%]> {
-        - queue clear
-        }
-      - attack %attacker% target:cancel
-      - determine cancelled
-      }
-    - if <server.has_flag[dRegions.%world%.<def[orderedRegions].get[1]>.mob-attack.%atarget%]> {
-      - if <server.flag[dRegions.%world%.<def[orderedRegions].get[1]>.mob-attack.%atarget%]> {
-        - queue clear
-        }
-      - attack %attacker% target:cancel
-      - determine cancelled
-      }
     - define FlagScript 's@dRegions_Flag_Mob-Attack'
     - inject s@dRegions_Flag_Mob-Attack p:event
     - define FlagScript 's@dRegions_Flag_EVE'
     - inject s@dRegions_Flag_EVE p:event
 
     on entity targets player:
-    - if !<server.flag[dRegions_NoTarget].as_list.filter[is[==].to[<c.target.uuid>]].is_empty||true> {
-      - attack <c.entity> target:cancel
-      - determine cancelled
-      }
     - define world '<c.entity.world.name>'
     - define attacker '<c.entity>'
+    - define target '<c.entity.entity_type>'
     - define defender '<c.target>'
+    - define puuid '<c.target.uuid>'
     - if <c.target.location.cuboids.is_empty||true> {
       - define FlagScript 's@dRegions_Flag_Mob-Target'
       - inject s@dRegions_Flag_Mob-Target p:event-global
@@ -1278,20 +1290,23 @@ dRegions:
     - define FlagScript 's@dRegions_Flag_Mob-Target'
     - inject s@dRegions_Flag_Mob-Target p:event
 
-    on entity damaged by block_explosion:
-    - define world '<c.entity.world.name>'
-    - if <c.entity.location.cuboids.is_empty||true> {
-      - define FlagScript 's@dRegions_Flag_Entity-Explode'
-      - inject s@dRegions_Flag_Entity-Explode p:event-global
-      - queue clear
-      }
-    - define regionPri 'li@'
-    - foreach <c.entity.location.cuboids.parse[notable_name].filter[starts_with[dRegions_]].parse[after[dregions_%world%_]].include[__global__]> {
-      - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
-      }
-    - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
-    - define FlagScript 's@dRegions_Flag_Entity-Explode'
-    - inject s@dRegions_Flag_Entity-Explode p:event
+#  This needs to be rewritten cause... idk
+#
+#    on entity damaged by block_explosion:
+#    - announce "block_explosion <c.cause>"
+#    - define world '<c.entity.world.name>'
+#    - if <c.entity.location.cuboids.is_empty||true> {
+#      - define FlagScript 's@dRegions_Flag_Entity-Explode'
+#      - inject s@dRegions_Flag_Entity-Explode p:event-global
+#      - queue clear
+#      }
+#    - define regionPri 'li@'
+#    - foreach <c.entity.location.cuboids.parse[notable_name].filter[starts_with[dRegions_]].parse[after[dregions_%world%_]].include[__global__]> {
+#      - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
+#      }
+#    - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
+#    - define FlagScript 's@dRegions_Flag_Entity-Explode'
+#    - inject s@dRegions_Flag_Entity-Explode p:event
 
     on entity damages entity:
     - if li@<c.damager.prefix>|<c.entity.prefix> contains player {
@@ -1302,32 +1317,16 @@ dRegions:
     - define defender '<c.entity>'
     - define atarget '<c.damager.entity_type>'
     - define dtarget '<c.entity.entity_type>'
-    - define FlagScripts 'li@'
-    - if <c.cause.is[==].to[entity_explosion]> {
-      - define FlagScripts '%FlagScripts%s@dRegions_Flag_Entity-Explode|'
-      }
-    - define FlagScripts '%FlagScripts%s@dRegions_Flag_Mob-Attack|s@dRegions_Flag_EVE|'
     - if <c.entity.location.cuboids.is_empty||true> {
-      - if <server.has_flag[dRegions.%world%.global.eve.%dtarget%]> {
-        - if <server.flag[dRegions.%world%.global.eve.%dtarget%]> {
-          - queue clear
-          }
-        - remove <c.projectile||li@>
-        - attack %attacker% target:cancel
-        - determine cancelled
+      - if <c.cause> == entity_explosion {
+        - define target '%atarget%'
+        - define FlagScript 's@dRegions_Flag_Entity-Explode'
+        - inject s@dRegions_Flag_Entity-Explode p:event-global
         }
-      - if <server.has_flag[dRegions.%world%.global.mob-attack.%atarget%]> {
-        - if <server.flag[dRegions.%world%.global.mob-attack.%atarget%]> {
-          - queue clear
-          }
-        - remove <c.projectile||li@>
-        - attack %attacker% target:cancel
-        - determine cancelled
-        }
-      - foreach %FlagScripts% {
-        - define FlagScript '%value%'
-        - inject %value% p:event-global
-        }
+      - define FlagScript 's@dRegions_Flag_Mob-Attack'
+      - inject s@dRegions_Flag_Mob-Attack p:event-global
+      - define FlagScript 's@dRegions_Flag_EVE'
+      - inject s@dRegions_Flag_EVE p:event-global
       - queue clear
       }
     - define regionPri 'li@'
@@ -1335,49 +1334,34 @@ dRegions:
       - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
       }
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
-    - if <server.has_flag[dRegions.%world%.<def[orderedRegions].get[1]>.eve.%dtarget%]> {
-      - if <server.flag[dRegions.%world%.<def[orderedRegions].get[1]>.eve.%dtarget%]> {
-        - queue clear
-        }
-      - remove <c.projectile||li@>
-      - attack %attacker% target:cancel
-      - determine cancelled
+    - if <c.cause> == entity_explosion {
+      - define target '%atarget%'
+      - define FlagScript 's@dRegions_Flag_Entity-Explode'
+      - inject s@dRegions_Flag_Entity-Explode p:event
       }
-    - if <server.has_flag[dRegions.%world%.<def[orderedRegions].get[1]>.mob-attack.%atarget%]> {
-      - if <server.flag[dRegions.%world%.<def[orderedRegions].get[1]>.mob-attack.%atarget%]> {
-        - queue clear
-        }
-      - remove <c.projectile||li@>
-      - attack %attacker% target:cancel
-      - determine cancelled
-      }
-    - foreach %FlagScripts% {
-      - define FlagScript '%value%'
-      - inject %value% p:event
-      }
+    - define FlagScript 's@dRegions_Flag_Mob-Attack'
+    - inject s@dRegions_Flag_Mob-Attack p:event
+    - define FlagScript 's@dRegions_Flag_EVE'
+    - inject s@dRegions_Flag_EVE p:event
+
 
     on entity damages player:
     - if <c.damager.prefix> == player {
       - queue clear
       }
-    - if !<server.flag[dRegions_NoTarget].as_list.filter[is[==].to[<c.entity.uuid>]].is_empty||true> {
-      - attack <c.damager> target:cancel
-      - determine cancelled
-      }
     - define world '<c.entity.world.name>'
     - define attacker '<c.damager>'
+    - define target '<def[attacker].entity_type>'
     - define defender '<c.entity>'
+    - define puuid '<c.entity.uuid>'
     - define FlagScripts 'li@'
-    - if <c.cause.is[==].to[entity_explosion]> {
-      - define target <c.damager.entity_type>
-      - define FlagScripts '%FlagScripts%s@dRegions_Flag_Entity-Explode|'
-      }
-    - define FlagScripts '%FlagScripts%s@dRegions_Flag_Mob-Target|s@dRegions_Flag_Mob-Damage|'
     - if <c.entity.location.cuboids.is_empty||true> {
-      - foreach %FlagScripts% {
-        - define FlagScript '%value%'
-        - inject %value% p:event-global
+      - if <c.cause> == entity_explosion {
+        - define FlagScript 's@dRegions_Flag_Entity-Explode'
+        - inject s@dRegions_Flag_Entity-Explode p:event-global
         }
+      - define FlagScript 's@dRegions_Flag_Mob-Damage'
+      - inject s@dRegions_Flag_Mob-Damage p:event-global
       - queue clear
       }
     - define regionPri 'li@'
@@ -1385,10 +1369,12 @@ dRegions:
       - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
       }
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
-    - foreach %FlagScripts% {
-      - define FlagScript '%value%'
-      - inject %value% p:event
+    - if <c.cause> == entity_explosion {
+      - define FlagScript 's@dRegions_Flag_Entity-Explode'
+      - inject s@dRegions_Flag_Entity-Explode p:event
       }
+    - define FlagScript 's@dRegions_Flag_Mob-Damage'
+    - inject s@dRegions_Flag_Mob-Damage p:event
 
     on player dies:
     - define world '<c.entity.world.name>'
@@ -1419,12 +1405,6 @@ dRegions:
     - define world '<c.entity.world.name>'
     - define target '<c.entity.entity_type>'
     - if <c.entity.location.cuboids.is_empty||true> {
-      - if <server.has_flag[dRegions.%world%.global.entity-drops-ondeath.%target%]> {
-        - if <server.flag[dRegions.%world%.global.entity-drops-ondeath.%target%]> {
-          - queue clear
-          }
-        - determine cancelled
-        }
       - define FlagScript 's@dRegions_Flag_Entity-Drops-OnDeath'
       - inject s@dRegions_Flag_Entity-Drops-OnDeath p:event-global
       - queue clear
@@ -1434,12 +1414,6 @@ dRegions:
       - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
       }
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
-    - if <server.has_flag[dRegions.%world%.<def[orderedRegions].get[1]>.entity-drops-ondeath.%target%]> {
-      - if <server.flag[dRegions.%world%.<def[orderedRegions].get[1]>.entity-drops-ondeath.%target%]> {
-        - queue clear
-        }
-      - determine cancelled
-      }
     - define FlagScript 's@dRegions_Flag_Entity-Drops-OnDeath'
     - inject s@dRegions_Flag_Entity-Drops-OnDeath p:event
 
@@ -1447,12 +1421,6 @@ dRegions:
     - define world '<c.entity.world.name>'
     - define target '<c.entity.entity_type>'
     - if <c.entity.location.cuboids.is_empty||true> {
-      - if <server.has_flag[dRegions.%world%.global.mob-spawn.%target%]> {
-        - if <server.flag[dRegions.%world%.global.mob-spawn.%target%]> {
-          - queue clear
-          }
-        - determine cancelled
-        }
       - define FlagScript 's@dRegions_Flag_Mob-Spawn'
       - inject s@dRegions_Flag_Mob-Spawn p:event-global
       - queue clear
@@ -1462,12 +1430,6 @@ dRegions:
       - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
       }
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
-    - if <server.has_flag[dRegions.%world%.<def[orderedRegions].get[1]>.mob-spawn.%target%]> {
-      - if <server.flag[dRegions.%world%.<def[orderedRegions].get[1]>.mob-spawn.%target%]> {
-        - queue clear
-        }
-      - determine cancelled
-      }
     - define FlagScript 's@dRegions_Flag_Mob-Spawn'
     - inject s@dRegions_Flag_Mob-Spawn p:event
 
@@ -1483,12 +1445,6 @@ dRegions:
     - define FlagScript 's@dRegions_Flag_Trample-Crops-%type%'
     - inject s@dRegions p:event_PreProc_Config-NoTarget
     - if <c.location.cuboids.is_empty||true> {
-      - if <server.has_flag[dRegions.%world%.global.trample-crops-%type%]> {
-        - if <server.flag[dRegions.%world%.global.trample-crops-%type%]> {
-          - queue clear
-          }
-        - determine cancelled
-        }
       - inject %FlagScript% p:event-global
       - queue clear
       }
@@ -1497,12 +1453,6 @@ dRegions:
       - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
       }
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
-    - if <server.has_flag[dRegions.%world%.<def[orderedRegions].get[1]>.TrampleCrops.%type%]> {
-      - if <server.flag[dRegions.%world%.<def[orderedRegions].get[1]>.TrampleCrops.%type%]> {
-        - queue clear
-        }
-      - determine cancelled
-      }
     - inject %FlagScript% p:event
 
     on falling_block changes block:
@@ -1513,12 +1463,6 @@ dRegions:
     - define FlagScript 's@dRegions_Flag_Falling-%mat%'
     - inject s@dRegions p:event_PreProc_Config-NoTarget
     - if <c.location.cuboids.is_empty||true> {
-      - if <server.has_flag[dRegions.%world%.global.falling-%mat%]> {
-        - if <server.flag[dRegions.%world%.global.falling-%mat%]> {
-          - queue clear
-          }
-        - determine cancelled
-        }
       - define FlagScript 's@dRegions_Flag_Falling-%mat%'
       - inject %FlagScript% p:event-global
       - queue clear
@@ -1528,12 +1472,6 @@ dRegions:
       - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
       }
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
-    - if <server.has_flag[dRegions.%world%.<def[orderedRegions].get[1]>.falling-%mat%]> {
-      - if <server.flag[dRegions.%world%.<def[orderedRegions].get[1]>.falling-%mat%]> {
-        - queue clear
-        }
-      - determine cancelled
-      }
     - define FlagScript 's@dRegions_Flag_Falling-%mat%'
     - inject %FlagScript% p:event
 
@@ -1547,12 +1485,6 @@ dRegions:
     - define FlagScript 's@dRegions_Flag_Entity-Grief'
     - inject s@dRegions p:event_PreProc_Config
     - if <c.location.cuboids.is_empty||true> {
-      - if <server.has_flag[dRegions.%world%.global.entity-grief.%target%]> {
-        - if <server.flag[dRegions.%world%.global.entity-grief.%target%]> {
-          - queue clear
-          }
-        - determine cancelled
-        }
       - inject %FlagScript% p:event-global
       - queue clear
       }
@@ -1561,30 +1493,18 @@ dRegions:
       - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
       }
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
-    - if <server.has_flag[dRegions.%world%.<def[orderedRegions].get[1]>.entity-grief.%target%]> {
-      - if <server.flag[dRegions.%world%.<def[orderedRegions].get[1]>.entity-grief.%target%]> {
-        - queue clear
-        }
-      - determine cancelled
-      }
     - inject %FlagScript% p:event
 
     on entity forms block:
 #    - if <c.entity.has_flag[dRegions_NoGrief]> determine cancelled
-#    - if !<server.flag[dRegions_EntityGrief].as_list.filter[is[==].to[<c.entity.uuid>]].is_empty||true> {
-#      - determine cancelled
-#      }
+    - if <server.has_flag[dRegions.EntityGrief.<c.entity.uuid>]> {
+      - determine cancelled
+      }
     - define world '<c.location.world.name>'
     - define readPath 'entity.changeBlock'
     - define target '<c.entity.entity_type||other>'
     - inject s@dRegions p:event_PreProc_Config
     - if <c.location.cuboids.is_empty||true> {
-      - if <server.has_flag[dRegions.%world%.global.entity-grief.%target%]> {
-        - if <server.flag[dRegions.%world%.global.entity-grief.%target%]> {
-          - queue clear
-          }
-        - determine cancelled
-        }
       - define FlagScript 's@dRegions_Flag_Entity-Grief'
       - inject s@dRegions_Flag_Entity-Grief p:event-global
       - queue clear
@@ -1594,12 +1514,6 @@ dRegions:
       - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
       }
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
-    - if <server.has_flag[dRegions.%world%.<def[orderedRegions].get[1]>.entity-grief.%target%]> {
-      - if <server.flag[dRegions.%world%.<def[orderedRegions].get[1]>.entity-grief.%target%]> {
-        - queue clear
-        }
-      - determine cancelled
-      }
     - define FlagScript 's@dRegions_Flag_Entity-Grief'
     - inject s@dRegions_Flag_Entity-Grief p:event
 
@@ -1607,15 +1521,9 @@ dRegions:
     - define world '<c.location.world.name>'
     - define readPath 'entity.explode'
     - define attacker '<c.entity>'
-    - define target '<c.entity.entity_type||other>'
+    - define target '<c.entity.entity_type>'
     - inject s@dRegions p:event_PreProc_Config
     - if <c.location.cuboids.is_empty||true> {
-      - if <server.has_flag[dRegions.%world%.global.entity-explode.%target%]> {
-        - if <server.flag[dRegions.%world%.global.entity-explode.%target%]> {
-          - queue clear
-          }
-        - determine cancelled
-        }
       - define FlagScript 's@dRegions_Flag_Entity-Explode'
       - inject s@dRegions_Flag_Entity-Explode p:event-global
       - queue clear
@@ -1625,12 +1533,6 @@ dRegions:
       - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
       }
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
-    - if <server.has_flag[dRegions.%world%.<def[orderedRegions].get[1]>.entity-explode.%target%]> {
-      - if <server.flag[dRegions.%world%.<def[orderedRegions].get[1]>.entity-explode.%target%]> {
-        - queue clear
-        }
-      - determine cancelled
-      }
     - define FlagScript 's@dRegions_Flag_Entity-Explode'
     - inject s@dRegions_Flag_Entity-Explode p:event
 
@@ -1724,12 +1626,12 @@ dRegions:
     - define flagScripts '<server.list_scripts.filter[starts_with[s@dRegions_Flag_]]||li@>'
     - flag server 'dRegions_Flags:!'
     - flag server 'dRegions_Flags:|:%flagScripts%'
-    - define flagMap 'li@'
-    - foreach '%flagScripts%' {
-      - define flagMap '<def[flagMap].include[<def[value].yaml_key[event_hook]||none>/<def[value].yaml_key[event_priority]||none>]>/%value%'
-      }
+#    - define flagMap 'li@'
+#    - foreach '%flagScripts%' {
+#      - define flagMap '<def[flagMap].include[<def[value].yaml_key[event_hook]||none>/<def[value].yaml_key[event_priority]||none>]>/%value%'
+#      }
     - flag server 'dRegions_FlagMap:!'
-    - flag server 'dRegions_FlagMap:|:%flagMap%'
+#    - flag server 'dRegions_FlagMap:|:%flagMap%'
 
 
   event_PreProc_Config:
@@ -1784,52 +1686,6 @@ dRegions:
 
     - if !<yaml[dRegions_global_config].read[config.%readPath%]> {
       - determine cancelled
-      }
-
-  event_PreProc_OrderRegionsGlobal:
-  # Reusable code block injected from events.
-  # This pre-processor returns %orderedRegions% including the __global__ region.
-    - define dRegions '<def[cuboids].parse[notable_name].filter[starts_with[dRegions_]].parse[after[dregions_%world%_]].include[__global__].replace[li@].replace[|].with[,]||null>'
-    - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|%dRegions%]||li@>'
-
-
-  event_PreProc_OrderRegions:
-  # Reusable code block injected from events.
-  # This pre-processor returns %orderedRegions% excluding the __global__ region.
-  # It stops processing if there are no regions present.
-#    - narrate "PreProcLoad"
-    - define dRegions '<def[cuboids].parse[notable_name].filter[starts_with[dRegions_]].parse[after[dregions_%world%_]].replace[li@].replace[|].with[,]||null>'
-    - if <def[dRegions].is[==].to[null]||true> {
-      - queue clear
-      }
-    - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|%dRegions%]||li@>'
-
-
-  event_preProc_RunEvent:
-  # Reusable code block injected from events. It's the final pre-processor
-  # before the flags take over.
-  # From all the flag scripts that exist, it filters out only those that have an
-  # event hook registered for this event.
-  # It then gets the event priority for each and builds a split list for each
-  # event: priority/flagscript. This makes it easy to run the flag scripts in
-  # order from lowest priority to highest. We just sort the list alphanumerically
-  # and drop the priority value from the list.
-  # Now that we have the orderedEvents we can inject each FlagScript in order.
-  #
-    - define eventHooks '<def[eventHooks].as_list.filter[contains_any[null].not]||li@>'
-    - if <def[eventHooks].is_empty> {
-      - queue clear
-      }
-    - define Flags '<server.flag[dRegions_Flags].filter[yaml_key[event_hook].contains_any[%eventHooks%]]||li@>'
-    - define eventPri '<def[Flags].parse[yaml_key[event_priority]]||li@>'
-    - define eventList 'li@'
-    - foreach %Flags% {
-      - define eventList '<def[eventList].include[<def[eventPri].get[%loop_index%]>/%value%]>'
-      }
-    - define orderedEvents '<def[eventList].alphanumeric.parse[split[/].get[2]]||li@>'
-    - foreach %orderedEvents% {
-      - define FlagScript '%value%'
-      - inject %value% p:event
       }
 
 
@@ -1928,10 +1784,9 @@ dRegions:
 
       - define file 'worlds/%world%/inventories'
       - if !<server.has_file[dRegions/%file%.yml]> {
-        - define region '__global__'
         - if <player.is[!=].to[null]||false> {
           - flag <player> ConfigFileGeneratorNotify:true
-          - inject locally createRegionFile
+          - inject locally createInventoryFile
           - flag <player> ConfigFileGeneratorNotify:!
           - run s@dRegions_Msg 'def:<&7><&o>Created <&f><&o>%world%<&7><&o> regions file!'
           }
@@ -1944,6 +1799,24 @@ dRegions:
         - yaml unload 'id:dRegions_%world%_inventories'
         }
       - yaml 'load:dRegions/%file%.yml' 'id:dRegions_%world%_inventories'
+
+      - define file 'worlds/%world%/cache'
+      - if !<server.has_file[dRegions/%file%.yml]> {
+        - if <player.is[!=].to[null]||false> {
+          - flag <player> ConfigFileGeneratorNotify:true
+          - inject locally createCacheFile
+          - flag <player> ConfigFileGeneratorNotify:!
+          - run s@dRegions_Msg 'def:<&7><&o>Created <&f><&o>%world%<&7><&o> cache file!'
+          }
+          else {
+          - inject locally createCacheFile
+          }
+        - announce "<&b>dRegions<&co> <&7><&o>Created <&f><&o>%world%<&7><&o> cache file!" to_console
+        }
+      - if <yaml.list.contains[dRegions_%world%_cache]> {
+        - yaml unload 'id:dRegions_%world%_cache'
+        }
+      - yaml 'load:dRegions/%file%.yml' 'id:dRegions_%world%_cache'
       }
     - announce "<&b>dRegions<&co><&a> System config files Loaded!" to_console
 
@@ -1970,6 +1843,10 @@ dRegions:
         - yaml unload 'id:dRegions_%world%_inventories'
         }
       - yaml 'load:dRegions/worlds/%world%/inventories.yml' 'id:dRegions_%world%_inventories'
+      - if <yaml.list.contains[dRegions_%world%_cache]> {
+        - yaml unload 'id:dRegions_%world%_cache'
+        }
+      - yaml 'load:dRegions/worlds/%world%/cache.yml' 'id:dRegions_%world%_cache'
       }
     - announce "<&b>dRegions<&co><&a> System config files Loaded!" to_console
     - run s@dRegions_Msg 'def:<&7><&o>System config files Loaded!'
@@ -2020,6 +1897,20 @@ dRegions:
     - yaml create 'id:%writeID%'
     - define readPath '%readID%.inventories'
     - define writePath 'inventories'
+    - run s@ConfigFileGenerator def:%readID%|%writeID%|%readPath%|%writePath%|false|false|false instantly
+    - yaml unload 'id:%readID%'
+    - yaml 'savefile:dRegions/%file%.yml' 'id:%writeID%'
+
+
+  createCacheFile:
+    - define readID 'dRegions_Configurations'
+    - define writeID 'dRegions_%world%_cache'
+    - if !<yaml.list.contains[%readID%]> {
+      - yaml fix_formatting 'load:<script.relative_filename>' 'id:%readID%'
+      }
+    - yaml create 'id:%writeID%'
+    - define readPath '%readID%.cache'
+    - define writePath 'cache'
     - run s@ConfigFileGenerator def:%readID%|%writeID%|%readPath%|%writePath%|false|false|false instantly
     - yaml unload 'id:%readID%'
     - yaml 'savefile:dRegions/%file%.yml' 'id:%writeID%'
@@ -5066,6 +4957,15 @@ dRegions_Configurations:
             player:
               equip: []
               inv: []
+
+  cache:
+    info:
+      - This is the cache file. We use this file to cache individual specific events so that we can reduce the number of flag lookups later on.
+      - Expect it to grow to a considerable size!
+    boolean: []
+    state-withTarget: []
+    state-withGroup: []
+    state-withTarget-withGroup: []
 
 
 #
