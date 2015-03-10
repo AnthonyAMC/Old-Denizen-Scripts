@@ -3848,7 +3848,7 @@ dRegions_Commands:
       - if <yaml[dRegions_%world%_regions].read[regions.%value%.parent]||null> == %name% {
         - yaml set 'regions.%value%.parent:<-:%name%' 'id:dRegions_%world%_regions'
         }
-      - if <yaml[dRegions_%world%_regions].read[regions.%value%.children]||li@ contains %name% {
+      - if <yaml[dRegions_%world%_regions].read[regions.%value%.children]||li@> contains %name% {
         - yaml set 'regions.%value%.children:<-:%name%' 'id:dRegions_%world%_regions'
         }
       }
