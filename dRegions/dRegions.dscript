@@ -3774,7 +3774,11 @@ dRegions_Commands:
       else {
       - define parent '<c.args.get[3].escaped||null>'
       }
-    - if <def[parent].is[==].to[null]> {
+    - if %parent% == null {
+      - define parent <yaml[dRegions_%world%_regions].read[regions.%name%.parent]||null>
+      - if %parent% != null {
+        - yaml set 'regions.%parent%.children:<-:%name%' 'id:dRegions_%world%_regions'
+        }
       - yaml set 'regions.%name%.parent:!' 'id:dRegions_%world%_regions'
       - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
       - run s@dRegions_Msg 'def:<&7><&o>Unset parent for <&f><&o>%name%'
@@ -3800,6 +3804,12 @@ dRegions_Commands:
       }
     # Update the region
     - yaml set 'regions.%name%.parent:%parent%' 'id:dRegions_%world%_regions'
+    - if <yaml[dRegions_%world%_regions].read[regions.%parent%.children]||li@> contains %name% {
+      - yaml set 'regions.%parent%.children:<-:%name%' 'id:dRegions_%world%_regions'
+      }
+      else {
+      - yaml set 'regions.%parent%.children:->:%name%' 'id:dRegions_%world%_regions'
+      }
     - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
     - run s@dRegions_Msg 'def:<&f><&o>%name%<&7><&o> set parent to <&f><&o>%parent%'
 
@@ -3832,11 +3842,14 @@ dRegions_Commands:
         - queue clear
         }
       }
-    # Check for child regions and unset parent
+    # Remove region from ancestry
     - define regions '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__]||li@>'
     - foreach %regions% {
-      - if <yaml[dRegions_%world%_regions].read[regions.%value%.parent].is[==].to[%name%]||false> {
+      - if <yaml[dRegions_%world%_regions].read[regions.%value%.parent]||null> == %name% {
         - yaml set 'regions.%value%.parent:<-:%name%' 'id:dRegions_%world%_regions'
+        }
+      - if <yaml[dRegions_%world%_regions].read[regions.%value%.children]||li@ contains %name% {
+        - yaml set 'regions.%value%.children:<-:%name%' 'id:dRegions_%world%_regions'
         }
       }
     # Remove the region
