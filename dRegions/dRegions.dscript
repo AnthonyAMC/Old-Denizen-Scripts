@@ -191,13 +191,13 @@ dRegions:
     - define readPath 'blockform.ice'
     - inject s@dRegions p:event_PreProc_Config-NoTarget
     - if <c.location.cuboids.is_empty||true> {
-#      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.__global__.ice-form]||null>'
-#      - if %cache% != null {
-#        - if %cache% {
-#          - queue clear
-#          }
-#        - determine cancelled
-#        }
+      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.__global__.ice-form]||null>'
+      - if %cache% != null {
+        - if %cache% {
+          - queue clear
+          }
+        - determine cancelled
+        }
       - define FlagScript 's@dRegions_Flag_Ice-Form'
       - inject s@dRegions_Flag_Ice-Form p:event-global
       - queue clear
@@ -214,15 +214,15 @@ dRegions:
 #      - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
 #      - yaml set 'cache.locations.<c.location.simple>:%orderedRegions%' 'id:dRegions_%world%_cache'
 #      }
-#    - foreach %orderedRegions% {
-#      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.ice-form]||null>'
-#      - if %cache% != null {
-#        - if %cache% {
-#          - queue clear
-#          }
-#        - determine cancelled
-#        }
-#      }
+    - foreach %orderedRegions% {
+      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.ice-form]||null>'
+      - if %cache% != null {
+        - if %cache% {
+          - queue clear
+          }
+        - determine cancelled
+        }
+      }
     - define regionPri 'li@'
     - foreach <c.location.cuboids.parse[notable_name].filter[starts_with[dRegions_]].parse[after[dregions_%world%_]].include[__global__]> {
       - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
@@ -3653,8 +3653,23 @@ dRegions_Commands:
       - queue clear
       }
 
+    # Clear the flag cache for this region and any child regions
+    - define subType '<s@dRegions_Flag_%flag%.yaml_key[flag_subType]||null>'
+    - define children '<yaml[dRegions_%world%_regions].read[regions.%region%.children]||li@>'
+    - if li@boolean|state-withTarget contains %subType% {
+      - yaml set 'cache.%subType%.%region%.%flag%:!' 'id:dRegions_%world%_cache'
+      - foreach %children% {
+        - yaml set 'cache.%subType%.%value%.%flag%:!' 'id:dRegions_%world%_cache'
+        }
+      }
+      else li@state-withGroup|state-withTarget-withGroup contains %subType% {
+      - define players '<def[region].as_cuboid.list_players>'
+      - foreach %players% {
+        - flag player dRegions.cache.%region%.%flag%:!
+        }
+      }
+
     # Check the specified flag value and set or clear it.
-    - flag server dRegions.%world%.<tern[<def[region].is[==].to[__global__]>]:global||%region%>.%flag%:!
     - define flagValue '<def[args].get[3].to[<def[args].size>].space_separated.escaped||null>'
     - if <def[flagValue].is[!=].to[null]||true> {
       - define type "<s@dRegions_Flag_%flag%.yaml_key[flag_type]||null>"
@@ -3700,7 +3715,6 @@ dRegions_Commands:
       }
       else {
       - inject s@dRegions_Flag_%flag% p:command_handler
-      - flag server dRegions.%world%.<tern[<def[region].is[==].to[__global__]>]:global||%region%>.%flag%:!
       - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
       - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
       - run s@dRegions_Msg 'def:<&c>Cleared %flag% flag for region %region%'
@@ -3843,6 +3857,7 @@ dRegions_Commands:
         }
       }
     # Remove region from ancestry
+    # This should be done smarterer now since regions know both children and parents.
     - define regions '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__]||li@>'
     - foreach %regions% {
       - if <yaml[dRegions_%world%_regions].read[regions.%value%.parent]||null> == %name% {
