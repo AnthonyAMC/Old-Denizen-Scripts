@@ -29,7 +29,7 @@ dRegions_Flag_Entry:
   - <&5>Who can enter a region
   event_hook: regionEnter
   event_priority: 0
-  flag_type: state
+  flag_type: state-withGroup
   flag_takeGroup: true
   flag_defaultValue: none
   flag_globalDefault: none
@@ -120,7 +120,7 @@ dRegions_Flag_Exit:
   - <&5>Who can exit a region
   event_hook: regionExit
   event_priority: 0
-  flag_type: state
+  flag_type: state-withGroup
   flag_takeGroup: true
   flag_defaultValue: none
   flag_globalDefault: none
@@ -505,7 +505,7 @@ dRegions_Flag_Build:
   - <&5>Override default build perms
   event_hook: build
   event_priority: 0
-  flag_type: state
+  flag_type: state-withGroup
   flag_name: Build
   flag_help: By default, all members and owners can build in their regions. Setting this flag can over ride that behavior. Can be set to allow, deny, or none and accepts the -g group switch.
   flag_takeGroup: true
@@ -518,15 +518,6 @@ dRegions_Flag_Build:
 
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
-
-  event-cleanup:
-    - run locally msg delay:1t
-
-  msg:
-    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
-      - flag player dRegions_Message_Cooldown duration:3s
-      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You do not have permission to build in this region'
-      }
 
   event-global:
   # Build is handled differently than the other flags. It checks only the HIGHEST
@@ -552,6 +543,15 @@ dRegions_Flag_Build:
       - inject s@dRegions_Flags_Processors p:state-withGroup
       }
 
+  event-cleanup:
+    - run locally msg delay:1t
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
+      - flag player dRegions_Message_Cooldown duration:3s
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You do not have permission to build in this region'
+      }
+
 
 dRegions_Flag_Vehicle-Place:
   type: item
@@ -563,7 +563,7 @@ dRegions_Flag_Vehicle-Place:
   - <&5>Who can place vehicles
   event_hook: placeVehicle
   event_priority: 5
-  flag_type: state
+  flag_type: state-withGroup
   flag_help: Control who can place vehicles in a region. Takes the -g group switch.
   flag_takeGroup: true
   flag_defaultValue: deny/nonmembers
@@ -621,7 +621,7 @@ dRegions_Flag_Vehicle-Destroy:
   - <&5>Who can destroy vehicles
   event_hook: destroyVehicle
   event_priority: 10
-  flag_type: state
+  flag_type: state-withGroup
   flag_help: Control who can destroy vehicles in a region. Takes the -g group switch.
   flag_takeGroup: true
   flag_defaultValue: deny/nonmembers
@@ -679,7 +679,7 @@ dRegions_Flag_Send-Chat:
   - <&5>Who can chat
   event_hook: sendChat
   event_priority: 10
-  flag_type: state
+  flag_type: state-withGroup
   flag_help: Control who can send chat in a region. Takes the -g group switch.
   flag_takeGroup: true
   flag_defaultValue: none
@@ -735,7 +735,7 @@ dRegions_Flag_Hunger:
   - <&5>Who can get hungry
   event_hook: changeFood
   event_priority: 10
-  flag_type: state
+  flag_type: state-withGroup
   flag_help: Control whether players will loose hunger in this region. Takes the -g group switch.
   flag_takeGroup: true
   flag_defaultValue: none
@@ -777,7 +777,7 @@ dRegions_Flag_Mob-Target:
   - <&5>Can mobs target players
   event_hook: ENTITY_Target_Player
   event_priority: 0
-  flag_type: state
+  flag_type: state-withTarget-withGroup
   flag_takeGroup: true
   flag_defaultValue: none
   flag_globalDefault: none
@@ -804,7 +804,7 @@ dRegions_Flag_Mob-Target:
       }
 
   event-global:
-    - define orderedRegions 'li@global'
+    - define orderedRegions 'li@__global__'
     - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|mob-target]>'
     - if %flagObj% != null {
       - define player '%defender%'
@@ -815,7 +815,6 @@ dRegions_Flag_Mob-Target:
   event-cleanup:
     - remove <c.projectile||li@>
     - attack %attacker% target:cancel
-
 
 
 dRegions_Flag_Mob-TargetList:
@@ -829,6 +828,7 @@ dRegions_Flag_Mob-TargetList:
   command_entryType: mob
   command_verifyEntry: <def[value].is[matches].to[entity].not>
   flag_type: list
+  flag_parent: dRegions_Flag_Mob-Target
   flag_takeGroup: false
   flag_help: List flag used with mob-targeting flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of mobs.
   script:
@@ -852,7 +852,7 @@ dRegions_Flag_Mob-Damage:
   - <&5>Can mobs damage players
   event_hook: ENTITY_Damage_Player
   event_priority: 10
-  flag_type: state
+  flag_type: state-withTarget-withGroup
   flag_takeGroup: true
   flag_defaultValue: none
   flag_globalDefault: none
@@ -879,7 +879,7 @@ dRegions_Flag_Mob-Damage:
       }
 
   event-global:
-    - define orderedRegions 'li@global'
+    - define orderedRegions 'li@__global__'
     - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|mob-damage]>'
     - if %flagObj% != null {
       - define player '%defender%'
@@ -903,6 +903,7 @@ dRegions_Flag_Mob-Damagelist:
   command_entryType: mob
   command_verifyEntry: <def[value].is[matches].to[entity].not>
   flag_type: list
+  flag_parent: dRegions_Flag_Mob-Damage
   flag_takeGroup: false
   flag_help: List flag used with mob-damage flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of mobs.
   script:
@@ -926,7 +927,7 @@ dRegions_Flag_Mob-Spawn:
   - <&5>Can mobs Spawn
   event_hook: ENTITY_Spawn
   event_priority: 10
-  flag_type: state
+  flag_type: state-withTarget
   flag_takeGroup: false
   flag_defaultValue: none
   flag_globalDefault: none
@@ -940,24 +941,46 @@ dRegions_Flag_Mob-Spawn:
 
   event:
     - foreach %orderedRegions% {
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|mob-spawn]>'
       - define region '%value%'
+      - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%value%.mob-spawn.%target%]||null>'
+      - if %cache% == none {
+        - define flagVal 'null'
+        - foreach next
+        }
+      - if %cache% != null {
+        - if %cache% {
+          - queue clear
+          }
+        - determine cancelled
+        }
+      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|mob-spawn]>'
       - if %flagVal% != null {
         - foreach stop
+        }
+        else {
+        - yaml set 'cache.state-withTarget.%region%.mob-spawn.%target%:none' 'id:dRegions_%world%_cache'
         }
       }
     - if %flagVal% != null {
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|mob-spawnlist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
+      - yaml set 'cache.state-withTarget.%region%.mob-spawn.%target%:true' 'id:dRegions_%world%_cache'
       }
 
   event-global:
-    - define orderedRegions 'li@global'
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|mob-spawn]>'
     - if %flagVal% != null {
+      - define region '__global__'
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|mob-spawnlist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
+      - yaml set 'cache.state-withTarget.__global__.mob-spawn.%target%:true' 'id:dRegions_%world%_cache'
       }
+      else {
+      - yaml set 'cache.state-withTarget.__global__.mob-spawn.%target%:none' 'id:dRegions_%world%_cache'
+      }
+
+  event-cleanup:
+    - yaml set 'cache.state-withTarget.%region%.mob-spawn.%target%:false' 'id:dRegions_%world%_cache'
 
 
 dRegions_Flag_Mob-SpawnList:
@@ -971,6 +994,7 @@ dRegions_Flag_Mob-SpawnList:
   command_entryType: mob
   command_verifyEntry: <def[value].is[matches].to[entity].not>
   flag_type: list
+  flag_parent: dRegions_Flag_Mob-Spawn
   flag_takeGroup: false
   flag_help: List flag used with mob-spawn flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of mobs.
   script:
@@ -994,7 +1018,7 @@ dRegions_Flag_EVE:
   - <&5>Can mobs be targeted
   event_hook: ENTITY_Target_ENTITY
   event_priority: 20
-  flag_type: state
+  flag_type: state-withTarget
   flag_takeGroup: false
   flag_defaultValue: none
   flag_globalDefault: none
@@ -1006,32 +1030,110 @@ dRegions_Flag_EVE:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
+#  event:
+#    - foreach %orderedRegions% {
+#      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|eve]>'
+#      - define region '%value%'
+#      - if %flagVal% != null {
+#        - foreach stop
+#        }
+#      }
+#    - if %flagVal% != null {
+#      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|eve-moblist].replace[, ].with[|].as_list>'
+#      - define target '%dtarget%'
+#      - inject s@dRegions_Flags_Processors p:state-withTarget
+#      }
+
+#  event-global:
+#    - define orderedRegions 'li@__global__'
+#    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|eve]>'
+#    - if %flagVal% != null {
+#      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|eve-moblist].replace[, ].with[|].as_list>'
+#      - define target '%dtarget%'
+#      - inject s@dRegions_Flags_Processors p:state-withTarget
+#      }
+
+#  event-cleanup:
+#    - remove <c.projectile||li@>
+#    - attack %attacker% target:cancel
+
   event:
+    - define target '%dtarget%'
     - foreach %orderedRegions% {
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|eve]>'
       - define region '%value%'
+      - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%value%.eve.%target%]||null>'
+      - if %cache% == none {
+        - define flagVal 'null'
+        - foreach next
+        }
+      - if %cache% != null {
+        - if %cache% {
+          - queue clear
+          }
+        - run locally wander delay:1t def:%attacker%
+        - remove <c.projectile||li@>
+        - attack %attacker% target:cancel
+        - determine cancelled
+        }
+      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|eve]>'
       - if %flagVal% != null {
         - foreach stop
+        }
+        else {
+        - yaml set 'cache.state-withTarget.%region%.eve.%target%:none' 'id:dRegions_%world%_cache'
         }
       }
     - if %flagVal% != null {
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|eve-moblist].replace[, ].with[|].as_list>'
-      - define target '%dtarget%'
       - inject s@dRegions_Flags_Processors p:state-withTarget
+      - yaml set 'cache.state-withTarget.%region%.eve.%target%:true' 'id:dRegions_%world%_cache'
       }
 
+#  event-global:
+#    - define target '%dtarget%'
+#    - define region '__global__'
+#    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|eve]>'
+#    - if %flagVal% != null {
+#      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|eve-moblist].replace[, ].with[|].as_list>'
+#      - inject s@dRegions_Flags_Processors p:state-withTarget
+#      }
+#    - yaml set 'cache.state-withTarget.__global__.eve.%target%:true' 'id:dRegions_%world%_cache'
+
   event-global:
-    - define orderedRegions 'li@global'
-    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|eve]>'
-    - if %flagVal% != null {
-      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|eve-moblist].replace[, ].with[|].as_list>'
-      - define target '%dtarget%'
-      - inject s@dRegions_Flags_Processors p:state-withTarget
+    - define target '%dtarget%'
+    - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.__global__.eve.%target%]||null>'
+    - if %cache% == false {
+      - remove <c.projectile||li@>
+      - attack %attacker% target:cancel
+      - run locally wander delay:1t def:%attacker%
+      - determine cancelled
+      }
+    - if %cache% == null {
+      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|eve]>'
+      - if %flagVal% != null {
+        - define region '__global__'
+        - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|eve-moblist].replace[, ].with[|].as_list>'
+        - inject s@dRegions_Flags_Processors p:state-withTarget
+        - yaml set 'cache.state-withTarget.__global__.eve.%target%:true' 'id:dRegions_%world%_cache'
+        }
+        else {
+        - yaml set 'cache.state-withTarget.__global__.eve.%target%:none' 'id:dRegions_%world%_cache'
+        }
       }
 
   event-cleanup:
     - remove <c.projectile||li@>
     - attack %attacker% target:cancel
+    - run locally wander delay:1t def:%attacker%
+    - yaml set 'cache.state-withTarget.%region%.eve.%target%:false' 'id:dRegions_%world%_cache'
+
+  wander:
+    - ^if !<def[1].is_spawned||false> queue clear
+#    - ^adjust %1% toggle_ai:false
+    - ^walk %1% <def[1].location.find.surface_blocks.within[25].random.add[0,1,0]> speed:0.2 auto_range radius:5
+    - ^wait 10s
+    - ^if !<def[1].is_spawned||false> queue clear
+#    - ^adjust %1% toggle_ai:true
 
 
 dRegions_Flag_EVE-Moblist:
@@ -1045,6 +1147,7 @@ dRegions_Flag_EVE-Moblist:
   command_entryType: mob
   command_verifyEntry: <def[value].is[matches].to[entity].not>
   flag_type: list
+  flag_parent: dRegions_Flag_EVE
   flag_takeGroup: false
   flag_help: List flag used with eve flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of mobs.
   script:
@@ -1068,7 +1171,7 @@ dRegions_Flag_Mob-Attack:
   - <&5>Can mobs attack other mobs
   event_hook: ENTITY_Target_ENTITY
   event_priority: 10
-  flag_type: state
+  flag_type: state-withTarget
   flag_takeGroup: false
   flag_defaultValue: none
   flag_globalDefault: none
@@ -1081,31 +1184,83 @@ dRegions_Flag_Mob-Attack:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
+    - define target '%atarget%'
     - foreach %orderedRegions% {
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|mob-attack]>'
       - define region '%value%'
+      - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%value%.mob-attack.%target%]||null>'
+      - if %cache% == none {
+        - define flagVal 'null'
+        - foreach next
+        }
+      - if %cache% != null {
+        - if %cache% {
+          - define flagVal 'null'
+          - foreach stop
+          }
+        - run locally wander delay:1t def:%attacker%
+        - remove <c.projectile||li@>
+        - attack %attacker% target:cancel
+        - determine cancelled
+        }
+      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|mob-attack]>'
       - if %flagVal% != null {
         - foreach stop
+        }
+        else {
+        - yaml set 'cache.state-withTarget.%region%.mob-attack.%target%:none' 'id:dRegions_%world%_cache'
         }
       }
     - if %flagVal% != null {
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|mob-attack-moblist].replace[, ].with[|].as_list>'
-      - define target '%atarget%'
       - inject s@dRegions_Flags_Processors p:state-withTarget
+      - yaml set 'cache.state-withTarget.%region%.mob-attack.%target%:true' 'id:dRegions_%world%_cache'
       }
 
+#  event-global:
+#    - define target '%atarget%'
+#    - define region '__global__'
+#    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|mob-attack]>'
+#    - if %flagVal% != null {
+#      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|mob-attack-moblist].replace[, ].with[|].as_list>'
+#      - inject s@dRegions_Flags_Processors p:state-withTarget
+#      }
+#    - yaml set 'cache.state-withTarget.__global__.mob-attack.%target%:true' 'id:dRegions_%world%_cache'
+
   event-global:
-    - define orderedRegions 'li@global'
-    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|mob-attack]>'
-    - if %flagVal% != null {
-      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|mob-attack-moblist].replace[, ].with[|].as_list>'
-      - define target '%atarget%'
-      - inject s@dRegions_Flags_Processors p:state-withTarget
+    - define target '%atarget%'
+    - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.__global__.mob-attack.%target%]||null>'
+    - if %cache% == false {
+      - remove <c.projectile||li@>
+      - attack %attacker% target:cancel
+      - run locally wander delay:1t def:%attacker%
+      - determine cancelled
+      }
+    - if %cache% == null {
+      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|mob-attack]>'
+      - if %flagVal% != null {
+        - define region '__global__'
+        - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|mob-attack-moblist].replace[, ].with[|].as_list>'
+        - inject s@dRegions_Flags_Processors p:state-withTarget
+        - yaml set 'cache.state-withTarget.__global__.mob-attack.%target%:true' 'id:dRegions_%world%_cache'
+        }
+        else {
+        - yaml set 'cache.state-withTarget.__global__.mob-attack.%target%:none' 'id:dRegions_%world%_cache'
+        }
       }
 
   event-cleanup:
     - remove <c.projectile||li@>
     - attack %attacker% target:cancel
+    - run locally wander delay:1t def:%attacker%
+    - yaml set 'cache.state-withTarget.%region%.mob-attack.%target%:false' 'id:dRegions_%world%_cache'
+
+  wander:
+    - ^if !<def[1].is_spawned||false> queue clear
+#    - ^adjust %1% toggle_ai:false
+    - ^walk %1% <def[1].location.find.surface_blocks.within[25].random.add[0,1,0]> speed:0.2 auto_range radius:5
+    - ^wait 10s
+    - ^if !<def[1].is_spawned||false> queue clear
+#    - ^adjust %1% toggle_ai:true
 
 
 dRegions_Flag_Mob-Attack-Moblist:
@@ -1119,6 +1274,7 @@ dRegions_Flag_Mob-Attack-Moblist:
   command_entryType: mob
   command_verifyEntry: <def[value].is[matches].to[entity].not>
   flag_type: list
+  flag_parent: dRegions_Flag_Mob-Attack
   flag_takeGroup: false
   flag_help: List flag used with mob-attack flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of mobs.
   script:
@@ -1142,7 +1298,7 @@ dRegions_Flag_PVE:
   - <&5>Can players damage mobs
   event_hook: PLAYER_Damage_Entity
   event_priority: 10
-  flag_type: state
+  flag_type: state-withTarget-withGroup
   flag_takeGroup: true
   flag_defaultValue: none
   flag_globalDefault: none
@@ -1168,7 +1324,7 @@ dRegions_Flag_PVE:
       }
 
   event-global:
-    - define orderedRegions 'li@global'
+    - define orderedRegions 'li@__global__'
     - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|pve]>'
     - if %flagObj% != null {
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|pve-moblist].replace[, ].with[|].as_list>'
@@ -1197,6 +1353,7 @@ dRegions_Flag_PVE-Moblist:
   command_entryType: mob
   command_verifyEntry: <def[value].is[matches].to[entity].not>
   flag_type: list
+  flag_parent: dRegions_Flag_PVE
   flag_takeGroup: false
   flag_help: List flag used with pve flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of mobs.
   script:
@@ -1220,7 +1377,7 @@ dRegions_Flag_Npc-Interact:
   - <&5>Can players interact with NPCs
   event_hook: npc-interact
   event_priority: 10
-  flag_type: state
+  flag_type: state-withGroup
   flag_takeGroup: true
   flag_defaultValue: none
   flag_globalDefault: none
@@ -1276,7 +1433,7 @@ dRegions_Flag_Entity-Interact:
   - <&5>Can players interact with entities
   event_hook: entity-interact
   event_priority: 10
-  flag_type: state
+  flag_type: state-withTarget-withGroup
   flag_takeGroup: true
   flag_defaultValue: none
   flag_globalDefault: none
@@ -1304,7 +1461,7 @@ dRegions_Flag_Entity-Interact:
       }
 
   event-global:
-    - define orderedRegions 'li@global'
+    - define orderedRegions 'li@__global__'
     - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|entity-interact]>'
     - if %flagObj% != null {
       - define player '<player>'
@@ -1334,6 +1491,7 @@ dRegions_Flag_Entity-Interactlist:
   command_entryType: mob
   command_verifyEntry: <def[value].is[matches].to[entity].not>
   flag_type: list
+  flag_parent: dRegions_Flag_Entity-Interact
   flag_takeGroup: false
   flag_help: List flag used with entity-interact flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of entities.
   script:
@@ -1357,7 +1515,7 @@ dRegions_Flag_Entity-Explode:
   - <&5>Can entities explode
   event_hook: entity-explode
   event_priority: 10
-  flag_type: state
+  flag_type: state-withTarget
   flag_takeGroup: false
   flag_defaultValue: none
   flag_globalDefault: none
@@ -1371,29 +1529,46 @@ dRegions_Flag_Entity-Explode:
 
   event:
     - foreach %orderedRegions% {
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|entity-explode]>'
       - define region '%value%'
+      - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%value%.entity-explode.%target%]||null>'
+      - if %cache% == none {
+        - define flagVal 'null'
+        - foreach next
+        }
+      - if %cache% != null {
+        - if %cache% {
+          - queue clear
+          }
+        - determine cancelled
+        }
+      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|entity-explode]>'
       - if %flagVal% != null {
         - foreach stop
+        }
+        else {
+        - yaml set 'cache.state-withTarget.%region%.entity-explode.%target%:none' 'id:dRegions_%world%_cache'
         }
       }
     - if %flagVal% != null {
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|entity-explodelist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
+      - yaml set 'cache.state-withTarget.%region%.entity-explode.%target%:true' 'id:dRegions_%world%_cache'
       }
 
   event-global:
-    - define orderedRegions 'li@global'
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|entity-explode]>'
     - if %flagVal% != null {
+      - define region '__global__'
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|entity-explodelist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
+      - yaml set 'cache.state-withTarget.__global__.entity-explode.%target%:true' 'id:dRegions_%world%_cache'
+      }
+      else {
+      - yaml set 'cache.state-withTarget.__global__.entity-explode.%target%:none' 'id:dRegions_%world%_cache'
       }
 
   event-cleanup:
-    - foreach <def[attacker].location.find.entities.within[5].exclude[%attacker%]> {
-      - adjust %value% 'velocity:l@0,0,0,%world%'
-      }
+    - yaml set 'cache.state-withTarget.%region%.entity-explode.%target%:false' 'id:dRegions_%world%_cache'
 
 
 dRegions_Flag_Entity-ExplodeList:
@@ -1407,6 +1582,7 @@ dRegions_Flag_Entity-ExplodeList:
   command_entryType: entity
   command_verifyEntry: <el@val[creeper|ender_crystal|ender_dragon|primed_tnt|minecart_tnt|fireball|small_fireball|wither|wither_skull].as_list.contains[<def[value]>].not>
   flag_type: list
+  flag_parent: dRegions_Flag_Entity-Explode
   flag_takeGroup: false
   flag_help: List flag used with entity-explode flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of entities. Valid entities<&co> creeper, ender_crystal, ender_dragon, primed_tnt, minecart_tnt, fireball, small_fireball, wither, wither_skull
   script:
@@ -1430,7 +1606,7 @@ dRegions_Flag_Entity-Grief:
   - <&5>Can entities alter blocks
   event_hook: entity-changeBlock
   event_priority: 10
-  flag_type: state
+  flag_type: state-withTarget
   flag_takeGroup: false
   flag_defaultValue: none
   flag_globalDefault: none
@@ -1444,26 +1620,47 @@ dRegions_Flag_Entity-Grief:
 
   event:
     - foreach %orderedRegions% {
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|entity-grief]>'
       - define region '%value%'
+      - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%value%.entity-grief.%target%]||null>'
+      - if %cache% == none {
+        - define flagVal 'null'
+        - foreach next
+        }
+      - if %cache% != null {
+        - if %cache% {
+          - queue clear
+          }
+        - run locally offthread delay:1t def:<c.entity.uuid>
+        - determine cancelled
+        }
+      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|entity-grief]>'
       - if %flagVal% != null {
         - foreach stop
+        }
+        else {
+        - yaml set 'cache.state-withTarget.%region%.entity-grief.%target%:none' 'id:dRegions_%world%_cache'
         }
       }
     - if %flagVal% != null {
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|entity-grieflist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
+      - yaml set 'cache.state-withTarget.%region%.entity-grief.%target%:true' 'id:dRegions_%world%_cache'
       }
 
   event-global:
-    - define orderedRegions 'li@global'
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|entity-grief]>'
     - if %flagVal% != null {
+      - define region '__global__'
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|entity-grieflist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
+      - yaml set 'cache.state-withTarget.__global__.entity-grief.%target%:true' 'id:dRegions_%world%_cache'
+      }
+      else {
+      - yaml set 'cache.state-withTarget.__global__.entity-grief.%target%:none' 'id:dRegions_%world%_cache'
       }
 
   event-cleanup:
+    - yaml set 'cache.state-withTarget.%region%.entity-grief.%target%:false' 'id:dRegions_%world%_cache'
     - run locally offthread delay:1t def:<c.entity.uuid>
 
   offthread:
@@ -1483,6 +1680,7 @@ dRegions_Flag_Entity-GriefList:
   command_entryType: entity
   command_verifyEntry: <el@val[enderman|sheep|zombie|squid].as_list.contains[<def[value]>].not>
   flag_type: list
+  flag_parent: dRegions_Flag_Entity-Grief
   flag_takeGroup: false
   flag_help: List flag used with entity-grief flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of entities. Valid entities<&co> sheep, enderman, zombie, squid
   script:
@@ -1506,7 +1704,7 @@ dRegions_Flag_Entity-Drops-OnDeath:
   - <&5>Can mobs drop items
   event_hook: EntityDies
   event_priority: 10
-  flag_type: state
+  flag_type: state-withTarget
   flag_takeGroup: false
   flag_defaultValue: none
   flag_globalDefault: none
@@ -1519,26 +1717,46 @@ dRegions_Flag_Entity-Drops-OnDeath:
 
   event:
     - foreach %orderedRegions% {
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|entity-drops-ondeath]>'
       - define region '%value%'
+      - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%value%.entity-drops-ondeath.%target%]||null>'
+      - if %cache% == none {
+        - define flagVal 'null'
+        - foreach next
+        }
+      - if %cache% != null {
+        - if %cache% {
+          - queue clear
+          }
+        - determine no_drops
+        }
+      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|entity-drops-ondeath]>'
       - if %flagVal% != null {
         - foreach stop
+        }
+        else {
+        - yaml set 'cache.state-withTarget.%region%.entity-drops-ondeath.%target%:none' 'id:dRegions_%world%_cache'
         }
       }
     - if %flagVal% != null {
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|entity-drops-ondeathlist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
+      - yaml set 'cache.state-withTarget.%region%.entity-drops-ondeath.%target%:true' 'id:dRegions_%world%_cache'
       }
 
   event-global:
-    - define orderedRegions 'li@global'
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|entity-drops-ondeath]>'
     - if %flagVal% != null {
+      - define region '__global__'
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|entity-drops-ondeathlist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
+      - yaml set 'cache.state-withTarget.__global__.entity-drops-ondeath.%target%:true' 'id:dRegions_%world%_cache'
+      }
+      else {
+      - yaml set 'cache.state-withTarget.__global__.entity-drops-ondeath.%target%:none' 'id:dRegions_%world%_cache'
       }
 
   event-cleanup:
+    - yaml set 'cache.state-withTarget.%region%.entity-drops-ondeath.%target%:false' 'id:dRegions_%world%_cache'
     - determine no_drops
 
 
@@ -1553,6 +1771,7 @@ dRegions_Flag_Entity-Drops-OnDeathList:
   command_entryType: entity
   command_verifyEntry: <def[value].is[matches].to[entity].not>
   flag_type: list
+  flag_parent: dRegions_Flag_Entity-Drops-OnDeath
   flag_takeGroup: false
   flag_help: List flag used with entity-drops-ondeath flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of entities.
   script:
@@ -1576,7 +1795,7 @@ dRegions_Flag_Fire-Spread:
   - <&5>Can fire spread
   event_hook: fireFrom-Spread
   event_priority: 10
-  flag_type: state
+  flag_type: state-withTarget
   flag_takeGroup: false
   flag_defaultValue: none
   flag_globalDefault: none
@@ -1591,23 +1810,42 @@ dRegions_Flag_Fire-Spread:
 
   event:
     - foreach %orderedRegions% {
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|fire-spread]>'
       - define region '%value%'
+      - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%value%.fire-spread.%target%]||null>'
+      - if %cache% == none {
+        - define flagVal 'null'
+        - foreach next
+        }
+      - if %cache% != null {
+        - if %cache% {
+          - queue clear
+          }
+        - determine cancelled
+        }
+      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|fire-spread]>'
       - if %flagVal% != null {
         - foreach stop
+        }
+        else {
+        - yaml set 'cache.state-withTarget.%region%.fire-spread.%target%:none' 'id:dRegions_%world%_cache'
         }
       }
     - if %flagVal% != null {
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|fire-spreadblocks].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
+      - yaml set 'cache.state-withTarget.%region%.fire-spread.%target%:true' 'id:dRegions_%world%_cache'
       }
 
   event-global:
-    - define orderedRegions 'li@global'
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|fire-spread]>'
     - if %flagVal% != null {
+      - define region '__global__'
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|fire-spreadblocks].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
+      - yaml set 'cache.state-withTarget.__global__.fire-spread.%target%:true' 'id:dRegions_%world%_cache'
+      }
+      else {
+      - yaml set 'cache.state-withTarget.__global__.fire-spread.%target%:none' 'id:dRegions_%world%_cache'
       }
 
 
@@ -1622,6 +1860,7 @@ dRegions_Flag_Fire-SpreadBlocks:
   command_entryType: block
   command_verifyEntry: <def[value].as_material.is_block.not||true>
   flag_type: list
+  flag_parent: dRegions_Flag_Fire-Spread
   flag_takeGroup: false
   flag_help: List flag used with fire-spread flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks.
   script:
@@ -1645,7 +1884,7 @@ dRegions_Flag_Fire-Destroy:
   - <&5>Can fire destroy blocks
   event_hook: fire-destroyBlocks
   event_priority: 10
-  flag_type: state
+  flag_type: state-withTarget
   flag_takeGroup: false
   flag_defaultValue: none
   flag_globalDefault: none
@@ -1659,23 +1898,43 @@ dRegions_Flag_Fire-Destroy:
 
   event:
     - foreach %orderedRegions% {
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|fire-destroy]>'
       - define region '%value%'
+      - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%value%.fire-destroy.%target%]||null>'
+      - if %cache% == none {
+        - define flagVal 'null'
+        - foreach next
+        }
+      - if %cache% != null {
+        - if %cache% {
+          - define flagVal 'null'
+          - foreach stop
+          }
+        - determine cancelled
+        }
+      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|fire-destroy]>'
       - if %flagVal% != null {
         - foreach stop
+        }
+        else {
+        - yaml set 'cache.state-withTarget.%region%.fire-destroy.%target%:none' 'id:dRegions_%world%_cache'
         }
       }
     - if %flagVal% != null {
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|fire-destroyblocks].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
+      - yaml set 'cache.state-withTarget.%region%.fire-destroy.%target%:true' 'id:dRegions_%world%_cache'
       }
 
   event-global:
-    - define orderedRegions 'li@global'
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|fire-destroy]>'
     - if %flagVal% != null {
+      - define region '__global__'
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|fire-destroyblocks].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
+      - yaml set 'cache.state-withTarget.__global__.fire-destroy.%target%:true' 'id:dRegions_%world%_cache'
+      }
+      else {
+      - yaml set 'cache.state-withTarget.__global__.fire-destroy.%target%:none' 'id:dRegions_%world%_cache'
       }
 
 
@@ -1690,6 +1949,7 @@ dRegions_Flag_Fire-DestroyBlocks:
   command_entryType: block
   command_verifyEntry: <def[value].as_material.is_block.not||true>
   flag_type: list
+  flag_parent: dRegions_Flag_Fire-Destroy
   flag_takeGroup: false
   flag_help: List flag used with fire-destroy flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks.
   script:
@@ -1713,7 +1973,7 @@ dRegions_Flag_Lightning-Strikes:
   - <&5>Can lightning strike
   event_hook: lightning-strikes
   event_priority: 10
-  flag_type: state
+  flag_type: state-withTarget
   flag_takeGroup: false
   flag_defaultValue: none
   flag_globalDefault: none
@@ -1727,23 +1987,42 @@ dRegions_Flag_Lightning-Strikes:
 
   event:
     - foreach %orderedRegions% {
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|lightning-strikes]>'
       - define region '%value%'
+      - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%value%.lightning-strikes.%target%]||null>'
+      - if %cache% == none {
+        - define flagVal 'null'
+        - foreach next
+        }
+      - if %cache% != null {
+        - if %cache% {
+          - queue clear
+          }
+        - determine cancelled
+        }
+      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|lightning-strikes]>'
       - if %flagVal% != null {
         - foreach stop
+        }
+        else {
+        - yaml set 'cache.state-withTarget.%region%.lightning-strikes.%target%:none' 'id:dRegions_%world%_cache'
         }
       }
     - if %flagVal% != null {
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|lightning-strikesblocks].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
+      - yaml set 'cache.state-withTarget.%region%.lightning-strikes.%target%:true' 'id:dRegions_%world%_cache'
       }
 
   event-global:
-    - define orderedRegions 'li@global'
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|lightning-strikes]>'
     - if %flagVal% != null {
+      - define region '__global__'
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|lightning-strikesblocks].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
+      - yaml set 'cache.state-withTarget.__global__.lightning-strikes.%target%:true' 'id:dRegions_%world%_cache'
+      }
+      else {
+      - yaml set 'cache.state-withTarget.__global__.lightning-strikes.%target%:none' 'id:dRegions_%world%_cache'
       }
 
 
@@ -1758,6 +2037,7 @@ dRegions_Flag_Lightning-StrikesBlocks:
   command_entryType: block
   command_verifyEntry: <def[value].as_material.is_block.not||true>
   flag_type: list
+  flag_parent: dRegions_Flag_Lightning-Strikes
   flag_takeGroup: false
   flag_help: List flag used with lightning-strike flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks.
   script:
@@ -1781,7 +2061,7 @@ dRegions_Flag_Water-Spread:
   - <&5>Can Water spread
   event_hook: WaterSpread
   event_priority: 10
-  flag_type: state
+  flag_type: state-withTarget
   flag_takeGroup: false
   flag_defaultValue: none
   flag_globalDefault: none
@@ -1795,24 +2075,48 @@ dRegions_Flag_Water-Spread:
 
   event:
     - foreach %orderedRegions% {
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|water-spread]>'
       - define region '%value%'
+      - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%value%.water-spread.%target%]||null>'
+      - if %cache% == none {
+        - define flagVal 'null'
+        - foreach next
+        }
+      - if %cache% != null {
+        - if %cache% {
+          - queue clear
+          }
+        - determine cancelled
+        }
+      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|water-spread]>'
       - if %flagVal% != null {
         - foreach stop
+        }
+        else {
+        - yaml set 'cache.state-withTarget.%region%.water-spread.%target%:none' 'id:dRegions_%world%_cache'
         }
       }
     - if %flagVal% != null {
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|water-spreadblocks].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
+      - yaml set 'cache.state-withTarget.%region%.water-spread.%target%:true' 'id:dRegions_%world%_cache'
+      - queue clear
       }
 
   event-global:
-    - define orderedRegions 'li@global'
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|water-spread]>'
     - if %flagVal% != null {
+      - define region '__global__'
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|water-spreadblocks].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
+      - yaml set 'cache.state-withTarget.__global__.water-spread.%target%:true' 'id:dRegions_%world%_cache'
       }
+      else {
+      - yaml set 'cache.state-withTarget.__global__.water-spread.%target%:none' 'id:dRegions_%world%_cache'
+      }
+
+  event-cleanup:
+    - yaml set 'cache.state-withTarget.%region%.water-spread.%target%:false' 'id:dRegions_%world%_cache'
+    - queue clear
 
 
 dRegions_Flag_Water-SpreadBlocks:
@@ -1826,6 +2130,7 @@ dRegions_Flag_Water-SpreadBlocks:
   command_entryType: block
   command_verifyEntry: <def[value].as_material.is_block.not||true>
   flag_type: list
+  flag_parent: dRegions_Flag_Water-Spread
   flag_takeGroup: false
   flag_help: List flag used with water-spread flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks.
   script:
@@ -1849,7 +2154,7 @@ dRegions_Flag_Lava-Spread:
   - <&5>Can Lava spread
   event_hook: LavaSpread
   event_priority: 10
-  flag_type: state
+  flag_type: state-withTarget
   flag_takeGroup: false
   flag_defaultValue: none
   flag_globalDefault: none
@@ -1861,26 +2166,71 @@ dRegions_Flag_Lava-Spread:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
+#  event:
+#    - foreach %orderedRegions% {
+#      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|lava-spread]>'
+#      - define region '%value%'
+#      - if %flagVal% != null {
+#        - foreach stop
+#        }
+#      }
+#    - if %flagVal% != null {
+#      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|lava-spreadblocks].replace[, ].with[|].as_list>'
+#      - inject s@dRegions_Flags_Processors p:state-withTarget
+#      }
+
+#  event-global:
+#    - define orderedRegions 'li@__global__'
+#    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|lava-spread]>'
+#    - if %flagVal% != null {
+#      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|lava-spreadblocks].replace[, ].with[|].as_list>'
+#      - inject s@dRegions_Flags_Processors p:state-withTarget
+#      }
+
   event:
     - foreach %orderedRegions% {
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|lava-spread]>'
       - define region '%value%'
+      - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%value%.lava-spread.%target%]||null>'
+      - if %cache% == none {
+        - define flagVal 'null'
+        - foreach next
+        }
+      - if %cache% != null {
+        - if %cache% {
+          - queue clear
+          }
+        - determine cancelled
+        }
+      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|lava-spread]>'
       - if %flagVal% != null {
         - foreach stop
+        }
+        else {
+        - yaml set 'cache.state-withTarget.%region%.lava-spread.%target%:none' 'id:dRegions_%world%_cache'
         }
       }
     - if %flagVal% != null {
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|lava-spreadblocks].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
+      - yaml set 'cache.state-withTarget.%region%.lava-spread.%target%:true' 'id:dRegions_%world%_cache'
+      - queue clear
       }
 
   event-global:
-    - define orderedRegions 'li@global'
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|lava-spread]>'
     - if %flagVal% != null {
+      - define region '__global__'
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|lava-spreadblocks].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
+      - yaml set 'cache.state-withTarget.__global__.lava-spread.%target%:true' 'id:dRegions_%world%_cache'
       }
+      else {
+      - yaml set 'cache.state-withTarget.__global__.lava-spread.%target%:none' 'id:dRegions_%world%_cache'
+      }
+
+  event-cleanup:
+    - yaml set 'cache.state-withTarget.%region%.lava-spread.%target%:false' 'id:dRegions_%world%_cache'
+
 
 
 dRegions_Flag_Lava-SpreadBlocks:
@@ -1894,6 +2244,7 @@ dRegions_Flag_Lava-SpreadBlocks:
   command_entryType: block
   command_verifyEntry: <def[value].as_material.is_block.not||true>
   flag_type: list
+  flag_parent: dRegions_Flag_Lava-Spread
   flag_takeGroup: false
   flag_help: List flag used with lava-spread flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks.
   script:
@@ -1917,7 +2268,7 @@ dRegions_Flag_Snow-Fall:
   - <&5>Can Snow accumulate
   event_hook: blockForm-snow
   event_priority: 10
-  flag_type: state
+  flag_type: state-withTarget
   flag_takeGroup: false
   flag_defaultValue: none
   flag_globalDefault: none
@@ -1931,26 +2282,47 @@ dRegions_Flag_Snow-Fall:
 
   event:
     - foreach %orderedRegions% {
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|snow-fall]>'
       - define region '%value%'
-      - if %flagVal% != null {
-        - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|snow-fallblocks].replace[, ].with[|].as_list>'
-        - inject s@dRegions_Flags_Processors p:state-withTarget
-#        - yaml set 'cache.state-withTarget.%region%.snow-fall.%target%:true' 'id:dRegions_%world%_cache'
+      - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%value%.snow-fall.%target%]||null>'
+      - if %cache% == none {
+        - define flagVal 'null'
+        - foreach next
         }
+      - if %cache% != null {
+        - if %cache% {
+          - queue clear
+          }
+        - determine cancelled
+        }
+      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|snow-fall]>'
+      - if %flagVal% != null {
+        - foreach stop
+        }
+        else {
+        - yaml set 'cache.state-withTarget.%region%.snow-fall.%target%:none' 'id:dRegions_%world%_cache'
+        }
+      }
+    - if %flagVal% != null {
+      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|snow-fallblocks].replace[, ].with[|].as_list>'
+      - inject s@dRegions_Flags_Processors p:state-withTarget
+      - yaml set 'cache.state-withTarget.%region%.snow-fall.%target%:true' 'id:dRegions_%world%_cache'
+      - queue clear
       }
 
   event-global:
-    - define region '__global__'
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|snow-fall]>'
     - if %flagVal% != null {
+      - define region '__global__'
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|snow-fallblocks].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
+      - yaml set 'cache.state-withTarget.__global__.snow-fall.%target%:true' 'id:dRegions_%world%_cache'
       }
-#    - yaml set 'cache.state-withTarget.__global__.snow-fall.%target%:true' 'id:dRegions_%world%_cache'
+      else {
+      - yaml set 'cache.state-withTarget.__global__.snow-fall.%target%:none' 'id:dRegions_%world%_cache'
+      }
 
-#  event-cleanup:
-#    - yaml set 'cache.state-withTarget.%region%.snow-fall.%target%:false' 'id:dRegions_%world%_cache'
+  event-cleanup:
+    - yaml set 'cache.state-withTarget.%region%.snow-fall.%target%:false' 'id:dRegions_%world%_cache'
 
 
 dRegions_Flag_Snow-FallBlocks:
@@ -1964,6 +2336,7 @@ dRegions_Flag_Snow-FallBlocks:
   command_entryType: block
   command_verifyEntry: <def[value].as_material.is_block.not||true>
   flag_type: list
+  flag_parent: dRegions_Flag_Snow-Fall
   flag_takeGroup: false
   flag_help: List flag used with snow-fall flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks.
   script:
@@ -2000,26 +2373,37 @@ dRegions_Flag_Ice-Form:
 
   event:
     - foreach %orderedRegions% {
+      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.ice-form]||null>'
+      - if %cache% == none {
+        - foreach next
+        }
+      - if %cache% != null {
+        - if %cache% {
+          - queue clear
+          }
+        - determine cancelled
+        }
       - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|ice-form]>'
       - if %flagVal% != null {
         - if %flagVal% {
-#          - yaml set 'cache.boolean.%value%.ice-form:true' 'id:dRegions_%world%_cache'
+          - yaml set 'cache.boolean.%value%.ice-form:true' 'id:dRegions_%world%_cache'
           - foreach stop
           }
-#        - yaml set 'cache.boolean.%value%.ice-form:false' 'id:dRegions_%world%_cache'
+        - yaml set 'cache.boolean.%value%.ice-form:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
+      - yaml set 'cache.boolean.%value%.ice-form:none' 'id:dRegions_%world%_cache'
       }
 
   event-global:
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|ice-form]>'
     - if %flagVal% != null {
       - if !%flagVal% {
-#        - yaml set 'cache.boolean.__global__.ice-form:false' 'id:dRegions_%world%_cache'
+        - yaml set 'cache.boolean.__global__.ice-form:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
       }
-#    - yaml set 'cache.boolean.__global__.ice-form:true' 'id:dRegions_%world%_cache'
+    - yaml set 'cache.boolean.__global__.ice-form:true' 'id:dRegions_%world%_cache'
 
 
 dRegions_Flag_Ice-Melt:
@@ -2045,26 +2429,37 @@ dRegions_Flag_Ice-Melt:
 
   event:
     - foreach %orderedRegions% {
+      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.ice-melt]||null>'
+      - if %cache% == none {
+        - foreach next
+        }
+      - if %cache% != null {
+        - if %cache% {
+          - queue clear
+          }
+        - determine cancelled
+        }
       - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|ice-melt]>'
       - if %flagVal% != null {
         - if !%flagVal% {
-#          - yaml set 'cache.boolean.%value%.ice-melt:false' 'id:dRegions_%world%_cache'
+          - yaml set 'cache.boolean.%value%.ice-melt:false' 'id:dRegions_%world%_cache'
           - determine cancelled
           }
-#        - yaml set 'cache.boolean.%value%.ice-melt:true' 'id:dRegions_%world%_cache'
+        - yaml set 'cache.boolean.%value%.ice-melt:true' 'id:dRegions_%world%_cache'
         - foreach stop
         }
+      - yaml set 'cache.boolean.%value%.ice-melt:none' 'id:dRegions_%world%_cache'
       }
 
   event-global:
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|ice-melt]>'
     - if %flagVal% != null {
       - if !%flagVal% {
-#        - yaml set 'cache.boolean.__global__.ice-melt:false' 'id:dRegions_%world%_cache'
+        - yaml set 'cache.boolean.__global__.ice-melt:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
       }
-#    - yaml set 'cache.boolean.__global__.ice-melt:true' 'id:dRegions_%world%_cache'
+    - yaml set 'cache.boolean.__global__.ice-melt:true' 'id:dRegions_%world%_cache'
 
 
 dRegions_Flag_Snow-Melt:
@@ -2090,26 +2485,37 @@ dRegions_Flag_Snow-Melt:
 
   event:
     - foreach %orderedRegions% {
+      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.snow-melt]||null>'
+      - if %cache% == none {
+        - foreach next
+        }
+      - if %cache% != null {
+        - if %cache% {
+          - queue clear
+          }
+        - determine cancelled
+        }
       - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|snow-melt]>'
       - if %flagVal% != null {
         - if !%flagVal% {
-#          - yaml set 'cache.boolean.%value%.snow-melt:false' 'id:dRegions_%world%_cache'
+          - yaml set 'cache.boolean.%value%.snow-melt:false' 'id:dRegions_%world%_cache'
           - determine cancelled
           }
-#        - yaml set 'cache.boolean.%value%.snow-melt:true' 'id:dRegions_%world%_cache'
+        - yaml set 'cache.boolean.%value%.snow-melt:true' 'id:dRegions_%world%_cache'
         - foreach stop
         }
+      - yaml set 'cache.boolean.%value%.snow-melt:none' 'id:dRegions_%world%_cache'
       }
 
   event-global:
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|snow-melt]>'
     - if %flagVal% != null {
       - if !%flagVal% {
-#        - yaml set 'cache.boolean.__global__.snow-melt:false' 'id:dRegions_%world%_cache'
+        - yaml set 'cache.boolean.__global__.snow-melt:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
       }
-#    - yaml set 'cache.boolean.__global__.snow-melt:true' 'id:dRegions_%world%_cache'
+    - yaml set 'cache.boolean.__global__.snow-melt:true' 'id:dRegions_%world%_cache'
 
 
 dRegions_Flag_Soil-Dry:
@@ -2135,21 +2541,36 @@ dRegions_Flag_Soil-Dry:
 
   event:
     - foreach %orderedRegions% {
+      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.soil-dry]||null>'
+      - if %cache% == none {
+        - foreach next
+        }
+      - if %cache% != null {
+        - if %cache% {
+          - queue clear
+          }
+        - determine cancelled
+        }
       - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|soil-dry]>'
       - if %flagVal% != null {
         - if !%flagVal% {
+          - yaml set 'cache.boolean.%value%.soil-dry:false' 'id:dRegions_%world%_cache'
           - determine cancelled
           }
+        - yaml set 'cache.boolean.%value%.soil-dry:true' 'id:dRegions_%world%_cache'
         - foreach stop
         }
+      - yaml set 'cache.boolean.%value%.soil-dry:none' 'id:dRegions_%world%_cache'
       }
 
   event-global:
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|soil-dry]>'
     - if %flagVal% != null {
       - if !%flagVal% {
+        - yaml set 'cache.boolean.__global__.soil-dry:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
+      - yaml set 'cache.boolean.__global__.soil-dry:true' 'id:dRegions_%world%_cache'
       }
 
 
@@ -2176,21 +2597,36 @@ dRegions_Flag_Trample-Crops-Player:
 
   event:
     - foreach %orderedRegions% {
+      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.trample-crops-player]||null>'
+      - if %cache% == none {
+        - foreach next
+        }
+      - if %cache% != null {
+        - if %cache% {
+          - queue clear
+          }
+        - determine cancelled
+        }
       - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|trample-crops-player]>'
       - if %flagVal% != null {
         - if !%flagVal% {
+          - yaml set 'cache.boolean.%value%.trample-crops-player:false' 'id:dRegions_%world%_cache'
           - determine cancelled
           }
+        - yaml set 'cache.boolean.%value%.trample-crops-player:true' 'id:dRegions_%world%_cache'
         - foreach stop
         }
+      - yaml set 'cache.boolean.%value%.trample-crops-player:none' 'id:dRegions_%world%_cache'
       }
 
   event-global:
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|trample-crops-player]>'
     - if %flagVal% != null {
       - if !%flagVal% {
+        - yaml set 'cache.boolean.__global__.trample-crops-player:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
+      - yaml set 'cache.boolean.__global__.trample-crops-player:true' 'id:dRegions_%world%_cache'
       }
 
 
@@ -2217,21 +2653,36 @@ dRegions_Flag_Trample-Crops-Entity:
 
   event:
     - foreach %orderedRegions% {
+      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.trample-crops-entity]||null>'
+      - if %cache% == none {
+        - foreach next
+        }
+      - if %cache% != null {
+        - if %cache% {
+          - queue clear
+          }
+        - determine cancelled
+        }
       - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|trample-crops-entity]>'
       - if %flagVal% != null {
         - if !%flagVal% {
+          - yaml set 'cache.boolean.%value%.trample-crops-entity:false' 'id:dRegions_%world%_cache'
           - determine cancelled
           }
+        - yaml set 'cache.boolean.%value%.trample-crops-entity:true' 'id:dRegions_%world%_cache'
         - foreach stop
         }
+      - yaml set 'cache.boolean.%value%.trample-crops-entity:none' 'id:dRegions_%world%_cache'
       }
 
   event-global:
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|trample-crops-entity]>'
     - if %flagVal% != null {
       - if !%flagVal% {
+        - yaml set 'cache.boolean.__global__.trample-crops-entity:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
+      - yaml set 'cache.boolean.__global__.trample-crops-entity:true' 'id:dRegions_%world%_cache'
       }
 
 
@@ -2259,21 +2710,36 @@ dRegions_Flag_Mushroom-Spread:
 
   event:
     - foreach %orderedRegions% {
+      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.mushroom-spread]||null>'
+      - if %cache% == none {
+        - foreach next
+        }
+      - if %cache% != null {
+        - if %cache% {
+          - queue clear
+          }
+        - determine cancelled
+        }
       - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|mushroom-spread]>'
       - if %flagVal% != null {
         - if !%flagVal% {
+          - yaml set 'cache.boolean.%value%.mushroom-spread:false' 'id:dRegions_%world%_cache'
           - determine cancelled
           }
+        - yaml set 'cache.boolean.%value%.mushroom-spread:true' 'id:dRegions_%world%_cache'
         - foreach stop
         }
+      - yaml set 'cache.boolean.%value%.mushroom-spread:none' 'id:dRegions_%world%_cache'
       }
 
   event-Global:
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|mushroom-spread]>'
     - if %flagVal% != null {
       - if !%flagVal% {
+        - yaml set 'cache.boolean.__global__.mushroom-spread:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
+      - yaml set 'cache.boolean.__global__.mushroom-spread:true' 'id:dRegions_%world%_cache'
       }
 
 
@@ -2301,21 +2767,36 @@ dRegions_Flag_Grass-Spread:
 
   event:
     - foreach %orderedRegions% {
+      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.grass-spread]||null>'
+      - if %cache% == none {
+        - foreach next
+        }
+      - if %cache% != null {
+        - if %cache% {
+          - queue clear
+          }
+        - determine cancelled
+        }
       - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|grass-spread]>'
       - if %flagVal% != null {
         - if !%flagVal% {
+          - yaml set 'cache.boolean.%value%.grass-spread:false' 'id:dRegions_%world%_cache'
           - determine cancelled
           }
+        - yaml set 'cache.boolean.%value%.grass-spread:true' 'id:dRegions_%world%_cache'
         - foreach stop
         }
+      - yaml set 'cache.boolean.%value%.grass-spread:none' 'id:dRegions_%world%_cache'
       }
 
   event-global:
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|grass-spread]>'
     - if %flagVal% != null {
       - if !%flagVal% {
+        - yaml set 'cache.boolean.__global__.grass-spread:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
+      - yaml set 'cache.boolean.__global__.grass-spread:true' 'id:dRegions_%world%_cache'
       }
 
 
@@ -2343,25 +2824,40 @@ dRegions_Flag_Mycel-Spread:
 
   event:
     - foreach %orderedRegions% {
+      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.mycel-spread]||null>'
+      - if %cache% == none {
+        - foreach next
+        }
+      - if %cache% != null {
+        - if %cache% {
+          - queue clear
+          }
+        - determine cancelled
+        }
       - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|mycel-spread]>'
       - if %flagVal% != null {
         - if !%flagVal% {
+          - yaml set 'cache.boolean.%value%.mycel-spread:false' 'id:dRegions_%world%_cache'
           - determine cancelled
           }
+        - yaml set 'cache.boolean.%value%.mycel-spread:true' 'id:dRegions_%world%_cache'
         - foreach stop
         }
+      - yaml set 'cache.boolean.%value%.mycel-spread:none' 'id:dRegions_%world%_cache'
       }
 
   event-global:
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|mycel-spread]>'
     - if %flagVal% != null {
       - if !%flagVal% {
+        - yaml set 'cache.boolean.__global__.mycel-spread:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
+      - yaml set 'cache.boolean.__global__.mycel-spread:true' 'id:dRegions_%world%_cache'
       }
 
 
-dRegions_Flag_Vine-Growth:
+dRegions_Flag_Vines-Spread:
   type: item
   speed: 0
   debug: false
@@ -2385,21 +2881,36 @@ dRegions_Flag_Vine-Growth:
 
   event:
     - foreach %orderedRegions% {
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|vine-growth]>'
+      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.vines-spread]||null>'
+      - if %cache% == none {
+        - foreach next
+        }
+      - if %cache% != null {
+        - if %cache% {
+          - queue clear
+          }
+        - determine cancelled
+        }
+      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|vines-spread]>'
       - if %flagVal% != null {
         - if !%flagVal% {
+          - yaml set 'cache.boolean.%value%.vines-spread:false' 'id:dRegions_%world%_cache'
           - determine cancelled
           }
+        - yaml set 'cache.boolean.%value%.vines-spread:true' 'id:dRegions_%world%_cache'
         - foreach stop
         }
+      - yaml set 'cache.boolean.%value%.vines-spread:none' 'id:dRegions_%world%_cache'
       }
 
   event-global:
-    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|vine-growth]>'
+    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|vines-spread]>'
     - if %flagVal% != null {
       - if !%flagVal% {
+        - yaml set 'cache.boolean.__global__.vines-spread:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
+      - yaml set 'cache.boolean.__global__.vines-spread:true' 'id:dRegions_%world%_cache'
       }
 
 
@@ -2427,26 +2938,37 @@ dRegions_Flag_Leaf-Decay:
 
   event:
     - foreach %orderedRegions% {
+      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.leaf-decay]||null>'
+      - if %cache% == none {
+        - foreach next
+        }
+      - if %cache% != null {
+        - if %cache% {
+          - queue clear
+          }
+        - determine cancelled
+        }
       - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|leaf-decay]>'
       - if %flagVal% != null {
         - if !%flagVal% {
-#          - yaml set 'cache.boolean.%value%.leaf-decay:false' 'id:dRegions_%world%_cache'
+          - yaml set 'cache.boolean.%value%.leaf-decay:false' 'id:dRegions_%world%_cache'
           - determine cancelled
           }
-#        - yaml set 'cache.boolean.%value%.leaf-decay:true' 'id:dRegions_%world%_cache'
+        - yaml set 'cache.boolean.%value%.leaf-decay:true' 'id:dRegions_%world%_cache'
         - foreach stop
         }
+      - yaml set 'cache.boolean.%value%.leaf-decay:none' 'id:dRegions_%world%_cache'
       }
 
   event-global:
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|leaf-decay]>'
     - if %flagVal% != null {
       - if !%flagVal% {
-#        - yaml set 'cache.boolean.__global__.leaf-decay:false' 'id:dRegions_%world%_cache'
+        - yaml set 'cache.boolean.__global__.leaf-decay:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
+      - yaml set 'cache.boolean.__global__.leaf-decay:true' 'id:dRegions_%world%_cache'
       }
-#    - yaml set 'cache.boolean.__global__.leaf-decay:true' 'id:dRegions_%world%_cache'
 
 
 dRegions_Flag_Falling-Sand:
@@ -2473,21 +2995,36 @@ dRegions_Flag_Falling-Sand:
 
   event:
     - foreach %orderedRegions% {
+      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.falling-sand]||null>'
+      - if %cache% == none {
+        - foreach next
+        }
+      - if %cache% != null {
+        - if %cache% {
+          - queue clear
+          }
+        - determine cancelled
+        }
       - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|falling-sand]>'
       - if %flagVal% != null {
         - if !%flagVal% {
+          - yaml set 'cache.boolean.%value%.falling-sand:false' 'id:dRegions_%world%_cache'
           - determine cancelled
           }
+        - yaml set 'cache.boolean.%value%.falling-sand:true' 'id:dRegions_%world%_cache'
         - foreach stop
         }
+      - yaml set 'cache.boolean.%value%.falling-sand:none' 'id:dRegions_%world%_cache'
       }
 
   event-global:
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|falling-sand]>'
     - if %flagVal% != null {
       - if !%flagVal% {
+        - yaml set 'cache.boolean.__global__.falling-sand:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
+      - yaml set 'cache.boolean.__global__.falling-sand:true' 'id:dRegions_%world%_cache'
       }
 
 
@@ -2515,21 +3052,36 @@ dRegions_Flag_Falling-Gravel:
 
   event:
     - foreach %orderedRegions% {
+      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.falling-gravel]||null>'
+      - if %cache% == none {
+        - foreach next
+        }
+      - if %cache% != null {
+        - if %cache% {
+          - queue clear
+          }
+        - determine cancelled
+        }
       - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|falling-gravel]>'
       - if %flagVal% != null {
         - if !%flagVal% {
+          - yaml set 'cache.boolean.%value%.falling-gravel:false' 'id:dRegions_%world%_cache'
           - determine cancelled
           }
+        - yaml set 'cache.boolean.%value%.falling-gravel:true' 'id:dRegions_%world%_cache'
         - foreach stop
         }
+      - yaml set 'cache.boolean.%value%.falling-gravel:none' 'id:dRegions_%world%_cache'
       }
 
   event-global:
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|falling-gravel]>'
     - if %flagVal% != null {
       - if !%flagVal% {
+        - yaml set 'cache.boolean.__global__.falling-gravel:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
+      - yaml set 'cache.boolean.__global__.falling-gravel:true' 'id:dRegions_%world%_cache'
       }
 
 
@@ -2557,21 +3109,36 @@ dRegions_Flag_Pistons:
 
   event:
     - foreach %orderedRegions% {
+      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.pistons]||null>'
+      - if %cache% == none {
+        - foreach next
+        }
+      - if %cache% != null {
+        - if %cache% {
+          - queue clear
+          }
+        - determine cancelled
+        }
       - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|pistons]>'
       - if %flagVal% != null {
         - if !%flagVal% {
+          - yaml set 'cache.boolean.%value%.pistons:false' 'id:dRegions_%world%_cache'
           - determine cancelled
           }
+        - yaml set 'cache.boolean.%value%.pistons:true' 'id:dRegions_%world%_cache'
         - foreach stop
         }
+      - yaml set 'cache.boolean.%value%.pistons:none' 'id:dRegions_%world%_cache'
       }
 
   event-global:
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|pistons]>'
     - if %flagVal% != null {
       - if !%flagVal% {
+        - yaml set 'cache.boolean.__global__.pistons:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
+      - yaml set 'cache.boolean.__global__.pistons:true' 'id:dRegions_%world%_cache'
       }
 
 
@@ -2585,7 +3152,7 @@ dRegions_Flag_Lighter:
   - <&5>Who can use the flint and steel in a region
   event_hook: fireFrom-Lighter
   event_priority: 10
-  flag_type: state
+  flag_type: state-withGroup
   flag_takeGroup: true
   flag_defaultValue: deny/nonmembers
   flag_globalDefault: none
@@ -2641,7 +3208,7 @@ dRegions_Flag_Bucket-Fill:
   - <&5>Who can fill a bucket in a region
   event_hook: fillBucket
   event_priority: 5
-  flag_type: state
+  flag_type: state-withGroup
   flag_takeGroup: true
   flag_defaultValue: deny/nonmembers
   flag_globalDefault: none
@@ -2697,7 +3264,7 @@ dRegions_Flag_Bucket-Empty:
   - <&5>Who can fill a bucket in a region
   event_hook: emptyBucket
   event_priority: 5
-  flag_type: state
+  flag_type: state-withGroup
   flag_takeGroup: true
   flag_defaultValue: deny/nonmembers
   flag_globalDefault: none
@@ -2753,7 +3320,7 @@ dRegions_Flag_Hanging-Place:
   - <&5>Who can place item frames and paintings
   event_hook: hangingPlace
   event_priority: 0
-  flag_type: state
+  flag_type: state-withGroup
   flag_takeGroup: true
   flag_defaultValue: deny/nonmembers
   flag_globalDefault: none
@@ -2809,7 +3376,7 @@ dRegions_Flag_Hanging-Break:
   - <&5>Who can break item frames and paintings
   event_hook: hangingBreak
   event_priority: 0
-  flag_type: state
+  flag_type: state-withGroup
   flag_takeGroup: true
   flag_defaultValue: deny/nonmembers
   flag_globalDefault: none
@@ -2865,7 +3432,7 @@ dRegions_Flag_Sleep:
   - <&5>Who can Sleep
   event_hook: sleep
   event_priority: 10
-  flag_type: state
+  flag_type: state-withGroup
   flag_takeGroup: true
   flag_defaultValue: deny/nonmembers
   flag_globalDefault: none
@@ -2921,7 +3488,7 @@ dRegions_Flag_Player-Drops:
   - <&5>Who can drop items
   event_hook: player-drop
   event_priority: 10
-  flag_type: state
+  flag_type: state-withGroup
   flag_takeGroup: true
   flag_defaultValue: none
   flag_globalDefault: none
@@ -2970,7 +3537,7 @@ dRegions_Flag_Player-Drops-OnDeath:
   - <&5>Who can drop items when they die
   event_hook: PlayerDies
   event_priority: 20
-  flag_type: state
+  flag_type: state-withGroup
   flag_takeGroup: true
   flag_defaultValue: none
   flag_globalDefault: none
@@ -3126,7 +3693,7 @@ dRegions_Flag_Player-Pickup:
   - <&5>Who can pickup items
   event_hook: player-pickup
   event_priority: 10
-  flag_type: state
+  flag_type: state-withGroup
   flag_takeGroup: true
   flag_defaultValue: none
   flag_globalDefault: none
@@ -3192,26 +3759,37 @@ dRegions_Flag_Entity-Break-Painting:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-#    - define flag 'entity-break-painting'
-#    - inject s@dRegions_Flags_Processors p:boolean
     - foreach %orderedRegions% {
+      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.entity-break-painting]||null>'
+      - if %cache% == none {
+        - foreach next
+        }
+      - if %cache% != null {
+        - if %cache% {
+          - queue clear
+          }
+        - determine cancelled
+        }
       - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|entity-break-painting]>'
       - if %flagVal% != null {
         - if !%flagVal% {
+          - yaml set 'cache.boolean.%value%.entity-break-painting:false' 'id:dRegions_%world%_cache'
           - determine cancelled
           }
+        - yaml set 'cache.boolean.%value%.entity-break-painting:true' 'id:dRegions_%world%_cache'
         - foreach stop
         }
+      - yaml set 'cache.boolean.%value%.entity-break-painting:none' 'id:dRegions_%world%_cache'
       }
 
   event-global:
-#    - define flag 'entity-break-painting'
-#    - inject s@dRegions_Flags_Processors p:boolean-Global
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|entity-break-painting]>'
     - if %flagVal% != null {
       - if !%flagVal% {
+        - yaml set 'cache.boolean.__global__.entity-break-painting:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
+      - yaml set 'cache.boolean.__global__.entity-break-painting:none' 'id:dRegions_%world%_cache'
       }
 
 
@@ -3238,26 +3816,37 @@ dRegions_Flag_Entity-Break-ItemFrame:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-#    - define flag 'entity-break-itemframe'
-#    - inject s@dRegions_Flags_Processors p:boolean
     - foreach %orderedRegions% {
+      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.entity-break-itemframe]||null>'
+      - if %cache% == none {
+        - foreach next
+        }
+      - if %cache% != null {
+        - if %cache% {
+          - queue clear
+          }
+        - determine cancelled
+        }
       - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|entity-break-itemframe]>'
       - if %flagVal% != null {
         - if !%flagVal% {
+          - yaml set 'cache.boolean.%value%.entity-break-itemframe:false' 'id:dRegions_%world%_cache'
           - determine cancelled
           }
+        - yaml set 'cache.boolean.%value%.entity-break-itemframe:true' 'id:dRegions_%world%_cache'
         - foreach stop
         }
+      - yaml set 'cache.boolean.%value%.entity-break-itemframe:none' 'id:dRegions_%world%_cache'
       }
 
   event-global:
-#    - define flag 'entity-break-itemframe'
-#    - inject s@dRegions_Flags_Processors p:boolean-Global
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|entity-break-itemframe]>'
     - if %flagVal% != null {
       - if !%flagVal% {
+        - yaml set 'cache.boolean.__global__.entity-break-itemframe:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
+      - yaml set 'cache.boolean.__global__.entity-break-itemframe:true' 'id:dRegions_%world%_cache'
       }
 
 
@@ -3285,47 +3874,49 @@ dRegions_Flag_PVP:
 
   event:
     - foreach %orderedRegions% {
+      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.pvp]||null>'
+      - if %cache% == none {
+        - foreach next
+        }
+      - if %cache% != null {
+        - if %cache% {
+          - queue clear
+          }
+        - remove <c.projectile||li@>
+        - run locally msg delay:1t
+        - determine cancelled
+        }
       - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|pvp]>'
       - if %flagVal% != null {
         - if !%flagVal% {
-          - run locally flags delay:1t def:<def[defender].uuid||null>
+          - yaml set 'cache.boolean.%value%.pvp:false' 'id:dRegions_%world%_cache'
           - remove <c.projectile||li@>
           - run locally msg delay:1t
           - determine cancelled
           }
-          - foreach stop
+        - yaml set 'cache.boolean.%value%.pvp:true' 'id:dRegions_%world%_cache'
+        - foreach stop
         }
+      - yaml set 'cache.boolean.%value%.pvp:none' 'id:dRegions_%world%_cache'
       }
 
   event-global:
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|pvp]>'
     - if %flagVal% != null {
       - if !%flagVal% {
-        - run locally flags delay:1t def:<def[defender].uuid||null>
+        - yaml set 'cache.boolean.__global__.pvp:false' 'id:dRegions_%world%_cache'
         - remove <c.projectile||li@>
         - run locally msg delay:1t
         - determine cancelled
         }
+      - yaml set 'cache.boolean.__global__.pvp:true' 'id:dRegions_%world%_cache'
       }
-
-  event-cleanup:
-    - run locally flags delay:1t def:<def[defender].uuid||null>
-    - remove <c.projectile||li@>
-    - run locally msg delay:1t
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag player dRegions_Message_Cooldown duration:3s
       - run s@dRegions_Msg delay:1t 'def:<&c><&o>You are in a no PVP zone.'
       }
-
-  flags:
-    - ^if %1% == null {
-      - queue clear
-      }
-    - ^flag server dRegions_NoTarget:->:%1%
-    - ^wait 3s
-    - ^flag server dRegions_NoTarget:<-:%1%
 
 
 dRegions_Flag_Potion-Throw:
@@ -3350,29 +3941,34 @@ dRegions_Flag_Potion-Throw:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
-  event-cleanup:
-    - if <player.is[!=].to[null]||false> {
-      - run locally msg delay:1t
-      }
-
-  msg:
-    - ^if <player.has_flag[dRegions_Message_Cooldown].not||false> {
-      - flag player dRegions_Message_Cooldown duration:3s
-      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not throw potions here.'
-      }
-
   event:
     - foreach %orderedRegions% {
+      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.potion-throw]||null>'
+      - if %cache% == none {
+        - foreach next
+        }
+      - if %cache% != null {
+        - if %cache% {
+          - queue clear
+          }
+        - if <player.is[!=].to[null]||false> {
+          - run locally msg delay:1t
+          }
+        - determine cancelled
+        }
       - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|potion-throw]>'
       - if %flagVal% != null {
         - if !%flagVal% {
           - if <player.is[!=].to[null]||false> {
             - run locally msg delay:1t
             }
+          - yaml set 'cache.boolean.%value%.potion-throw:false' 'id:dRegions_%world%_cache'
           - determine cancelled
           }
+        - yaml set 'cache.boolean.%value%.potion-throw:true' 'id:dRegions_%world%_cache'
         - foreach stop
         }
+      - yaml set 'cache.boolean.%value%.potion-throw:none' 'id:dRegions_%world%_cache'
       }
 
   event-global:
@@ -3382,8 +3978,16 @@ dRegions_Flag_Potion-Throw:
         - if <player.is[!=].to[null]||false> {
           - run locally msg delay:1t
           }
+        - yaml set 'cache.boolean.__global__.potion-throw:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
+      - yaml set 'cache.boolean.__global__.potion-throw:true' 'id:dRegions_%world%_cache'
+      }
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not||false> {
+      - flag player dRegions_Message_Cooldown duration:3s
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not throw potions here.'
       }
 
 
@@ -3397,7 +4001,7 @@ dRegions_Flag_Potion-Drink:
   - <&5>Who can drink potions
   event_hook: drinkPotion
   event_priority: 10
-  flag_type: state
+  flag_type: state-withGroup
   flag_takeGroup: true
   flag_defaultValue: none
   flag_globalDefault: none
@@ -3450,7 +4054,7 @@ dRegions_Flag_Enderpearl:
   - <&5>Who can use enderpearls
   event_hook: enderPearl
   event_priority: 10
-  flag_type: state
+  flag_type: state-withGroup
   flag_takeGroup: true
   flag_defaultValue: none
   flag_globalDefault: none
@@ -3503,7 +4107,7 @@ dRegions_Flag_Block-Place:
   - <&5>Can players place blocks.
   event_hook: blockPlace
   event_priority: 5
-  flag_type: state
+  flag_type: state-withTarget-withGroup
   flag_takeGroup: true
   flag_defaultValue: none
   flag_globalDefault: none
@@ -3531,7 +4135,7 @@ dRegions_Flag_Block-Place:
       }
 
   event-global:
-    - define orderedRegions 'li@global'
+    - define orderedRegions 'li@__global__'
     - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|block-place]>'
     - if %flagObj% != null {
       - define player <player>
@@ -3560,6 +4164,7 @@ dRegions_Flag_Block-PlaceList:
   command_entryType: block
   command_verifyEntry: <def[value].as_material.is_block.not||true>
   flag_type: list
+  flag_parent: dRegions_Flag_Block-Place
   flag_takeGroup: false
   flag_help: List flag used with block-place flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks.
   script:
@@ -3583,7 +4188,7 @@ dRegions_Flag_Block-Break:
   - <&5>Can players break blocks.
   event_hook: blockBreak
   event_priority: 5
-  flag_type: state
+  flag_type: state-withTarget-withGroup
   flag_takeGroup: true
   flag_defaultValue: none
   flag_globalDefault: none
@@ -3611,7 +4216,7 @@ dRegions_Flag_Block-Break:
       }
 
   event-global:
-    - define orderedRegions 'li@global'
+    - define orderedRegions 'li@__global__'
     - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|block-break]>'
     - if %flagObj% != null {
       - define player <player>
@@ -3640,6 +4245,7 @@ dRegions_Flag_Block-BreakList:
   command_entryType: block
   command_verifyEntry: <def[value].as_material.is_block.not||true>
   flag_type: list
+  flag_parent: dRegions_Flag_Block-Break
   flag_takeGroup: false
   flag_help: List flag used with block-break flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks.
   script:
@@ -3663,7 +4269,7 @@ dRegions_Flag_Chest-Access:
   - <&5>Can players open containers.
   event_hook: openContainer
   event_priority: 10
-  flag_type: state
+  flag_type: state-withTarget-withGroup
   flag_name: chest-access
   flag_targetList: chest-access-blocks
   flag_takeGroup: true
@@ -3694,7 +4300,7 @@ dRegions_Flag_Chest-Access:
       }
 
   event-global:
-    - define orderedRegions 'li@global'
+    - define orderedRegions 'li@__global__'
     - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|chest-access]>'
     - if %flagObj% != null {
       - define player <player>
@@ -3724,6 +4330,7 @@ dRegions_Flag_Chest-Access-Blocks:
   command_entryType: container
   command_verifyEntry: <el@val[chest|ender_chest|locked_chest|trapped_chest|dispenser|hopper|dropper].as_list.contains[<def[value]>].not>
   flag_type: list
+  flag_parent: dRegions_Flag_Chest-Access
   flag_takeGroup: false
   flag_help: List flag used with chest-access flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks. Valid container blocks<&co> chest, ender_chest, locked_chest, trapped_chest, dispenser, hopper, and dropper.
   script:
@@ -3747,7 +4354,7 @@ dRegions_Flag_Door-Access:
   - <&5>Can players open doors.
   event_hook: openDoor
   event_priority: 10
-  flag_type: state
+  flag_type: state-withTarget-withGroup
   flag_name: Door-Access
   flag_targetList: Door-Access-Doors
   flag_takeGroup: true
@@ -3777,7 +4384,7 @@ dRegions_Flag_Door-Access:
       }
 
   event-global:
-    - define orderedRegions 'li@global'
+    - define orderedRegions 'li@__global__'
     - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|door-access]>'
     - if %flagObj% != null {
       - define player <player>
@@ -3807,6 +4414,7 @@ dRegions_Flag_Door-Access-Doors:
   command_entryType: door
   command_verifyEntry: <el@val[trap_door|iron_trapdoor|wooden_door|iron_door_block|spruce_door|birch_door|jungle_door|dark_oak_door|acacia_door|fence_gate|spruce_fence_gate|birch_fence_gate|jungle_fence_gate|dark_oak_fence_gate|acacia_fence_gate].as_list.contains[<def[value]>].not>
   flag_type: list
+  flag_parent: dRegions_Flag_Door-Access
   flag_takeGroup: false
   flag_help: List flag used with door-access flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks. Valid door blocks<&co> trap_door, iron_trapdoor, wooden_door, iron_door_block, spruce_door, birch_door, jungle_door, dark_oak_door, acacia_door, fence_gate, spruce_fence_gate, birch_fence_gate, jungle_fence_gate, dark_oak_fence_gate, and acacia_fence_gate.
   script:
@@ -3830,7 +4438,7 @@ dRegions_Flag_Use-Switches:
   - <&5>Can players interact with switches.
   event_hook: useSwitch
   event_priority: 10
-  flag_type: state
+  flag_type: state-withTarget-withGroup
   flag_name: Use-Switches
   flag_targetList: Use-Switches-List
   flag_takeGroup: true
@@ -3861,7 +4469,7 @@ dRegions_Flag_Use-Switches:
       }
 
   event-global:
-    - define orderedRegions 'li@global'
+    - define orderedRegions 'li@__global__'
     - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|use-switches]>'
     - if %flagObj% != null {
       - define player <player>
@@ -3894,6 +4502,7 @@ dRegions_Flag_Use-Switches-List:
   command_entryType: switch
   command_verifyEntry: <el@val[lever|wood_button|stone_button|wood_plate|stone_plate|iron_plate|gold_plate].as_list.contains[<def[value]>].not>
   flag_type: list
+  flag_parent: dRegions_Flag_Use-Switches
   flag_takeGroup: false
   flag_help: List flag used with use-switches flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks. Valid switch blocks<&co> lever, wood_button, stone_button, wood_plate, stone_plate, iron_plate, and gold_plate.
   script:
@@ -3917,7 +4526,7 @@ dRegions_Flag_Use-Utilities:
   - <&5>Can players use utility blocks.
   event_hook: useUtility
   event_priority: 10
-  flag_type: state
+  flag_type: state-withTarget-withGroup
   flag_name: Use-Utilities
   flag_targetList: Use-Utilities-Blocks
   flag_takeGroup: true
@@ -3948,7 +4557,7 @@ dRegions_Flag_Use-Utilities:
       }
 
   event-global:
-    - define orderedRegions 'li@global'
+    - define orderedRegions 'li@__global__'
     - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|use-utilities]>'
     - if %flagObj% != null {
       - define player <player>
@@ -3978,6 +4587,7 @@ dRegions_Flag_Use-Utilities-Blocks:
   command_entryType: utility
   command_verifyEntry: <el@val[workbench|furnace|burning_furnace|anvil|cauldron|brewing_stand|enchantment_table|note_block|jukebox|beacon].as_list.contains[<def[value]>].not>
   flag_type: list
+  flag_parent: dRegions_Flag_Use-Utilities
   flag_takeGroup: false
   flag_help: List flag used with use-utilities flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks. Valid utility blocks<&co> workbench, furnace, burning_furnace, anvil, brewing_stand, cauldron, enchantment_table, note_block, jukebox, and beacon.
   script:
@@ -4001,7 +4611,7 @@ dRegions_Flag_Player-Damage:
   - <&5>Can players take damage.
   event_hook: playerDamaged
   event_priority: 10
-  flag_type: state
+  flag_type: state-withTarget-withGroup
   flag_takeGroup: true
   flag_defaultValue: none
   flag_globalDefault: none
@@ -4016,29 +4626,52 @@ dRegions_Flag_Player-Damage:
 
   event:
     - foreach %orderedRegions% {
+      - define cache '<player.flag[dRegions.cache.%world%.%value%.player-damage.%target%]||null>'
+      - if %cache% == none {
+        - define flagObj 'null'
+        - foreach next
+        }
+      - if %cache% != null {
+        - if %cache% {
+          - queue clear
+          }
+        - flag player dRegions_cancelDamage_%target% d:2s
+        - adjust <player> 'fire_time:0'
+        - determine cancelled
+        }
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|player-damage]>'
       - define region '%value%'
       - if %flagObj% != null {
-        - define player <player>
-        - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|player-damage-types].replace[, ].with[|].as_list>'
         - foreach stop
         }
       }
     - if %flagObj% != null {
+      - define player <player>
+      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|player-damage-types].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
+      - flag player dRegions.cache.%world%.%region%.player-damage.%target%:true
       }
+      else {
+      - flag player dRegions.cache.%world%.%region%.player-damage.%target%:none
+      }
+#    - yaml set 'cache.state-withTarget-withGroup.%region%.player-damage.%puuid%.%target%:true' 'id:dRegions_%world%_cache'
 
   event-global:
-    - define orderedRegions 'li@global'
+    - define region '__global__'
     - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|player-damage]>'
     - if %flagObj% != null {
       - define player '<player>'
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|player-damage-types].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
+      - flag player dRegions.cache.%world%.__global__.player-damage.%target%:true
+      }
+      else {
+      - flag player dRegions.cache.%world%.__global__.player-damage.%target%:none
       }
 #    - yaml set 'cache.state-withTarget-withGroup.__global__.player-damage.%puuid%.%target%:true' 'id:dRegions_%world%_cache'
 
   event-cleanup:
+    - flag player dRegions.cache.%world%.%region%.player-damage.%target%:false
 #    - yaml set 'cache.state-withTarget-withGroup.%region%.player-damage.%puuid%.%target%:false' 'id:dRegions_%world%_cache'
     - flag player dRegions_cancelDamage_%target% d:2s
     - adjust <player> 'fire_time:0'
@@ -4055,6 +4688,7 @@ dRegions_Flag_Player-Damage-Types:
   command_entryType: cause
   command_verifyEntry: <el@val[BLOCK_EXPLOSION|CONTACT|CUSTOM|DROWNING|ENTITY_ATTACK|ENTITY_EXPLOSION|FALL|FALLING_BLOCK|FIRE|FIRE_TICK|LAVA|LIGHTNING|MAGIC|MELTING|POISON|PROJECTILE|STARVATION|SUFFOCATION|SUICIDE|THORNS|VOID|WITHER].as_list.contains[<def[value]>].not>
   flag_type: list
+  flag_parent: dRegions_Flag_Player-Damage
   flag_takeGroup: false
   flag_help: List flag used with player-damage flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of damage types. Valid damage types<&co> block_explosion, contact, custom, drowning, entity_attack, entity_explosion, fall, falling_block, fire, fire_tick, lava, lightning, magic, melting, poison, projectile, starvation, suffocation, suicide, thorns, void, and wither.
   script:
@@ -4078,7 +4712,7 @@ dRegions_Flag_Commands:
   - <&5>Can players use commands.
   event_hook: playerCommand
   event_priority: 10
-  flag_type: state
+  flag_type: state-withTargetString-withGroup
   flag_takeGroup: true
   flag_defaultValue: none
   flag_globalDefault: none
@@ -4132,6 +4766,7 @@ dRegions_Flag_Commands-List:
   - <&5>List of commands used by commands flag
   command_entryType: cause
   flag_type: list
+  flag_parent: dRegions_Flag_Commands
   flag_takeGroup: false
   flag_help: List flag used with commands flag. To add to the list, use the -a switch. To remove from list use the -r switch. Add/remove one command at a time!
   script:
