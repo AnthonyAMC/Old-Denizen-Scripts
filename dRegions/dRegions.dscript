@@ -158,7 +158,7 @@ dRegions:
 #    - define cause '<t[<c.cause.is[==].to[flint_and_steel]>]:Lighter||Fire-Spread>'
     - inject s@dRegions p:event_PreProc_Config
     - if <c.location.cuboids.is_empty||true> {
-      - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.__global__.%mat%-spread.%target%]||null>'
+      - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.__global__.%cause%.%target%]||null>'
       - if %cache% == false {
         - determine cancelled
         }
