@@ -783,30 +783,64 @@ dRegions:
 
     on player right clicks:
     - if <player.has_permission[dRegions.admin]||<player.is_op>> queue clear
-    - define mat '<c.location.material.bukkit_enum||air>'
+    - define target '<c.location.material.bukkit_enum||air>'
     - define item '<c.item.material.bukkit_enum||air>'
-    - define FlagScripts 'li@'
     - if %item% == air {
-      - define FlagScripts '%FlagScripts%<s@dRegions_Map_Interactions.yaml_key[block.%mat%]||null>|'
+      - define FlagScript '<s@dRegions_Map_Interactions.yaml_key[block.%target%]||null>'
       }
       else {
-      - define eventObj '<s@dRegions_Map_Interactions.yaml_key[block_withItem.%mat%]||li@>'
+      - define eventObj '<s@dRegions_Map_Interactions.yaml_key[block_withItem.%target%]||li@>'
       - if <def[eventObj].split[/].get[2].as_list||li@> contains %item% {
-        - define FlagScripts '%FlagScripts%<def[eventObj].split[/].get[1]>|'
+        - define FlagScript '<def[eventObj].split[/].get[1]>'
         }
-      - define FlagScripts '%FlagScripts%<s@dRegions_Map_Interactions.yaml_key[block.%mat%]||null>|'
+        else {
+        - define FlagScript '<s@dRegions_Map_Interactions.yaml_key[block.%target%]||null>'
+        }
       }
-    - define FlagScripts '<def[FlagScripts].as_list.filter[starts_with[null].not]>'
-    - if <def[FlagScripts].is_empty> {
+    - if %FlagScript% == null {
       - queue clear
       }
+    - define flag '<def[FlagScript].after_last[_]>'
+
+    - if <c.location.cuboids.alphanumeric.unseparated||null> == <player.location.cuboids.alphanumeric.unseparated||null> {
+      - define sameRegion 'true'
+      - if %flag% == Build {
+        - define rateLimit '<player.flag[dRegions.rateLimit.%flag%]||null>'
+        }
+        else {
+        - define rateLimit '<player.flag[dRegions.rateLimit.%flag%.%target%]||null>'
+        }
+      - if %rateLimit% != null {
+        - if %rateLimit% {
+          - queue clear
+          }
+          else {
+          - run s@dRegions_Flag_%flag% p:msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
+          - determine cancelled
+          }
+        }
+      }
+      else {
+      - define sameRegion 'false'
+      }
+
     - define world '<player.world.name>'
     - define cuboids '<c.cuboids||<player.location.cursor_on[5].cuboids||li@>>'
     - if <def[cuboids].is_empty||true> {
-      - foreach %FlagScripts% {
-        - define FlagScript '%value%'
-        - inject %value% p:event-global
+      - if %flag% == Build {
+        - inject %FlagScript% p:event-global
+        - queue clear
         }
+      - define cache '<player.flag[dRegions.cache.%world%.__global__.%flag%.%target%]||null>'
+      - if %cache% == false {
+        - if %sameRegion% flag <player> dRegions.rateLimit.%flag%.%target%:false d:10s
+        - run s@dRegions_Flag_%flag% p:msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
+        - determine cancelled
+        }
+      - if %cache% == null {
+        - inject s@dRegions_Flag_%flag% p:event-global
+        }
+      - if %sameRegion% flag <player> dRegions.rateLimit.%flag%.%target%:true d:10s
       - queue clear
       }
     - define regionPri 'li@'
@@ -814,18 +848,12 @@ dRegions:
       - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
       }
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
-    - foreach %FlagScripts% {
-      - define FlagScript '%value%'
-      - inject %value% p:event
-      }
+    - inject %FlagScript% p:event
 
-    on player right clicks entity:
-    - if <c.entity.entity_type> == item_frame {
-      - queue clear
-      }
+    on player right clicks npc:
     - define world '<player.world.name>'
     - if <c.cuboids.is_empty||true> {
-      - define FlagScript 's@dRegions_Flag_<tern[<c.entity.is_npc>]:NPC-Interact||Entity-Interact>'
+      - define FlagScript 's@dRegions_Flag_NPC-Interact'
       - inject %FlagScript% p:event-global
       - queue clear
       }
@@ -834,8 +862,46 @@ dRegions:
       - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
       }
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
-    - define FlagScript 's@dRegions_Flag_<tern[<c.entity.is_npc>]:NPC-Interact||Entity-Interact>'
-    - inject %FlagScript% p:event
+    - define FlagScript 's@dRegions_Flag_NPC-Interact'
+    - inject s@dRegions_Flag_NPC-Interact p:event
+
+    on player right clicks entity:
+    - if <c.entity.is_player> || <c.entity.is_npc> || <c.entity.entity_type> == item_frame {
+      - queue clear
+      }
+    - define target '<c.entity.entity_type>'
+    - define rateLimit '<player.flag[dRegions.rateLimit.entity-interact.%target%]||null>'
+    - if %rateLimit% != null {
+      - if %rateLimit% {
+        - queue clear
+        }
+        else {
+        - run s@dRegions_Flag_Entity-Interact p:msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
+        - determine cancelled
+        }
+      }
+    - define world '<player.world.name>'
+    - if <c.cuboids.is_empty||true> {
+      - define cache '<player.flag[dRegions.cache.%world%.__global__.entity-interact.%target%]||null>'
+      - if %cache% == false {
+        - flag <player> dRegions.rateLimit.entity-interact.%target%:false d:10s
+        - run s@dRegions_Flag_Entity-Interact p:msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
+        - determine cancelled
+        }
+      - if %cache% == null {
+        - define FlagScript 's@dRegions_Flag_Entity-Interact'
+        - inject s@dRegions_Flag_Entity-Interact p:event-global
+        }
+      - flag <player> dRegions.rateLimit.entity-interact.%target%:true d:10s
+      - queue clear
+      }
+    - define regionPri 'li@'
+    - foreach <c.cuboids.parse[notable_name].filter[starts_with[dRegions_]].parse[after[dregions_%world%_]].include[__global__]> {
+      - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
+      }
+    - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
+    - define FlagScript 's@dRegions_Flag_Entity-Interact'
+    - inject s@dRegions_Flag_Entity-Interact p:event
 
     on player enters bed:
     # Do we need to fire events for region enter, exit, and toggle?
@@ -890,6 +956,7 @@ dRegions:
 #      - event 'player exits notable cuboid' 'context:cuboids|<c.from.cuboids.escaped>|from|<c.from>|to|<c.to>' save:exit
 #      - if <entry[exit].determinations.get[1].is[==].to[cancelled]||false> determine cancelled
 #      }
+    - flag <player> dRegions.rateLimit:!
     - define world '<player.world.name.to_lowercase>'
     - define isEnter ''
     - define cuboids '<c.cuboids.unescaped.as_list>'
@@ -1143,13 +1210,34 @@ dRegions:
     - if li@armor_stand|player|item_frame contains <c.entity.prefix> {
       - queue clear
       }
+    - define target '<c.entity.entity_type>'
+    - if <c.entity.location.cuboids.alphanumeric.unseparated||null> == <player.location.cuboids.alphanumeric.unseparated||null> {
+      - define rateLimit '<player.flag[dRegions.rateLimit.pve.%target%]||null>'
+      - if %rateLimit% != null {
+        - if %rateLimit% {
+          - queue clear
+          }
+          else {
+          - run s@dRegions_Flag_pve p:msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
+          - determine cancelled
+          }
+        }
+      }
     - define world '<c.entity.world.name>'
     - define player '<c.damager>'
     - define puuid '<c.damager.uuid>'
-    - define target '<c.entity.entity_type>'
     - if <c.entity.location.cuboids.is_empty> {
-      - define FlagScript 's@dRegions_Flag_PVE'
-      - inject s@dRegions_Flag_PVE p:event-global
+      - define cache '<player.flag[dRegions.cache.%world%.__global__.pve.%target%]||null>'
+      - if %cache% == false {
+        - flag <player> dRegions.rateLimit.FLAG.%target%:false d:10s
+        - run s@dRegions_Flag_pve p:msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
+        - determine cancelled
+        }
+      - if %cache% == null {
+        - define FlagScript 's@dRegions_Flag_pve'
+        - inject s@dRegions_Flag_pve p:event-global
+        }
+      - flag <player> dRegions.rateLimit.pve.%target%:true d:10s
       - queue clear
       }
     - define regionPri 'li@'
@@ -1194,12 +1282,17 @@ dRegions:
     - inject s@dRegions_Flag_Build p:event
 
     on player damaged:
-    - if <player.has_flag[dRegions_cancelDamage_<c.cause>]> {
-      - adjust <player> 'fire_time:0'
-      - determine cancelled
+    - define rateLimit '<player.flag[dRegions.rateLimit.player-damage.<c.cause>]||null>'
+    - if %rateLimit% != null {
+      - if %rateLimit% {
+        - queue clear
+        }
+        else {
+        - determine cancelled
+        }
       }
     - if ( <player.has_permission[dregions.invincible]> || <player.has_permission[dregions.invincible.<c.cause>]> ) && !<player.is_op> {
-      - flag <player> dRegions_cancelDamage_<c.cause> d:3s
+      - flag <player> dRegions.rateLimit.player-damage.%target%:false d:5s
       - adjust <player> 'fire_time:0'
       - determine cancelled
       }
@@ -1210,19 +1303,16 @@ dRegions:
     - inject s@dRegions p:event_PreProc_Config
     - if <c.entity.location.cuboids.is_empty||true> {
       - define cache '<player.flag[dRegions.cache.%world%.__global__.player-damage.%target%]||null>'
-      - if %cache% == none {
-        - queue clear
-        }
-      - if %cache% != null {
-        - if %cache% {
-          - queue clear
-          }
-        - flag player dRegions_cancelDamage_%target% d:2s
+      - if %cache% == false {
+        - flag <player> dRegions.rateLimit.player-damage.%target%:false d:10s
         - adjust <player> 'fire_time:0'
         - determine cancelled
         }
-      - define FlagScript 's@dRegions_Flag_Player-Damage'
-      - inject s@dRegions_Flag_Player-Damage p:event-global
+      - if %cache% == null {
+        - define FlagScript 's@dRegions_Flag_Player-Damage'
+        - inject s@dRegions_Flag_Player-Damage p:event-global
+        }
+      - flag <player> dRegions.rateLimit.player-damage.%target%:true d:10s
       - queue clear
       }
     - define regionPri 'li@'
@@ -1230,17 +1320,6 @@ dRegions:
       - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
       }
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
-    - foreach %orderedRegions% {
-      - define cache '<player.flag[dRegions.cache.%world%.%value%.player-damage.%target%]||null>'
-      - if %cache% != null {
-        - if %cache% {
-          - queue clear
-          }
-        - flag player dRegions_cancelDamage_%target% d:2s
-        - adjust <player> 'fire_time:0'
-        - determine cancelled
-        }
-      }
     - define FlagScript 's@dRegions_Flag_Player-Damage'
     - inject s@dRegions_Flag_Player-Damage p:event
 
@@ -1319,14 +1398,30 @@ dRegions:
     - inject s@dRegions_Flag_EVE p:event
 
     on entity targets player:
+    - define target '<c.entity.entity_type>'
+    - define rateLimit '<c.target.flag[dRegions.rateLimit.mob-target.%target%]||null>'
+    - if %rateLimit% != null {
+      - if %rateLimit% {
+        - queue clear
+        }
+        else {
+        - determine cancelled
+        }
+      }
+    - define player '<c.target>'
     - define world '<c.entity.world.name>'
     - define attacker '<c.entity>'
-    - define target '<c.entity.entity_type>'
-    - define defender '<c.target>'
-    - define puuid '<c.target.uuid>'
     - if <c.target.location.cuboids.is_empty||true> {
-      - define FlagScript 's@dRegions_Flag_Mob-Target'
-      - inject s@dRegions_Flag_Mob-Target p:event-global
+      - define cache '<c.target.flag[dRegions.cache.%world%.__global__.flag.%target%]||null>'
+      - if %cache% == false {
+        - flag <c.target> dRegions.rateLimit.mob-target.%target%:false d:10s
+        - determine cancelled
+        }
+      - if %cache% == null {
+        - define FlagScript 's@dRegions_Flag_Mob-Target'
+        - inject s@dRegions_Flag_Mob-Target p:event-global
+        }
+      - flag <c.target> dRegions.rateLimit.mob-target.%target%:true d:10s
       - queue clear
       }
     - define regionPri 'li@'
@@ -1404,19 +1499,34 @@ dRegions:
     - if <c.damager.prefix> == player {
       - queue clear
       }
+    - define target '<c.damager.entity_type>'
+    - define rateLimit '<c.entity.flag[dRegions.rateLimit.mob-damage.%target%]||null>'
+    - if %rateLimit% != null {
+      - if %rateLimit% {
+        - queue clear
+        }
+        else {
+        - determine cancelled
+        }
+      }
     - define world '<c.entity.world.name>'
     - define attacker '<c.damager>'
-    - define target '<def[attacker].entity_type>'
-    - define defender '<c.entity>'
-    - define puuid '<c.entity.uuid>'
-    - define FlagScripts 'li@'
+    - define player '<c.entity>'
     - if <c.entity.location.cuboids.is_empty||true> {
 #      - if <c.cause> == entity_explosion {
 #        - define FlagScript 's@dRegions_Flag_Entity-Explode'
 #        - inject s@dRegions_Flag_Entity-Explode p:event-global
 #        }
-      - define FlagScript 's@dRegions_Flag_Mob-Damage'
-      - inject s@dRegions_Flag_Mob-Damage p:event-global
+      - define cache '<c.entity.flag[dRegions.cache.%world%.__global__.flag.%target%]||null>'
+      - if %cache% == false {
+        - flag <c.entity> dRegions.rateLimit.mob-damage.%target%:false d:10s
+        - determine cancelled
+        }
+      - if %cache% == null {
+        - define FlagScript 's@dRegions_Flag_Mob-Damage'
+        - inject s@dRegions_Flag_Mob-Damage p:event-global
+        }
+      - flag <c.entity> dRegions.rateLimit.mob-damage.%target%:true d:10s
       - queue clear
       }
     - define regionPri 'li@'
@@ -2070,7 +2180,8 @@ dRegions:
       else if li@state-withGroup|state-withTarget-withGroup|state-withTargetString-withGroup contains %type% {
       - define players '<def[cuboid].list_players>'
       - foreach %players% {
-        - flag player dRegions.cache.%world%.%region%.%flag%:!
+        - narrate "dRegions.cache.%world%.%region%.%flag%"
+        - flag <player> dRegions.cache.%world%.%region%.%flag%:!
         }
       }
 
@@ -2083,7 +2194,7 @@ dRegions:
       }
       else if li@state-withGroup|state-withTarget-withGroup|state-withTargetString-withGroup contains %type% {
       - foreach <server.list_online_players> {
-        - flag player dRegions.cache.%world%.%region%.%flag%:!
+        - flag <player> dRegions.cache.%world%.%region%.%flag%:!
         }
       }
 
@@ -3270,9 +3381,9 @@ dRegions_Commands:
       }
     - define min '<yaml[dRegions_%world%_regions].read[regions.%name%.min].as_location.simple||null>'
     - define max '<yaml[dRegions_%world%_regions].read[regions.%name%.max].as_location.simple||null>'
-    - flag player 'dWEWand_Type:cuboid'
-    - flag player dWEWand:!
-    - flag player dWEWand:|:%min%|%max%
+    - flag <player> 'dWEWand_Type:cuboid'
+    - flag <player> dWEWand:!
+    - flag <player> dWEWand:|:%min%|%max%
     - run s@dRegions_Msg 'def:<&7><&o>Selected <&f><&o>%name%'
 
   info:
@@ -4293,9 +4404,9 @@ dRegions_Commands:
 #      }
 #    - define min '<yaml[dRegions_%world%_regions].read[regions.%name%.min].as_location.simple||null>'
 #    - define max '<yaml[dRegions_%world%_regions].read[regions.%name%.max].as_location.simple||null>'
-#    - flag player 'dWEWand_Type:cuboid'
-#    - flag player dWEWand:!
-#    - flag player dWEWand:|:%min%|%max%
+#    - flag <player> 'dWEWand_Type:cuboid'
+#    - flag <player> dWEWand:!
+#    - flag <player> dWEWand:|:%min%|%max%
 #    - run s@dRegions_Msg 'def:<&7><&o>Selected <&f><&o>%name%'
 
 #  prerun:

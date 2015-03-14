@@ -92,7 +92,7 @@ dRegions_Flag_Entry:
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
-      - flag player dRegions_Message_Cooldown duration:3s
+      - flag <player> dRegions_Message_Cooldown duration:3s
       - run s@dRegions_Msg delay:1t 'def:<&c><&o>You do not have permission to enter this region'
       }
 
@@ -181,7 +181,7 @@ dRegions_Flag_Exit:
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
-      - flag player dRegions_Message_Cooldown duration:3s
+      - flag <player> dRegions_Message_Cooldown duration:3s
       - run s@dRegions_Msg delay:1t 'def:<&c><&o>You do not have permission to exit this region'
       }
 
@@ -548,7 +548,7 @@ dRegions_Flag_Build:
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
-      - flag player dRegions_Message_Cooldown duration:3s
+      - flag <player> dRegions_Message_Cooldown duration:3s
       - run s@dRegions_Msg delay:1t 'def:<&c><&o>You do not have permission to build in this region'
       }
 
@@ -581,7 +581,7 @@ dRegions_Flag_Vehicle-Place:
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
-      - flag player dRegions_Message_Cooldown duration:3s
+      - flag <player> dRegions_Message_Cooldown duration:3s
       - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not place %1%s here.'
       }
 
@@ -639,7 +639,7 @@ dRegions_Flag_Vehicle-Destroy:
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
-      - flag player dRegions_Message_Cooldown duration:3s
+      - flag <player> dRegions_Message_Cooldown duration:3s
       - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not break %1%s here.'
       }
 
@@ -697,7 +697,7 @@ dRegions_Flag_Send-Chat:
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
-      - flag player dRegions_Message_Cooldown duration:3s
+      - flag <player> dRegions_Message_Cooldown duration:3s
       - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not chat here.'
       }
 
@@ -772,7 +772,7 @@ dRegions_Flag_Mob-Target:
   speed: 0
   debug: false
   material: i@paper
-  display name: "<&4>[<&6>Mob-Targeting<&4>]"
+  display name: "<&4>[<&6>Mob-Target<&4>]"
   lore:
   - <&5>Can mobs target players
   event_hook: ENTITY_Target_Player
@@ -791,30 +791,59 @@ dRegions_Flag_Mob-Target:
 
   event:
     - foreach %orderedRegions% {
+      - define cache '<c.target.flag[dRegions.cache.%world%.%value%.mob-target.%target%]||null>'
+      - if %cache% == none {
+        - define flagObj 'null'
+        - foreach next
+        }
+      - if %cache% != null {
+        - if %cache% {
+          - flag %player% dRegions.rateLimit.mob-target.%target%:true d:10s
+          - queue clear
+          }
+        - flag %player% dRegions.rateLimit.mob-target.%target%:false d:10s
+        - determine cancelled
+        }
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|mob-target]>'
-      - define region '%value%'
       - if %flagObj% != null {
+        - define region '%value%'
         - foreach stop
+        }
+        else {
+        - flag %player% dRegions.rateLimit.mob-target.%target%:true d:10s
+        - flag %player% dRegions.cache.%world%.%value%.mob-target.%target%:none
         }
       }
     - if %flagObj% != null {
-      - define player '%defender%'
-      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|mob-targetlist].replace[, ].with[|].as_list>'
+      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|mob-targetlist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
+      - flag %player% dRegions.rateLimit.mob-target.%target%:true d:10s
+      - flag %player% dRegions.cache.%world%.%region%.mob-target.%target%:true
+      }
+      else {
+      - flag %player% dRegions.rateLimit.mob-target.%target%:true d:10s
       }
 
   event-global:
-    - define orderedRegions 'li@__global__'
+    - define region '__global__'
     - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|mob-target]>'
     - if %flagObj% != null {
-      - define player '%defender%'
+      - define orderedRegions 'li@__global__'
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|mob-targetlist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
+      - flag %player% dRegions.rateLimit.mob-target.%target%:true d:5s
+      - flag %player% dRegions.cache.%world%.__global__.mob-target.%target%:true
+      }
+      else {
+      - flag %player% dRegions.rateLimit.mob-target.%target%:true d:5s
+      - flag %player% dRegions.cache.%world%.__global__.mob-target.%target%:none
       }
 
   event-cleanup:
     - remove <c.projectile||li@>
     - attack %attacker% target:cancel
+    - flag %player% dRegions.rateLimit.mob-target.%target%:false d:5s
+    - flag %player% dRegions.cache.%world%.%region%.mob-target.%target%:false
 
 
 dRegions_Flag_Mob-TargetList:
@@ -866,30 +895,59 @@ dRegions_Flag_Mob-Damage:
 
   event:
     - foreach %orderedRegions% {
+      - define cache '<c.entity.flag[dRegions.cache.%world%.%value%.mob-damage.%target%]||null>'
+      - if %cache% == none {
+        - define flagObj 'null'
+        - foreach next
+        }
+      - if %cache% != null {
+        - if %cache% {
+          - flag %player% dRegions.rateLimit.mob-damage.%target%:true d:10s
+          - queue clear
+          }
+        - flag %player% dRegions.rateLimit.mob-damage.%target%:false d:10s
+        - determine cancelled
+        }
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|mob-damage]>'
-      - define region '%value%'
       - if %flagObj% != null {
+        - define region '%value%'
         - foreach stop
+        }
+        else {
+        - flag %player% dRegions.rateLimit.mob-damage.%target%:true d:10s
+        - flag %player% dRegions.cache.%world%.%value%.mob-damage.%target%:none
         }
       }
     - if %flagObj% != null {
-      - define player '%defender%'
-      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|mob-damagelist].replace[, ].with[|].as_list>'
+      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|mob-damagelist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
+      - flag %player% dRegions.rateLimit.mob-damage.%target%:true d:10s
+      - flag %player% dRegions.cache.%world%.%region%.mob-damage.%target%:true
+      }
+      else {
+      - flag %player% dRegions.rateLimit.mob-damage.%target%:true d:10s
       }
 
   event-global:
-    - define orderedRegions 'li@__global__'
+    - define region '__global__'
     - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|mob-damage]>'
     - if %flagObj% != null {
-      - define player '%defender%'
+      - define orderedRegions 'li@__global__'
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|mob-damagelist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
+      - flag %player% dRegions.rateLimit.mob-damage.%target%:true d:10s
+      - flag %player% dRegions.cache.%world%.__global__.mob-damage.%target%:true
+      }
+      else {
+      - flag %player% dRegions.rateLimit.mob-damage.%target%:true d:10s
+      - flag %player% dRegions.cache.%world%.__global__.mob-damage.%target%:none
       }
 
   event-cleanup:
     - remove <c.projectile||li@>
     - attack %attacker% target:cancel
+    - flag %player% dRegions.rateLimit.mob-damage.%target%:false d:10s
+    - flag %player% dRegions.cache.%world%.%region%.mob-damage.%target%:false
 
 
 dRegions_Flag_Mob-Damagelist:
@@ -1312,32 +1370,66 @@ dRegions_Flag_PVE:
 
   event:
     - foreach %orderedRegions% {
+      - define cache '<player.flag[dRegions.cache.%world%.%value%.pve.%target%]||null>'
+      - if %cache% == none {
+        - define flagObj 'null'
+        - foreach next
+        }
+      - if %cache% != null {
+        - if %cache% {
+          - flag <player> dRegions.rateLimit.pve.%target%:true d:10s
+          - queue clear
+          }
+        - flag <player> dRegions.rateLimit.pve.%target%:false d:10s
+        - run locally msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
+        - determine cancelled
+        }
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|pve]>'
-      - define region '%value%'
       - if %flagObj% != null {
+        - define region '%value%'
         - foreach stop
+        }
+        else {
+        - flag <player> dRegions.rateLimit.pve.%target%:true d:10s
+        - flag <player> dRegions.cache.%world%.%value%.pve.%target%:none
         }
       }
     - if %flagObj% != null {
+      - define player <player>
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|pve-moblist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
+      - flag <player> dRegions.rateLimit.pve.%target%:true d:10s
+      - flag <player> dRegions.cache.%world%.%region%.pve.%target%:true
+      }
+      else {
+      - flag <player> dRegions.rateLimit.pve.%target%:true d:10s
       }
 
   event-global:
-    - define orderedRegions 'li@__global__'
+    - define region '__global__'
     - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|pve]>'
     - if %flagObj% != null {
+      - define orderedRegions 'li@__global__'
+      - define player '<player>'
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|pve-moblist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
+      - flag <player> dRegions.rateLimit.pve.%target%:true d:10s
+      - flag <player> dRegions.cache.%world%.__global__.pve.%target%:true
+      }
+      else {
+      - flag <player> dRegions.rateLimit.pve.%target%:true d:10s
+      - flag <player> dRegions.cache.%world%.__global__.pve.%target%:none
       }
 
   event-cleanup:
     - remove <c.projectile||li@>
+    - flag <player> dRegions.rateLimit.pve.%target%:false d:10s
+    - flag <player> dRegions.cache.%world%.%region%.pve.%target%:false
     - run locally msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
-      - flag player dRegions_Message_Cooldown duration:3s
+      - flag <player> dRegions_Message_Cooldown duration:3s
       - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not attack %1%s here!'
       }
 
@@ -1418,7 +1510,7 @@ dRegions_Flag_Npc-Interact:
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
-      - flag player dRegions_Message_Cooldown duration:3s
+      - flag <player> dRegions_Message_Cooldown duration:3s
       - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not interact with NPCs here!'
       }
 
@@ -1447,35 +1539,65 @@ dRegions_Flag_Entity-Interact:
 
   event:
     - foreach %orderedRegions% {
+      - define cache '<player.flag[dRegions.cache.%world%.%value%.entity-interact.%target%]||null>'
+      - if %cache% == none {
+        - define flagObj 'null'
+        - foreach next
+        }
+      - if %cache% != null {
+        - if %cache% {
+          - flag <player> dRegions.rateLimit.entity-interact.%target%:true d:10s
+          - queue clear
+          }
+        - flag <player> dRegions.rateLimit.entity-interact.%target%:false d:10s
+        - run locally msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
+        - determine cancelled
+        }
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|entity-interact]>'
-      - define region '%value%'
       - if %flagObj% != null {
+        - define region '%value%'
         - foreach stop
+        }
+        else {
+        - flag <player> dRegions.rateLimit.entity-interact.%target%:true d:10s
+        - flag <player> dRegions.cache.%world%.%value%.entity-interact.%target%:none
         }
       }
     - if %flagObj% != null {
-      - define player '<player>'
-      - define target '<c.entity.entity_type>'
+      - define player <player>
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|entity-interactlist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
+      - flag <player> dRegions.rateLimit.entity-interact.%target%:true d:10s
+      - flag <player> dRegions.cache.%world%.%region%.entity-interact.%target%:true
+      }
+      else {
+      - flag <player> dRegions.rateLimit.entity-interact.%target%:true d:10s
       }
 
   event-global:
-    - define orderedRegions 'li@__global__'
+    - define region '__global__'
     - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|entity-interact]>'
     - if %flagObj% != null {
+      - define orderedRegions 'li@__global__'
       - define player '<player>'
-      - define target '<c.entity.entity_type>'
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|entity-interactlist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
+      - flag <player> dRegions.rateLimit.entity-interact.%target%:true d:10s
+      - flag <player> dRegions.cache.%world%.__global__.entity-interact.%target%:true
+      }
+      else {
+      - flag <player> dRegions.rateLimit.entity-interact.%target%:true d:10s
+      - flag <player> dRegions.cache.%world%.__global__.entity-interact.%target%:none
       }
 
   event-cleanup:
+    - flag <player> dRegions.rateLimit.entity-interact.%target%:false d:10s
+    - flag <player> dRegions.cache.%world%.%region%.entity-interact.%target%:false
     - run locally msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
-      - flag player dRegions_Message_Cooldown duration:3s
+      - flag <player> dRegions_Message_Cooldown duration:3s
       - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not interact with %1%s here!'
       }
 
@@ -3168,7 +3290,7 @@ dRegions_Flag_Lighter:
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
-      - flag player dRegions_Message_Cooldown duration:3s
+      - flag <player> dRegions_Message_Cooldown duration:3s
       - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not use a lighter in this region'
       }
 
@@ -3224,7 +3346,7 @@ dRegions_Flag_Bucket-Fill:
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
-      - flag player dRegions_Message_Cooldown duration:3s
+      - flag <player> dRegions_Message_Cooldown duration:3s
       - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not fill a bucket in this region'
       }
 
@@ -3280,7 +3402,7 @@ dRegions_Flag_Bucket-Empty:
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
-      - flag player dRegions_Message_Cooldown duration:3s
+      - flag <player> dRegions_Message_Cooldown duration:3s
       - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not empty a bucket in this region'
       }
 
@@ -3336,7 +3458,7 @@ dRegions_Flag_Hanging-Place:
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
-      - flag player dRegions_Message_Cooldown duration:3s
+      - flag <player> dRegions_Message_Cooldown duration:3s
       - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not hang that in this region'
       }
 
@@ -3392,7 +3514,7 @@ dRegions_Flag_Hanging-Break:
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
-      - flag player dRegions_Message_Cooldown duration:3s
+      - flag <player> dRegions_Message_Cooldown duration:3s
       - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not break that in this region'
       }
 
@@ -3448,7 +3570,7 @@ dRegions_Flag_Sleep:
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
-      - flag player dRegions_Message_Cooldown duration:3s
+      - flag <player> dRegions_Message_Cooldown duration:3s
       - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not sleep here.'
       }
 
@@ -3504,7 +3626,7 @@ dRegions_Flag_Player-Drops:
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
-      - flag player dRegions_Message_Cooldown duration:3s
+      - flag <player> dRegions_Message_Cooldown duration:3s
       - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not drop items here.'
       }
 
@@ -3709,7 +3831,7 @@ dRegions_Flag_Player-Pickup:
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
-      - flag player dRegions_Message_Cooldown duration:3s
+      - flag <player> dRegions_Message_Cooldown duration:3s
       - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not pick up items here.'
       }
 
@@ -3914,7 +4036,7 @@ dRegions_Flag_PVP:
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
-      - flag player dRegions_Message_Cooldown duration:3s
+      - flag <player> dRegions_Message_Cooldown duration:3s
       - run s@dRegions_Msg delay:1t 'def:<&c><&o>You are in a no PVP zone.'
       }
 
@@ -3986,7 +4108,7 @@ dRegions_Flag_Potion-Throw:
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not||false> {
-      - flag player dRegions_Message_Cooldown duration:3s
+      - flag <player> dRegions_Message_Cooldown duration:3s
       - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not throw potions here.'
       }
 
@@ -4017,7 +4139,7 @@ dRegions_Flag_Potion-Drink:
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
-      - flag player dRegions_Message_Cooldown duration:3s
+      - flag <player> dRegions_Message_Cooldown duration:3s
       - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not drink potions here.'
       }
 
@@ -4070,7 +4192,7 @@ dRegions_Flag_Enderpearl:
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
-      - flag player dRegions_Message_Cooldown duration:3s
+      - flag <player> dRegions_Message_Cooldown duration:3s
       - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not use enderpearls here.'
       }
 
@@ -4148,7 +4270,7 @@ dRegions_Flag_Block-Place:
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
-      - flag player dRegions_Message_Cooldown duration:3s
+      - flag <player> dRegions_Message_Cooldown duration:3s
       - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not place %1% in this region!'
       }
 
@@ -4229,7 +4351,7 @@ dRegions_Flag_Block-Break:
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
-      - flag player dRegions_Message_Cooldown duration:3s
+      - flag <player> dRegions_Message_Cooldown duration:3s
       - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not break %1% in this region!'
       }
 
@@ -4285,36 +4407,63 @@ dRegions_Flag_Chest-Access:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
+    - define thisRegion '<def[orderedRegions].get[1]>'
     - foreach %orderedRegions% {
+      - define cache '<player.flag[dRegions.cache.%world%.%value%.chest-access.%target%]||null>'
+      - if %cache% == none {
+        - define flagObj 'null'
+        - foreach next
+        }
+      - if %cache% != null {
+        - if %cache% {
+          - if %sameRegion% flag <player> dRegions.rateLimit.chest-access.%target%:true d:10s
+          - queue clear
+          }
+        - if %sameRegion% flag <player> dRegions.rateLimit.chest-access.%target%:false d:10s
+        - run locally msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
+        - determine cancelled
+        }
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|chest-access]>'
-      - define region '%value%'
       - if %flagObj% != null {
+        - define region '%value%'
         - foreach stop
         }
+        else {
+        - flag <player> dRegions.cache.%world%.%value%.chest-access.%target%:none
+        }
       }
-    - if %flagObj% != null {
-      - define player <player>
-      - define target <c.location.material.bukkit_enum>
-      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|chest-access-blocks].replace[, ].with[|].as_list>'
-      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
+    - if %flagObj% == null {
+      - define flagObj 'deny/nonmembers'
       }
+    - define player <player>
+    - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|chest-access-blocks].replace[, ].with[|].as_list>'
+    - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
+    - if %sameRegion% flag <player> dRegions.rateLimit.chest-access.%target%:true d:10s
+    - flag <player> dRegions.cache.%world%.%thisRegion%.chest-access.%target%:true
 
   event-global:
-    - define orderedRegions 'li@__global__'
+    - define thisRegion '__global__'
     - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|chest-access]>'
     - if %flagObj% != null {
-      - define player <player>
-      - define target <c.location.material.bukkit_enum>
+      - define orderedRegions 'li@__global__'
+      - define player '<player>'
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|chest-access-blocks].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
+      - if %sameRegion% flag <player> dRegions.rateLimit.chest-access.%target%:true d:10s
+      - flag <player> dRegions.cache.%world%.__global__.chest-access.%target%:true
+      }
+      else {
+      - flag <player> dRegions.cache.%world%.__global__.chest-access.%target%:none
       }
 
   event-cleanup:
+    - if %sameRegion% flag <player> dRegions.rateLimit.chest-access.%target%:false d:10s
+    - flag <player> dRegions.cache.%world%.%thisRegion%.chest-access.%target%:false
     - run locally msg delay:1t 'def:<c.location.material.name.replace[_].with[ ]>'
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
-      - flag player dRegions_Message_Cooldown duration:3s
+      - flag <player> dRegions_Message_Cooldown duration:3s
       - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not open %1%s in this region!'
       }
 
@@ -4398,7 +4547,7 @@ dRegions_Flag_Door-Access:
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
-      - flag player dRegions_Message_Cooldown duration:3s
+      - flag <player> dRegions_Message_Cooldown duration:3s
       - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not open %1%s in this region!'
       }
 
@@ -4454,41 +4603,65 @@ dRegions_Flag_Use-Switches:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
+    - define thisRegion '<def[orderedRegions].get[1]>'
     - foreach %orderedRegions% {
+      - define cache '<player.flag[dRegions.cache.%world%.%value%.use-switches.%target%]||null>'
+      - if %cache% == none {
+        - define flagObj 'null'
+        - foreach next
+        }
+      - if %cache% != null {
+        - if %cache% {
+          - if %sameRegion% flag <player> dRegions.rateLimit.use-switches.%target%:true d:10s
+          - queue clear
+          }
+        - if %sameRegion% flag <player> dRegions.rateLimit.use-switches.%target%:false d:10s
+        - run locally msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
+        - determine cancelled
+        }
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|use-switches]>'
-      - define region '%value%'
       - if %flagObj% != null {
+        - define region '%value%'
         - foreach stop
         }
+        else {
+        - flag <player> dRegions.cache.%world%.%value%.use-switches.%target%:none
+        }
       }
-    - if %flagObj% != null {
-      - define player <player>
-      - define target <c.location.material.bukkit_enum>
-      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|use-switches-list].replace[, ].with[|].as_list>'
-      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
+    - if %flagObj% == null {
+      - define flagObj 'deny/nonmembers'
       }
+    - define player <player>
+    - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|use-switches-list].replace[, ].with[|].as_list>'
+    - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
+    - if %sameRegion% flag <player> dRegions.rateLimit.use-switches.%target%:true d:10s
+    - flag <player> dRegions.cache.%world%.%thisRegion%.use-switches.%target%:true
 
   event-global:
-    - define orderedRegions 'li@__global__'
+    - define thisRegion '__global__'
     - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|use-switches]>'
     - if %flagObj% != null {
-      - define player <player>
-      - define target <c.location.material.bukkit_enum>
+      - define orderedRegions 'li@__global__'
+      - define player '<player>'
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|use-switches-list].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
+      - if %sameRegion% flag <player> dRegions.rateLimit.use-switches.%target%:true d:10s
+      - flag <player> dRegions.cache.%world%.__global__.use-switches.%target%:true
+      }
+      else {
+      - flag <player> dRegions.cache.%world%.__global__.use-switches.%target%:none
       }
 
   event-cleanup:
+    - if %sameRegion% flag <player> dRegions.rateLimit.use-switches.%target%:false d:10s
+    - flag <player> dRegions.cache.%world%.%thisRegion%.use-switches.%target%:false
     - run locally msg delay:1t 'def:<c.location.material.name.replace[_].with[ ]>'
 
   msg:
-    - ^flag <player> dRegions_UseSwitch
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
-      - flag player dRegions_Message_Cooldown duration:3s
+      - flag <player> dRegions_Message_Cooldown duration:3s
       - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not use %1%s in this region!'
       }
-    - ^wait 2s
-    - ^flag <player> dRegions_UseSwitch:!
 
 
 dRegions_Flag_Use-Switches-List:
@@ -4542,36 +4715,63 @@ dRegions_Flag_Use-Utilities:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
+    - define thisRegion '<def[orderedRegions].get[1]>'
     - foreach %orderedRegions% {
+      - define cache '<player.flag[dRegions.cache.%world%.%value%.use-utilities.%target%]||null>'
+      - if %cache% == none {
+        - define flagObj 'null'
+        - foreach next
+        }
+      - if %cache% != null {
+        - if %cache% {
+          - if %sameRegion% flag <player> dRegions.rateLimit.use-utilities.%target%:true d:10s
+          - queue clear
+          }
+        - if %sameRegion% flag <player> dRegions.rateLimit.use-utilities.%target%:false d:10s
+        - run locally msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
+        - determine cancelled
+        }
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|use-utilities]>'
-      - define region '%value%'
       - if %flagObj% != null {
+        - define region '%value%'
         - foreach stop
         }
+        else {
+        - flag <player> dRegions.cache.%world%.%value%.use-utilities.%target%:none
+        }
       }
-    - if %flagObj% != null {
-      - define player <player>
-      - define target <c.location.material.bukkit_enum>
-      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|use-utilities-blocks].replace[, ].with[|].as_list>'
-      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
+    - if %flagObj% == null {
+      - define flagObj 'deny/nonmembers'
       }
+    - define player <player>
+    - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|use-utilities-blocks].replace[, ].with[|].as_list>'
+    - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
+    - if %sameRegion% flag <player> dRegions.rateLimit.use-utilities.%target%:true d:10s
+    - flag <player> dRegions.cache.%world%.%thisRegion%.use-utilities.%target%:true
 
   event-global:
-    - define orderedRegions 'li@__global__'
+    - define thisRegion '__global__'
     - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|use-utilities]>'
     - if %flagObj% != null {
-      - define player <player>
-      - define target <c.location.material.bukkit_enum>
+      - define orderedRegions 'li@__global__'
+      - define player '<player>'
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|use-utilities-blocks].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
+      - if %sameRegion% flag <player> dRegions.rateLimit.use-utilities.%target%:true d:10s
+      - flag <player> dRegions.cache.%world%.__global__.use-utilities.%target%:true
+      }
+      else {
+      - flag <player> dRegions.cache.%world%.__global__.use-utilities.%target%:none
       }
 
   event-cleanup:
+    - if %sameRegion% flag <player> dRegions.rateLimit.use-utilities.%target%:false d:10s
+    - flag <player> dRegions.cache.%world%.%thisRegion%.use-utilities.%target%:false
     - run locally msg delay:1t 'def:<c.location.material.name.replace[_].with[ ]>'
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
-      - flag player dRegions_Message_Cooldown duration:3s
+      - flag <player> dRegions_Message_Cooldown duration:3s
       - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not use %1%s in this region!'
       }
 
@@ -4633,47 +4833,53 @@ dRegions_Flag_Player-Damage:
         }
       - if %cache% != null {
         - if %cache% {
+          - flag <player> dRegions.rateLimit.player-damage.%target%:true d:10s
           - queue clear
           }
-        - flag player dRegions_cancelDamage_%target% d:2s
         - adjust <player> 'fire_time:0'
+        - flag <player> dRegions.rateLimit.player-damage.%target%:false d:10s
         - determine cancelled
         }
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|player-damage]>'
-      - define region '%value%'
       - if %flagObj% != null {
+        - define region '%value%'
         - foreach stop
+        }
+        else {
+        - flag <player> dRegions.rateLimit.player-damage.%target%:true d:10s
+        - flag <player> dRegions.cache.%world%.%value%.player-damage.%target%:none
         }
       }
     - if %flagObj% != null {
       - define player <player>
-      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|player-damage-types].replace[, ].with[|].as_list>'
+      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|player-damage-types].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
-      - flag player dRegions.cache.%world%.%region%.player-damage.%target%:true
+      - flag <player> dRegions.rateLimit.player-damage.%target%:true d:10s
+      - flag <player> dRegions.cache.%world%.%region%.player-damage.%target%:true
       }
       else {
-      - flag player dRegions.cache.%world%.%region%.player-damage.%target%:none
+      - flag <player> dRegions.rateLimit.player-damage.%target%:true d:10s
       }
-#    - yaml set 'cache.state-withTarget-withGroup.%region%.player-damage.%puuid%.%target%:true' 'id:dRegions_%world%_cache'
 
   event-global:
     - define region '__global__'
     - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|player-damage]>'
     - if %flagObj% != null {
+      - define orderedRegions 'li@__global__'
       - define player '<player>'
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|player-damage-types].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
-      - flag player dRegions.cache.%world%.__global__.player-damage.%target%:true
+      - flag <player> dRegions.rateLimit.player-damage.%target%:true d:10s
+      - flag <player> dRegions.cache.%world%.__global__.player-damage.%target%:true
       }
       else {
-      - flag player dRegions.cache.%world%.__global__.player-damage.%target%:none
+      - flag <player> dRegions.rateLimit.player-damage.%target%:true d:10s
+      - flag <player> dRegions.cache.%world%.__global__.player-damage.%target%:none
       }
-#    - yaml set 'cache.state-withTarget-withGroup.__global__.player-damage.%puuid%.%target%:true' 'id:dRegions_%world%_cache'
 
   event-cleanup:
-    - flag player dRegions.cache.%world%.%region%.player-damage.%target%:false
-#    - yaml set 'cache.state-withTarget-withGroup.%region%.player-damage.%puuid%.%target%:false' 'id:dRegions_%world%_cache'
-    - flag player dRegions_cancelDamage_%target% d:2s
+    - flag <player> dRegions.rateLimit.player-damage.%target%:false d:10s
+    - flag <player> dRegions.cache.%world%.%region%.player-damage.%target%:false
     - adjust <player> 'fire_time:0'
 
 
@@ -4748,7 +4954,7 @@ dRegions_Flag_Commands:
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
-      - flag player dRegions_Message_Cooldown duration:3s
+      - flag <player> dRegions_Message_Cooldown duration:3s
       - define lines '<proc[dRegions_LineWrap].context[You can not use the %1% <&c>command in this region!|45]>'
       - foreach %lines% {
         - run s@dRegions_Msg delay:1t 'def:<&c>%value%'
