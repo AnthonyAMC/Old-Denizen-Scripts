@@ -782,7 +782,9 @@ dRegions:
     - inject s@dRegions_Flag_Build p:event
 
     on player right clicks:
-    - if <player.has_permission[dRegions.admin]||<player.is_op>> queue clear
+    - if <player.has_permission[dRegions.admin]> || <player.is_op> {
+      - queue clear
+      }
     - define target '<c.location.material.bukkit_enum||air>'
     - define item '<c.item.material.bukkit_enum||air>'
     - if %item% == air {
@@ -996,11 +998,52 @@ dRegions:
     - if <player.has_permission[dRegions.admin]||<player.is_op>> queue clear
     - define world '<player.world.name>'
     - define target '<c.material.bukkit_enum>'
+    - if <c.cuboids.alphanumeric.unseparated||null> == <player.location.cuboids.alphanumeric.unseparated||null> {
+      - define sameRegion 'true'
+      - define rateLimit '<player.flag[dRegions.rateLimit.build]||null>'
+      - if %rateLimit% != null {
+        - if !%rateLimit% {
+          - run s@dRegions_Flag_Build p:msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
+          - determine cancelled
+          }
+        }
+      - define rateLimit '<player.flag[dRegions.rateLimit.block-break.%target%]||null>'
+      - if %rateLimit% != null {
+        - if %rateLimit% {
+          - queue clear
+          }
+          else {
+          - run s@dRegions_Flag_Block-Break p:msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
+          - determine cancelled
+          }
+        }
+      }
+      else {
+      - define sameRegion 'false'
+      }
     - if <c.cuboids.is_empty||true> {
-      - define FlagScript 's@dRegions_Flag_Build'
-      - inject s@dRegions_Flag_Build p:event-global
-      - define FlagScript 's@dRegions_Flag_Block-Break'
-      - inject s@dRegions_Flag_Block-Break p:event-global
+      - define cache '<player.flag[dRegions.cache.%world%.__global__.build]||null>'
+      - if %cache% == false {
+        - if %sameRegion% flag <player> dRegions.rateLimit.build:false d:10s
+        - run s@dRegions_Flag_Build p:msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
+        - determine cancelled
+        }
+      - if %cache% == null {
+        - define FlagScript 's@dRegions_Flag_Build'
+        - inject s@dRegions_Flag_Build p:event-global
+        }
+      - if %sameRegion% flag <player> dRegions.rateLimit.build:true d:10s
+      - define cache '<player.flag[dRegions.cache.%world%.__global__.block-break.%target%]||null>'
+      - if %cache% == false {
+        - if %sameRegion% flag <player> dRegions.rateLimit.block-break.%target%:false d:10s
+        - run s@dRegions_Flag_block-break p:msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
+        - determine cancelled
+        }
+      - if %cache% == null {
+        - define FlagScript 's@dRegions_Flag_block-break'
+        - inject s@dRegions_Flag_block-break p:event-global
+        }
+      - if %sameRegion% flag <player> dRegions.rateLimit.block-break.%target%:true d:10s
       - queue clear
       }
     - define regionPri 'li@'
@@ -1014,14 +1057,55 @@ dRegions:
     - inject s@dRegions_Flag_Block-Break p:event
 
     on player places block:
-    - if <player.has_permission[dRegions.admin]||<player.is_op>> queue clear
+    - if <player.has_permission[dRegions.admin]> || <player.is_op> queue clear
     - define world '<player.world.name>'
     - define target '<c.material.bukkit_enum>'
+    - if <c.cuboids.alphanumeric.unseparated||null> == <player.location.cuboids.alphanumeric.unseparated||null> {
+      - define sameRegion 'true'
+      - define rateLimit '<player.flag[dRegions.rateLimit.build]||null>'
+      - if %rateLimit% != null {
+        - if !%rateLimit% {
+          - run s@dRegions_Flag_Build p:msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
+          - determine cancelled
+          }
+        }
+      - define rateLimit '<player.flag[dRegions.rateLimit.block-place.%target%]||null>'
+      - if %rateLimit% != null {
+        - if %rateLimit% {
+          - queue clear
+          }
+          else {
+          - run s@dRegions_Flag_Block-Place p:msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
+          - determine cancelled
+          }
+        }
+      }
+      else {
+      - define sameRegion 'false'
+      }
     - if <c.cuboids.is_empty||true> {
-      - define FlagScript 's@dRegions_Flag_Build'
-      - inject s@dRegions_Flag_Build p:event-global
-      - define FlagScript 's@dRegions_Flag_Block-Place'
-      - inject s@dRegions_Flag_Block-Place p:event-global
+      - define cache '<player.flag[dRegions.cache.%world%.__global__.build]||null>'
+      - if %cache% == false {
+        - if %sameRegion% flag <player> dRegions.rateLimit.build:false d:10s
+        - run s@dRegions_Flag_Build p:msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
+        - determine cancelled
+        }
+      - if %cache% == null {
+        - define FlagScript 's@dRegions_Flag_Build'
+        - inject s@dRegions_Flag_Build p:event-global
+        }
+      - if %sameRegion% flag <player> dRegions.rateLimit.build:true d:10s
+      - define cache '<player.flag[dRegions.cache.%world%.__global__.block-place.%target%]||null>'
+      - if %cache% == false {
+        - if %sameRegion% flag <player> dRegions.rateLimit.block-place.%target%:false d:10s
+        - run s@dRegions_Flag_block-place p:msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
+        - determine cancelled
+        }
+      - if %cache% == null {
+        - define FlagScript 's@dRegions_Flag_block-place'
+        - inject s@dRegions_Flag_block-place p:event-global
+        }
+      - if %sameRegion% flag <player> dRegions.rateLimit.block-place.%target%:true d:10s
       - queue clear
       }
     - define regionPri 'li@'
@@ -2180,7 +2264,6 @@ dRegions:
       else if li@state-withGroup|state-withTarget-withGroup|state-withTargetString-withGroup contains %type% {
       - define players '<def[cuboid].list_players>'
       - foreach %players% {
-        - narrate "dRegions.cache.%world%.%region%.%flag%"
         - flag <player> dRegions.cache.%world%.%region%.%flag%:!
         }
       }
