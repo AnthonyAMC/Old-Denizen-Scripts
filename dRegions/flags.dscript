@@ -43,7 +43,7 @@ dRegions_Flag_Entry:
   event:
     - define player <player>
     - define region '<def[orderedRegions].get[1]>'
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|entry]>'
       - if %flagObj% != null {
         - inject s@dRegions_Flags_Processors p:state-withGroup
@@ -53,7 +53,7 @@ dRegions_Flag_Entry:
 
   event-global:
     - define player <player>
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|entry]>'
       - if %flagObj% != null {
         - inject s@dRegions_Flags_Processors p:state-withGroup-Global
@@ -134,7 +134,7 @@ dRegions_Flag_Exit:
   event:
     - define player <player>
     - define region '<def[orderedRegions].get[1]>'
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|exit]>'
       - if %flagObj% != null {
         - inject s@dRegions_Flags_Processors p:state-withGroup
@@ -144,7 +144,7 @@ dRegions_Flag_Exit:
 
   event-global:
     - define player <player>
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|exit]>'
       - if %flagObj% != null {
         - inject s@dRegions_Flags_Processors p:state-withGroup-Global
@@ -224,7 +224,7 @@ dRegions_Flag_Notify-Enter:
   # We only notify for the highest priority region, but we inherit the flag value from parents.
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|notify-enter]>'
     - if %flagVal% == true {
-      - foreach <server.list_online_players.filter[has_permission[dregions.notify]].include[<server.list_online_ops>].deduplicate> {
+      - foreach <server.list_online_players.filter[permission[dregions.notify]].include[<server.list_online_ops>].deduplicate> {
         - run player:%value% s@dRegions_Msg 'def:<&5><&o><def[player].name> entered %region% in %world%'
         }
       }
@@ -233,7 +233,7 @@ dRegions_Flag_Notify-Enter:
   # We only notify for the highest priority region, but we inherit the flag value from parents.
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|notify-enter]>'
     - if %flagVal% = true {
-      - foreach <server.list_online_players.filter[has_permission[dregions.notify]].include[<server.list_online_ops>].deduplicate> {
+      - foreach <server.list_online_players.filter[permission[dregions.notify]].include[<server.list_online_ops>].deduplicate> {
         - run player:%value% s@dRegions_Msg 'def:<&5><&o><def[player].name> entered the global region in %world%'
         }
       }
@@ -264,7 +264,7 @@ dRegions_Flag_Notify-Exit:
   # We only notify for the highest priority region, but we inherit the flag value from parents.
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|notify-exit]>'
     - if %flagVal% == true {
-      - foreach <server.list_online_players.filter[has_permission[dregions.notify]].include[<server.list_online_ops>].deduplicate> {
+      - foreach <server.list_online_players.filter[permission[dregions.notify]].include[<server.list_online_ops>].deduplicate> {
         - run player:%value% s@dRegions_Msg 'def:<&5><&o><def[player].name> left %region% in %world%'
         }
       }
@@ -273,7 +273,7 @@ dRegions_Flag_Notify-Exit:
   # We only notify for the highest priority region, but we inherit the flag value from parents.
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|notify-exit]>'
     - if %flagVal% = true {
-      - foreach <server.list_online_players.filter[has_permission[dregions.notify]].include[<server.list_online_ops>].deduplicate> {
+      - foreach <server.list_online_players.filter[permission[dregions.notify]].include[<server.list_online_ops>].deduplicate> {
         - run player:%value% s@dRegions_Msg 'def:<&5><&o><def[player].name> left the global region in %world%'
         }
       }
@@ -519,31 +519,37 @@ dRegions_Flag_Build:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
-  event-global:
-  # Build is handled differently than the other flags. It checks only the HIGHEST
-  # priority region. It does inherit owners, members, and flags from parent regions.
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
-      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|build]>'
-      - if %flagObj% != null {
-        - define player <player>
-        - inject s@dRegions_Flags_Processors p:state-withGroup-global
-        }
-      }
-
   event:
-  # Build is handled differently than the other flags. It checks only the HIGHEST
-  # priority region. It does inherit owners, members, and flags from parent regions.
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
-      - define region '<def[orderedRegions].get[1]>'
+    - define region '<def[orderedRegions].get[1]>'
+    - define cache '<player.flag[dRegions.cache.%world%.%region%.build]||null>'
+    - if %cache% != true {
+      - if %cache% == false {
+        - if %sameRegion% flag <player> dRegions.rateLimit.build:false d:10s
+        - run locally msg delay:1t
+        - determine cancelled
+        }
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|build]>'
       - if %flagObj% == null {
         - define flagObj 'deny/nonmembers'
         }
       - define player <player>
       - inject s@dRegions_Flags_Processors p:state-withGroup
+      - flag <player> dRegions.cache.%world%.%region%.build:true
+      }
+    - if %sameRegion% flag <player> dRegions.rateLimit.build:true d:10s
+
+  event-global:
+    - define region '__global__'
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|build]>'
+    - if %flagObj% != null {
+      - define player <player>
+      - inject s@dRegions_Flags_Processors p:state-withGroup-global
+      - flag <player> dRegions.cache.%world%.__global__.build:true
       }
 
   event-cleanup:
+    - flag <player> dRegions.cache.%world%.%region%.build:false
+    - if %sameRegion% flag <player> dRegions.rateLimit.build:false d:10s
     - run locally msg delay:1t
 
   msg:
@@ -586,7 +592,7 @@ dRegions_Flag_Vehicle-Place:
       }
 
   event:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
       - foreach %orderedRegions% {
         - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|vehicle-place]>'
         - define region '%value%'
@@ -602,7 +608,7 @@ dRegions_Flag_Vehicle-Place:
       }
 
   event-global:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|vehicle-place]>'
       - if %flagObj% != null {
         - define player <player>
@@ -644,7 +650,7 @@ dRegions_Flag_Vehicle-Destroy:
       }
 
   event:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
       - foreach %orderedRegions% {
         - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|vehicle-destroy]>'
         - define region '%value%'
@@ -660,7 +666,7 @@ dRegions_Flag_Vehicle-Destroy:
       }
 
   event-global:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|vehicle-destroy]>'
       - if %flagObj% != null {
         - define player <player>
@@ -702,7 +708,7 @@ dRegions_Flag_Send-Chat:
       }
 
   event:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
       - foreach %orderedRegions% {
         - define region '<def[orderedRegions].get[1]>'
         - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|send-chat]>'
@@ -716,7 +722,7 @@ dRegions_Flag_Send-Chat:
 
 
   event-global:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|send-chat]>'
       - if %flagObj% != null {
         - define player <player>
@@ -1190,10 +1196,9 @@ dRegions_Flag_EVE:
   wander:
     - ^if !<def[1].is_spawned||false> queue clear
 #    - ^adjust %1% toggle_ai:false
-    - ^walk %1% <def[1].location.find.surface_blocks.within[25].random.add[0,1,0]> speed:0.2 auto_range radius:5
-    - ^wait 10s
+    - ~walk %1% <def[1].location.find.surface_blocks.within[15].filter[distance[<def[1].location>].horizontal.is[more].than[10]].random.add[0,1,0]>
     - ^if !<def[1].is_spawned||false> queue clear
-#    - ^adjust %1% toggle_ai:true
+    - ^remove %1%
 
 
 dRegions_Flag_EVE-Moblist:
@@ -1276,16 +1281,6 @@ dRegions_Flag_Mob-Attack:
       - yaml set 'cache.state-withTarget.%region%.mob-attack.%target%:true' 'id:dRegions_%world%_cache'
       }
 
-#  event-global:
-#    - define target '%atarget%'
-#    - define region '__global__'
-#    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|mob-attack]>'
-#    - if %flagVal% != null {
-#      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|mob-attack-moblist].replace[, ].with[|].as_list>'
-#      - inject s@dRegions_Flags_Processors p:state-withTarget
-#      }
-#    - yaml set 'cache.state-withTarget.__global__.mob-attack.%target%:true' 'id:dRegions_%world%_cache'
-
   event-global:
     - define target '%atarget%'
     - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.__global__.mob-attack.%target%]||null>'
@@ -1317,10 +1312,9 @@ dRegions_Flag_Mob-Attack:
   wander:
     - ^if !<def[1].is_spawned||false> queue clear
 #    - ^adjust %1% toggle_ai:false
-    - ^walk %1% <def[1].location.find.surface_blocks.within[25].random.add[0,1,0]> speed:0.2 auto_range radius:5
-    - ^wait 10s
+    - ~walk %1% <def[1].location.find.surface_blocks.within[15].filter[distance[<def[1].location>].horizontal.is[more].than[10]].random.add[0,1,0]>
     - ^if !<def[1].is_spawned||false> queue clear
-#    - ^adjust %1% toggle_ai:true
+    - ^remove %1%
 
 
 dRegions_Flag_Mob-Attack-Moblist:
@@ -1485,7 +1479,7 @@ dRegions_Flag_Npc-Interact:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
       - foreach %orderedRegions% {
         - define region '%value%'
         - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|npc-interact]>'
@@ -1500,7 +1494,7 @@ dRegions_Flag_Npc-Interact:
       }
 
   event-global:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|npc-interact]>'
       - if %flagObj% != null {
         - define player <player>
@@ -3299,7 +3293,7 @@ dRegions_Flag_Lighter:
       }
 
   event:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
       - foreach %orderedRegions% {
         - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|lighter]>'
         - define region '%value%'
@@ -3315,7 +3309,7 @@ dRegions_Flag_Lighter:
       }
 
   event-global:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|lighter]>'
       - if %flagObj% != null {
         - define player <player>
@@ -3355,7 +3349,7 @@ dRegions_Flag_Bucket-Fill:
       }
 
   event:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
       - foreach %orderedRegions% {
         - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|bucket-fill]>'
         - define region '%value%'
@@ -3371,7 +3365,7 @@ dRegions_Flag_Bucket-Fill:
       }
 
   event-global:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|bucket-fill]>'
       - if %flagObj% != null {
         - define player <player>
@@ -3411,7 +3405,7 @@ dRegions_Flag_Bucket-Empty:
       }
 
   event-global:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|bucket-empty]>'
       - if %flagObj% != null {
         - define player <player>
@@ -3420,7 +3414,7 @@ dRegions_Flag_Bucket-Empty:
       }
 
   event:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
       - foreach %orderedRegions% {
         - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|bucket-empty]>'
         - define region '%value%'
@@ -3467,7 +3461,7 @@ dRegions_Flag_Hanging-Place:
       }
 
   event:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
       - foreach %orderedRegions% {
         - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|hanging-place]>'
         - define region '%value%'
@@ -3483,7 +3477,7 @@ dRegions_Flag_Hanging-Place:
       }
 
   event-global:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|hanging-place]>'
       - if %flagObj% != null {
         - define player <player>
@@ -3523,7 +3517,7 @@ dRegions_Flag_Hanging-Break:
       }
 
   event:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
       - foreach %orderedRegions% {
         - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|hanging-break]>'
         - define region '%value%'
@@ -3539,7 +3533,7 @@ dRegions_Flag_Hanging-Break:
       }
 
   event-global:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|hanging-break]>'
       - if %flagObj% != null {
         - define player <player>
@@ -3579,7 +3573,7 @@ dRegions_Flag_Sleep:
       }
 
   event:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
       - foreach %orderedRegions% {
         - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|sleep]>'
         - define region '%value%'
@@ -3595,7 +3589,7 @@ dRegions_Flag_Sleep:
       }
 
   event-global:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|sleep]>'
       - if %flagObj% != null {
         - define player <player>
@@ -3784,7 +3778,7 @@ dRegions_Flag_Spawn:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   command_handler:
-    - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dregions.admin]||<player.is_op||false>> {
       - if <proc[dRegions_RegionOverlaps].context[<def[flagValue]>/<def[flagValue]>|%world%|<player>]> {
         - run s@dRegions_Msg delay:1t 'def:<&c>You can not use that location!'
         - queue clear
@@ -3840,7 +3834,7 @@ dRegions_Flag_Player-Pickup:
       }
 
   event:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
       - foreach %orderedRegions% {
         - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|player-pickup]>'
         - define region '%value%'
@@ -3853,7 +3847,7 @@ dRegions_Flag_Player-Pickup:
       }
 
   event-global:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|player-pickup]>'
       - if %flagObj% != null {
         - define player <player>
@@ -4148,7 +4142,7 @@ dRegions_Flag_Potion-Drink:
       }
 
   event:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
       - foreach %orderedRegions% {
         - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|potion-drink]>'
         - define region '%value%'
@@ -4161,7 +4155,7 @@ dRegions_Flag_Potion-Drink:
       }
 
   event-global:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|potion-drink]>'
       - if %flagObj% != null {
         - define player <player>
@@ -4201,7 +4195,7 @@ dRegions_Flag_Enderpearl:
       }
 
   event:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
       - foreach %orderedRegions% {
         - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|enderpearl]>'
         - define region '%value%'
@@ -4214,7 +4208,7 @@ dRegions_Flag_Enderpearl:
       }
 
   event-global:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|enderpearl]>'
       - if %flagObj% != null {
         - define player <player>
@@ -5034,7 +5028,7 @@ dRegions_Flag_Commands:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
       - define player <player>
       - define flag 'commands'
       - define flag-targetList 'commands-list'
@@ -5043,7 +5037,7 @@ dRegions_Flag_Commands:
       }
 
   event-global:
-    - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
       - define player <player>
       - define flag 'commands'
       - define flag-targetList 'commands-list'

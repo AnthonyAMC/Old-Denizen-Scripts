@@ -671,13 +671,32 @@ dRegions:
     - inject s@dRegions_Flag_Vehicle-Destroy p:event
 
     on player stands on:
-    - if <player.has_flag[dRegions_UseSwitch]> {
-      - determine cancelled
+    - if <player.permission[dRegions.admin]> || <player.is_op> queue clear
+    - define target '<c.location.material.bukkit_enum>'
+    - define sameRegion 'true'
+    - define rateLimit '<player.flag[dRegions.rateLimit.use-switches.%target%]||null>'
+    - if %rateLimit% != null {
+      - if %rateLimit% {
+        - queue clear
+        }
+        else {
+        - run s@dRegions_Flag_Use-Switches p:msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
+        - determine cancelled
+        }
       }
     - define world '<player.world.name>'
     - if <c.cuboids.is_empty||true> {
-      - define FlagScript '<s@dRegions_Map_Interactions.yaml_key[block.<c.location.material.bukkit_enum||air>]||s@dRegions_Map_Interactions>'
-      - inject %FlagScript% p:event-global
+      - define cache '<player.flag[dRegions.cache.%world%.__global__.use-switches.%target%]||null>'
+      - if %cache% == false {
+        - flag <player> dRegions.rateLimit.use-switches.%target%:false d:10s
+        - run s@dRegions_Flag_use-switches p:msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
+        - determine cancelled
+        }
+      - if %cache% == null {
+        - define flagScript 's@dRegions_Flag_Use-Switches'
+        - inject s@dRegions_Flag_Use-Switches p:event-global
+        }
+      - flag <player> dRegions.rateLimit.use-switches.%target%:true d:10s
       - queue clear
       }
     - define regionPri 'li@'
@@ -685,8 +704,8 @@ dRegions:
       - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
       }
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
-    - define FlagScript '<s@dRegions_Map_Interactions.yaml_key[block.<c.location.material.bukkit_enum||air>]||s@dRegions_Map_Interactions>'
-    - inject %FlagScript% p:event
+    - define flagScript 's@dRegions_Flag_Use-Switches'
+    - inject s@dRegions_Flag_Use-Switches p:event
 
     on player right clicks block with boat:
     - define world '<player.world.name>'
@@ -737,10 +756,36 @@ dRegions:
     - inject s@dRegions_Flag_Potion-Drink p:event
 
     on player right clicks block with armor_stand:
+    - if <player.permission[dRegions.admin]> || <player.is_op> queue clear
     - define world '<player.world.name>'
+    - if <c.cuboids.alphanumeric.unseparated> == <player.location.cuboids.alphanumeric.unseparated> {
+      - define sameRegion 'true'
+      - define rateLimit '<player.flag[dRegions.rateLimit.build]||null>'
+      - if %rateLimit% != null {
+        - if %rateLimit% {
+          - queue clear
+          }
+          else {
+          - run s@dRegions_Flag_Build p:msg delay:1t
+          - determine cancelled
+          }
+        }
+      }
+      else {
+      - define sameRegion 'false'
+      }
     - if <c.cuboids.is_empty||true> {
-      - define FlagScript 's@dRegions_Flag_Build'
-      - inject s@dRegions_Flag_Build p:event-global
+      - define cache '<player.flag[dRegions.cache.%world%.__global__.build]||null>'
+      - if %cache% == false {
+        - if %sameRegion% flag <player> dRegions.rateLimit.build:false d:10s
+        - run s@dRegions_Flag_Build p:msg delay:1t
+        - determine cancelled
+        }
+      - if %cache% == null {
+        - define FlagScript 's@dRegions_Flag_Build'
+        - inject s@dRegions_Flag_Build p:event-global
+        }
+      - if %sameRegion% flag <player> dRegions.rateLimit.build:true d:10s
       - queue clear
       }
     - define regionPri 'li@'
@@ -752,10 +797,36 @@ dRegions:
     - inject s@dRegions_Flag_Build p:event
 
     on player right clicks block with monster_egg:
+    - if <player.permission[dRegions.admin]> || <player.is_op> queue clear
     - define world '<player.world.name>'
+    - if <c.cuboids.alphanumeric.unseparated> == <player.location.cuboids.alphanumeric.unseparated> {
+      - define sameRegion 'true'
+      - define rateLimit '<player.flag[dRegions.rateLimit.build]||null>'
+      - if %rateLimit% != null {
+        - if %rateLimit% {
+          - queue clear
+          }
+          else {
+          - run s@dRegions_Flag_Build p:msg delay:1t
+          - determine cancelled
+          }
+        }
+      }
+      else {
+      - define sameRegion 'false'
+      }
     - if <c.cuboids.is_empty||true> {
-      - define FlagScript 's@dRegions_Flag_Build'
-      - inject s@dRegions_Flag_Build p:event-global
+      - define cache '<player.flag[dRegions.cache.%world%.__global__.build]||null>'
+      - if %cache% == false {
+        - if %sameRegion% flag <player> dRegions.rateLimit.build:false d:10s
+        - run s@dRegions_Flag_Build p:msg delay:1t
+        - determine cancelled
+        }
+      - if %cache% == null {
+        - define FlagScript 's@dRegions_Flag_Build'
+        - inject s@dRegions_Flag_Build p:event-global
+        }
+      - if %sameRegion% flag <player> dRegions.rateLimit.build:true d:10s
       - queue clear
       }
     - define regionPri 'li@'
@@ -767,10 +838,36 @@ dRegions:
     - inject s@dRegions_Flag_Build p:event
 
     on player throws hatching egg:
+    - if <player.permission[dRegions.admin]> || <player.is_op> queue clear
     - define world '<player.world.name>'
-    - if <c.egg.location.cuboids.is_empty||true> {
-      - define FlagScript 's@dRegions_Flag_Build'
-      - inject s@dRegions_Flag_Build p:event-global
+    - if <c.egg.location.cuboids.alphanumeric.unseparated> == <player.location.cuboids.alphanumeric.unseparated> {
+      - define sameRegion 'true'
+      - define rateLimit '<player.flag[dRegions.rateLimit.build]||null>'
+      - if %rateLimit% != null {
+        - if %rateLimit% {
+          - queue clear
+          }
+          else {
+          - run s@dRegions_Flag_Build p:msg delay:1t
+          - determine cancelled
+          }
+        }
+      }
+      else {
+      - define sameRegion 'false'
+      }
+    - if <c.egg.location.cuboids.is_empty> {
+      - define cache '<player.flag[dRegions.cache.%world%.__global__.build]||null>'
+      - if %cache% == false {
+        - if %sameRegion% flag <player> dRegions.rateLimit.build:false d:10s
+        - run s@dRegions_Flag_Build p:msg delay:1t
+        - determine cancelled
+        }
+      - if %cache% == null {
+        - define FlagScript 's@dRegions_Flag_Build'
+        - inject s@dRegions_Flag_Build p:event-global
+        }
+      - if %sameRegion% flag <player> dRegions.rateLimit.build:true d:10s
       - queue clear
       }
     - define regionPri 'li@'
@@ -782,7 +879,7 @@ dRegions:
     - inject s@dRegions_Flag_Build p:event
 
     on player right clicks:
-    - if <player.has_permission[dRegions.admin]> || <player.is_op> {
+    - if <player.permission[dRegions.admin]> || <player.is_op> {
       - queue clear
       }
     - define target '<c.location.material.bukkit_enum||air>'
@@ -830,7 +927,17 @@ dRegions:
     - define cuboids '<c.cuboids||<player.location.cursor_on[5].cuboids||li@>>'
     - if <def[cuboids].is_empty||true> {
       - if %flag% == Build {
-        - inject %FlagScript% p:event-global
+        - define cache '<player.flag[dRegions.cache.%world%.__global__.build]||null>'
+        - if %cache% == false {
+          - if %sameRegion% flag <player> dRegions.rateLimit.build:false d:10s
+          - run s@dRegions_Flag_Build p:msg delay:1t
+          - determine cancelled
+          }
+        - if %cache% == null {
+          - define FlagScript 's@dRegions_Flag_Build'
+          - inject s@dRegions_Flag_Build p:event-global
+          }
+        - if %sameRegion% flag <player> dRegions.rateLimit.build:true d:10s
         - queue clear
         }
       - define cache '<player.flag[dRegions.cache.%world%.__global__.%flag%.%target%]||null>'
@@ -995,15 +1102,15 @@ dRegions:
       }
 
     on player breaks block:
-    - if <player.has_permission[dRegions.admin]||<player.is_op>> queue clear
+    - if <player.permission[dRegions.admin]> || <player.is_op> queue clear
     - define world '<player.world.name>'
     - define target '<c.material.bukkit_enum>'
-    - if <c.cuboids.alphanumeric.unseparated||null> == <player.location.cuboids.alphanumeric.unseparated||null> {
+    - if <c.cuboids.alphanumeric.unseparated> == <player.location.cuboids.alphanumeric.unseparated> {
       - define sameRegion 'true'
       - define rateLimit '<player.flag[dRegions.rateLimit.build]||null>'
       - if %rateLimit% != null {
         - if !%rateLimit% {
-          - run s@dRegions_Flag_Build p:msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
+          - run s@dRegions_Flag_Build p:msg delay:1t
           - determine cancelled
           }
         }
@@ -1021,11 +1128,11 @@ dRegions:
       else {
       - define sameRegion 'false'
       }
-    - if <c.cuboids.is_empty||true> {
+    - if <c.cuboids.is_empty> {
       - define cache '<player.flag[dRegions.cache.%world%.__global__.build]||null>'
       - if %cache% == false {
         - if %sameRegion% flag <player> dRegions.rateLimit.build:false d:10s
-        - run s@dRegions_Flag_Build p:msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
+        - run s@dRegions_Flag_Build p:msg delay:1t
         - determine cancelled
         }
       - if %cache% == null {
@@ -1057,15 +1164,15 @@ dRegions:
     - inject s@dRegions_Flag_Block-Break p:event
 
     on player places block:
-    - if <player.has_permission[dRegions.admin]> || <player.is_op> queue clear
+    - if <player.permission[dRegions.admin]> || <player.is_op> queue clear
     - define world '<player.world.name>'
     - define target '<c.material.bukkit_enum>'
-    - if <c.cuboids.alphanumeric.unseparated||null> == <player.location.cuboids.alphanumeric.unseparated||null> {
+    - if <c.cuboids.alphanumeric.unseparated> == <player.location.cuboids.alphanumeric.unseparated> {
       - define sameRegion 'true'
       - define rateLimit '<player.flag[dRegions.rateLimit.build]||null>'
       - if %rateLimit% != null {
         - if !%rateLimit% {
-          - run s@dRegions_Flag_Build p:msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
+          - run s@dRegions_Flag_Build p:msg delay:1t
           - determine cancelled
           }
         }
@@ -1083,11 +1190,11 @@ dRegions:
       else {
       - define sameRegion 'false'
       }
-    - if <c.cuboids.is_empty||true> {
+    - if <c.cuboids.is_empty> {
       - define cache '<player.flag[dRegions.cache.%world%.__global__.build]||null>'
       - if %cache% == false {
         - if %sameRegion% flag <player> dRegions.rateLimit.build:false d:10s
-        - run s@dRegions_Flag_Build p:msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
+        - run s@dRegions_Flag_Build p:msg delay:1t
         - determine cancelled
         }
       - if %cache% == null {
@@ -1119,7 +1226,7 @@ dRegions:
     - inject s@dRegions_Flag_Block-Place p:event
 
     on player empties bucket:
-    - if <player.has_permission[dRegions.admin]||<player.is_op>> queue clear
+    - if <player.permission[dRegions.admin]> || <player.is_op> queue clear
     - define world '<player.world.name>'
     - if <c.relative.cuboids.is_empty||true> {
       - define FlagScript 's@dRegions_Flag_Bucket-Empty'
@@ -1135,7 +1242,7 @@ dRegions:
     - inject s@dRegions_Flag_Bucket-Empty p:event
 
     on player fills bucket:
-    - if <player.has_permission[dRegions.admin]||<player.is_op>> queue clear
+    - if <player.permission[dRegions.admin]> || <player.is_op> queue clear
     - define world '<player.world.name>'
     - if <c.location.cuboids.is_empty||true> {
       - define FlagScript 's@dRegions_Flag_Bucket-Fill'
@@ -1183,11 +1290,36 @@ dRegions:
     - inject s@dRegions_Flag_Player-Pickup p:event
 
     on player places hanging:
-    - if <player.has_permission[dRegions.admin]||<player.is_op>> queue clear
+    - if <player.permission[dRegions.admin]> || <player.is_op> queue clear
     - define world '<player.world.name>'
+    - if <c.location.cuboids.alphanumeric.unseparated> == <player.location.cuboids.alphanumeric.unseparated> {
+      - define sameRegion 'true'
+      - define rateLimit '<player.flag[dRegions.rateLimit.build]||null>'
+      - if %rateLimit% != null {
+        - if %rateLimit% {
+          - queue clear
+          }
+          else {
+          - run s@dRegions_Flag_Build p:msg delay:1t
+          - determine cancelled
+          }
+        }
+      }
+      else {
+      - define sameRegion 'false'
+      }
     - if <c.location.cuboids.is_empty||true> {
-      - define FlagScript 's@dRegions_Flag_Build'
-      - inject s@dRegions_Flag_Build p:event-global
+      - define cache '<player.flag[dRegions.cache.%world%.__global__.build]||null>'
+      - if %cache% == false {
+        - if %sameRegion% flag <player> dRegions.rateLimit.build:false d:10s
+        - run s@dRegions_Flag_Build p:msg delay:1t
+        - determine cancelled
+        }
+      - if %cache% == null {
+        - define FlagScript 's@dRegions_Flag_Build'
+        - inject s@dRegions_Flag_Build p:event-global
+        }
+      - if %sameRegion% flag <player> dRegions.rateLimit.build:true d:10s
       - define FlagScript 's@dRegions_Flag_Hanging-Place'
       - inject s@dRegions_Flag_Hanging-Place p:event-global
       - queue clear
@@ -1203,11 +1335,36 @@ dRegions:
     - inject s@dRegions_Flag_Hanging-Place p:event
 
     on player right clicks at armor_stand:
-    - if <player.has_permission[dRegions.admin]||<player.is_op>> queue clear
+    - if <player.permission[dRegions.admin]> || <player.is_op> queue clear
     - define world '<player.world.name>'
+    - if <c.entity.location.cuboids.alphanumeric.unseparated> == <player.location.cuboids.alphanumeric.unseparated> {
+      - define sameRegion 'true'
+      - define rateLimit '<player.flag[dRegions.rateLimit.build]||null>'
+      - if %rateLimit% != null {
+        - if %rateLimit% {
+          - queue clear
+          }
+          else {
+          - run s@dRegions_Flag_Build p:msg delay:1t
+          - determine cancelled
+          }
+        }
+      }
+      else {
+      - define sameRegion 'false'
+      }
     - if <c.entity.location.cuboids.is_empty||true> {
-      - define FlagScript 's@dRegions_Flag_Build'
-      - inject s@dRegions_Flag_Build p:event-global
+      - define cache '<player.flag[dRegions.cache.%world%.__global__.build]||null>'
+      - if %cache% == false {
+        - if %sameRegion% flag <player> dRegions.rateLimit.build:false d:10s
+        - run s@dRegions_Flag_Build p:msg delay:1t
+        - determine cancelled
+        }
+      - if %cache% == null {
+        - define FlagScript 's@dRegions_Flag_Build'
+        - inject s@dRegions_Flag_Build p:event-global
+        }
+      - if %sameRegion% flag <player> dRegions.rateLimit.build:true d:10s
       - queue clear
       }
     - define regionPri 'li@'
@@ -1219,11 +1376,36 @@ dRegions:
     - inject s@dRegions_Flag_Build p:event
 
     on player right clicks item_frame:
-    - if <player.has_permission[dRegions.admin]||<player.is_op>> queue clear
+    - if <player.permission[dRegions.admin]> || <player.is_op> queue clear
     - define world '<player.world.name>'
+    - if <c.entity.location.cuboids.alphanumeric.unseparated> == <player.location.cuboids.alphanumeric.unseparated> {
+      - define sameRegion 'true'
+      - define rateLimit '<player.flag[dRegions.rateLimit.build]||null>'
+      - if %rateLimit% != null {
+        - if %rateLimit% {
+          - queue clear
+          }
+          else {
+          - run s@dRegions_Flag_Build p:msg delay:1t
+          - determine cancelled
+          }
+        }
+      }
+      else {
+      - define sameRegion 'false'
+      }
     - if <c.entity.location.cuboids.is_empty||true> {
-      - define FlagScript 's@dRegions_Flag_Build'
-      - inject s@dRegions_Flag_Build p:event-global
+      - define cache '<player.flag[dRegions.cache.%world%.__global__.build]||null>'
+      - if %cache% == false {
+        - if %sameRegion% flag <player> dRegions.rateLimit.build:false d:10s
+        - run s@dRegions_Flag_Build p:msg delay:1t
+        - determine cancelled
+        }
+      - if %cache% == null {
+        - define FlagScript 's@dRegions_Flag_Build'
+        - inject s@dRegions_Flag_Build p:event-global
+        }
+      - if %sameRegion% flag <player> dRegions.rateLimit.build:true d:10s
       - queue clear
       }
     - define regionPri 'li@'
@@ -1235,11 +1417,36 @@ dRegions:
     - inject s@dRegions_Flag_Build p:event
 
     on player damages item_frame:
-    - if <player.has_permission[dRegions.admin]||<player.is_op>> queue clear
+    - if <player.permission[dRegions.admin]> || <player.is_op> queue clear
     - define world '<player.world.name>'
+    - if <c.entity.location.cuboids.alphanumeric.unseparated> == <player.location.cuboids.alphanumeric.unseparated> {
+      - define sameRegion 'true'
+      - define rateLimit '<player.flag[dRegions.rateLimit.build]||null>'
+      - if %rateLimit% != null {
+        - if %rateLimit% {
+          - queue clear
+          }
+          else {
+          - run s@dRegions_Flag_Build p:msg delay:1t
+          - determine cancelled
+          }
+        }
+      }
+      else {
+      - define sameRegion 'false'
+      }
     - if <c.entity.location.cuboids.is_empty||true> {
-      - define FlagScript 's@dRegions_Flag_Build'
-      - inject s@dRegions_Flag_Build p:event-global
+      - define cache '<player.flag[dRegions.cache.%world%.__global__.build]||null>'
+      - if %cache% == false {
+        - if %sameRegion% flag <player> dRegions.rateLimit.build:false d:10s
+        - run s@dRegions_Flag_Build p:msg delay:1t
+        - determine cancelled
+        }
+      - if %cache% == null {
+        - define FlagScript 's@dRegions_Flag_Build'
+        - inject s@dRegions_Flag_Build p:event-global
+        }
+      - if %sameRegion% flag <player> dRegions.rateLimit.build:true d:10s
       - queue clear
       }
     - define regionPri 'li@'
@@ -1251,7 +1458,7 @@ dRegions:
     - inject s@dRegions_Flag_Build p:event
 
     on player damages player:
-    - if <player.has_permission[dRegions.admin]||<player.is_op>> queue clear
+    - if <player.permission[dRegions.admin]> || <player.is_op> queue clear
     - define world '<c.entity.world.name>'
     - if <c.entity.location.cuboids.is_empty||true> {
       - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.__global__.pvp]||null>'
@@ -1276,11 +1483,36 @@ dRegions:
     - inject s@dRegions_Flag_PVP p:event
 
     on player damages armor_stand:
-    - if <player.has_permission[dRegions.admin]||<player.is_op>> queue clear
+    - if <player.permission[dRegions.admin]> || <player.is_op> queue clear
     - define world '<c.entity.world.name>'
-    - define FlagScript 's@dRegions_Flag_Build'
+    - if <c.entity.location.cuboids.alphanumeric.unseparated> == <player.location.cuboids.alphanumeric.unseparated> {
+      - define sameRegion 'true'
+      - define rateLimit '<player.flag[dRegions.rateLimit.build]||null>'
+      - if %rateLimit% != null {
+        - if %rateLimit% {
+          - queue clear
+          }
+          else {
+          - run s@dRegions_Flag_Build p:msg delay:1t
+          - determine cancelled
+          }
+        }
+      }
+      else {
+      - define sameRegion 'false'
+      }
     - if <c.entity.location.cuboids.is_empty||true> {
-      - inject %FlagScript% p:event-global
+      - define cache '<player.flag[dRegions.cache.%world%.__global__.build]||null>'
+      - if %cache% == false {
+        - if %sameRegion% flag <player> dRegions.rateLimit.build:false d:10s
+        - run s@dRegions_Flag_Build p:msg delay:1t
+        - determine cancelled
+        }
+      - if %cache% == null {
+        - define FlagScript 's@dRegions_Flag_Build'
+        - inject s@dRegions_Flag_Build p:event-global
+        }
+      - if %sameRegion% flag <player> dRegions.rateLimit.build:true d:10s
       - queue clear
       }
     - define regionPri 'li@'
@@ -1288,12 +1520,14 @@ dRegions:
       - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
       }
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
+    - define FlagScript 's@dRegions_Flag_Build'
     - inject %FlagScript% p:event
 
     on player damages entity:
-    - if li@armor_stand|player|item_frame contains <c.entity.prefix> {
+    - if li@armor_stand|player|item_frame contains <c.entity.entity_type> {
       - queue clear
       }
+    - if <player.permission[dRegions.admin]> || <player.is_op> queue clear
     - define target '<c.entity.entity_type>'
     - if <c.entity.location.cuboids.alphanumeric.unseparated||null> == <player.location.cuboids.alphanumeric.unseparated||null> {
       - define rateLimit '<player.flag[dRegions.rateLimit.pve.%target%]||null>'
@@ -1336,10 +1570,36 @@ dRegions:
     - if <c.relative.material.name> != fire {
       - queue clear
       }
+    - if <player.permission[dRegions.admin]> || <player.is_op> queue clear
     - define world '<player.world.name>'
+    - if <c.relative.cuboids.alphanumeric.unseparated> == <player.location.cuboids.alphanumeric.unseparated> {
+      - define sameRegion 'true'
+      - define rateLimit '<player.flag[dRegions.rateLimit.build]||null>'
+      - if %rateLimit% != null {
+        - if %rateLimit% {
+          - queue clear
+          }
+          else {
+          - run s@dRegions_Flag_Build p:msg delay:1t
+          - determine cancelled
+          }
+        }
+      }
+      else {
+      - define sameRegion 'false'
+      }
     - if <c.relative.cuboids.is_empty||true> {
-      - define FlagScript 's@dRegions_Flag_Build'
-      - inject s@dRegions_Flag_Build p:event-global
+      - define cache '<player.flag[dRegions.cache.%world%.__global__.build]||null>'
+      - if %cache% == false {
+        - if %sameRegion% flag <player> dRegions.rateLimit.build:false d:10s
+        - run s@dRegions_Flag_Build p:msg delay:1t
+        - determine cancelled
+        }
+      - if %cache% == null {
+        - define FlagScript 's@dRegions_Flag_Build'
+        - inject s@dRegions_Flag_Build p:event-global
+        }
+      - if %sameRegion% flag <player> dRegions.rateLimit.build:true d:10s
       - queue clear
       }
     - define regionPri 'li@'
@@ -1351,10 +1611,36 @@ dRegions:
     - inject s@dRegions_Flag_Build p:event
 
     on player clicks block with bone_meal:
+    - if <player.permission[dRegions.admin]> || <player.is_op> queue clear
     - define world '<player.world.name>'
-    - if <c.cuboids.is_empty||true> {
-      - define FlagScript 's@dRegions_Flag_Build'
-      - inject s@dRegions_Flag_Build p:event-global
+    - if <c.cuboids.alphanumeric.unseparated> == <player.location.cuboids.alphanumeric.unseparated> {
+      - define sameRegion 'true'
+      - define rateLimit '<player.flag[dRegions.rateLimit.build]||null>'
+      - if %rateLimit% != null {
+        - if %rateLimit% {
+          - queue clear
+          }
+          else {
+          - run s@dRegions_Flag_Build p:msg delay:1t
+          - determine cancelled
+          }
+        }
+      }
+      else {
+      - define sameRegion 'false'
+      }
+    - if <c.cuboids.is_empty> {
+      - define cache '<player.flag[dRegions.cache.%world%.__global__.build]||null>'
+      - if %cache% == false {
+        - if %sameRegion% flag <player> dRegions.rateLimit.build:false d:10s
+        - run s@dRegions_Flag_Build p:msg delay:1t
+        - determine cancelled
+        }
+      - if %cache% == null {
+        - define FlagScript 's@dRegions_Flag_Build'
+        - inject s@dRegions_Flag_Build p:event-global
+        }
+      - if %sameRegion% flag <player> dRegions.rateLimit.build:true d:10s
       - queue clear
       }
     - define regionPri 'li@'
@@ -1375,7 +1661,7 @@ dRegions:
         - determine cancelled
         }
       }
-    - if ( <player.has_permission[dregions.invincible]> || <player.has_permission[dregions.invincible.<c.cause>]> ) && !<player.is_op> {
+    - if ( <player.permission[dregions.invincible]> || <player.permission[dregions.invincible.<c.cause>]> ) && !<player.is_op> {
       - flag <player> dRegions.rateLimit.player-damage.%target%:false d:5s
       - adjust <player> 'fire_time:0'
       - determine cancelled
@@ -1423,9 +1709,8 @@ dRegions:
     - inject s@dRegions_Flag_Hunger p:event
 
     on player teleports:
-    - if <c.cause.is[!=].to[ender_pearl]||true> {
-      - queue clear
-      }
+    - if <c.cause> != ender_pearl queue clear
+    - if <player.permission[dRegions.admin]> || <player.is_op> queue clear
     - define world '<player.world.name>'
     - define cuboids '<c.origin.cuboids.include[<c.destination.cuboids>].deduplicate>'
     - if <def[cuboids].is_empty||true> {
@@ -1862,10 +2147,36 @@ dRegions:
     - inject %FlagScript% p:event
 
     on player breaks hanging:
+    - if <player.permission[dRegions.admin]> || <player.is_op> queue clear
     - define world '<c.entity.world.name>'
+    - if <c.hanging.location.cuboids.alphanumeric.unseparated> == <player.location.cuboids.alphanumeric.unseparated> {
+      - define sameRegion 'true'
+      - define rateLimit '<player.flag[dRegions.rateLimit.build]||null>'
+      - if %rateLimit% != null {
+        - if %rateLimit% {
+          - queue clear
+          }
+          else {
+          - run s@dRegions_Flag_Build p:msg delay:1t
+          - determine cancelled
+          }
+        }
+      }
+      else {
+      - define sameRegion 'false'
+      }
     - if <c.hanging.location.cuboids.is_empty||true> {
-      - define FlagScript 's@dRegions_Flag_Build'
-      - inject s@dRegions_Flag_Build p:event-global
+      - define cache '<player.flag[dRegions.cache.%world%.__global__.build]||null>'
+      - if %cache% == false {
+        - if %sameRegion% flag <player> dRegions.rateLimit.build:false d:10s
+        - run s@dRegions_Flag_Build p:msg delay:1t
+        - determine cancelled
+        }
+      - if %cache% == null {
+        - define FlagScript 's@dRegions_Flag_Build'
+        - inject s@dRegions_Flag_Build p:event-global
+        }
+      - if %sameRegion% flag <player> dRegions.rateLimit.build:true d:10s
       - define FlagScript 's@dRegions_Flag_Hanging-Break'
       - inject s@dRegions_Flag_Hanging-Break p:event-global
       - queue clear
@@ -2432,7 +2743,7 @@ dRegions_Commands:
   tab_arg_1:
     # This Excludes args from the original args
     - foreach %args% {
-      - if !<player.has_permission[dregions.%value%]||<player.is_op||false>> {
+      - if !<player.permission[dregions.%value%]||<player.is_op||false>> {
         - define args '<def[args].exclude[%value%]||%args%>'
         }
       }
@@ -2454,7 +2765,7 @@ dRegions_Commands:
       else if <def[spaces].is[==].to[1]> {
       - define result 'li@'
       - foreach %args% {
-        - if <player.has_permission[dregions.%value%]||<player.is_op||false>> {
+        - if <player.permission[dregions.%value%]||<player.is_op||false>> {
           - define result '<def[result].include[%value%]||%result%>'
           }
           else {
@@ -2465,7 +2776,7 @@ dRegions_Commands:
         - define result '<def[args].filter[starts_with[<c.args.get[2]>]]||li@>'
         - if <def[result].is_empty> {
           - foreach %args% {
-            - if <player.has_permission[dregions.%value%]||<player.is_op||false>> {
+            - if <player.permission[dregions.%value%]||<player.is_op||false>> {
               - define result '<def[result].include[%value%]||%result%>'
               }
               else {
@@ -2487,7 +2798,7 @@ dRegions_Commands:
 
   tab_define:
   # /drg define [ID] (g:group) (player)
-    - if <player.has_permission[dregions.define]||<player.is_op||false>> {
+    - if <player.permission[dregions.define]||<player.is_op||false>> {
       - define spaces '<c.raw_args.to_list.count[ ]||0>'
       - if <def[spaces].is[==].to[0]> {
         - define result 'define [ID]'
@@ -2533,11 +2844,11 @@ dRegions_Commands:
 
   tab_redefine:
   # /drg redefine [ID]
-    - if <player.has_permission[dregions.redefine]||<player.is_op||false>> {
+    - if <player.permission[dregions.redefine]||<player.is_op||false>> {
       - define spaces '<c.raw_args.to_list.count[ ]||0>'
       - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name.to_lowercase||<player.world.name.to_lowercase||null>>'
       - define regions '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__].alphanumeric||li@>'
-      - if !<player.has_permission[dregions.admin]||<player.is_op||true>> {
+      - if !<player.permission[dregions.admin]||<player.is_op||true>> {
         - foreach %regions% {
           - if <proc[dRegions_IsOwner].context[%value%|%world%|<player>].not> {
             - define regions '<def[regions].exclude[%value%]||%regions%>'
@@ -2562,11 +2873,11 @@ dRegions_Commands:
       }
 
   tab_claim:
-    - if <player.has_permission[dregions.claim]||<player.is_op||false>> {
+    - if <player.permission[dregions.claim]||<player.is_op||false>> {
       - define spaces '<c.raw_args.to_list.count[ ]||0>'
       - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name.to_lowercase||<player.world.name.to_lowercase||null>>'
       - define regions '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__].alphanumeric||li@>'
-      - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
+      - if !<player.permission[dregions.admin]||<player.is_op||false>> {
         - foreach %regions% {
           - if <proc[dRegions_IsOwner].context[%value%|%world%|<player>].not> {
             - define regions '<def[regions].exclude[%value%]||%regions%>'
@@ -2592,11 +2903,11 @@ dRegions_Commands:
 
   tab_select:
   # /drg select [ID] -w world
-    - if <player.has_permission[dregions.select]||<player.is_op||false>> {
+    - if <player.permission[dregions.select]||<player.is_op||false>> {
       - define spaces '<c.raw_args.to_list.count[ ]||0>'
       - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name.to_lowercase||<player.world.name.to_lowercase||null>>'
       - define regions '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__].alphanumeric||li@>'
-      - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
+      - if !<player.permission[dregions.admin]||<player.is_op||false>> {
         - foreach %regions% {
           - if <proc[dRegions_IsOwner].context[%value%|%world%|<player>].not> {
             - define regions '<def[regions].exclude[%value%]||%regions%>'
@@ -2622,11 +2933,11 @@ dRegions_Commands:
 
   tab_info:
   # /drg info [ID] -w world
-    - if <player.has_permission[dregions.info]||<player.is_op||false>> {
+    - if <player.permission[dregions.info]||<player.is_op||false>> {
       - define spaces '<c.raw_args.to_list.count[ ]||0>'
       - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name.to_lowercase||<player.world.name.to_lowercase||null>>'
       - define regions '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__].alphanumeric||li@>'
-      - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
+      - if !<player.permission[dregions.admin]||<player.is_op||false>> {
         - foreach %regions% {
           - if <proc[dRegions_IsOwner].context[%value%|%world%|<player>].not> {
             - define regions '<def[regions].exclude[%value%]||%regions%>'
@@ -2652,11 +2963,11 @@ dRegions_Commands:
 
   tab_addowner:
   # /drg addowner [ID] g:group player -w world
-    - if <player.has_permission[dregions.addowner]||<player.is_op||false>> {
+    - if <player.permission[dregions.addowner]||<player.is_op||false>> {
       - define spaces '<c.raw_args.to_list.count[ ]||0>'
       - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name.to_lowercase||<player.world.name.to_lowercase||null>>'
       - define regions '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__].alphanumeric||li@>'
-      - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
+      - if !<player.permission[dregions.admin]||<player.is_op||false>> {
         - foreach %regions% {
           - if <proc[dRegions_IsOwner].context[%value%|%world%|<player>].not> {
             - define regions '<def[regions].exclude[%value%]||%regions%>'
@@ -2703,11 +3014,11 @@ dRegions_Commands:
 
   tab_removeowner:
   # /drg removeowner [ID] g:group player -w world
-    - if <player.has_permission[dregions.removeowner]||<player.is_op||false>> {
+    - if <player.permission[dregions.removeowner]||<player.is_op||false>> {
       - define spaces '<c.raw_args.to_list.count[ ]||0>'
       - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name.to_lowercase||<player.world.name.to_lowercase||null>>'
       - define regions '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__].alphanumeric||li@>'
-      - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
+      - if !<player.permission[dregions.admin]||<player.is_op||false>> {
         - foreach %regions% {
           - if <proc[dRegions_IsOwner].context[%value%|%world%|<player>].not> {
             - define regions '<def[regions].exclude[%value%]||%regions%>'
@@ -2754,11 +3065,11 @@ dRegions_Commands:
 
   tab_addmember:
   # /drg addmember [ID] g:group player -w world
-    - if <player.has_permission[dregions.addmember]||<player.is_op||false>> {
+    - if <player.permission[dregions.addmember]||<player.is_op||false>> {
       - define spaces '<c.raw_args.to_list.count[ ]||0>'
       - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name.to_lowercase||<player.world.name.to_lowercase||null>>'
       - define regions '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__].alphanumeric||li@>'
-      - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
+      - if !<player.permission[dregions.admin]||<player.is_op||false>> {
         - foreach %regions% {
           - if <proc[dRegions_IsOwner].context[%value%|%world%|<player>].not> {
             - define regions '<def[regions].exclude[%value%]||%regions%>'
@@ -2805,11 +3116,11 @@ dRegions_Commands:
 
   tab_removemember:
   # /drg removemember [ID] g:group player -w world
-    - if <player.has_permission[dregions.removemember]||<player.is_op||false>> {
+    - if <player.permission[dregions.removemember]||<player.is_op||false>> {
       - define spaces '<c.raw_args.to_list.count[ ]||0>'
       - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name.to_lowercase||<player.world.name.to_lowercase||null>>'
       - define regions '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__].alphanumeric||li@>'
-      - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
+      - if !<player.permission[dregions.admin]||<player.is_op||false>> {
         - foreach %regions% {
           - if <proc[dRegions_IsOwner].context[%value%|%world%|<player>].not> {
             - define regions '<def[regions].exclude[%value%]||%regions%>'
@@ -2860,7 +3171,7 @@ dRegions_Commands:
   tab_flag:
   # TODO
   # /drg flag [ID] [flag] [value] -g group -w world
-    - if <player.has_permission[dregions.flag]||<player.is_op||false>> {
+    - if <player.permission[dregions.flag]||<player.is_op||false>> {
       - define spaces '<c.raw_args.to_list.count[ ]||0>'
       - if <def[spaces].is[==].to[0]> {
         - define result 'flag [ID]'
@@ -2874,7 +3185,7 @@ dRegions_Commands:
           }
           else if <context.server.not> {
           - define regions '<yaml[dRegions_<player.world.name.to_lowercase>_regions].list_keys[regions].alphanumeric||li@>'
-          - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
+          - if !<player.permission[dregions.admin]||<player.is_op||false>> {
             - foreach %regions% {
               - if <proc[dRegions_IsOwner].context[%value%|<player.world.name.to_lowercase>|<player>].not> {
                 - define regions '<def[regions].exclude[%value%]||%regions%>'
@@ -2975,7 +3286,7 @@ dRegions_Commands:
 
   tab_setpriority:
   # /drg remove [ID] -w world
-    - if <player.has_permission[dregions.setpriority]||<player.is_op||false>> {
+    - if <player.permission[dregions.setpriority]||<player.is_op||false>> {
       - define spaces '<c.raw_args.to_list.count[ ]||0>'
       - if <def[spaces].is[==].to[0]> {
         - define result 'setpriority [ID]'
@@ -2989,7 +3300,7 @@ dRegions_Commands:
           }
           else if <context.server.not> {
           - define regions '<yaml[dRegions_<player.world.name.to_lowercase>_regions].list_keys[regions].exclude[__global__].alphanumeric||li@>'
-          - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
+          - if !<player.permission[dregions.admin]||<player.is_op||false>> {
             - foreach %regions% {
               - if <proc[dRegions_IsOwner].context[%value%|<player.world.name.to_lowercase>|<player>].not> {
                 - define regions '<def[regions].exclude[%value%]||%regions%>'
@@ -3089,7 +3400,7 @@ dRegions_Commands:
 
   tab_remove:
   # /drg remove [ID] -w world
-    - if <player.has_permission[dregions.remove]||<player.is_op||false>> {
+    - if <player.permission[dregions.remove]||<player.is_op||false>> {
       - define spaces '<c.raw_args.to_list.count[ ]||0>'
       - if <def[spaces].is[==].to[0]> {
         - define result 'remove [ID] -w world'
@@ -3103,7 +3414,7 @@ dRegions_Commands:
           }
           else if <context.server.not> {
           - define regions '<yaml[dRegions_<player.world.name.to_lowercase>_regions].list_keys[regions].exclude[__global__].alphanumeric||li@>'
-          - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
+          - if !<player.permission[dregions.admin]||<player.is_op||false>> {
             - foreach %regions% {
               - if <proc[dRegions_IsOwner].context[%value%|<player.world.name.to_lowercase>|<player>].not> {
                 - define regions '<def[regions].exclude[%value%]||%regions%>'
@@ -3180,7 +3491,7 @@ dRegions_Commands:
       - run s@dRegions_Msg 'def:<script.yaml_key[commandArgs.%arg%.usage]||No help for you!>'
       - queue clear
       }
-    - if <player.has_permission[dRegions.admin]||<player.is_op||<context.server||false>>> {
+    - if <player.permission[dRegions.admin]||<player.is_op||<context.server||false>>> {
       - inject locally msgsHelpAdmin
       }
       else {
@@ -3195,7 +3506,7 @@ dRegions_Commands:
     - queue clear
 
   reload:
-    - if !<player.has_permission[dRegions.reload]||<player.is_op||<context.server||false>>> {
+    - if !<player.permission[dRegions.reload]||<player.is_op||<context.server||false>>> {
       - inject locally help
       - queue clear
       }
@@ -3203,7 +3514,7 @@ dRegions_Commands:
 #    - run s@dRegions_Msg 'def:<&7><&o>System files loaded!'
 
   restart:
-    - if !<player.has_permission[dRegions.restart]||<player.is_op||<context.server||false>>> {
+    - if !<player.permission[dRegions.restart]||<player.is_op||<context.server||false>>> {
       - inject locally help
       - queue clear
       }
@@ -3225,7 +3536,7 @@ dRegions_Commands:
       - queue clear
       }
     # Check for overlapping regions
-    - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dregions.admin]||<player.is_op||false>> {
       - if <proc[dRegions_RegionOverlaps].context[<def[selectedCuboid].replace[cu@].replace[|].with[/]>|%world%|<player>]> {
         - run s@dRegions_Msg 'def:<&c>Region selection contains unowned regions!'
         - queue clear
@@ -3279,14 +3590,14 @@ dRegions_Commands:
       - queue clear
       }
     # Check if is owner
-    - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dregions.admin]||<player.is_op||false>> {
       - if <proc[dRegions_IsOwner].context[%name%|%world%|<player>].not> {
         - run s@dRegions_Msg 'def:<&c>You are not an owner of this region!'
         - queue clear
         }
       }
     # Check for overlapping regions
-    - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dregions.admin]||<player.is_op||false>> {
       - if <proc[dRegions_RegionOverlaps].context[<def[selectedCuboid].replace[cu@].replace[|].with[/]>|%world%|<player>]> {
         - run s@dRegions_Msg 'def:<&c>Region selection contains unowned regions!'
         - queue clear
@@ -3317,7 +3628,7 @@ dRegions_Commands:
         }
       - if <def[playerGlobalRegions].size.is[OR_MORE].than[%globalRegionLimit%]> {
         - run s@dRegions_Msg 'def:<&c>You already have <def[playerGlobalRegions].size> total regions!'
-        - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+        - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
           - queue clear
           }
         - run s@dRegions_Msg 'def:<&c>But you are an admin so it is ok!'
@@ -3335,7 +3646,7 @@ dRegions_Commands:
         }
       - if <def[playerWorldRegions].size.is[OR_MORE].than[%worldRegionLimit%]> {
         - run s@dRegions_Msg 'def:<&c>You already have <def[playerWorldRegions].size> regions in this world!'
-        - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+        - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
           - queue clear
           }
         - run s@dRegions_Msg 'def:<&c>But you are an admin so it is ok!'
@@ -3348,7 +3659,7 @@ dRegions_Commands:
       - if <def[size].is[MORE].than[%globalClaimVol%]> {
         - run s@dRegions_Msg 'def:<&c>Your selection exceeds the global limit!'
         - run s@dRegions_Msg 'def:<&7><&o>Selected <&8>(<&7><&o>%size%<&8>) <&7><&o>Limit <&8>(<&7><&o>%globalClaimVol%<&8>) <&7><&o>Over <&8>(<&7><&o><def[size].sub[%globalClaimVol%].as_int><&8>)'
-        - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+        - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
           - queue clear
           }
         - run s@dRegions_Msg 'def:<&c>But you are an admin so it is ok!'
@@ -3359,7 +3670,7 @@ dRegions_Commands:
       - if <def[size].is[MORE].than[%worldClaimVol%]> {
         - run s@dRegions_Msg 'def:<&c>Your selection exceeds the world limit!'
         - run s@dRegions_Msg 'def:<&7><&o>Selected <&8>(<&7><&o>%size%<&8>) <&7><&o>Limit <&8>(<&7><&o>%worldClaimVol%<&8>) <&7><&o>Over <&8>(<&7><&o><def[size].sub[%worldClaimVol%].as_int><&8>)'
-        - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+        - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
           - queue clear
           }
         - run s@dRegions_Msg 'def:<&c>But you are an admin so it is ok!'
@@ -3386,7 +3697,7 @@ dRegions_Commands:
         }
       - if <def[isWithin].exists.not> {
         - run s@dRegions_Msg 'def:<&c>You may only claim regions within land you own'
-        - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+        - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
           - queue clear
           }
         - run s@dRegions_Msg 'def:<&c>But you are an admin so it is ok!'
@@ -3413,10 +3724,10 @@ dRegions_Commands:
       - define update ''
       }
     # Check for overlapping regions
-    - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dregions.admin]||<player.is_op||false>> {
       - if <proc[dRegions_RegionOverlaps].context[<def[selectedCuboid].replace[cu@].replace[|].with[/]>|%world%|<player>]> {
         - run s@dRegions_Msg 'def:<&c>Region selection contains unowned regions!'
-        - if !<player.has_permission[dRegions.admin]||<player.is_op||false>> {
+        - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
           - queue clear
           }
         - run s@dRegions_Msg 'def:<&c>But you are an admin so it is ok!'
@@ -3456,7 +3767,7 @@ dRegions_Commands:
       - queue clear
       }
     # Check if is owner
-    - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dregions.admin]||<player.is_op||false>> {
       - if <proc[dRegions_IsOwner].context[%name%|%world%|<player>].not> {
         - run s@dRegions_Msg 'def:<&c>You are not an owner of this region!'
         - queue clear
@@ -3484,7 +3795,7 @@ dRegions_Commands:
       - queue clear
       }
     # Check if is owner
-    - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dregions.admin]||<player.is_op||false>> {
       - if <proc[dRegions_IsOwner].context[%name%|%world%|<player>].not> {
         - run s@dRegions_Msg 'def:<&c>You are not an owner of this region!'
         - queue clear
@@ -3553,7 +3864,7 @@ dRegions_Commands:
       - queue clear
       }
     # Check if is owner
-    - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dregions.admin]||<player.is_op||false>> {
       - if <proc[dRegions_IsOwner].context[%name%|%world%|<player>].not> {
         - run s@dRegions_Msg 'def:<&c>You are not an owner of this region!'
         - queue clear
@@ -3615,7 +3926,7 @@ dRegions_Commands:
       - queue clear
       }
     # Check if is owner
-    - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dregions.admin]||<player.is_op||false>> {
       - if <proc[dRegions_IsOwner].context[%name%|%world%|<player>].not> {
         - run s@dRegions_Msg 'def:<&c>You are not an owner of this region!'
         - queue clear
@@ -3680,7 +3991,7 @@ dRegions_Commands:
       - queue clear
       }
     # Check if is owner
-    - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dregions.admin]||<player.is_op||false>> {
       - if <proc[dRegions_IsOwner].context[%name%|%world%|<player>].not> {
         - run s@dRegions_Msg 'def:<&c>You are not an owner of this region!'
         - queue clear
@@ -3745,7 +4056,7 @@ dRegions_Commands:
       - queue clear
       }
     # Check if is owner
-    - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dregions.admin]||<player.is_op||false>> {
       - if <proc[dRegions_IsOwner].context[%name%|%world%|<player>].not> {
         - run s@dRegions_Msg 'def:<&c>You are not an owner of this region!'
         - queue clear
@@ -3801,7 +4112,7 @@ dRegions_Commands:
     - define args '<c.args.remove[1]>'
     # Check the specified player
     - if <def[args].find[-p].is[OR_MORE].than[0]||false> {
-      - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
+      - if !<player.permission[dregions.admin]||<player.is_op||false>> {
         - run s@dRegions_Msg 'def:<&c>You may not list other players regions!'
         - queue clear
         }
@@ -3868,7 +4179,7 @@ dRegions_Commands:
           - run s@dRegions_Msg 'def:<&c>There is no region by this name!'
           - queue clear
           }
-        - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
+        - if !<player.permission[dregions.admin]||<player.is_op||false>> {
           - if <proc[dRegions_IsOwner].context[<def[region]>|<def[world]>|<player>].not> {
             - run s@dRegions_Msg 'def:<&c>You are not an owner of this region!'
             - queue clear
@@ -3971,7 +4282,7 @@ dRegions_Commands:
         - run s@dRegions_Msg 'def:<&c>There is no region by this name!'
         - queue clear
         }
-      - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
+      - if !<player.permission[dregions.admin]||<player.is_op||false>> {
         - if <proc[dRegions_IsOwner].context[<def[region]>|<def[world]>|<player>].not> {
           - run s@dRegions_Msg 'def:<&c>You are not an owner of this region!'
           - queue clear
@@ -4070,7 +4381,7 @@ dRegions_Commands:
       - queue clear
       }
     # Check if is owner
-    - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dregions.admin]||<player.is_op||false>> {
       - if <proc[dRegions_IsOwner].context[%name%|%world%|<player>].not> {
         - run s@dRegions_Msg 'def:<&c>You are not an owner of this region!'
         - queue clear
@@ -4108,7 +4419,7 @@ dRegions_Commands:
       - queue clear
       }
     # Check if is owner
-    - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dregions.admin]||<player.is_op||false>> {
       - if <proc[dRegions_IsOwner].context[%name%|%world%|<player>].not> {
         - run s@dRegions_Msg 'def:<&c>You are not an owner of this region!'
         - queue clear
@@ -4144,7 +4455,7 @@ dRegions_Commands:
       - queue clear
       }
     # Check if player owns parent
-    - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dregions.admin]||<player.is_op||false>> {
       - if <proc[dRegions_IsOwner].context[%parent%|%world%|<player>].not> {
         - run s@dRegions_Msg 'def:<&c>You are not an owner of this region!'
         - queue clear
@@ -4184,7 +4495,7 @@ dRegions_Commands:
       - queue clear
       }
     # Check if is owner
-    - if !<player.has_permission[dregions.admin]||<player.is_op||false>> {
+    - if !<player.permission[dregions.admin]||<player.is_op||false>> {
       - if <proc[dRegions_IsOwner].context[%name%|%world%|<player>].not> {
         - run s@dRegions_Msg 'def:<&c>You are not an owner of this region!'
         - queue clear
@@ -4217,7 +4528,7 @@ dRegions_Commands:
 #
   prerun:
   # Block of checks run before /most/ commands
-    - if !<player.has_permission[dRegions.%command%]||<player.is_op||false>> {
+    - if !<player.permission[dRegions.%command%]||<player.is_op||false>> {
       - inject locally help
       - queue clear
       }
@@ -4375,7 +4686,7 @@ dRegions_Commands:
     # Filter the list of commands this player can use
     - define commands '<script.list_keys[commandArgs].alphanumeric.to_lowercase||li@>'
     - foreach %commands% {
-      - if !<player.has_permission[dregions.%value%]||<player.is_op||<c.server||false>>> {
+      - if !<player.permission[dregions.%value%]||<player.is_op||<c.server||false>>> {
         - define commands '<def[commands].exclude[%value%]>'
         }
         else {
@@ -4479,7 +4790,7 @@ dRegions_Commands:
 #      - queue clear
 #      }
 #    # Check if is owner
-#    - if !<player.has_permission[dregions.admin]||false> {
+#    - if !<player.permission[dregions.admin]||false> {
 #      - if <proc[dRegions_IsOwner].context[%name%|%world%|<player>].not> {
 #        - run s@dRegions_Msg 'def:<&c>You are not an owner of this region!'
 #        - queue clear
@@ -4494,7 +4805,7 @@ dRegions_Commands:
 
 #  prerun:
 #  # Block of checks run before /most/ commands
-#    - if !<player.has_permission[dRegions.%command%]||<player.is_op||false>> {
+#    - if !<player.permission[dRegions.%command%]||<player.is_op||false>> {
 #      - inject locally help
 #      - queue clear
 #      }
@@ -4827,7 +5138,7 @@ dRegions_CanUse_Block:
     - define FlagScript '<s@dRegions_Map_Interactions.yaml_key[block.%target%]||s@dRegions_Map_Interactions>'
     - define flag '<def[FlagScript].yaml_key[flag_name]||null>'
     - if %flag% == null determine false
-    - if <def[player].has_permission[dregions.admin]||<def[player].is_op>> determine true
+    - if <def[player].permission[dregions.admin]||<def[player].is_op>> determine true
     - define flag-targetList '<def[FlagScript].yaml_key[flag_targetList]||null>'
     - if <def[location].cuboids.is_empty||true> {
       - inject locally check-global
