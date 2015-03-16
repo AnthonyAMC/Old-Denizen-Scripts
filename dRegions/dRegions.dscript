@@ -979,21 +979,27 @@ dRegions:
       - queue clear
       }
     - define target '<c.entity.entity_type>'
-    - define rateLimit '<player.flag[dRegions.rateLimit.entity-interact.%target%]||null>'
-    - if %rateLimit% != null {
-      - if %rateLimit% {
-        - queue clear
+    - if <c.location.cuboids.alphanumeric.unseparated||null> == <player.location.cuboids.alphanumeric.unseparated||null> {
+      - define sameRegion 'true'
+      - define rateLimit '<player.flag[dRegions.rateLimit.entity-interact.%target%]||null>'
+      - if %rateLimit% != null {
+        - if %rateLimit% {
+          - queue clear
+          }
+          else {
+          - run s@dRegions_Flag_entity-interact p:msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
+          - determine cancelled
+          }
         }
-        else {
-        - run s@dRegions_Flag_Entity-Interact p:msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
-        - determine cancelled
-        }
+      }
+      else {
+      - define sameRegion 'false'
       }
     - define world '<player.world.name>'
     - if <c.location.cuboids.is_empty||true> {
       - define cache '<player.flag[dRegions.cache.%world%.__global__.entity-interact.%target%]||null>'
       - if %cache% == false {
-        - flag <player> dRegions.rateLimit.entity-interact.%target%:false d:10s
+        - if %sameRegion% flag <player> dRegions.rateLimit.entity-interact.%target%:false d:10s
         - run s@dRegions_Flag_Entity-Interact p:msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
         - determine cancelled
         }
@@ -1001,7 +1007,7 @@ dRegions:
         - define FlagScript 's@dRegions_Flag_Entity-Interact'
         - inject s@dRegions_Flag_Entity-Interact p:event-global
         }
-      - flag <player> dRegions.rateLimit.entity-interact.%target%:true d:10s
+      - if %sameRegion% flag <player> dRegions.rateLimit.entity-interact.%target%:true d:10s
       - queue clear
       }
     - define regionPri 'li@'
@@ -1016,7 +1022,7 @@ dRegions:
     - define color '<s@dRegions_Map_Interactions.yaml_key[dye_colors.<c.color>]>'
     - define player '<c.entity.location.find.players.within[5].filter[item_in_hand.material.bukkit_enum.is[==].to[ink_sack]].filter[item_in_hand.material.data.is[==].to[%color%]].get[1]>'
     - event player:%player% 'player right clicks entity' 'context:entity|<c.entity>|location|<c.entity.location>|dye|true' save:event
-    - if <entry[event].determinations.get[1]> == cancelled {
+    - if <entry[event].determinations.get[1]||null> == cancelled {
       - determine cancelled
       }
 

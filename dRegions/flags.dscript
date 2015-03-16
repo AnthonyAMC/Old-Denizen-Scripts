@@ -1524,7 +1524,7 @@ dRegions_Flag_Entity-Interact:
   event_priority: 10
   flag_type: state-withTarget-withGroup
   flag_takeGroup: true
-  flag_defaultValue: none
+  flag_defaultValue: deny/nonmembers
   flag_globalDefault: none
   flag_help: State flag controlling whether players will be able to interact with entities in this region. Defaults to allow all. Use entity-interactlist flag to specify entity types. Takes the -g group switch.
   script:
@@ -1544,10 +1544,10 @@ dRegions_Flag_Entity-Interact:
         }
       - if %cache% != null {
         - if %cache% {
-          - flag <player> dRegions.rateLimit.entity-interact.%target%:true d:10s
+          - if %sameRegion% flag <player> dRegions.rateLimit.entity-interact.%target%:true d:10s
           - queue clear
           }
-        - flag <player> dRegions.rateLimit.entity-interact.%target%:false d:10s
+        - if %sameRegion% flag <player> dRegions.rateLimit.entity-interact.%target%:false d:10s
         - run locally msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
         - determine cancelled
         }
@@ -1557,20 +1557,17 @@ dRegions_Flag_Entity-Interact:
         - foreach stop
         }
         else {
-        - flag <player> dRegions.rateLimit.entity-interact.%target%:true d:10s
         - flag <player> dRegions.cache.%world%.%value%.entity-interact.%target%:none
         }
       }
-    - if %flagObj% != null {
-      - define player <player>
-      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|entity-interactlist].replace[, ].with[|].as_list>'
-      - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
-      - flag <player> dRegions.rateLimit.entity-interact.%target%:true d:10s
-      - flag <player> dRegions.cache.%world%.%thisRegion%.entity-interact.%target%:true
+    - if %flagObj% == null {
+      - define flagObj 'deny/nonmembers'
       }
-      else {
-      - flag <player> dRegions.rateLimit.entity-interact.%target%:true d:10s
-      }
+    - define player <player>
+    - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|entity-interactlist].replace[, ].with[|].as_list>'
+    - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
+    - if %sameRegion% flag <player> dRegions.rateLimit.entity-interact.%target%:true d:10s
+    - flag <player> dRegions.cache.%world%.%thisRegion%.entity-interact.%target%:true
 
   event-global:
     - define thisRegion '__global__'
@@ -1580,16 +1577,16 @@ dRegions_Flag_Entity-Interact:
       - define player '<player>'
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|entity-interactlist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
-      - flag <player> dRegions.rateLimit.entity-interact.%target%:true d:10s
+      - if %sameRegion% flag <player> dRegions.rateLimit.entity-interact.%target%:true d:10s
       - flag <player> dRegions.cache.%world%.__global__.entity-interact.%target%:true
       }
       else {
-      - flag <player> dRegions.rateLimit.entity-interact.%target%:true d:10s
+      - if %sameRegion% flag <player> dRegions.rateLimit.entity-interact.%target%:true d:10s
       - flag <player> dRegions.cache.%world%.__global__.entity-interact.%target%:none
       }
 
   event-cleanup:
-    - flag <player> dRegions.rateLimit.entity-interact.%target%:false d:10s
+    - if %sameRegion% flag <player> dRegions.rateLimit.entity-interact.%target%:false d:10s
     - flag <player> dRegions.cache.%world%.%thisRegion%.entity-interact.%target%:false
     - run locally msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
 
