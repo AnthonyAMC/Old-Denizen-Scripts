@@ -975,7 +975,7 @@ dRegions:
     - inject s@dRegions_Flag_NPC-Interact p:event
 
     on player right clicks entity:
-    - if <c.entity.is_player> || <c.entity.is_npc> || <c.entity.entity_type> == item_frame {
+    - if <c.entity.is_player> || <c.entity.is_npc> || <c.entity.entity_type> == item_frame || ( <c.entity.entity_type> == sheep && <c.dye.not||true> ) {
       - queue clear
       }
     - define target '<c.entity.entity_type>'
@@ -990,7 +990,7 @@ dRegions:
         }
       }
     - define world '<player.world.name>'
-    - if <c.cuboids.is_empty||true> {
+    - if <c.location.cuboids.is_empty||true> {
       - define cache '<player.flag[dRegions.cache.%world%.__global__.entity-interact.%target%]||null>'
       - if %cache% == false {
         - flag <player> dRegions.rateLimit.entity-interact.%target%:false d:10s
@@ -1005,12 +1005,20 @@ dRegions:
       - queue clear
       }
     - define regionPri 'li@'
-    - foreach <c.cuboids.parse[notable_name].filter[starts_with[dRegions_]].parse[after[dregions_%world%_]].include[__global__]> {
+    - foreach <c.location.cuboids.parse[notable_name].filter[starts_with[dRegions_]].parse[after[dregions_%world%_]].include[__global__]> {
       - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
       }
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
     - define FlagScript 's@dRegions_Flag_Entity-Interact'
     - inject s@dRegions_Flag_Entity-Interact p:event
+
+    on player dyes sheep:
+    - define color '<s@dRegions_Map_Interactions.yaml_key[dye_colors.<c.color>]>'
+    - define player '<c.entity.location.find.players.within[5].filter[item_in_hand.material.bukkit_enum.is[==].to[ink_sack]].filter[item_in_hand.material.data.is[==].to[%color%]].get[1]>'
+    - event player:%player% 'player right clicks entity' 'context:entity|<c.entity>|location|<c.entity.location>|dye|true' save:event
+    - if <entry[event].determinations.get[1]> == cancelled {
+      - determine cancelled
+      }
 
     on player enters bed:
     # Do we need to fire events for region enter, exit, and toggle?
@@ -5503,6 +5511,24 @@ dRegions_Map_Interactions:
     gold_record: jukebox
     glass_bottle: cauldron
     flint_and_steel: tnt
+
+  dye_colors:
+    black: 0
+    red: 1
+    green: 2
+    brown: 3
+    blue: 4
+    purple: 5
+    cyan: 6
+    silver: 7
+    gray: 8
+    pink: 9
+    lime: 10
+    yellow: 11
+    light_blue: 12
+    magenta: 13
+    orange: 14
+    white: 15
 
 #
 #  END dRegions Interaction Mapping
