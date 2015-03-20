@@ -41,25 +41,52 @@ dRegions_Flag_Entry:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - define player <player>
-    - define region '<def[orderedRegions].get[1]>'
-    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
-      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|entry]>'
-      - if %flagObj% != null {
-        - inject s@dRegions_Flags_Processors p:state-withGroup
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - if !<player.permission[dRegions.admin]> && !<player.is_op> {
+      - define cache '<player.flag[dRegions.cache.%world%.%thisRegion%.entry]||null>'
+      - if %cache% == null {
+        - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|entry]>'
+        - if %flagObj% != null {
+          - define player <player>
+          - inject s@dRegions_Flags_Processors p:state-withGroup
+          }
+        - flag <player> dRegions.cache.%world%.%thisRegion%.entry:true
+        }
+        else {
+        - if !%cache% {
+          - run locally msg delay:1t
+          - determine cancelled
+          }
         }
       }
-    - run locally entered delay:1t player:<player> def:%world%|%region%|<def[orderedRegions].escaped>
+    - flag <player> dRegions.rateLimit:!
+    - run locally entered delay:1t player:<player> def:%world%|%thisRegion%|<def[orderedRegions].escaped>
 
   event-global:
-    - define player <player>
-    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
+    - define thisRegion '__global__'
+    - if !<player.permission[dRegions.admin]> && !<player.is_op> {
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|entry]>'
       - if %flagObj% != null {
-        - inject s@dRegions_Flags_Processors p:state-withGroup-Global
+        - define player <player>
+        - inject s@dRegions_Flags_Processors p:state-withGroup-global
         }
+      - flag <player> dRegions.cache.%world%.__global__.entry:true
       }
+    - flag <player> dRegions.rateLimit:!
     - run locally entered-global delay:1t player:<player> def:%world%|__global__
+
+  event-cleanup:
+    - if <player.is_inside_vehicle> {
+      - run locally vehicle 'def:<player.get_vehicle>|<c.from>' delay:1t
+      }
+    - flag <player> dRegions.cache.%world%.%thisRegion%.entry:false
+    - run locally msg delay:1t
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
+      - flag <player> dRegions_Message_Cooldown duration:3s
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You do not have permission to enter this region'
+      }
 
   entered:
     - ^define world '%1%'
@@ -83,18 +110,6 @@ dRegions_Flag_Entry:
     - ^inject s@dRegions_Flag_Gamemode p:event-enter
     - ^inject s@dRegions_Flag_Heal-Amount p:event-global
     - ^inject s@dRegions_Flag_Feed-Amount p:event-global
-
-  event-cleanup:
-    - if <player.is_inside_vehicle||false> {
-      - run locally vehicle 'def:<player.get_vehicle>|<c.from>' delay:1t
-      }
-    - run locally msg delay:1t
-
-  msg:
-    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
-      - flag <player> dRegions_Message_Cooldown duration:3s
-      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You do not have permission to enter this region'
-      }
 
   vehicle:
     - ^if <player.has_flag[dRegions_regionKick]> {
@@ -132,25 +147,53 @@ dRegions_Flag_Exit:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - define player <player>
-    - define region '<def[orderedRegions].get[1]>'
-    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
-      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|exit]>'
-      - if %flagObj% != null {
-        - inject s@dRegions_Flags_Processors p:state-withGroup
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - if !<player.permission[dRegions.admin]> && !<player.is_op> {
+      - define cache '<player.flag[dRegions.cache.%world%.%thisRegion%.exit]||null>'
+      - if %cache% == null {
+        - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|exit]>'
+        - if %flagObj% != null {
+          - define player <player>
+          - inject s@dRegions_Flags_Processors p:state-withGroup
+          }
+        - flag <player> dRegions.cache.%world%.%thisRegion%.exit:true
+        }
+        else {
+        - if !%cache% {
+          - run locally msg delay:1t
+          - determine cancelled
+          }
         }
       }
-    - run locally exited delay:1t player:<player> def:%world%|%region%|<def[orderedRegions].escaped>
+    - flag <player> dRegions.rateLimit:!
+    - run locally exited delay:1t player:<player> def:%world%|%thisRegion%|<def[orderedRegions].escaped>
 
   event-global:
-    - define player <player>
-    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
+    - define thisRegion '__global__'
+    - if !<player.permission[dRegions.admin]> && !<player.is_op> {
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|exit]>'
       - if %flagObj% != null {
-        - inject s@dRegions_Flags_Processors p:state-withGroup-Global
+        - define player <player>
+        - inject s@dRegions_Flags_Processors p:state-withGroup-global
         }
+      - flag <player> dRegions.cache.%world%.__global__.exit:true
       }
+    - flag <player> dRegions.rateLimit:!
     - run locally exited-global delay:1t player:<player> def:%world%|__global__
+
+  event-cleanup:
+    - if <player.is_inside_vehicle||false> {
+      - define vehicle '<player.get_vehicle>'
+      - run locally vehicle 'def:%vehicle%|<c.from>' delay:1t
+      }
+    - flag <player> dRegions.cache.%world%.%thisRegion%.exit:false
+    - run locally msg delay:1t
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
+      - flag <player> dRegions_Message_Cooldown duration:3s
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You do not have permission to exit this region'
+      }
 
   exited:
     - ^define world '%1%'
@@ -170,20 +213,6 @@ dRegions_Flag_Exit:
     - ^inject s@dRegions_Flag_Farewell p:event-global
     - ^inject s@dRegions_Flag_Inventory p:event-Exit
     - ^inject s@dRegions_Flag_Gamemode p:event-Exit
-
-
-  event-cleanup:
-    - if <player.is_inside_vehicle||false> {
-      - define vehicle '<player.get_vehicle>'
-      - run locally vehicle 'def:%vehicle%|<c.from>' delay:1t
-      }
-    - run locally msg delay:1t
-
-  msg:
-    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
-      - flag <player> dRegions_Message_Cooldown duration:3s
-      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You do not have permission to exit this region'
-      }
 
   vehicle:
     - ^if <player.has_flag[dRegions_regionKick]> {
@@ -520,36 +549,42 @@ dRegions_Flag_Build:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - define region '<def[orderedRegions].get[1]>'
-    - define cache '<player.flag[dRegions.cache.%world%.%region%.build]||null>'
-    - if %cache% != true {
-      - if %cache% == false {
-        - if %sameRegion% flag <player> dRegions.rateLimit.build:false d:10s
-        - run locally msg delay:1t
-        - determine cancelled
-        }
-      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|build]>'
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<player.flag[dRegions.cache.%world%.%thisRegion%.build]||null>'
+    - if %cache% == null {
+      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|build]>'
       - if %flagObj% == null {
         - define flagObj 'deny/nonmembers'
         }
       - define player <player>
       - inject s@dRegions_Flags_Processors p:state-withGroup
-      - flag <player> dRegions.cache.%world%.%region%.build:true
+      - if %sameRegion% flag <player> dRegions.rateLimit.build:true d:10s
+      - flag <player> dRegions.cache.%world%.%thisRegion%.build:true
       }
-    - if %sameRegion% flag <player> dRegions.rateLimit.build:true d:10s
+      else {
+      - if !%cache% {
+        - if %sameRegion% flag <player> dRegions.rateLimit.build:false d:10s
+        - run locally msg delay:1t
+        - determine cancelled
+        }
+      - if %sameRegion% flag <player> dRegions.rateLimit.build:true d:10s
+      }
 
   event-global:
-    - define region '__global__'
+    - define thisRegion '__global__'
     - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|build]>'
     - if %flagObj% != null {
       - define player <player>
       - inject s@dRegions_Flags_Processors p:state-withGroup-global
-      - flag <player> dRegions.cache.%world%.__global__.build:true
       }
+    - if %sameRegion% flag <player> dRegions.rateLimit.build:true d:10s
+    - flag <player> dRegions.cache.%world%.__global__.build:true
+    - define cache 'true'
 
   event-cleanup:
-    - flag <player> dRegions.cache.%world%.%region%.build:false
+    - flag <player> dRegions.cache.%world%.%thisRegion%.build:false
     - if %sameRegion% flag <player> dRegions.rateLimit.build:false d:10s
+    - define cache 'false'
     - run locally msg delay:1t
 
   msg:
@@ -582,20 +617,12 @@ dRegions_Flag_Vehicle-Place:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
-  event-cleanup:
-    - run locally msg delay:1t 'def:<c.item.material.name.replace[_].with[ ]>'
-
-  msg:
-    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
-      - flag <player> dRegions_Message_Cooldown duration:3s
-      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not place %1%s here.'
-      }
-
   event:
-    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<player.flag[dRegions.cache.%world%.%thisRegion%.vehicle-place]||null>'
+    - if %cache% == null {
       - foreach %orderedRegions% {
         - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|vehicle-place]>'
-        - define region '%value%'
         - if %flagObj% != null {
           - foreach stop
           }
@@ -605,15 +632,39 @@ dRegions_Flag_Vehicle-Place:
         }
       - define player <player>
       - inject s@dRegions_Flags_Processors p:state-withGroup
+      - if %sameRegion% flag <player> dRegions.rateLimit.vehicle-place:true d:10s
+      - flag <player> dRegions.cache.%world%.%thisRegion%.vehicle-place:true
+      }
+      else {
+      - if !%cache% {
+        - if %sameRegion% flag <player> dRegions.rateLimit.vehicle-place:false d:10s
+        - run locally msg delay:1t 'def:'
+        - determine cancelled
+        }
+      - if %sameRegion% flag <player> dRegions.rateLimit.vehicle-place:true d:10s
       }
 
   event-global:
-    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
-      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|vehicle-place]>'
-      - if %flagObj% != null {
-        - define player <player>
-        - inject s@dRegions_Flags_Processors p:state-withGroup-global
-        }
+    - define thisRegion '__global__'
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|vehicle-place]>'
+    - if %flagObj% != null {
+      - define player <player>
+      - inject s@dRegions_Flags_Processors p:state-withGroup-global
+      }
+    - if %sameRegion% flag <player> dRegions.rateLimit.vehicle-place:true d:10s
+    - flag <player> dRegions.cache.%world%.__global__.vehicle-place:true
+    - define cache 'true'
+
+  event-cleanup:
+    - flag <player> dRegions.cache.%world%.%thisRegion%.vehicle-place:false
+    - if %sameRegion% flag <player> dRegions.rateLimit.vehicle-place:false d:10s
+    - run locally msg delay:1t 'def:<def[item].replace[_].with[ ]>'
+    - define cache 'false'
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
+      - flag <player> dRegions_Message_Cooldown duration:3s
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not place %1%s here.'
       }
 
 
@@ -640,20 +691,12 @@ dRegions_Flag_Vehicle-Destroy:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
-  event-cleanup:
-    - run locally msg delay:1t 'def:<c.vehicle.entity_type.to_lowercase.replace[_].with[ ]>'
-
-  msg:
-    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
-      - flag <player> dRegions_Message_Cooldown duration:3s
-      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not break %1%s here.'
-      }
-
   event:
-    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<player.flag[dRegions.cache.%world%.%thisRegion%.vehicle-destroy]||null>'
+    - if %cache% == null {
       - foreach %orderedRegions% {
         - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|vehicle-destroy]>'
-        - define region '%value%'
         - if %flagObj% != null {
           - foreach stop
           }
@@ -663,15 +706,39 @@ dRegions_Flag_Vehicle-Destroy:
         }
       - define player <player>
       - inject s@dRegions_Flags_Processors p:state-withGroup
+      - if %sameRegion% flag <player> dRegions.rateLimit.vehicle-destroy:true d:10s
+      - flag <player> dRegions.cache.%world%.%thisRegion%.vehicle-destroy:true
+      }
+      else {
+      - if !%cache% {
+        - if %sameRegion% flag <player> dRegions.rateLimit.vehicle-destroy:false d:10s
+        - run locally msg delay:1t 'def:<c.vehicle.entity_type.to_lowercase.replace[_].with[ ]>'
+        - determine cancelled
+        }
+      - if %sameRegion% flag <player> dRegions.rateLimit.vehicle-destroy:true d:10s
       }
 
   event-global:
-    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
-      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|vehicle-destroy]>'
-      - if %flagObj% != null {
-        - define player <player>
-        - inject s@dRegions_Flags_Processors p:state-withGroup-global
-        }
+    - define thisRegion '__global__'
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|vehicle-destroy]>'
+    - if %flagObj% != null {
+      - define player <player>
+      - inject s@dRegions_Flags_Processors p:state-withGroup-global
+      }
+    - if %sameRegion% flag <player> dRegions.rateLimit.vehicle-destroy:true d:10s
+    - flag <player> dRegions.cache.%world%.__global__.vehicle-destroy:true
+    - define cache 'true'
+
+  event-cleanup:
+    - flag <player> dRegions.cache.%world%.%thisRegion%.vehicle-destroy:false
+    - if %sameRegion% flag <player> dRegions.rateLimit.vehicle-destroy:false d:10s
+    - run locally msg delay:1t 'def:<c.vehicle.entity_type.to_lowercase.replace[_].with[ ]>'
+    - define cache 'false'
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
+      - flag <player> dRegions_Message_Cooldown duration:3s
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not break %1%s here.'
       }
 
 
@@ -690,7 +757,6 @@ dRegions_Flag_Send-Chat:
   flag_takeGroup: true
   flag_defaultValue: none
   flag_globalDefault: none
-  region_highestOnly: true
   script:
     - narrate "A handy container for region flags."
     - narrate "We<&sq>ll have subscripts for various tasks."
@@ -698,36 +764,54 @@ dRegions_Flag_Send-Chat:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
+  event:
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<player.flag[dRegions.cache.%world%.%thisRegion%.send-chat]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|send-chat]>'
+        - if %flagObj% != null {
+          - foreach stop
+          }
+        }
+      - if %flagObj% == null {
+        - define flagObj 'allow/all'
+        }
+      - define player <player>
+      - inject s@dRegions_Flags_Processors p:state-withGroup
+      - if %sameRegion% flag <player> dRegions.rateLimit.send-chat:true d:10s
+      - flag <player> dRegions.cache.%world%.%thisRegion%.send-chat:true
+      }
+      else {
+      - if !%cache% {
+        - if %sameRegion% flag <player> dRegions.rateLimit.send-chat:false d:10s
+        - run locally msg delay:1t
+        - determine cancelled
+        }
+      - if %sameRegion% flag <player> dRegions.rateLimit.send-chat:true d:10s
+      }
+
+  event-global:
+    - define thisRegion '__global__'
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|send-chat]>'
+    - if %flagObj% != null {
+      - define player <player>
+      - inject s@dRegions_Flags_Processors p:state-withGroup-global
+      }
+    - if %sameRegion% flag <player> dRegions.rateLimit.send-chat:true d:10s
+    - flag <player> dRegions.cache.%world%.__global__.send-chat:true
+    - define cache 'true'
+
   event-cleanup:
+    - flag <player> dRegions.cache.%world%.%thisRegion%.send-chat:false
+    - if %sameRegion% flag <player> dRegions.rateLimit.send-chat:false d:10s
     - run locally msg delay:1t
+    - define cache 'false'
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag <player> dRegions_Message_Cooldown duration:3s
       - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not chat here.'
-      }
-
-  event:
-    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
-      - foreach %orderedRegions% {
-        - define region '<def[orderedRegions].get[1]>'
-        - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|send-chat]>'
-        - if %flagObj% != null {
-          - define player <player>
-          - inject s@dRegions_Flags_Processors p:state-withGroup
-          - foreach stop
-          }
-        }
-      }
-
-
-  event-global:
-    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
-      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|send-chat]>'
-      - if %flagObj% != null {
-        - define player <player>
-        - inject s@dRegions_Flags_Processors p:state-withGroup-global
-        }
       }
 
 
@@ -755,22 +839,41 @@ dRegions_Flag_Hunger:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - foreach %orderedRegions% {
-      - define region '%value%'
-      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|hunger]>'
-      - if %flagObj% != null {
-        - define player <player>
-        - inject s@dRegions_Flags_Processors p:state-withGroup
-        - foreach stop
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<player.flag[dRegions.cache.%world%.%thisRegion%.hunger]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|hunger]>'
+        - if %flagObj% != null {
+          - foreach stop
+          }
         }
+      - if %flagObj% == null {
+        - define flagObj 'allow/all'
+        }
+      - define player <player>
+      - inject s@dRegions_Flags_Processors p:state-withGroup
+      - if %sameRegion% flag <player> dRegions.rateLimit.hunger:true d:10s
+      - flag <player> dRegions.cache.%world%.%thisRegion%.hunger:true
+      }
+      else {
+      - if !%cache% {
+        - if %sameRegion% flag <player> dRegions.rateLimit.hunger:false d:10s
+        - determine cancelled
+        }
+      - if %sameRegion% flag <player> dRegions.rateLimit.hunger:true d:10s
       }
 
   event-global:
+    - define thisRegion '__global__'
     - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|hunger]>'
     - if %flagObj% != null {
       - define player <player>
       - inject s@dRegions_Flags_Processors p:state-withGroup-global
       }
+    - if %sameRegion% flag <player> dRegions.rateLimit.hunger:true d:10s
+    - flag <player> dRegions.cache.%world%.__global__.hunger:true
+    - define cache 'true'
 
 
 dRegions_Flag_Mob-Target:
@@ -805,10 +908,13 @@ dRegions_Flag_Mob-Target:
         }
       - if %cache% != null {
         - if %cache% {
-          - flag %player% dRegions.rateLimit.mob-target.%target%:true d:10s
+          - if %sameRegion% flag %player% dRegions.rateLimit.mob-target.%target%:true d:10s
           - queue clear
           }
-        - flag %player% dRegions.rateLimit.mob-target.%target%:false d:10s
+        - remove <c.projectile||li@>
+        - attack %attacker% target:cancel
+        - if %sameRegion% flag %player% dRegions.rateLimit.mob-target.%target%:false d:10s
+        - run delay:1t locally wander 'def:%attacker%'
         - determine cancelled
         }
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|mob-target]>'
@@ -817,18 +923,18 @@ dRegions_Flag_Mob-Target:
         - foreach stop
         }
         else {
-        - flag %player% dRegions.rateLimit.mob-target.%target%:true d:10s
+        - if %sameRegion% flag %player% dRegions.rateLimit.mob-target.%target%:true d:10s
         - flag %player% dRegions.cache.%world%.%value%.mob-target.%target%:none
         }
       }
     - if %flagObj% != null {
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|mob-targetlist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
-      - flag %player% dRegions.rateLimit.mob-target.%target%:true d:10s
+      - if %sameRegion% flag %player% dRegions.rateLimit.mob-target.%target%:true d:10s
       - flag %player% dRegions.cache.%world%.%thisRegion%.mob-target.%target%:true
       }
       else {
-      - flag %player% dRegions.rateLimit.mob-target.%target%:true d:10s
+      - if %sameRegion% flag %player% dRegions.rateLimit.mob-target.%target%:true d:10s
       }
 
   event-global:
@@ -849,8 +955,16 @@ dRegions_Flag_Mob-Target:
   event-cleanup:
     - remove <c.projectile||li@>
     - attack %attacker% target:cancel
-    - flag %player% dRegions.rateLimit.mob-target.%target%:false d:5s
+    - if %sameRegion% flag %player% dRegions.rateLimit.mob-target.%target%:false d:5s
     - flag %player% dRegions.cache.%world%.%thisRegion%.mob-target.%target%:false
+    - run locally wander delay:1t 'def:%attacker%'
+
+  wander:
+    - ^if !<def[1].is_spawned||false> queue clear
+#    - ^adjust %1% toggle_ai:false
+    - ~walk %1% <def[1].location.find.surface_blocks.within[15].filter[distance[<def[1].location>].horizontal.is[more].than[10]].random.add[0,1,0]>
+    - ^if !<def[1].is_spawned||false> queue clear
+    - ^remove %1%
 
 
 dRegions_Flag_Mob-TargetList:
@@ -1006,47 +1120,42 @@ dRegions_Flag_Mob-Spawn:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - foreach %orderedRegions% {
-      - define region '%value%'
-      - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%value%.mob-spawn.%target%]||null>'
-      - if %cache% == none {
-        - define flagVal 'null'
-        - foreach next
-        }
-      - if %cache% != null {
-        - if %cache% {
-          - queue clear
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%thisRegion%.mob-spawn.%target%]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|mob-spawn]>'
+        - if %flagVal% != null {
+          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|mob-spawnlist].replace[, ].with[|].as_list>'
+          - foreach stop
           }
+        }
+      - if %flagVal% == null {
+        - define flagVal 'allow'
+        - define targetList 'li@null'
+        }
+      - inject s@dRegions_Flags_Processors p:state-withTarget
+      - yaml set 'cache.state-withTarget.%thisRegion%.mob-spawn.%target%:true' 'id:dRegions_%world%_cache'
+      }
+      else {
+      - if !%cache% {
         - determine cancelled
         }
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|mob-spawn]>'
-      - if %flagVal% != null {
-        - foreach stop
-        }
-        else {
-        - yaml set 'cache.state-withTarget.%region%.mob-spawn.%target%:none' 'id:dRegions_%world%_cache'
-        }
-      }
-    - if %flagVal% != null {
-      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|mob-spawnlist].replace[, ].with[|].as_list>'
-      - inject s@dRegions_Flags_Processors p:state-withTarget
-      - yaml set 'cache.state-withTarget.%region%.mob-spawn.%target%:true' 'id:dRegions_%world%_cache'
       }
 
   event-global:
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|mob-spawn]>'
     - if %flagVal% != null {
-      - define region '__global__'
+      - define thisRegion '__global__'
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|mob-spawnlist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
-      - yaml set 'cache.state-withTarget.__global__.mob-spawn.%target%:true' 'id:dRegions_%world%_cache'
       }
-      else {
-      - yaml set 'cache.state-withTarget.__global__.mob-spawn.%target%:none' 'id:dRegions_%world%_cache'
-      }
+    - yaml set 'cache.state-withTarget.__global__.mob-spawn.%target%:true' 'id:dRegions_%world%_cache'
+    - define cache 'true'
 
   event-cleanup:
-    - yaml set 'cache.state-withTarget.%region%.mob-spawn.%target%:false' 'id:dRegions_%world%_cache'
+    - yaml set 'cache.state-withTarget.%thisRegion%.mob-spawn.%target%:false' 'id:dRegions_%world%_cache'
+    - define cache 'false'
 
 
 dRegions_Flag_Mob-SpawnList:
@@ -1096,102 +1205,51 @@ dRegions_Flag_EVE:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
-#  event:
-#    - foreach %orderedRegions% {
-#      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|eve]>'
-#      - define region '%value%'
-#      - if %flagVal% != null {
-#        - foreach stop
-#        }
-#      }
-#    - if %flagVal% != null {
-#      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|eve-moblist].replace[, ].with[|].as_list>'
-#      - define target '%dtarget%'
-#      - inject s@dRegions_Flags_Processors p:state-withTarget
-#      }
-
-#  event-global:
-#    - define orderedRegions 'li@__global__'
-#    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|eve]>'
-#    - if %flagVal% != null {
-#      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|eve-moblist].replace[, ].with[|].as_list>'
-#      - define target '%dtarget%'
-#      - inject s@dRegions_Flags_Processors p:state-withTarget
-#      }
-
-#  event-cleanup:
-#    - remove <c.projectile||li@>
-#    - attack %attacker% target:cancel
-
   event:
     - define target '%dtarget%'
-    - foreach %orderedRegions% {
-      - define region '%value%'
-      - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%value%.eve.%target%]||null>'
-      - if %cache% == none {
-        - define flagVal 'null'
-        - foreach next
-        }
-      - if %cache% != null {
-        - if %cache% {
-          - queue clear
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%thisRegion%.eve.%target%]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|eve]>'
+        - if %flagVal% != null {
+          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|eve-moblist].replace[, ].with[|].as_list>'
+          - foreach stop
           }
+        }
+      - if %flagVal% == null {
+        - define flagVal 'allow'
+        - define targetList 'li@null'
+        }
+      - inject s@dRegions_Flags_Processors p:state-withTarget
+      - yaml set 'cache.state-withTarget.%thisRegion%.eve.%target%:true' 'id:dRegions_%world%_cache'
+      }
+      else {
+      - if !%cache% {
         - run locally wander delay:1t def:%attacker%
         - remove <c.projectile||li@>
         - attack %attacker% target:cancel
         - determine cancelled
         }
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|eve]>'
-      - if %flagVal% != null {
-        - foreach stop
-        }
-        else {
-        - yaml set 'cache.state-withTarget.%region%.eve.%target%:none' 'id:dRegions_%world%_cache'
-        }
       }
-    - if %flagVal% != null {
-      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|eve-moblist].replace[, ].with[|].as_list>'
-      - inject s@dRegions_Flags_Processors p:state-withTarget
-      - yaml set 'cache.state-withTarget.%region%.eve.%target%:true' 'id:dRegions_%world%_cache'
-      }
-
-#  event-global:
-#    - define target '%dtarget%'
-#    - define region '__global__'
-#    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|eve]>'
-#    - if %flagVal% != null {
-#      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|eve-moblist].replace[, ].with[|].as_list>'
-#      - inject s@dRegions_Flags_Processors p:state-withTarget
-#      }
-#    - yaml set 'cache.state-withTarget.__global__.eve.%target%:true' 'id:dRegions_%world%_cache'
 
   event-global:
     - define target '%dtarget%'
-    - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.__global__.eve.%target%]||null>'
-    - if %cache% == false {
-      - remove <c.projectile||li@>
-      - attack %attacker% target:cancel
-      - run locally wander delay:1t def:%attacker%
-      - determine cancelled
+    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|eve]>'
+    - if %flagVal% != null {
+      - define thisRegion '__global__'
+      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|eve-moblist].replace[, ].with[|].as_list>'
+      - inject s@dRegions_Flags_Processors p:state-withTarget
       }
-    - if %cache% == null {
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|eve]>'
-      - if %flagVal% != null {
-        - define region '__global__'
-        - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|eve-moblist].replace[, ].with[|].as_list>'
-        - inject s@dRegions_Flags_Processors p:state-withTarget
-        - yaml set 'cache.state-withTarget.__global__.eve.%target%:true' 'id:dRegions_%world%_cache'
-        }
-        else {
-        - yaml set 'cache.state-withTarget.__global__.eve.%target%:none' 'id:dRegions_%world%_cache'
-        }
-      }
+    - yaml set 'cache.state-withTarget.__global__.eve.%target%:true' 'id:dRegions_%world%_cache'
+    - define cache 'true'
 
   event-cleanup:
     - remove <c.projectile||li@>
     - attack %attacker% target:cancel
     - run locally wander delay:1t def:%attacker%
-    - yaml set 'cache.state-withTarget.%region%.eve.%target%:false' 'id:dRegions_%world%_cache'
+    - yaml set 'cache.state-withTarget.%thisRegion%.eve.%target%:false' 'id:dRegions_%world%_cache'
+    - define cache 'false'
 
   wander:
     - ^if !<def[1].is_spawned||false> queue clear
@@ -1250,64 +1308,49 @@ dRegions_Flag_Mob-Attack:
 
   event:
     - define target '%atarget%'
-    - foreach %orderedRegions% {
-      - define region '%value%'
-      - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%value%.mob-attack.%target%]||null>'
-      - if %cache% == none {
-        - define flagVal 'null'
-        - foreach next
-        }
-      - if %cache% != null {
-        - if %cache% {
-          - define flagVal 'null'
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%thisRegion%.mob-attack.%target%]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|mob-attack]>'
+        - if %flagVal% != null {
+          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|mob-attack-moblist].replace[, ].with[|].as_list>'
           - foreach stop
           }
+        }
+      - if %flagVal% == null {
+        - define flagVal 'allow'
+        - define targetList 'li@null'
+        }
+      - inject s@dRegions_Flags_Processors p:state-withTarget
+      - yaml set 'cache.state-withTarget.%thisRegion%.mob-attack.%target%:true' 'id:dRegions_%world%_cache'
+      }
+      else {
+      - if !%cache% {
         - run locally wander delay:1t def:%attacker%
         - remove <c.projectile||li@>
         - attack %attacker% target:cancel
         - determine cancelled
         }
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|mob-attack]>'
-      - if %flagVal% != null {
-        - foreach stop
-        }
-        else {
-        - yaml set 'cache.state-withTarget.%region%.mob-attack.%target%:none' 'id:dRegions_%world%_cache'
-        }
-      }
-    - if %flagVal% != null {
-      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|mob-attack-moblist].replace[, ].with[|].as_list>'
-      - inject s@dRegions_Flags_Processors p:state-withTarget
-      - yaml set 'cache.state-withTarget.%region%.mob-attack.%target%:true' 'id:dRegions_%world%_cache'
       }
 
   event-global:
-    - define target '%atarget%'
-    - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.__global__.mob-attack.%target%]||null>'
-    - if %cache% == false {
-      - remove <c.projectile||li@>
-      - attack %attacker% target:cancel
-      - run locally wander delay:1t def:%attacker%
-      - determine cancelled
+    - define target '%dtarget%'
+    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|mob-attack]>'
+    - if %flagVal% != null {
+      - define thisRegion '__global__'
+      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|mob-attack-moblist].replace[, ].with[|].as_list>'
+      - inject s@dRegions_Flags_Processors p:state-withTarget
       }
-    - if %cache% == null {
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|mob-attack]>'
-      - if %flagVal% != null {
-        - define region '__global__'
-        - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|mob-attack-moblist].replace[, ].with[|].as_list>'
-        - inject s@dRegions_Flags_Processors p:state-withTarget
-        - yaml set 'cache.state-withTarget.__global__.mob-attack.%target%:true' 'id:dRegions_%world%_cache'
-        }
-        else {
-        - yaml set 'cache.state-withTarget.__global__.mob-attack.%target%:none' 'id:dRegions_%world%_cache'
-        }
-      }
+    - yaml set 'cache.state-withTarget.__global__.mob-attack.%target%:true' 'id:dRegions_%world%_cache'
+    - define cache 'true'
 
   event-cleanup:
     - remove <c.projectile||li@>
     - attack %attacker% target:cancel
     - run locally wander delay:1t def:%attacker%
-    - yaml set 'cache.state-withTarget.%region%.mob-attack.%target%:false' 'id:dRegions_%world%_cache'
+    - yaml set 'cache.state-withTarget.%thisRegion%.mob-attack.%target%:false' 'id:dRegions_%world%_cache'
+    - define cache 'false'
 
   wander:
     - ^if !<def[1].is_spawned||false> queue clear
@@ -1479,31 +1522,48 @@ dRegions_Flag_Npc-Interact:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<player.flag[dRegions.cache.%world%.%thisRegion%.npc-interact]||null>'
+    - if %cache% == null {
       - foreach %orderedRegions% {
-        - define region '%value%'
-        - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|npc-interact]>'
+        - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|npc-interact]>'
         - if %flagObj% != null {
           - foreach stop
           }
         }
-      - if %flagObj% != null {
-        - define player <player>
-        - inject s@dRegions_Flags_Processors p:state-withGroup
+      - if %flagObj% == null {
+        - define flagObj 'allow/all'
         }
+      - define player <player>
+      - inject s@dRegions_Flags_Processors p:state-withGroup
+      - if %sameRegion% flag <player> dRegions.rateLimit.npc-interact:true d:10s
+      - flag <player> dRegions.cache.%world%.%thisRegion%.npc-interact:true
+      }
+      else {
+      - if !%cache% {
+        - if %sameRegion% flag <player> dRegions.rateLimit.npc-interact:false d:10s
+        - run locally msg delay:1t
+        - determine cancelled
+        }
+      - if %sameRegion% flag <player> dRegions.rateLimit.npc-interact:true d:10s
       }
 
   event-global:
-    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
-      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|npc-interact]>'
-      - if %flagObj% != null {
-        - define player <player>
-        - inject s@dRegions_Flags_Processors p:state-withGroup-global
-        }
+    - define thisRegion '__global__'
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|npc-interact]>'
+    - if %flagObj% != null {
+      - define player <player>
+      - inject s@dRegions_Flags_Processors p:state-withGroup-global
       }
+    - if %sameRegion% flag <player> dRegions.rateLimit.npc-interact:true d:10s
+    - flag <player> dRegions.cache.%world%.__global__.npc-interact:true
+    - define cache 'true'
 
   event-cleanup:
-    - run locally msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
+    - flag <player> dRegions.cache.%world%.%thisRegion%.npc-interact:false
+    - if %sameRegion% flag <player> dRegions.rateLimit.npc-interact:false d:10s
+    - run locally msg delay:1t
+    - define cache 'false'
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
@@ -1645,47 +1705,42 @@ dRegions_Flag_Entity-Explode:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - foreach %orderedRegions% {
-      - define region '%value%'
-      - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%value%.entity-explode.%target%]||null>'
-      - if %cache% == none {
-        - define flagVal 'null'
-        - foreach next
-        }
-      - if %cache% != null {
-        - if %cache% {
-          - queue clear
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%thisRegion%.entity-explode.%target%]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|entity-explode]>'
+        - if %flagVal% != null {
+          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|entity-explodelist].replace[, ].with[|].as_list>'
+          - foreach stop
           }
+        }
+      - if %flagVal% == null {
+        - define flagVal 'allow'
+        - define targetList 'li@null'
+        }
+      - inject s@dRegions_Flags_Processors p:state-withTarget
+      - yaml set 'cache.state-withTarget.%thisRegion%.entity-explode.%target%:true' 'id:dRegions_%world%_cache'
+      }
+      else {
+      - if !%cache% {
         - determine cancelled
         }
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|entity-explode]>'
-      - if %flagVal% != null {
-        - foreach stop
-        }
-        else {
-        - yaml set 'cache.state-withTarget.%region%.entity-explode.%target%:none' 'id:dRegions_%world%_cache'
-        }
-      }
-    - if %flagVal% != null {
-      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|entity-explodelist].replace[, ].with[|].as_list>'
-      - inject s@dRegions_Flags_Processors p:state-withTarget
-      - yaml set 'cache.state-withTarget.%region%.entity-explode.%target%:true' 'id:dRegions_%world%_cache'
       }
 
   event-global:
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|entity-explode]>'
     - if %flagVal% != null {
-      - define region '__global__'
+      - define thisRegion '__global__'
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|entity-explodelist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
-      - yaml set 'cache.state-withTarget.__global__.entity-explode.%target%:true' 'id:dRegions_%world%_cache'
       }
-      else {
-      - yaml set 'cache.state-withTarget.__global__.entity-explode.%target%:none' 'id:dRegions_%world%_cache'
-      }
+    - yaml set 'cache.state-withTarget.__global__.entity-explode.%target%:true' 'id:dRegions_%world%_cache'
+    - define cache 'true'
 
   event-cleanup:
-    - yaml set 'cache.state-withTarget.%region%.entity-explode.%target%:false' 'id:dRegions_%world%_cache'
+    - yaml set 'cache.state-withTarget.%thisRegion%.entity-explode.%target%:false' 'id:dRegions_%world%_cache'
+    - define cache 'false'
 
 
 dRegions_Flag_Entity-ExplodeList:
@@ -1736,49 +1791,44 @@ dRegions_Flag_Entity-Grief:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - foreach %orderedRegions% {
-      - define region '%value%'
-      - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%value%.entity-grief.%target%]||null>'
-      - if %cache% == none {
-        - define flagVal 'null'
-        - foreach next
-        }
-      - if %cache% != null {
-        - if %cache% {
-          - queue clear
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%thisRegion%.entity-grief.%target%]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|entity-grief]>'
+        - if %flagVal% != null {
+          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|entity-grieflist].replace[, ].with[|].as_list>'
+          - foreach stop
           }
+        }
+      - if %flagVal% == null {
+        - define flagVal 'allow'
+        - define targetList 'li@null'
+        }
+      - inject s@dRegions_Flags_Processors p:state-withTarget
+      - yaml set 'cache.state-withTarget.%thisRegion%.entity-grief.%target%:true' 'id:dRegions_%world%_cache'
+      }
+      else {
+      - if !%cache% {
         - run locally offthread delay:1t def:<c.entity.uuid>
         - determine cancelled
         }
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|entity-grief]>'
-      - if %flagVal% != null {
-        - foreach stop
-        }
-        else {
-        - yaml set 'cache.state-withTarget.%region%.entity-grief.%target%:none' 'id:dRegions_%world%_cache'
-        }
-      }
-    - if %flagVal% != null {
-      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|entity-grieflist].replace[, ].with[|].as_list>'
-      - inject s@dRegions_Flags_Processors p:state-withTarget
-      - yaml set 'cache.state-withTarget.%region%.entity-grief.%target%:true' 'id:dRegions_%world%_cache'
       }
 
   event-global:
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|entity-grief]>'
     - if %flagVal% != null {
-      - define region '__global__'
+      - define thisRegion '__global__'
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|entity-grieflist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
-      - yaml set 'cache.state-withTarget.__global__.entity-grief.%target%:true' 'id:dRegions_%world%_cache'
       }
-      else {
-      - yaml set 'cache.state-withTarget.__global__.entity-grief.%target%:none' 'id:dRegions_%world%_cache'
-      }
+    - yaml set 'cache.state-withTarget.__global__.entity-grief.%target%:true' 'id:dRegions_%world%_cache'
+    - define cache 'true'
 
   event-cleanup:
-    - yaml set 'cache.state-withTarget.%region%.entity-grief.%target%:false' 'id:dRegions_%world%_cache'
+    - yaml set 'cache.state-withTarget.%thisRegion%.entity-grief.%target%:false' 'id:dRegions_%world%_cache'
     - run locally offthread delay:1t def:<c.entity.uuid>
+    - define cache 'false'
 
   offthread:
     - ^flag server dRegions.EntityGrief.%1%
@@ -1833,47 +1883,41 @@ dRegions_Flag_Entity-Drops-OnDeath:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - foreach %orderedRegions% {
-      - define region '%value%'
-      - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%value%.entity-drops-ondeath.%target%]||null>'
-      - if %cache% == none {
-        - define flagVal 'null'
-        - foreach next
-        }
-      - if %cache% != null {
-        - if %cache% {
-          - queue clear
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%thisRegion%.entity-drops-ondeath.%target%]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|entity-drops-ondeath]>'
+        - if %flagVal% != null {
+          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|entity-drops-ondeathlist].replace[, ].with[|].as_list>'
+          - foreach stop
           }
+        }
+      - if %flagVal% == null {
+        - define flagVal 'allow'
+        - define targetList 'li@null'
+        }
+      - inject s@dRegions_Flags_Processors p:state-withTarget
+      - yaml set 'cache.state-withTarget.%thisRegion%.entity-drops-ondeath.%target%:true' 'id:dRegions_%world%_cache'
+      }
+      else {
+      - if !%cache% {
         - determine no_drops
         }
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|entity-drops-ondeath]>'
-      - if %flagVal% != null {
-        - foreach stop
-        }
-        else {
-        - yaml set 'cache.state-withTarget.%region%.entity-drops-ondeath.%target%:none' 'id:dRegions_%world%_cache'
-        }
-      }
-    - if %flagVal% != null {
-      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|entity-drops-ondeathlist].replace[, ].with[|].as_list>'
-      - inject s@dRegions_Flags_Processors p:state-withTarget
-      - yaml set 'cache.state-withTarget.%region%.entity-drops-ondeath.%target%:true' 'id:dRegions_%world%_cache'
       }
 
   event-global:
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|entity-drops-ondeath]>'
     - if %flagVal% != null {
-      - define region '__global__'
+      - define thisRegion '__global__'
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|entity-drops-ondeathlist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
-      - yaml set 'cache.state-withTarget.__global__.entity-drops-ondeath.%target%:true' 'id:dRegions_%world%_cache'
       }
-      else {
-      - yaml set 'cache.state-withTarget.__global__.entity-drops-ondeath.%target%:none' 'id:dRegions_%world%_cache'
-      }
+    - yaml set 'cache.state-withTarget.__global__.entity-drops-ondeath.%target%:true' 'id:dRegions_%world%_cache'
+    - define cache 'true'
 
   event-cleanup:
-    - yaml set 'cache.state-withTarget.%region%.entity-drops-ondeath.%target%:false' 'id:dRegions_%world%_cache'
+    - yaml set 'cache.state-withTarget.%thisRegion%.entity-drops-ondeath.%target%:false' 'id:dRegions_%world%_cache'
     - determine no_drops
 
 
@@ -1926,44 +1970,42 @@ dRegions_Flag_Fire-Spread:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - foreach %orderedRegions% {
-      - define region '%value%'
-      - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%value%.fire-spread.%target%]||null>'
-      - if %cache% == none {
-        - define flagVal 'null'
-        - foreach next
-        }
-      - if %cache% != null {
-        - if %cache% {
-          - queue clear
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%thisRegion%.fire-spread.%target%]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|fire-spread]>'
+        - if %flagVal% != null {
+          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|fire-spreadblocks].replace[, ].with[|].as_list>'
+          - foreach stop
           }
+        }
+      - if %flagVal% == null {
+        - define flagVal 'allow'
+        - define targetList 'li@null'
+        }
+      - inject s@dRegions_Flags_Processors p:state-withTarget
+      - yaml set 'cache.state-withTarget.%thisRegion%.fire-spread.%target%:true' 'id:dRegions_%world%_cache'
+      }
+      else {
+      - if !%cache% {
         - determine cancelled
         }
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|fire-spread]>'
-      - if %flagVal% != null {
-        - foreach stop
-        }
-        else {
-        - yaml set 'cache.state-withTarget.%region%.fire-spread.%target%:none' 'id:dRegions_%world%_cache'
-        }
-      }
-    - if %flagVal% != null {
-      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|fire-spreadblocks].replace[, ].with[|].as_list>'
-      - inject s@dRegions_Flags_Processors p:state-withTarget
-      - yaml set 'cache.state-withTarget.%region%.fire-spread.%target%:true' 'id:dRegions_%world%_cache'
       }
 
   event-global:
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|fire-spread]>'
     - if %flagVal% != null {
-      - define region '__global__'
+      - define thisRegion '__global__'
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|fire-spreadblocks].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
-      - yaml set 'cache.state-withTarget.__global__.fire-spread.%target%:true' 'id:dRegions_%world%_cache'
       }
-      else {
-      - yaml set 'cache.state-withTarget.__global__.fire-spread.%target%:none' 'id:dRegions_%world%_cache'
-      }
+    - yaml set 'cache.state-withTarget.__global__.fire-spread.%target%:true' 'id:dRegions_%world%_cache'
+    - define cache 'true'
+
+  event-cleanup:
+    - yaml set 'cache.state-withTarget.%thisRegion%.fire-spread.%target%:false' 'id:dRegions_%world%_cache'
+    - define cache 'false'
 
 
 dRegions_Flag_Fire-SpreadBlocks:
@@ -2014,45 +2056,42 @@ dRegions_Flag_Fire-Destroy:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - foreach %orderedRegions% {
-      - define region '%value%'
-      - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%value%.fire-destroy.%target%]||null>'
-      - if %cache% == none {
-        - define flagVal 'null'
-        - foreach next
-        }
-      - if %cache% != null {
-        - if %cache% {
-          - define flagVal 'null'
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%thisRegion%.fire-destroy.%target%]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|fire-destroy]>'
+        - if %flagVal% != null {
+          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|fire-destroyblocks].replace[, ].with[|].as_list>'
           - foreach stop
           }
+        }
+      - if %flagVal% == null {
+        - define flagVal 'allow'
+        - define targetList 'li@null'
+        }
+      - inject s@dRegions_Flags_Processors p:state-withTarget
+      - yaml set 'cache.state-withTarget.%thisRegion%.fire-destroy.%target%:true' 'id:dRegions_%world%_cache'
+      }
+      else {
+      - if !%cache% {
         - determine cancelled
         }
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|fire-destroy]>'
-      - if %flagVal% != null {
-        - foreach stop
-        }
-        else {
-        - yaml set 'cache.state-withTarget.%region%.fire-destroy.%target%:none' 'id:dRegions_%world%_cache'
-        }
-      }
-    - if %flagVal% != null {
-      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|fire-destroyblocks].replace[, ].with[|].as_list>'
-      - inject s@dRegions_Flags_Processors p:state-withTarget
-      - yaml set 'cache.state-withTarget.%region%.fire-destroy.%target%:true' 'id:dRegions_%world%_cache'
       }
 
   event-global:
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|fire-destroy]>'
     - if %flagVal% != null {
-      - define region '__global__'
+      - define thisRegion '__global__'
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|fire-destroyblocks].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
-      - yaml set 'cache.state-withTarget.__global__.fire-destroy.%target%:true' 'id:dRegions_%world%_cache'
       }
-      else {
-      - yaml set 'cache.state-withTarget.__global__.fire-destroy.%target%:none' 'id:dRegions_%world%_cache'
-      }
+    - yaml set 'cache.state-withTarget.__global__.fire-destroy.%target%:true' 'id:dRegions_%world%_cache'
+    - define cache 'true'
+
+  event-cleanup:
+    - yaml set 'cache.state-withTarget.%thisRegion%.fire-destroy.%target%:false' 'id:dRegions_%world%_cache'
+    - define cache 'false'
 
 
 dRegions_Flag_Fire-DestroyBlocks:
@@ -2142,6 +2181,44 @@ dRegions_Flag_Lightning-Strikes:
       - yaml set 'cache.state-withTarget.__global__.lightning-strikes.%target%:none' 'id:dRegions_%world%_cache'
       }
 
+  event:
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%thisRegion%.lightning-strikes.%target%]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|lightning-strikes]>'
+        - if %flagVal% != null {
+          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|lightning-strikesblocks].replace[, ].with[|].as_list>'
+          - foreach stop
+          }
+        }
+      - if %flagVal% == null {
+        - define flagVal 'allow'
+        - define targetList 'li@null'
+        }
+      - inject s@dRegions_Flags_Processors p:state-withTarget
+      - yaml set 'cache.state-withTarget.%thisRegion%.lightning-strikes.%target%:true' 'id:dRegions_%world%_cache'
+      }
+      else {
+      - if !%cache% {
+        - determine cancelled
+        }
+      }
+
+  event-global:
+    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|lightning-strikes]>'
+    - if %flagVal% != null {
+      - define thisRegion '__global__'
+      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|lightning-strikesblocks].replace[, ].with[|].as_list>'
+      - inject s@dRegions_Flags_Processors p:state-withTarget
+      }
+    - yaml set 'cache.state-withTarget.__global__.lightning-strikes.%target%:true' 'id:dRegions_%world%_cache'
+    - define cache 'true'
+
+  event-cleanup:
+    - yaml set 'cache.state-withTarget.%thisRegion%.lightning-strikes.%target%:false' 'id:dRegions_%world%_cache'
+    - define cache 'false'
+
 
 dRegions_Flag_Lightning-StrikesBlocks:
   type: item
@@ -2191,49 +2268,42 @@ dRegions_Flag_Water-Spread:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - foreach %orderedRegions% {
-      - define region '%value%'
-      - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%value%.water-spread.%target%]||null>'
-      - if %cache% == none {
-        - define flagVal 'null'
-        - foreach next
-        }
-      - if %cache% != null {
-        - if %cache% {
-          - queue clear
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%thisRegion%.water-spread.%target%]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|water-spread]>'
+        - if %flagVal% != null {
+          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|water-spreadblocks].replace[, ].with[|].as_list>'
+          - foreach stop
           }
+        }
+      - if %flagVal% == null {
+        - define flagVal 'allow'
+        - define targetList 'li@null'
+        }
+      - inject s@dRegions_Flags_Processors p:state-withTarget
+      - yaml set 'cache.state-withTarget.%thisRegion%.water-spread.%target%:true' 'id:dRegions_%world%_cache'
+      }
+      else {
+      - if !%cache% {
         - determine cancelled
         }
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|water-spread]>'
-      - if %flagVal% != null {
-        - foreach stop
-        }
-        else {
-        - yaml set 'cache.state-withTarget.%region%.water-spread.%target%:none' 'id:dRegions_%world%_cache'
-        }
-      }
-    - if %flagVal% != null {
-      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|water-spreadblocks].replace[, ].with[|].as_list>'
-      - inject s@dRegions_Flags_Processors p:state-withTarget
-      - yaml set 'cache.state-withTarget.%region%.water-spread.%target%:true' 'id:dRegions_%world%_cache'
-      - queue clear
       }
 
   event-global:
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|water-spread]>'
     - if %flagVal% != null {
-      - define region '__global__'
+      - define thisRegion '__global__'
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|water-spreadblocks].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
-      - yaml set 'cache.state-withTarget.__global__.water-spread.%target%:true' 'id:dRegions_%world%_cache'
       }
-      else {
-      - yaml set 'cache.state-withTarget.__global__.water-spread.%target%:none' 'id:dRegions_%world%_cache'
-      }
+    - yaml set 'cache.state-withTarget.__global__.water-spread.%target%:true' 'id:dRegions_%world%_cache'
+    - define cache 'true'
 
   event-cleanup:
-    - yaml set 'cache.state-withTarget.%region%.water-spread.%target%:false' 'id:dRegions_%world%_cache'
-    - queue clear
+    - yaml set 'cache.state-withTarget.%thisRegion%.water-spread.%target%:false' 'id:dRegions_%world%_cache'
+    - define cache 'false'
 
 
 dRegions_Flag_Water-SpreadBlocks:
@@ -2283,70 +2353,43 @@ dRegions_Flag_Lava-Spread:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
-#  event:
-#    - foreach %orderedRegions% {
-#      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|lava-spread]>'
-#      - define region '%value%'
-#      - if %flagVal% != null {
-#        - foreach stop
-#        }
-#      }
-#    - if %flagVal% != null {
-#      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|lava-spreadblocks].replace[, ].with[|].as_list>'
-#      - inject s@dRegions_Flags_Processors p:state-withTarget
-#      }
-
-#  event-global:
-#    - define orderedRegions 'li@__global__'
-#    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|lava-spread]>'
-#    - if %flagVal% != null {
-#      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|lava-spreadblocks].replace[, ].with[|].as_list>'
-#      - inject s@dRegions_Flags_Processors p:state-withTarget
-#      }
-
   event:
-    - foreach %orderedRegions% {
-      - define region '%value%'
-      - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%value%.lava-spread.%target%]||null>'
-      - if %cache% == none {
-        - define flagVal 'null'
-        - foreach next
-        }
-      - if %cache% != null {
-        - if %cache% {
-          - queue clear
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%thisRegion%.lava-spread.%target%]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|lava-spread]>'
+        - if %flagVal% != null {
+          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|lava-spreadblocks].replace[, ].with[|].as_list>'
+          - foreach stop
           }
+        }
+      - if %flagVal% == null {
+        - define flagVal 'allow'
+        - define targetList 'li@null'
+        }
+      - inject s@dRegions_Flags_Processors p:state-withTarget
+      - yaml set 'cache.state-withTarget.%thisRegion%.lava-spread.%target%:true' 'id:dRegions_%world%_cache'
+      }
+      else {
+      - if !%cache% {
         - determine cancelled
         }
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|lava-spread]>'
-      - if %flagVal% != null {
-        - foreach stop
-        }
-        else {
-        - yaml set 'cache.state-withTarget.%region%.lava-spread.%target%:none' 'id:dRegions_%world%_cache'
-        }
-      }
-    - if %flagVal% != null {
-      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|lava-spreadblocks].replace[, ].with[|].as_list>'
-      - inject s@dRegions_Flags_Processors p:state-withTarget
-      - yaml set 'cache.state-withTarget.%region%.lava-spread.%target%:true' 'id:dRegions_%world%_cache'
-      - queue clear
       }
 
   event-global:
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|lava-spread]>'
     - if %flagVal% != null {
-      - define region '__global__'
+      - define thisRegion '__global__'
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|lava-spreadblocks].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
-      - yaml set 'cache.state-withTarget.__global__.lava-spread.%target%:true' 'id:dRegions_%world%_cache'
       }
-      else {
-      - yaml set 'cache.state-withTarget.__global__.lava-spread.%target%:none' 'id:dRegions_%world%_cache'
-      }
+    - yaml set 'cache.state-withTarget.__global__.lava-spread.%target%:true' 'id:dRegions_%world%_cache'
+    - define cache 'true'
 
   event-cleanup:
-    - yaml set 'cache.state-withTarget.%region%.lava-spread.%target%:false' 'id:dRegions_%world%_cache'
+    - yaml set 'cache.state-withTarget.%thisRegion%.lava-spread.%target%:false' 'id:dRegions_%world%_cache'
+    - define cache 'false'
 
 
 
@@ -2398,48 +2441,42 @@ dRegions_Flag_Snow-Fall:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - foreach %orderedRegions% {
-      - define region '%value%'
-      - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%value%.snow-fall.%target%]||null>'
-      - if %cache% == none {
-        - define flagVal 'null'
-        - foreach next
-        }
-      - if %cache% != null {
-        - if %cache% {
-          - queue clear
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%thisRegion%.snow-fall.%target%]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|snow-fall]>'
+        - if %flagVal% != null {
+          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|snow-fallblocks].replace[, ].with[|].as_list>'
+          - foreach stop
           }
+        }
+      - if %flagVal% == null {
+        - define flagVal 'allow'
+        - define targetList 'li@null'
+        }
+      - inject s@dRegions_Flags_Processors p:state-withTarget
+      - yaml set 'cache.state-withTarget.%thisRegion%.snow-fall.%target%:true' 'id:dRegions_%world%_cache'
+      }
+      else {
+      - if !%cache% {
         - determine cancelled
         }
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|snow-fall]>'
-      - if %flagVal% != null {
-        - foreach stop
-        }
-        else {
-        - yaml set 'cache.state-withTarget.%region%.snow-fall.%target%:none' 'id:dRegions_%world%_cache'
-        }
-      }
-    - if %flagVal% != null {
-      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|snow-fallblocks].replace[, ].with[|].as_list>'
-      - inject s@dRegions_Flags_Processors p:state-withTarget
-      - yaml set 'cache.state-withTarget.%region%.snow-fall.%target%:true' 'id:dRegions_%world%_cache'
-      - queue clear
       }
 
   event-global:
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|snow-fall]>'
     - if %flagVal% != null {
-      - define region '__global__'
+      - define thisRegion '__global__'
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|snow-fallblocks].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget
-      - yaml set 'cache.state-withTarget.__global__.snow-fall.%target%:true' 'id:dRegions_%world%_cache'
       }
-      else {
-      - yaml set 'cache.state-withTarget.__global__.snow-fall.%target%:none' 'id:dRegions_%world%_cache'
-      }
+    - yaml set 'cache.state-withTarget.__global__.snow-fall.%target%:true' 'id:dRegions_%world%_cache'
+    - define cache 'true'
 
   event-cleanup:
-    - yaml set 'cache.state-withTarget.%region%.snow-fall.%target%:false' 'id:dRegions_%world%_cache'
+    - yaml set 'cache.state-withTarget.%thisRegion%.snow-fall.%target%:false' 'id:dRegions_%world%_cache'
+    - define cache 'false'
 
 
 dRegions_Flag_Snow-FallBlocks:
@@ -2489,27 +2526,29 @@ dRegions_Flag_Ice-Form:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - foreach %orderedRegions% {
-      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.ice-form]||null>'
-      - if %cache% == none {
-        - foreach next
-        }
-      - if %cache% != null {
-        - if %cache% {
-          - queue clear
-          }
-        - determine cancelled
-        }
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|ice-form]>'
-      - if %flagVal% != null {
-        - if %flagVal% {
-          - yaml set 'cache.boolean.%value%.ice-form:true' 'id:dRegions_%world%_cache'
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%thisRegion%.ice-form]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|ice-form]>'
+        - if %flagVal% != null {
           - foreach stop
           }
-        - yaml set 'cache.boolean.%value%.ice-form:false' 'id:dRegions_%world%_cache'
+        }
+      - if %flagVal% == null {
+        - define flagVal 'true'
+        }
+      - if !%flagVal% {
+        - yaml set 'cache.boolean.%thisRegion%.ice-form:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
-      - yaml set 'cache.boolean.%value%.ice-form:none' 'id:dRegions_%world%_cache'
+      - yaml set 'cache.boolean.%thisRegion%.ice-form.%target%:true' 'id:dRegions_%world%_cache'
+      }
+      else {
+      - if !%cache% {
+        - yaml set 'cache.boolean.%thisRegion%.ice-form:false' 'id:dRegions_%world%_cache'
+        - determine cancelled
+        }
       }
 
   event-global:
@@ -2545,27 +2584,29 @@ dRegions_Flag_Ice-Melt:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - foreach %orderedRegions% {
-      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.ice-melt]||null>'
-      - if %cache% == none {
-        - foreach next
-        }
-      - if %cache% != null {
-        - if %cache% {
-          - queue clear
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%thisRegion%.ice-melt]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|ice-melt]>'
+        - if %flagVal% != null {
+          - foreach stop
           }
+        }
+      - if %flagVal% == null {
+        - define flagVal 'true'
+        }
+      - if !%flagVal% {
+        - yaml set 'cache.boolean.%thisRegion%.ice-melt:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|ice-melt]>'
-      - if %flagVal% != null {
-        - if !%flagVal% {
-          - yaml set 'cache.boolean.%value%.ice-melt:false' 'id:dRegions_%world%_cache'
-          - determine cancelled
-          }
-        - yaml set 'cache.boolean.%value%.ice-melt:true' 'id:dRegions_%world%_cache'
-        - foreach stop
+      - yaml set 'cache.boolean.%thisRegion%.ice-melt.%target%:true' 'id:dRegions_%world%_cache'
+      }
+      else {
+      - if !%cache% {
+        - yaml set 'cache.boolean.%thisRegion%.ice-melt:false' 'id:dRegions_%world%_cache'
+        - determine cancelled
         }
-      - yaml set 'cache.boolean.%value%.ice-melt:none' 'id:dRegions_%world%_cache'
       }
 
   event-global:
@@ -2601,27 +2642,29 @@ dRegions_Flag_Snow-Melt:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - foreach %orderedRegions% {
-      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.snow-melt]||null>'
-      - if %cache% == none {
-        - foreach next
-        }
-      - if %cache% != null {
-        - if %cache% {
-          - queue clear
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%thisRegion%.snow-melt]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|snow-melt]>'
+        - if %flagVal% != null {
+          - foreach stop
           }
+        }
+      - if %flagVal% == null {
+        - define flagVal 'true'
+        }
+      - if !%flagVal% {
+        - yaml set 'cache.boolean.%thisRegion%.snow-melt:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|snow-melt]>'
-      - if %flagVal% != null {
-        - if !%flagVal% {
-          - yaml set 'cache.boolean.%value%.snow-melt:false' 'id:dRegions_%world%_cache'
-          - determine cancelled
-          }
-        - yaml set 'cache.boolean.%value%.snow-melt:true' 'id:dRegions_%world%_cache'
-        - foreach stop
+      - yaml set 'cache.boolean.%thisRegion%.snow-melt.%target%:true' 'id:dRegions_%world%_cache'
+      }
+      else {
+      - if !%cache% {
+        - yaml set 'cache.boolean.%thisRegion%.snow-melt:false' 'id:dRegions_%world%_cache'
+        - determine cancelled
         }
-      - yaml set 'cache.boolean.%value%.snow-melt:none' 'id:dRegions_%world%_cache'
       }
 
   event-global:
@@ -2657,27 +2700,29 @@ dRegions_Flag_Soil-Dry:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - foreach %orderedRegions% {
-      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.soil-dry]||null>'
-      - if %cache% == none {
-        - foreach next
-        }
-      - if %cache% != null {
-        - if %cache% {
-          - queue clear
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%thisRegion%.soil-dry]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|soil-dry]>'
+        - if %flagVal% != null {
+          - foreach stop
           }
+        }
+      - if %flagVal% == null {
+        - define flagVal 'true'
+        }
+      - if !%flagVal% {
+        - yaml set 'cache.boolean.%thisRegion%.soil-dry:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|soil-dry]>'
-      - if %flagVal% != null {
-        - if !%flagVal% {
-          - yaml set 'cache.boolean.%value%.soil-dry:false' 'id:dRegions_%world%_cache'
-          - determine cancelled
-          }
-        - yaml set 'cache.boolean.%value%.soil-dry:true' 'id:dRegions_%world%_cache'
-        - foreach stop
+      - yaml set 'cache.boolean.%thisRegion%.soil-dry.%target%:true' 'id:dRegions_%world%_cache'
+      }
+      else {
+      - if !%cache% {
+        - yaml set 'cache.boolean.%thisRegion%.soil-dry:false' 'id:dRegions_%world%_cache'
+        - determine cancelled
         }
-      - yaml set 'cache.boolean.%value%.soil-dry:none' 'id:dRegions_%world%_cache'
       }
 
   event-global:
@@ -2687,8 +2732,8 @@ dRegions_Flag_Soil-Dry:
         - yaml set 'cache.boolean.__global__.soil-dry:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
-      - yaml set 'cache.boolean.__global__.soil-dry:true' 'id:dRegions_%world%_cache'
       }
+    - yaml set 'cache.boolean.__global__.soil-dry:true' 'id:dRegions_%world%_cache'
 
 
 dRegions_Flag_Trample-Crops-Player:
@@ -2713,27 +2758,29 @@ dRegions_Flag_Trample-Crops-Player:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - foreach %orderedRegions% {
-      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.trample-crops-player]||null>'
-      - if %cache% == none {
-        - foreach next
-        }
-      - if %cache% != null {
-        - if %cache% {
-          - queue clear
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%thisRegion%.trample-crops-player]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|trample-crops-player]>'
+        - if %flagVal% != null {
+          - foreach stop
           }
+        }
+      - if %flagVal% == null {
+        - define flagVal 'true'
+        }
+      - if !%flagVal% {
+        - yaml set 'cache.boolean.%thisRegion%.trample-crops-player:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|trample-crops-player]>'
-      - if %flagVal% != null {
-        - if !%flagVal% {
-          - yaml set 'cache.boolean.%value%.trample-crops-player:false' 'id:dRegions_%world%_cache'
-          - determine cancelled
-          }
-        - yaml set 'cache.boolean.%value%.trample-crops-player:true' 'id:dRegions_%world%_cache'
-        - foreach stop
+      - yaml set 'cache.boolean.%thisRegion%.trample-crops-player.%target%:true' 'id:dRegions_%world%_cache'
+      }
+      else {
+      - if !%cache% {
+        - yaml set 'cache.boolean.%thisRegion%.trample-crops-player:false' 'id:dRegions_%world%_cache'
+        - determine cancelled
         }
-      - yaml set 'cache.boolean.%value%.trample-crops-player:none' 'id:dRegions_%world%_cache'
       }
 
   event-global:
@@ -2743,8 +2790,8 @@ dRegions_Flag_Trample-Crops-Player:
         - yaml set 'cache.boolean.__global__.trample-crops-player:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
-      - yaml set 'cache.boolean.__global__.trample-crops-player:true' 'id:dRegions_%world%_cache'
       }
+    - yaml set 'cache.boolean.__global__.trample-crops-player:true' 'id:dRegions_%world%_cache'
 
 
 dRegions_Flag_Trample-Crops-Entity:
@@ -2769,27 +2816,29 @@ dRegions_Flag_Trample-Crops-Entity:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - foreach %orderedRegions% {
-      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.trample-crops-entity]||null>'
-      - if %cache% == none {
-        - foreach next
-        }
-      - if %cache% != null {
-        - if %cache% {
-          - queue clear
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%thisRegion%.trample-crops-entity]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|trample-crops-entity]>'
+        - if %flagVal% != null {
+          - foreach stop
           }
+        }
+      - if %flagVal% == null {
+        - define flagVal 'true'
+        }
+      - if !%flagVal% {
+        - yaml set 'cache.boolean.%thisRegion%.trample-crops-entity:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|trample-crops-entity]>'
-      - if %flagVal% != null {
-        - if !%flagVal% {
-          - yaml set 'cache.boolean.%value%.trample-crops-entity:false' 'id:dRegions_%world%_cache'
-          - determine cancelled
-          }
-        - yaml set 'cache.boolean.%value%.trample-crops-entity:true' 'id:dRegions_%world%_cache'
-        - foreach stop
+      - yaml set 'cache.boolean.%thisRegion%.trample-crops-entity.%target%:true' 'id:dRegions_%world%_cache'
+      }
+      else {
+      - if !%cache% {
+        - yaml set 'cache.boolean.%thisRegion%.trample-crops-entity:false' 'id:dRegions_%world%_cache'
+        - determine cancelled
         }
-      - yaml set 'cache.boolean.%value%.trample-crops-entity:none' 'id:dRegions_%world%_cache'
       }
 
   event-global:
@@ -2799,8 +2848,8 @@ dRegions_Flag_Trample-Crops-Entity:
         - yaml set 'cache.boolean.__global__.trample-crops-entity:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
-      - yaml set 'cache.boolean.__global__.trample-crops-entity:true' 'id:dRegions_%world%_cache'
       }
+    - yaml set 'cache.boolean.__global__.trample-crops-entity:true' 'id:dRegions_%world%_cache'
 
 
 dRegions_Flag_Mushroom-Spread:
@@ -2826,38 +2875,40 @@ dRegions_Flag_Mushroom-Spread:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - foreach %orderedRegions% {
-      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.mushroom-spread]||null>'
-      - if %cache% == none {
-        - foreach next
-        }
-      - if %cache% != null {
-        - if %cache% {
-          - queue clear
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%thisRegion%.mushroom-spread]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|mushroom-spread]>'
+        - if %flagVal% != null {
+          - foreach stop
           }
+        }
+      - if %flagVal% == null {
+        - define flagVal 'true'
+        }
+      - if !%flagVal% {
+        - yaml set 'cache.boolean.%thisRegion%.mushroom-spread:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|mushroom-spread]>'
-      - if %flagVal% != null {
-        - if !%flagVal% {
-          - yaml set 'cache.boolean.%value%.mushroom-spread:false' 'id:dRegions_%world%_cache'
-          - determine cancelled
-          }
-        - yaml set 'cache.boolean.%value%.mushroom-spread:true' 'id:dRegions_%world%_cache'
-        - foreach stop
+      - yaml set 'cache.boolean.%thisRegion%.mushroom-spread.%target%:true' 'id:dRegions_%world%_cache'
+      }
+      else {
+      - if !%cache% {
+        - yaml set 'cache.boolean.%thisRegion%.mushroom-spread:false' 'id:dRegions_%world%_cache'
+        - determine cancelled
         }
-      - yaml set 'cache.boolean.%value%.mushroom-spread:none' 'id:dRegions_%world%_cache'
       }
 
-  event-Global:
+  event-global:
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|mushroom-spread]>'
     - if %flagVal% != null {
       - if !%flagVal% {
         - yaml set 'cache.boolean.__global__.mushroom-spread:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
-      - yaml set 'cache.boolean.__global__.mushroom-spread:true' 'id:dRegions_%world%_cache'
       }
+    - yaml set 'cache.boolean.__global__.mushroom-spread:true' 'id:dRegions_%world%_cache'
 
 
 dRegions_Flag_Grass-Spread:
@@ -2883,27 +2934,29 @@ dRegions_Flag_Grass-Spread:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - foreach %orderedRegions% {
-      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.grass-spread]||null>'
-      - if %cache% == none {
-        - foreach next
-        }
-      - if %cache% != null {
-        - if %cache% {
-          - queue clear
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%thisRegion%.grass-spread]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|grass-spread]>'
+        - if %flagVal% != null {
+          - foreach stop
           }
+        }
+      - if %flagVal% == null {
+        - define flagVal 'true'
+        }
+      - if !%flagVal% {
+        - yaml set 'cache.boolean.%thisRegion%.grass-spread:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|grass-spread]>'
-      - if %flagVal% != null {
-        - if !%flagVal% {
-          - yaml set 'cache.boolean.%value%.grass-spread:false' 'id:dRegions_%world%_cache'
-          - determine cancelled
-          }
-        - yaml set 'cache.boolean.%value%.grass-spread:true' 'id:dRegions_%world%_cache'
-        - foreach stop
+      - yaml set 'cache.boolean.%thisRegion%.grass-spread.%target%:true' 'id:dRegions_%world%_cache'
+      }
+      else {
+      - if !%cache% {
+        - yaml set 'cache.boolean.%thisRegion%.grass-spread:false' 'id:dRegions_%world%_cache'
+        - determine cancelled
         }
-      - yaml set 'cache.boolean.%value%.grass-spread:none' 'id:dRegions_%world%_cache'
       }
 
   event-global:
@@ -2913,8 +2966,8 @@ dRegions_Flag_Grass-Spread:
         - yaml set 'cache.boolean.__global__.grass-spread:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
-      - yaml set 'cache.boolean.__global__.grass-spread:true' 'id:dRegions_%world%_cache'
       }
+    - yaml set 'cache.boolean.__global__.grass-spread:true' 'id:dRegions_%world%_cache'
 
 
 dRegions_Flag_Mycel-Spread:
@@ -2940,27 +2993,29 @@ dRegions_Flag_Mycel-Spread:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - foreach %orderedRegions% {
-      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.mycel-spread]||null>'
-      - if %cache% == none {
-        - foreach next
-        }
-      - if %cache% != null {
-        - if %cache% {
-          - queue clear
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%thisRegion%.mycel-spread]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|mycel-spread]>'
+        - if %flagVal% != null {
+          - foreach stop
           }
+        }
+      - if %flagVal% == null {
+        - define flagVal 'true'
+        }
+      - if !%flagVal% {
+        - yaml set 'cache.boolean.%thisRegion%.mycel-spread:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|mycel-spread]>'
-      - if %flagVal% != null {
-        - if !%flagVal% {
-          - yaml set 'cache.boolean.%value%.mycel-spread:false' 'id:dRegions_%world%_cache'
-          - determine cancelled
-          }
-        - yaml set 'cache.boolean.%value%.mycel-spread:true' 'id:dRegions_%world%_cache'
-        - foreach stop
+      - yaml set 'cache.boolean.%thisRegion%.mycel-spread.%target%:true' 'id:dRegions_%world%_cache'
+      }
+      else {
+      - if !%cache% {
+        - yaml set 'cache.boolean.%thisRegion%.mycel-spread:false' 'id:dRegions_%world%_cache'
+        - determine cancelled
         }
-      - yaml set 'cache.boolean.%value%.mycel-spread:none' 'id:dRegions_%world%_cache'
       }
 
   event-global:
@@ -2970,8 +3025,8 @@ dRegions_Flag_Mycel-Spread:
         - yaml set 'cache.boolean.__global__.mycel-spread:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
-      - yaml set 'cache.boolean.__global__.mycel-spread:true' 'id:dRegions_%world%_cache'
       }
+    - yaml set 'cache.boolean.__global__.mycel-spread:true' 'id:dRegions_%world%_cache'
 
 
 dRegions_Flag_Vines-Spread:
@@ -2997,27 +3052,29 @@ dRegions_Flag_Vines-Spread:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - foreach %orderedRegions% {
-      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.vines-spread]||null>'
-      - if %cache% == none {
-        - foreach next
-        }
-      - if %cache% != null {
-        - if %cache% {
-          - queue clear
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%thisRegion%.vines-spread]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|vines-spread]>'
+        - if %flagVal% != null {
+          - foreach stop
           }
+        }
+      - if %flagVal% == null {
+        - define flagVal 'true'
+        }
+      - if !%flagVal% {
+        - yaml set 'cache.boolean.%thisRegion%.vines-spread:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|vines-spread]>'
-      - if %flagVal% != null {
-        - if !%flagVal% {
-          - yaml set 'cache.boolean.%value%.vines-spread:false' 'id:dRegions_%world%_cache'
-          - determine cancelled
-          }
-        - yaml set 'cache.boolean.%value%.vines-spread:true' 'id:dRegions_%world%_cache'
-        - foreach stop
+      - yaml set 'cache.boolean.%thisRegion%.vines-spread.%target%:true' 'id:dRegions_%world%_cache'
+      }
+      else {
+      - if !%cache% {
+        - yaml set 'cache.boolean.%thisRegion%.vines-spread:false' 'id:dRegions_%world%_cache'
+        - determine cancelled
         }
-      - yaml set 'cache.boolean.%value%.vines-spread:none' 'id:dRegions_%world%_cache'
       }
 
   event-global:
@@ -3027,8 +3084,8 @@ dRegions_Flag_Vines-Spread:
         - yaml set 'cache.boolean.__global__.vines-spread:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
-      - yaml set 'cache.boolean.__global__.vines-spread:true' 'id:dRegions_%world%_cache'
       }
+    - yaml set 'cache.boolean.__global__.vines-spread:true' 'id:dRegions_%world%_cache'
 
 
 dRegions_Flag_Leaf-Decay:
@@ -3054,27 +3111,29 @@ dRegions_Flag_Leaf-Decay:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - foreach %orderedRegions% {
-      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.leaf-decay]||null>'
-      - if %cache% == none {
-        - foreach next
-        }
-      - if %cache% != null {
-        - if %cache% {
-          - queue clear
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%thisRegion%.leaf-decay]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|leaf-decay]>'
+        - if %flagVal% != null {
+          - foreach stop
           }
+        }
+      - if %flagVal% == null {
+        - define flagVal 'true'
+        }
+      - if !%flagVal% {
+        - yaml set 'cache.boolean.%thisRegion%.leaf-decay:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|leaf-decay]>'
-      - if %flagVal% != null {
-        - if !%flagVal% {
-          - yaml set 'cache.boolean.%value%.leaf-decay:false' 'id:dRegions_%world%_cache'
-          - determine cancelled
-          }
-        - yaml set 'cache.boolean.%value%.leaf-decay:true' 'id:dRegions_%world%_cache'
-        - foreach stop
+      - yaml set 'cache.boolean.%thisRegion%.leaf-decay.%target%:true' 'id:dRegions_%world%_cache'
+      }
+      else {
+      - if !%cache% {
+        - yaml set 'cache.boolean.%thisRegion%.leaf-decay:false' 'id:dRegions_%world%_cache'
+        - determine cancelled
         }
-      - yaml set 'cache.boolean.%value%.leaf-decay:none' 'id:dRegions_%world%_cache'
       }
 
   event-global:
@@ -3084,8 +3143,8 @@ dRegions_Flag_Leaf-Decay:
         - yaml set 'cache.boolean.__global__.leaf-decay:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
-      - yaml set 'cache.boolean.__global__.leaf-decay:true' 'id:dRegions_%world%_cache'
       }
+    - yaml set 'cache.boolean.__global__.leaf-decay:true' 'id:dRegions_%world%_cache'
 
 
 dRegions_Flag_Falling-Sand:
@@ -3111,27 +3170,29 @@ dRegions_Flag_Falling-Sand:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - foreach %orderedRegions% {
-      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.falling-sand]||null>'
-      - if %cache% == none {
-        - foreach next
-        }
-      - if %cache% != null {
-        - if %cache% {
-          - queue clear
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%thisRegion%.falling-sand]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|falling-sand]>'
+        - if %flagVal% != null {
+          - foreach stop
           }
+        }
+      - if %flagVal% == null {
+        - define flagVal 'true'
+        }
+      - if !%flagVal% {
+        - yaml set 'cache.boolean.%thisRegion%.falling-sand:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|falling-sand]>'
-      - if %flagVal% != null {
-        - if !%flagVal% {
-          - yaml set 'cache.boolean.%value%.falling-sand:false' 'id:dRegions_%world%_cache'
-          - determine cancelled
-          }
-        - yaml set 'cache.boolean.%value%.falling-sand:true' 'id:dRegions_%world%_cache'
-        - foreach stop
+      - yaml set 'cache.boolean.%thisRegion%.falling-sand.%target%:true' 'id:dRegions_%world%_cache'
+      }
+      else {
+      - if !%cache% {
+        - yaml set 'cache.boolean.%thisRegion%.falling-sand:false' 'id:dRegions_%world%_cache'
+        - determine cancelled
         }
-      - yaml set 'cache.boolean.%value%.falling-sand:none' 'id:dRegions_%world%_cache'
       }
 
   event-global:
@@ -3141,8 +3202,8 @@ dRegions_Flag_Falling-Sand:
         - yaml set 'cache.boolean.__global__.falling-sand:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
-      - yaml set 'cache.boolean.__global__.falling-sand:true' 'id:dRegions_%world%_cache'
       }
+    - yaml set 'cache.boolean.__global__.falling-sand:true' 'id:dRegions_%world%_cache'
 
 
 dRegions_Flag_Falling-Gravel:
@@ -3168,27 +3229,29 @@ dRegions_Flag_Falling-Gravel:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - foreach %orderedRegions% {
-      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.falling-gravel]||null>'
-      - if %cache% == none {
-        - foreach next
-        }
-      - if %cache% != null {
-        - if %cache% {
-          - queue clear
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%thisRegion%.falling-gravel]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|falling-gravel]>'
+        - if %flagVal% != null {
+          - foreach stop
           }
+        }
+      - if %flagVal% == null {
+        - define flagVal 'true'
+        }
+      - if !%flagVal% {
+        - yaml set 'cache.boolean.%thisRegion%.falling-gravel:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|falling-gravel]>'
-      - if %flagVal% != null {
-        - if !%flagVal% {
-          - yaml set 'cache.boolean.%value%.falling-gravel:false' 'id:dRegions_%world%_cache'
-          - determine cancelled
-          }
-        - yaml set 'cache.boolean.%value%.falling-gravel:true' 'id:dRegions_%world%_cache'
-        - foreach stop
+      - yaml set 'cache.boolean.%thisRegion%.falling-gravel.%target%:true' 'id:dRegions_%world%_cache'
+      }
+      else {
+      - if !%cache% {
+        - yaml set 'cache.boolean.%thisRegion%.falling-gravel:false' 'id:dRegions_%world%_cache'
+        - determine cancelled
         }
-      - yaml set 'cache.boolean.%value%.falling-gravel:none' 'id:dRegions_%world%_cache'
       }
 
   event-global:
@@ -3198,8 +3261,8 @@ dRegions_Flag_Falling-Gravel:
         - yaml set 'cache.boolean.__global__.falling-gravel:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
-      - yaml set 'cache.boolean.__global__.falling-gravel:true' 'id:dRegions_%world%_cache'
       }
+    - yaml set 'cache.boolean.__global__.falling-gravel:true' 'id:dRegions_%world%_cache'
 
 
 dRegions_Flag_Pistons:
@@ -3225,27 +3288,29 @@ dRegions_Flag_Pistons:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - foreach %orderedRegions% {
-      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.pistons]||null>'
-      - if %cache% == none {
-        - foreach next
-        }
-      - if %cache% != null {
-        - if %cache% {
-          - queue clear
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%thisRegion%.pistons]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|pistons]>'
+        - if %flagVal% != null {
+          - foreach stop
           }
+        }
+      - if %flagVal% == null {
+        - define flagVal 'true'
+        }
+      - if !%flagVal% {
+        - yaml set 'cache.boolean.%thisRegion%.pistons:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|pistons]>'
-      - if %flagVal% != null {
-        - if !%flagVal% {
-          - yaml set 'cache.boolean.%value%.pistons:false' 'id:dRegions_%world%_cache'
-          - determine cancelled
-          }
-        - yaml set 'cache.boolean.%value%.pistons:true' 'id:dRegions_%world%_cache'
-        - foreach stop
+      - yaml set 'cache.boolean.%thisRegion%.pistons.%target%:true' 'id:dRegions_%world%_cache'
+      }
+      else {
+      - if !%cache% {
+        - yaml set 'cache.boolean.%thisRegion%.pistons:false' 'id:dRegions_%world%_cache'
+        - determine cancelled
         }
-      - yaml set 'cache.boolean.%value%.pistons:none' 'id:dRegions_%world%_cache'
       }
 
   event-global:
@@ -3255,8 +3320,8 @@ dRegions_Flag_Pistons:
         - yaml set 'cache.boolean.__global__.pistons:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
-      - yaml set 'cache.boolean.__global__.pistons:true' 'id:dRegions_%world%_cache'
       }
+    - yaml set 'cache.boolean.__global__.pistons:true' 'id:dRegions_%world%_cache'
 
 
 dRegions_Flag_Lighter:
@@ -3280,20 +3345,12 @@ dRegions_Flag_Lighter:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
-  event-cleanup:
-    - run locally msg delay:1t
-
-  msg:
-    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
-      - flag <player> dRegions_Message_Cooldown duration:3s
-      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not use a lighter in this region'
-      }
-
   event:
-    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<player.flag[dRegions.cache.%world%.%thisRegion%.lighter]||null>'
+    - if %cache% == null {
       - foreach %orderedRegions% {
         - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|lighter]>'
-        - define region '%value%'
         - if %flagObj% != null {
           - foreach stop
           }
@@ -3303,15 +3360,39 @@ dRegions_Flag_Lighter:
         }
       - define player <player>
       - inject s@dRegions_Flags_Processors p:state-withGroup
+      - if %sameRegion% flag <player> dRegions.rateLimit.lighter:true d:10s
+      - flag <player> dRegions.cache.%world%.%thisRegion%.lighter:true
+      }
+      else {
+      - if !%cache% {
+        - if %sameRegion% flag <player> dRegions.rateLimit.lighter:false d:10s
+        - run locally msg delay:1t
+        - determine cancelled
+        }
+      - if %sameRegion% flag <player> dRegions.rateLimit.lighter:true d:10s
       }
 
   event-global:
-    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
-      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|lighter]>'
-      - if %flagObj% != null {
-        - define player <player>
-        - inject s@dRegions_Flags_Processors p:state-withGroup-global
-        }
+    - define thisRegion '__global__'
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|lighter]>'
+    - if %flagObj% != null {
+      - define player <player>
+      - inject s@dRegions_Flags_Processors p:state-withGroup-global
+      }
+    - if %sameRegion% flag <player> dRegions.rateLimit.lighter:true d:10s
+    - flag <player> dRegions.cache.%world%.__global__.lighter:true
+    - define cache 'true'
+
+  event-cleanup:
+    - flag <player> dRegions.cache.%world%.%thisRegion%.lighter:false
+    - if %sameRegion% flag <player> dRegions.rateLimit.lighter:false d:10s
+    - run locally msg delay:1t
+    - define cache 'false'
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
+      - flag <player> dRegions_Message_Cooldown duration:3s
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not use a lighter in this region'
       }
 
 
@@ -3336,20 +3417,12 @@ dRegions_Flag_Bucket-Fill:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
-  event-cleanup:
-    - run locally msg delay:1t
-
-  msg:
-    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
-      - flag <player> dRegions_Message_Cooldown duration:3s
-      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not fill a bucket in this region'
-      }
-
   event:
-    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<player.flag[dRegions.cache.%world%.%thisRegion%.bucket-fill]||null>'
+    - if %cache% == null {
       - foreach %orderedRegions% {
         - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|bucket-fill]>'
-        - define region '%value%'
         - if %flagObj% != null {
           - foreach stop
           }
@@ -3359,15 +3432,39 @@ dRegions_Flag_Bucket-Fill:
         }
       - define player <player>
       - inject s@dRegions_Flags_Processors p:state-withGroup
+      - if %sameRegion% flag <player> dRegions.rateLimit.bucket-fill:true d:10s
+      - flag <player> dRegions.cache.%world%.%thisRegion%.bucket-fill:true
+      }
+      else {
+      - if !%cache% {
+        - if %sameRegion% flag <player> dRegions.rateLimit.bucket-fill:false d:10s
+        - run locally msg delay:1t
+        - determine cancelled
+        }
+      - if %sameRegion% flag <player> dRegions.rateLimit.bucket-fill:true d:10s
       }
 
   event-global:
-    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
-      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|bucket-fill]>'
-      - if %flagObj% != null {
-        - define player <player>
-        - inject s@dRegions_Flags_Processors p:state-withGroup-global
-        }
+    - define thisRegion '__global__'
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|bucket-fill]>'
+    - if %flagObj% != null {
+      - define player <player>
+      - inject s@dRegions_Flags_Processors p:state-withGroup-global
+      }
+    - if %sameRegion% flag <player> dRegions.rateLimit.bucket-fill:true d:10s
+    - flag <player> dRegions.cache.%world%.__global__.bucket-fill:true
+    - define cache 'true'
+
+  event-cleanup:
+    - flag <player> dRegions.cache.%world%.%thisRegion%.bucket-fill:false
+    - if %sameRegion% flag <player> dRegions.rateLimit.bucket-fill:false d:10s
+    - run locally msg delay:1t
+    - define cache 'false'
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
+      - flag <player> dRegions_Message_Cooldown duration:3s
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not fill a bucket in this region'
       }
 
 
@@ -3392,29 +3489,12 @@ dRegions_Flag_Bucket-Empty:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
-  event-cleanup:
-    - run locally msg delay:1t
-
-  msg:
-    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
-      - flag <player> dRegions_Message_Cooldown duration:3s
-      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not empty a bucket in this region'
-      }
-
-  event-global:
-    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
-      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|bucket-empty]>'
-      - if %flagObj% != null {
-        - define player <player>
-        - inject s@dRegions_Flags_Processors p:state-withGroup-global
-        }
-      }
-
   event:
-    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<player.flag[dRegions.cache.%world%.%thisRegion%.bucket-empty]||null>'
+    - if %cache% == null {
       - foreach %orderedRegions% {
         - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|bucket-empty]>'
-        - define region '%value%'
         - if %flagObj% != null {
           - foreach stop
           }
@@ -3424,6 +3504,39 @@ dRegions_Flag_Bucket-Empty:
         }
       - define player <player>
       - inject s@dRegions_Flags_Processors p:state-withGroup
+      - if %sameRegion% flag <player> dRegions.rateLimit.bucket-empty:true d:10s
+      - flag <player> dRegions.cache.%world%.%thisRegion%.bucket-empty:true
+      }
+      else {
+      - if !%cache% {
+        - if %sameRegion% flag <player> dRegions.rateLimit.bucket-empty:false d:10s
+        - run locally msg delay:1t
+        - determine cancelled
+        }
+      - if %sameRegion% flag <player> dRegions.rateLimit.bucket-empty:true d:10s
+      }
+
+  event-global:
+    - define thisRegion '__global__'
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|bucket-empty]>'
+    - if %flagObj% != null {
+      - define player <player>
+      - inject s@dRegions_Flags_Processors p:state-withGroup-global
+      }
+    - if %sameRegion% flag <player> dRegions.rateLimit.bucket-empty:true d:10s
+    - flag <player> dRegions.cache.%world%.__global__.bucket-empty:true
+    - define cache 'true'
+
+  event-cleanup:
+    - flag <player> dRegions.cache.%world%.%thisRegion%.bucket-empty:false
+    - if %sameRegion% flag <player> dRegions.rateLimit.bucket-empty:false d:10s
+    - run locally msg delay:1t
+    - define cache 'false'
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
+      - flag <player> dRegions_Message_Cooldown duration:3s
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not empty a bucket in this region'
       }
 
 
@@ -3448,20 +3561,12 @@ dRegions_Flag_Hanging-Place:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
-  event-cleanup:
-    - run locally msg delay:1t
-
-  msg:
-    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
-      - flag <player> dRegions_Message_Cooldown duration:3s
-      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not hang that in this region'
-      }
-
   event:
-    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<player.flag[dRegions.cache.%world%.%thisRegion%.hanging-place]||null>'
+    - if %cache% == null {
       - foreach %orderedRegions% {
         - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|hanging-place]>'
-        - define region '%value%'
         - if %flagObj% != null {
           - foreach stop
           }
@@ -3471,15 +3576,39 @@ dRegions_Flag_Hanging-Place:
         }
       - define player <player>
       - inject s@dRegions_Flags_Processors p:state-withGroup
+      - if %sameRegion% flag <player> dRegions.rateLimit.hanging-place:true d:10s
+      - flag <player> dRegions.cache.%world%.%thisRegion%.hanging-place:true
+      }
+      else {
+      - if !%cache% {
+        - if %sameRegion% flag <player> dRegions.rateLimit.hanging-place:false d:10s
+        - run locally msg delay:1t
+        - determine cancelled
+        }
+      - if %sameRegion% flag <player> dRegions.rateLimit.hanging-place:true d:10s
       }
 
   event-global:
-    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
-      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|hanging-place]>'
-      - if %flagObj% != null {
-        - define player <player>
-        - inject s@dRegions_Flags_Processors p:state-withGroup-global
-        }
+    - define thisRegion '__global__'
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|hanging-place]>'
+    - if %flagObj% != null {
+      - define player <player>
+      - inject s@dRegions_Flags_Processors p:state-withGroup-global
+      }
+    - if %sameRegion% flag <player> dRegions.rateLimit.hanging-place:true d:10s
+    - flag <player> dRegions.cache.%world%.__global__.hanging-place:true
+    - define cache 'true'
+
+  event-cleanup:
+    - flag <player> dRegions.cache.%world%.%thisRegion%.hanging-place:false
+    - if %sameRegion% flag <player> dRegions.rateLimit.hanging-place:false d:10s
+    - run locally msg delay:1t
+    - define cache 'false'
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
+      - flag <player> dRegions_Message_Cooldown duration:3s
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not hang that in this region'
       }
 
 
@@ -3504,20 +3633,12 @@ dRegions_Flag_Hanging-Break:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
-  event-cleanup:
-    - run locally msg delay:1t
-
-  msg:
-    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
-      - flag <player> dRegions_Message_Cooldown duration:3s
-      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not break that in this region'
-      }
-
   event:
-    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<player.flag[dRegions.cache.%world%.%thisRegion%.hanging-break]||null>'
+    - if %cache% == null {
       - foreach %orderedRegions% {
         - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|hanging-break]>'
-        - define region '%value%'
         - if %flagObj% != null {
           - foreach stop
           }
@@ -3527,15 +3648,39 @@ dRegions_Flag_Hanging-Break:
         }
       - define player <player>
       - inject s@dRegions_Flags_Processors p:state-withGroup
+      - if %sameRegion% flag <player> dRegions.rateLimit.hanging-break:true d:10s
+      - flag <player> dRegions.cache.%world%.%thisRegion%.hanging-break:true
+      }
+      else {
+      - if !%cache% {
+        - if %sameRegion% flag <player> dRegions.rateLimit.hanging-break:false d:10s
+        - run locally msg delay:1t
+        - determine cancelled
+        }
+      - if %sameRegion% flag <player> dRegions.rateLimit.hanging-break:true d:10s
       }
 
   event-global:
-    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
-      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|hanging-break]>'
-      - if %flagObj% != null {
-        - define player <player>
-        - inject s@dRegions_Flags_Processors p:state-withGroup-global
-        }
+    - define thisRegion '__global__'
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|hanging-break]>'
+    - if %flagObj% != null {
+      - define player <player>
+      - inject s@dRegions_Flags_Processors p:state-withGroup-global
+      }
+    - if %sameRegion% flag <player> dRegions.rateLimit.hanging-break:true d:10s
+    - flag <player> dRegions.cache.%world%.__global__.hanging-break:true
+    - define cache 'true'
+
+  event-cleanup:
+    - flag <player> dRegions.cache.%world%.%thisRegion%.hanging-break:false
+    - if %sameRegion% flag <player> dRegions.rateLimit.hanging-break:false d:10s
+    - run locally msg delay:1t
+    - define cache 'false'
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
+      - flag <player> dRegions_Message_Cooldown duration:3s
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not break that in this region'
       }
 
 
@@ -3560,20 +3705,12 @@ dRegions_Flag_Sleep:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
-  event-cleanup:
-    - run locally msg delay:1t
-
-  msg:
-    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
-      - flag <player> dRegions_Message_Cooldown duration:3s
-      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not sleep here.'
-      }
-
   event:
-    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<player.flag[dRegions.cache.%world%.%thisRegion%.sleep]||null>'
+    - if %cache% == null {
       - foreach %orderedRegions% {
         - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|sleep]>'
-        - define region '%value%'
         - if %flagObj% != null {
           - foreach stop
           }
@@ -3583,15 +3720,39 @@ dRegions_Flag_Sleep:
         }
       - define player <player>
       - inject s@dRegions_Flags_Processors p:state-withGroup
+      - if %sameRegion% flag <player> dRegions.rateLimit.sleep:true d:10s
+      - flag <player> dRegions.cache.%world%.%thisRegion%.sleep:true
+      }
+      else {
+      - if !%cache% {
+        - if %sameRegion% flag <player> dRegions.rateLimit.sleep:false d:10s
+        - run locally msg delay:1t
+        - determine cancelled
+        }
+      - if %sameRegion% flag <player> dRegions.rateLimit.sleep:true d:10s
       }
 
   event-global:
-    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
-      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|sleep]>'
-      - if %flagObj% != null {
-        - define player <player>
-        - inject s@dRegions_Flags_Processors p:state-withGroup-global
-        }
+    - define thisRegion '__global__'
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|sleep]>'
+    - if %flagObj% != null {
+      - define player <player>
+      - inject s@dRegions_Flags_Processors p:state-withGroup-global
+      }
+    - if %sameRegion% flag <player> dRegions.rateLimit.sleep:true d:10s
+    - flag <player> dRegions.cache.%world%.__global__.sleep:true
+    - define cache 'true'
+
+  event-cleanup:
+    - flag <player> dRegions.cache.%world%.%thisRegion%.sleep:false
+    - if %sameRegion% flag <player> dRegions.rateLimit.sleep:false d:10s
+    - run locally msg delay:1t
+    - define cache 'false'
+
+  msg:
+    - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
+      - flag <player> dRegions_Message_Cooldown duration:3s
+      - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not sleep here.'
       }
 
 
@@ -3616,31 +3777,54 @@ dRegions_Flag_Player-Drops:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
+  event:
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<player.flag[dRegions.cache.%world%.%thisRegion%.player-drops]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|player-drops]>'
+        - if %flagObj% != null {
+          - foreach stop
+          }
+        }
+      - if %flagObj% == null {
+        - define flagObj 'allow/all'
+        }
+      - define player <player>
+      - inject s@dRegions_Flags_Processors p:state-withGroup
+      - if %sameRegion% flag <player> dRegions.rateLimit.player-drops:true d:10s
+      - flag <player> dRegions.cache.%world%.%thisRegion%.player-drops:true
+      }
+      else {
+      - if !%cache% {
+        - if %sameRegion% flag <player> dRegions.rateLimit.player-drops:false d:10s
+        - run locally msg delay:1t
+        - determine cancelled
+        }
+      - if %sameRegion% flag <player> dRegions.rateLimit.player-drops:true d:10s
+      }
+
+  event-global:
+    - define thisRegion '__global__'
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|player-drops]>'
+    - if %flagObj% != null {
+      - define player <player>
+      - inject s@dRegions_Flags_Processors p:state-withGroup-global
+      }
+    - if %sameRegion% flag <player> dRegions.rateLimit.player-drops:true d:10s
+    - flag <player> dRegions.cache.%world%.__global__.player-drops:true
+    - define cache 'true'
+
   event-cleanup:
+    - flag <player> dRegions.cache.%world%.%thisRegion%.player-drops:false
+    - if %sameRegion% flag <player> dRegions.rateLimit.player-drops:false d:10s
     - run locally msg delay:1t
+    - define cache 'false'
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag <player> dRegions_Message_Cooldown duration:3s
       - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not drop items here.'
-      }
-
-  event:
-    - foreach %orderedRegions% {
-      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|player-drops]>'
-      - define region '%value%'
-      - if %flagObj% != null {
-        - define player <player>
-        - inject s@dRegions_Flags_Processors p:state-withGroup
-        - foreach stop
-        }
-      }
-
-  event-global:
-    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|player-drops]>'
-    - if %flagObj% != null {
-      - define player <player>
-      - inject s@dRegions_Flags_Processors p:state-withGroup-global
       }
 
 
@@ -3665,26 +3849,48 @@ dRegions_Flag_Player-Drops-OnDeath:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
-  event-cleanup:
-    - determine NO_DROPS
-
   event:
-    - foreach %orderedRegions% {
-      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|player-drops-ondeath]>'
-      - define region '%value%'
-      - if %flagObj% != null {
-        - define player <player>
-        - inject s@dRegions_Flags_Processors p:state-withGroup
-        - foreach stop
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<player.flag[dRegions.cache.%world%.%thisRegion%.player-drops-ondeath]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|player-drops-ondeath]>'
+        - if %flagObj% != null {
+          - foreach stop
+          }
         }
+      - if %flagObj% == null {
+        - define flagObj 'allow/all'
+        }
+      - define player <player>
+      - inject s@dRegions_Flags_Processors p:state-withGroup
+      - if %sameRegion% flag <player> dRegions.rateLimit.player-drops-ondeath:true d:10s
+      - flag <player> dRegions.cache.%world%.%thisRegion%.player-drops-ondeath:true
+      }
+      else {
+      - if !%cache% {
+        - if %sameRegion% flag <player> dRegions.rateLimit.player-drops-ondeath:false d:10s
+        - determine NO_DROPS
+        }
+      - if %sameRegion% flag <player> dRegions.rateLimit.player-drops-ondeath:true d:10s
       }
 
   event-global:
+    - define thisRegion '__global__'
     - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|player-drops-ondeath]>'
     - if %flagObj% != null {
       - define player <player>
       - inject s@dRegions_Flags_Processors p:state-withGroup-global
       }
+    - if %sameRegion% flag <player> dRegions.rateLimit.player-drops-ondeath:true d:10s
+    - flag <player> dRegions.cache.%world%.__global__.player-drops-ondeath:true
+    - define cache 'true'
+
+  event-cleanup:
+    - flag <player> dRegions.cache.%world%.%thisRegion%.player-drops-ondeath:false
+    - if %sameRegion% flag <player> dRegions.rateLimit.player-drops-ondeath:false d:10s
+    - define cache 'false'
+    - determine NO_DROPS
 
 
 dRegions_Flag_Player-KeepItems:
@@ -3697,7 +3903,7 @@ dRegions_Flag_Player-KeepItems:
   - <&5>Can players keep items on death
   event_hook: PlayerDies
   event_priority: 10
-  flag_type: state
+  flag_type: state-withGroup
   flag_takeGroup: true
   flag_defaultValue: deny/all
   flag_help: State flag controlling whether players will keep their items when they die in a region. Default is to deny all. Takes the -g group switch.
@@ -3821,35 +4027,54 @@ dRegions_Flag_Player-Pickup:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
+  event:
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<player.flag[dRegions.cache.%world%.%thisRegion%.player-pickup]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|player-pickup]>'
+        - if %flagObj% != null {
+          - foreach stop
+          }
+        }
+      - if %flagObj% == null {
+        - define flagObj 'allow/all'
+        }
+      - define player <player>
+      - inject s@dRegions_Flags_Processors p:state-withGroup
+      - if %sameRegion% flag <player> dRegions.rateLimit.player-pickup:true d:10s
+      - flag <player> dRegions.cache.%world%.%thisRegion%.player-pickup:true
+      }
+      else {
+      - if !%cache% {
+        - if %sameRegion% flag <player> dRegions.rateLimit.player-pickup:false d:10s
+        - run locally msg delay:1t
+        - determine cancelled
+        }
+      - if %sameRegion% flag <player> dRegions.rateLimit.player-pickup:true d:10s
+      }
+
+  event-global:
+    - define thisRegion '__global__'
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|player-pickup]>'
+    - if %flagObj% != null {
+      - define player <player>
+      - inject s@dRegions_Flags_Processors p:state-withGroup-global
+      }
+    - if %sameRegion% flag <player> dRegions.rateLimit.player-pickup:true d:10s
+    - flag <player> dRegions.cache.%world%.__global__.player-pickup:true
+    - define cache 'true'
+
   event-cleanup:
+    - flag <player> dRegions.cache.%world%.%thisRegion%.player-pickup:false
+    - if %sameRegion% flag <player> dRegions.rateLimit.player-pickup:false d:10s
     - run locally msg delay:1t
+    - define cache 'false'
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag <player> dRegions_Message_Cooldown duration:3s
       - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not pick up items here.'
-      }
-
-  event:
-    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
-      - foreach %orderedRegions% {
-        - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|player-pickup]>'
-        - define region '%value%'
-        - if %flagObj% != null {
-          - define player <player>
-          - inject s@dRegions_Flags_Processors p:state-withGroup
-          - foreach stop
-          }
-        }
-      }
-
-  event-global:
-    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
-      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|player-pickup]>'
-      - if %flagObj% != null {
-        - define player <player>
-        - inject s@dRegions_Flags_Processors p:state-withGroup-global
-        }
       }
 
 
@@ -3876,27 +4101,29 @@ dRegions_Flag_Entity-Break-Painting:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - foreach %orderedRegions% {
-      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.entity-break-painting]||null>'
-      - if %cache% == none {
-        - foreach next
-        }
-      - if %cache% != null {
-        - if %cache% {
-          - queue clear
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%thisRegion%.entity-break-painting]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|entity-break-painting]>'
+        - if %flagVal% != null {
+          - foreach stop
           }
+        }
+      - if %flagVal% == null {
+        - define flagVal 'true'
+        }
+      - if !%flagVal% {
+        - yaml set 'cache.boolean.%thisRegion%.entity-break-painting:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|entity-break-painting]>'
-      - if %flagVal% != null {
-        - if !%flagVal% {
-          - yaml set 'cache.boolean.%value%.entity-break-painting:false' 'id:dRegions_%world%_cache'
-          - determine cancelled
-          }
-        - yaml set 'cache.boolean.%value%.entity-break-painting:true' 'id:dRegions_%world%_cache'
-        - foreach stop
+      - yaml set 'cache.boolean.%thisRegion%.entity-break-painting.%target%:true' 'id:dRegions_%world%_cache'
+      }
+      else {
+      - if !%cache% {
+        - yaml set 'cache.boolean.%thisRegion%.entity-break-painting:false' 'id:dRegions_%world%_cache'
+        - determine cancelled
         }
-      - yaml set 'cache.boolean.%value%.entity-break-painting:none' 'id:dRegions_%world%_cache'
       }
 
   event-global:
@@ -3906,8 +4133,8 @@ dRegions_Flag_Entity-Break-Painting:
         - yaml set 'cache.boolean.__global__.entity-break-painting:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
-      - yaml set 'cache.boolean.__global__.entity-break-painting:none' 'id:dRegions_%world%_cache'
       }
+    - yaml set 'cache.boolean.__global__.entity-break-painting:true' 'id:dRegions_%world%_cache'
 
 
 dRegions_Flag_Entity-Break-ItemFrame:
@@ -3933,27 +4160,29 @@ dRegions_Flag_Entity-Break-ItemFrame:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - foreach %orderedRegions% {
-      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.entity-break-itemframe]||null>'
-      - if %cache% == none {
-        - foreach next
-        }
-      - if %cache% != null {
-        - if %cache% {
-          - queue clear
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%thisRegion%.entity-break-itemframe]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|entity-break-itemframe]>'
+        - if %flagVal% != null {
+          - foreach stop
           }
+        }
+      - if %flagVal% == null {
+        - define flagVal 'true'
+        }
+      - if !%flagVal% {
+        - yaml set 'cache.boolean.%thisRegion%.entity-break-itemframe:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|entity-break-itemframe]>'
-      - if %flagVal% != null {
-        - if !%flagVal% {
-          - yaml set 'cache.boolean.%value%.entity-break-itemframe:false' 'id:dRegions_%world%_cache'
-          - determine cancelled
-          }
-        - yaml set 'cache.boolean.%value%.entity-break-itemframe:true' 'id:dRegions_%world%_cache'
-        - foreach stop
+      - yaml set 'cache.boolean.%thisRegion%.entity-break-itemframe.%target%:true' 'id:dRegions_%world%_cache'
+      }
+      else {
+      - if !%cache% {
+        - yaml set 'cache.boolean.%thisRegion%.entity-break-itemframe:false' 'id:dRegions_%world%_cache'
+        - determine cancelled
         }
-      - yaml set 'cache.boolean.%value%.entity-break-itemframe:none' 'id:dRegions_%world%_cache'
       }
 
   event-global:
@@ -3963,8 +4192,8 @@ dRegions_Flag_Entity-Break-ItemFrame:
         - yaml set 'cache.boolean.__global__.entity-break-itemframe:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
-      - yaml set 'cache.boolean.__global__.entity-break-itemframe:true' 'id:dRegions_%world%_cache'
       }
+    - yaml set 'cache.boolean.__global__.entity-break-itemframe:true' 'id:dRegions_%world%_cache'
 
 
 dRegions_Flag_PVP:
@@ -3990,31 +4219,33 @@ dRegions_Flag_PVP:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - foreach %orderedRegions% {
-      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.pvp]||null>'
-      - if %cache% == none {
-        - foreach next
-        }
-      - if %cache% != null {
-        - if %cache% {
-          - queue clear
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%thisRegion%.pvp]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|pvp]>'
+        - if %flagVal% != null {
+          - foreach stop
           }
+        }
+      - if %flagVal% == null {
+        - define flagVal 'true'
+        }
+      - if !%flagVal% {
+        - yaml set 'cache.boolean.%thisRegion%.pvp:false' 'id:dRegions_%world%_cache'
         - remove <c.projectile||li@>
         - run locally msg delay:1t
         - determine cancelled
         }
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|pvp]>'
-      - if %flagVal% != null {
-        - if !%flagVal% {
-          - yaml set 'cache.boolean.%value%.pvp:false' 'id:dRegions_%world%_cache'
-          - remove <c.projectile||li@>
-          - run locally msg delay:1t
-          - determine cancelled
-          }
-        - yaml set 'cache.boolean.%value%.pvp:true' 'id:dRegions_%world%_cache'
-        - foreach stop
+      - yaml set 'cache.boolean.%thisRegion%.pvp.%target%:true' 'id:dRegions_%world%_cache'
+      }
+      else {
+      - if !%cache% {
+        - yaml set 'cache.boolean.%thisRegion%.pvp:false' 'id:dRegions_%world%_cache'
+        - remove <c.projectile||li@>
+        - run locally msg delay:1t
+        - determine cancelled
         }
-      - yaml set 'cache.boolean.%value%.pvp:none' 'id:dRegions_%world%_cache'
       }
 
   event-global:
@@ -4026,8 +4257,8 @@ dRegions_Flag_PVP:
         - run locally msg delay:1t
         - determine cancelled
         }
-      - yaml set 'cache.boolean.__global__.pvp:true' 'id:dRegions_%world%_cache'
       }
+    - yaml set 'cache.boolean.__global__.pvp:true' 'id:dRegions_%world%_cache'
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
@@ -4059,47 +4290,49 @@ dRegions_Flag_Potion-Throw:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
-    - foreach %orderedRegions% {
-      - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%value%.potion-throw]||null>'
-      - if %cache% == none {
-        - foreach next
-        }
-      - if %cache% != null {
-        - if %cache% {
-          - queue clear
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%thisRegion%.potion-throw]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|potion-throw]>'
+        - if %flagVal% != null {
+          - foreach stop
           }
+        }
+      - if %flagVal% == null {
+        - define flagVal 'true'
+        }
+      - if !%flagVal% {
+        - yaml set 'cache.boolean.%thisRegion%.potion-throw:false' 'id:dRegions_%world%_cache'
         - if <player.is[!=].to[null]||false> {
           - run locally msg delay:1t
           }
         - determine cancelled
         }
-      - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|potion-throw]>'
-      - if %flagVal% != null {
-        - if !%flagVal% {
-          - if <player.is[!=].to[null]||false> {
-            - run locally msg delay:1t
-            }
-          - yaml set 'cache.boolean.%value%.potion-throw:false' 'id:dRegions_%world%_cache'
-          - determine cancelled
+      - yaml set 'cache.boolean.%thisRegion%.potion-throw.%target%:true' 'id:dRegions_%world%_cache'
+      }
+      else {
+      - if !%cache% {
+        - yaml set 'cache.boolean.%thisRegion%.potion-throw:false' 'id:dRegions_%world%_cache'
+        - if <player.is[!=].to[null]||false> {
+          - run locally msg delay:1t
           }
-        - yaml set 'cache.boolean.%value%.potion-throw:true' 'id:dRegions_%world%_cache'
-        - foreach stop
+        - determine cancelled
         }
-      - yaml set 'cache.boolean.%value%.potion-throw:none' 'id:dRegions_%world%_cache'
       }
 
   event-global:
     - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|potion-throw]>'
     - if %flagVal% != null {
       - if !%flagVal% {
+        - yaml set 'cache.boolean.__global__.potion-throw:false' 'id:dRegions_%world%_cache'
         - if <player.is[!=].to[null]||false> {
           - run locally msg delay:1t
           }
-        - yaml set 'cache.boolean.__global__.potion-throw:false' 'id:dRegions_%world%_cache'
         - determine cancelled
         }
-      - yaml set 'cache.boolean.__global__.potion-throw:true' 'id:dRegions_%world%_cache'
       }
+    - yaml set 'cache.boolean.__global__.potion-throw:true' 'id:dRegions_%world%_cache'
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not||false> {
@@ -4129,35 +4362,54 @@ dRegions_Flag_Potion-Drink:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
+  event:
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<player.flag[dRegions.cache.%world%.%thisRegion%.potion-drink]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|potion-drink]>'
+        - if %flagObj% != null {
+          - foreach stop
+          }
+        }
+      - if %flagObj% == null {
+        - define flagObj 'allow/all'
+        }
+      - define player <player>
+      - inject s@dRegions_Flags_Processors p:state-withGroup
+      - if %sameRegion% flag <player> dRegions.rateLimit.potion-drink:true d:10s
+      - flag <player> dRegions.cache.%world%.%thisRegion%.potion-drink:true
+      }
+      else {
+      - if !%cache% {
+        - if %sameRegion% flag <player> dRegions.rateLimit.potion-drink:false d:10s
+        - run locally msg delay:1t
+        - determine cancelled
+        }
+      - if %sameRegion% flag <player> dRegions.rateLimit.potion-drink:true d:10s
+      }
+
+  event-global:
+    - define thisRegion '__global__'
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|potion-drink]>'
+    - if %flagObj% != null {
+      - define player <player>
+      - inject s@dRegions_Flags_Processors p:state-withGroup-global
+      }
+    - if %sameRegion% flag <player> dRegions.rateLimit.potion-drink:true d:10s
+    - flag <player> dRegions.cache.%world%.__global__.potion-drink:true
+    - define cache 'true'
+
   event-cleanup:
+    - flag <player> dRegions.cache.%world%.%thisRegion%.potion-drink:false
+    - if %sameRegion% flag <player> dRegions.rateLimit.potion-drink:false d:10s
     - run locally msg delay:1t
+    - define cache 'false'
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag <player> dRegions_Message_Cooldown duration:3s
       - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not drink potions here.'
-      }
-
-  event:
-    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
-      - foreach %orderedRegions% {
-        - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|potion-drink]>'
-        - define region '%value%'
-        - if %flagObj% != null {
-          - define player <player>
-          - inject s@dRegions_Flags_Processors p:state-withGroup
-          - foreach stop
-          }
-        }
-      }
-
-  event-global:
-    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
-      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|potion-drink]>'
-      - if %flagObj% != null {
-        - define player <player>
-        - inject s@dRegions_Flags_Processors p:state-withGroup-global
-        }
       }
 
 
@@ -4182,35 +4434,54 @@ dRegions_Flag_Enderpearl:
   button_click:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
+  event:
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<player.flag[dRegions.cache.%world%.%thisRegion%.enderpearl]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|enderpearl]>'
+        - if %flagObj% != null {
+          - foreach stop
+          }
+        }
+      - if %flagObj% == null {
+        - define flagObj 'allow/all'
+        }
+      - define player <player>
+      - inject s@dRegions_Flags_Processors p:state-withGroup
+      - if %sameRegion% flag <player> dRegions.rateLimit.enderpearl:true d:10s
+      - flag <player> dRegions.cache.%world%.%thisRegion%.enderpearl:true
+      }
+      else {
+      - if !%cache% {
+        - if %sameRegion% flag <player> dRegions.rateLimit.enderpearl:false d:10s
+        - run locally msg delay:1t 'def:'
+        - determine cancelled
+        }
+      - if %sameRegion% flag <player> dRegions.rateLimit.enderpearl:true d:10s
+      }
+
+  event-global:
+    - define thisRegion '__global__'
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|enderpearl]>'
+    - if %flagObj% != null {
+      - define player <player>
+      - inject s@dRegions_Flags_Processors p:state-withGroup-global
+      }
+    - if %sameRegion% flag <player> dRegions.rateLimit.enderpearl:true d:10s
+    - flag <player> dRegions.cache.%world%.__global__.enderpearl:true
+    - define cache 'true'
+
   event-cleanup:
+    - flag <player> dRegions.cache.%world%.%thisRegion%.enderpearl:false
+    - if %sameRegion% flag <player> dRegions.rateLimit.enderpearl:false d:10s
     - run locally msg delay:1t
+    - define cache 'false'
 
   msg:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag <player> dRegions_Message_Cooldown duration:3s
       - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not use enderpearls here.'
-      }
-
-  event:
-    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
-      - foreach %orderedRegions% {
-        - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|enderpearl]>'
-        - define region '%value%'
-        - if %flagObj% != null {
-          - define player <player>
-          - inject s@dRegions_Flags_Processors p:state-withGroup
-          - foreach stop
-          }
-        }
-      }
-
-  event-global:
-    - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
-      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|enderpearl]>'
-      - if %flagObj% != null {
-        - define player <player>
-        - inject s@dRegions_Flags_Processors p:state-withGroup-global
-        }
       }
 
 
@@ -4239,39 +4510,29 @@ dRegions_Flag_Block-Place:
 
   event:
     - define thisRegion '<def[orderedRegions].get[1]>'
-    - foreach %orderedRegions% {
-      - define cache '<player.flag[dRegions.cache.%world%.%value%.block-place.%target%]||null>'
-      - if %cache% == none {
-        - define flagObj 'null'
-        - foreach next
-        }
-      - if %cache% != null {
-        - if %cache% {
-          - if %sameRegion% flag <player> dRegions.rateLimit.block-place.%target%:true d:10s
-          - queue clear
+    - define cache '<player.flag[dRegions.cache.%world%.%thisRegion%.block-place.%target%]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|block-place]>'
+        - if %flagObj% != null {
+          - foreach stop
           }
-        - if %sameRegion% flag <player> dRegions.rateLimit.block-place.%target%:false d:10s
-        - run locally msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
-        - determine cancelled
         }
-      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|block-place]>'
-      - if %flagObj% != null {
-        - define region '%value%'
-        - foreach stop
+      - if %flagObj% == null {
+        - define flagObj 'allow/all'
         }
-        else {
-        - if %sameRegion% flag <player> dRegions.rateLimit.block-place.%target%:true d:10s
-        - flag <player> dRegions.cache.%world%.%value%.block-place.%target%:none
-        }
-      }
-    - if %flagObj% != null {
       - define player <player>
-      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|block-placelist].replace[, ].with[|].as_list>'
+      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|block-placelist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
       - if %sameRegion% flag <player> dRegions.rateLimit.block-place.%target%:true d:10s
       - flag <player> dRegions.cache.%world%.%thisRegion%.block-place.%target%:true
       }
       else {
+      - if !%cache% {
+        - if %sameRegion% flag <player> dRegions.rateLimit.block-place.%target%:false d:10s
+        - run locally msg delay:1t
+        - determine cancelled
+        }
       - if %sameRegion% flag <player> dRegions.rateLimit.block-place.%target%:true d:10s
       }
 
@@ -4279,21 +4540,16 @@ dRegions_Flag_Block-Place:
     - define thisRegion '__global__'
     - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|block-place]>'
     - if %flagObj% != null {
-      - define orderedRegions 'li@__global__'
-      - define player '<player>'
-      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|block-placelist].replace[, ].with[|].as_list>'
+      - define player <player>
+      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|block-placelist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
       - if %sameRegion% flag <player> dRegions.rateLimit.block-place.%target%:true d:10s
       - flag <player> dRegions.cache.%world%.__global__.block-place.%target%:true
       }
-      else {
-      - if %sameRegion% flag <player> dRegions.rateLimit.block-place.%target%:true d:10s
-      - flag <player> dRegions.cache.%world%.__global__.block-place.%target%:none
-      }
 
   event-cleanup:
-    - if %sameRegion% flag <player> dRegions.rateLimit.block-place.%target%:false d:10s
     - flag <player> dRegions.cache.%world%.%thisRegion%.block-place.%target%:false
+    - if %sameRegion% flag <player> dRegions.rateLimit.block-place.%target%:false d:10s
     - run locally msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
 
   msg:
@@ -4353,39 +4609,29 @@ dRegions_Flag_Block-Break:
 
   event:
     - define thisRegion '<def[orderedRegions].get[1]>'
-    - foreach %orderedRegions% {
-      - define cache '<player.flag[dRegions.cache.%world%.%value%.block-break.%target%]||null>'
-      - if %cache% == none {
-        - define flagObj 'null'
-        - foreach next
-        }
-      - if %cache% != null {
-        - if %cache% {
-          - if %sameRegion% flag <player> dRegions.rateLimit.block-break.%target%:true d:10s
-          - queue clear
+    - define cache '<player.flag[dRegions.cache.%world%.%thisRegion%.block-break.%target%]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|block-break]>'
+        - if %flagObj% != null {
+          - foreach stop
           }
-        - if %sameRegion% flag <player> dRegions.rateLimit.block-break.%target%:false d:10s
-        - run locally msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
-        - determine cancelled
         }
-      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|block-break]>'
-      - if %flagObj% != null {
-        - define region '%value%'
-        - foreach stop
+      - if %flagObj% == null {
+        - define flagObj 'allow/all'
         }
-        else {
-        - if %sameRegion% flag <player> dRegions.rateLimit.block-break.%target%:true d:10s
-        - flag <player> dRegions.cache.%world%.%value%.block-break.%target%:none
-        }
-      }
-    - if %flagObj% != null {
       - define player <player>
-      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|block-breaklist].replace[, ].with[|].as_list>'
+      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|block-breaklist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
       - if %sameRegion% flag <player> dRegions.rateLimit.block-break.%target%:true d:10s
       - flag <player> dRegions.cache.%world%.%thisRegion%.block-break.%target%:true
       }
       else {
+      - if !%cache% {
+        - if %sameRegion% flag <player> dRegions.rateLimit.block-break.%target%:false d:10s
+        - run locally msg delay:1t
+        - determine cancelled
+        }
       - if %sameRegion% flag <player> dRegions.rateLimit.block-break.%target%:true d:10s
       }
 
@@ -4393,21 +4639,16 @@ dRegions_Flag_Block-Break:
     - define thisRegion '__global__'
     - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|block-break]>'
     - if %flagObj% != null {
-      - define orderedRegions 'li@__global__'
-      - define player '<player>'
-      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|block-breaklist].replace[, ].with[|].as_list>'
+      - define player <player>
+      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|block-breaklist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
       - if %sameRegion% flag <player> dRegions.rateLimit.block-break.%target%:true d:10s
       - flag <player> dRegions.cache.%world%.__global__.block-break.%target%:true
       }
-      else {
-      - if %sameRegion% flag <player> dRegions.rateLimit.block-break.%target%:true d:10s
-      - flag <player> dRegions.cache.%world%.__global__.block-break.%target%:none
-      }
 
   event-cleanup:
-    - if %sameRegion% flag <player> dRegions.rateLimit.block-break.%target%:false d:10s
     - flag <player> dRegions.cache.%world%.%thisRegion%.block-break.%target%:false
+    - if %sameRegion% flag <player> dRegions.rateLimit.block-break.%target%:false d:10s
     - run locally msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
 
   msg:
