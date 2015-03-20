@@ -683,6 +683,10 @@ dRegions:
 #    - inject s@dRegions p:playerClick_<c.type||null>
 
     on player changes world:
+#    - event 'player exits notable cuboid' 'context:cuboids|<c.from.cuboids.escaped>|from|<c.from>|to|<c.to>' save:exit
+#    - if <entry[exit].determinations.get[1]||null> == cancelled {
+#      - determine cancelled
+#      }
     - flag <player> dRegions.cache:!
 
     on player joins:
@@ -1255,8 +1259,8 @@ dRegions:
         - determine cancelled
         }
       }
-    - define world '<player.world.name.to_lowercase>'
-    - define cuboids '<c.cuboids.unescaped.as_list>'
+    - define world '<c.to.world.name.to_lowercase>'
+    - define cuboids '<c.to.cuboids.unescaped.as_list>'
     - if <def[cuboids].is_empty> {
       - define cache '<player.flag[dRegions.cache.%world%.__global__.entry]||null>'
       - if %cache% == null {
@@ -1280,8 +1284,8 @@ dRegions:
     - inject s@dRegions_Flag_Entry p:event
 
     on player exits notable cuboid:
-    - define world '<player.world.name.to_lowercase>'
-    - define cuboids '<c.cuboids.unescaped.as_list>'
+    - define world '<c.from.world.name.to_lowercase>'
+    - define cuboids '<c.from.cuboids.unescaped.as_list>'
     - if <def[cuboids].is_empty> {
       - define cache '<player.flag[dRegions.cache.%world%.__global__.exit]||null>'
       - if %cache% == null {
@@ -2062,6 +2066,14 @@ dRegions:
     - inject s@dRegions_Flag_Hunger p:event
 
     on player teleports:
+    - if <c.origin.world> != <c.destination.world> {
+      - if <c.origin.cuboids.is_empty> && <c.destination.cuboids.is_empty> {
+        - event 'player enters notable cuboid' 'context:cuboids|<c.origin.cuboids.escaped>|from|<c.origin>|to|<c.destination>' save:enter
+        - if <entry[enter].determinations.get[1]||null> == cancelled {
+          - determine cancelled
+          }
+        }
+      }
     - if <c.cause> != ender_pearl queue clear
     - if <player.permission[dRegions.admin]||false> || <player.is_op> queue clear
     - if <c.origin.location.cuboids.alphanumeric.unseparated> == <c.destination.location.cuboids.alphanumeric.unseparated> {
