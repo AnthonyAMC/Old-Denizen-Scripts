@@ -195,6 +195,7 @@ dRegions:
         - if %cache% == null {
           - define FlagScript 's@dRegions_Flag_Lighter'
           - inject s@dRegions_Flag_Lighter p:event-global
+          - queue clear
           }
         - if !%cache% {
           - if %sameRegion% flag <player> dRegions.rateLimit.lighter:false d:10s
@@ -209,6 +210,7 @@ dRegions:
       - if %cache% == null {
         - define FlagScript 's@dRegions_Flag_%cause%'
         - inject s@dRegions_Flag_%cause% p:event-global
+        - queue clear
         }
       - if !%cache% {
         - determine cancelled
@@ -234,7 +236,7 @@ dRegions:
         - define FlagScript 's@dRegions_Flag_Fire-Destroy'
         - inject s@dRegions_Flag_Fire-Destroy p:event-global
         }
-      - if !%cache% {
+        else if !%cache% {
         - determine cancelled
         }
       - define cache '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.__global__.fire-spread.%target%]||null>'
@@ -304,6 +306,7 @@ dRegions:
       - if %cache% == null {
         - define FlagScript 's@dRegions_Flag_Snow-Fall'
         - inject s@dRegions_Flag_Snow-Fall p:event-global
+        - queue clear
         }
       - if !%cache% {
         - determine cancelled
@@ -463,6 +466,7 @@ dRegions:
       - if %cache% == null {
         - define FlagScript 's@dRegions_Flag_%mat%-Spread'
         - inject s@dRegions_Flag_%mat%-Spread p:event-global
+        - queue clear
         }
       - if !%cache% {
         - determine cancelled
@@ -500,6 +504,7 @@ dRegions:
       - if %cache% == null {
         - define FlagScript 's@dRegions_Flag_Lightning-Strikes'
         - inject s@dRegions_Flag_Lightning-Strikes p:event-global
+        - queue clear
         }
       - if !%cache% {
         - determine cancelled
@@ -716,6 +721,7 @@ dRegions:
       - if %cache% == null {
         - define FlagScript 's@dRegions_Flag_Send-Chat'
         - inject s@dRegions_Flag_Send-Chat p:event-global
+        - queue clear
         }
       - if !%cache% {
         - if %sameRegion% flag <player> dRegions.rateLimit.send-chat:false d:10s
@@ -756,6 +762,7 @@ dRegions:
       - if %cache% == null {
         - define FlagScript 's@dRegions_Flag_Vehicle-Destroy'
         - inject s@dRegions_Flag_Vehicle-Destroy p:event-global
+        - queue clear
         }
       - if !%cache% {
         - if %sameRegion% flag <player> dRegions.rateLimit.vehicle-destroy:false d:10s
@@ -790,14 +797,15 @@ dRegions:
     - define world '<player.world.name>'
     - if <c.cuboids.is_empty||true> {
       - define cache '<player.flag[dRegions.cache.%world%.__global__.use-switches.%target%]||null>'
-      - if %cache% == false {
-        - flag <player> dRegions.rateLimit.use-switches.%target%:false d:10s
-        - run s@dRegions_Flag_use-switches p:msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
-        - determine cancelled
-        }
       - if %cache% == null {
         - define flagScript 's@dRegions_Flag_Use-Switches'
         - inject s@dRegions_Flag_Use-Switches p:event-global
+        - queue clear
+        }
+      - if !%cache% {
+        - flag <player> dRegions.rateLimit.use-switches.%target%:false d:10s
+        - run s@dRegions_Flag_use-switches p:msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
+        - determine cancelled
         }
       - flag <player> dRegions.rateLimit.use-switches.%target%:true d:10s
       - queue clear
@@ -868,6 +876,7 @@ dRegions:
       - if %cache% == null {
         - define FlagScript 's@dRegions_Flag_Potion-Drink'
         - inject s@dRegions_Flag_Potion-Drink p:event-global
+        - queue clear
         }
       - if !%cache% {
         - if %sameRegion% flag <player> dRegions.rateLimit.potion-drink:false d:10s
@@ -909,6 +918,7 @@ dRegions:
       - if %cache% == null {
         - define FlagScript 's@dRegions_Flag_Build'
         - inject s@dRegions_Flag_Build p:event-global
+        - queue clear
         }
       - if !%cache% {
         - if %sameRegion% flag <player> dRegions.rateLimit.build:false d:10s
@@ -950,6 +960,7 @@ dRegions:
       - if %cache% == null {
         - define FlagScript 's@dRegions_Flag_Build'
         - inject s@dRegions_Flag_Build p:event-global
+        - queue clear
         }
       - if !%cache% {
         - if %sameRegion% flag <player> dRegions.rateLimit.build:false d:10s
@@ -991,6 +1002,7 @@ dRegions:
       - if %cache% == null {
         - define FlagScript 's@dRegions_Flag_Build'
         - inject s@dRegions_Flag_Build p:event-global
+        - queue clear
         }
       - if !%cache% {
         - if %sameRegion% flag <player> dRegions.rateLimit.build:false d:10s
@@ -1114,6 +1126,7 @@ dRegions:
       - if %cache% == null {
         - define FlagScript 's@dRegions_Flag_NPC-Interact'
         - inject s@dRegions_Flag_NPC-Interact p:event-global
+        - queue clear
         }
       - if !%cache% {
         - if %sameRegion% flag <player> dRegions.rateLimit.npc-interact:false d:10s
@@ -1217,6 +1230,7 @@ dRegions:
       - if %cache% == null {
         - define FlagScript 's@dRegions_Flag_Sleep'
         - inject s@dRegions_Flag_Sleep p:event-global
+        - queue clear
         }
       - if !%cache% {
         - if %sameRegion% flag <player> dRegions.rateLimit.sleep:false d:10s
@@ -1359,7 +1373,7 @@ dRegions:
         - define FlagScript 's@dRegions_Flag_Build'
         - inject s@dRegions_Flag_Build p:event-global
         }
-      - if !%cache% {
+        else if !%cache% {
         - if %sameRegion% flag <player> dRegions.rateLimit.build:false d:10s
         - run s@dRegions_Flag_Build p:msg delay:1t
         - determine cancelled
@@ -1369,6 +1383,7 @@ dRegions:
       - if %cache% == null {
         - define FlagScript 's@dRegions_Flag_block-break'
         - inject s@dRegions_Flag_block-break p:event-global
+        - queue clear
         }
       - if !%cache% {
         - if %sameRegion% flag <player> dRegions.rateLimit.block-break.%target%:false d:10s
@@ -1425,7 +1440,7 @@ dRegions:
         - define FlagScript 's@dRegions_Flag_Build'
         - inject s@dRegions_Flag_Build p:event-global
         }
-      - if !%cache% {
+        else if !%cache% {
         - if %sameRegion% flag <player> dRegions.rateLimit.build:false d:10s
         - run s@dRegions_Flag_Build p:msg delay:1t
         - determine cancelled
@@ -1435,6 +1450,7 @@ dRegions:
       - if %cache% == null {
         - define FlagScript 's@dRegions_Flag_block-place'
         - inject s@dRegions_Flag_block-place p:event-global
+        - queue clear
         }
       - if !%cache% {
         - if %sameRegion% flag <player> dRegions.rateLimit.block-place.%target%:false d:10s
@@ -1478,6 +1494,7 @@ dRegions:
       - if %cache% == null {
         - define FlagScript 's@dRegions_Flag_Bucket-Empty'
         - inject s@dRegions_Flag_Bucket-Empty p:event-global
+        - queue clear
         }
       - if !%cache% {
         - if %sameRegion% flag <player> dRegions.rateLimit.bucket-empty:false d:10s
@@ -1519,6 +1536,7 @@ dRegions:
       - if %cache% == null {
         - define FlagScript 's@dRegions_Flag_Bucket-Fill'
         - inject s@dRegions_Flag_Bucket-Fill p:event-global
+        - queue clear
         }
       - if !%cache% {
         - if %sameRegion% flag <player> dRegions.rateLimit.bucket-fill:false d:10s
@@ -1560,6 +1578,7 @@ dRegions:
       - if %cache% == null {
         - define FlagScript 's@dRegions_Flag_Player-Drops'
         - inject s@dRegions_Flag_Player-Drops p:event-global
+        - queue clear
         }
       - if !%cache% {
         - if %sameRegion% flag <player> dRegions.rateLimit.player-drops:false d:10s
@@ -1651,7 +1670,7 @@ dRegions:
         - define FlagScript 's@dRegions_Flag_Build'
         - inject s@dRegions_Flag_Build p:event-global
         }
-      - if !%cache% {
+        else if !%cache% {
         - if %sameRegion% flag <player> dRegions.rateLimit.build:false d:10s
         - run s@dRegions_Flag_Build p:msg delay:1t
         - determine cancelled
@@ -1661,6 +1680,7 @@ dRegions:
       - if %cache% == null {
         - define FlagScript 's@dRegions_Flag_Hanging-Place'
         - inject s@dRegions_Flag_Hanging-Place p:event-global
+        - queue clear
         }
       - if !%cache% {
         - if %sameRegion% flag <player> dRegions.rateLimit.hanging-place:false d:10s
@@ -1704,6 +1724,7 @@ dRegions:
       - if %cache% == null {
         - define FlagScript 's@dRegions_Flag_Build'
         - inject s@dRegions_Flag_Build p:event-global
+        - queue clear
         }
       - if !%cache% {
         - if %sameRegion% flag <player> dRegions.rateLimit.build:false d:10s
@@ -1745,6 +1766,7 @@ dRegions:
       - if %cache% == null {
         - define FlagScript 's@dRegions_Flag_Build'
         - inject s@dRegions_Flag_Build p:event-global
+        - queue clear
         }
       - if !%cache% {
         - if %sameRegion% flag <player> dRegions.rateLimit.build:false d:10s
@@ -1786,6 +1808,7 @@ dRegions:
       - if %cache% == null {
         - define FlagScript 's@dRegions_Flag_Build'
         - inject s@dRegions_Flag_Build p:event-global
+        - queue clear
         }
       - if !%cache% {
         - if %sameRegion% flag <player> dRegions.rateLimit.build:false d:10s
@@ -1850,6 +1873,7 @@ dRegions:
       - if %cache% == null {
         - define FlagScript 's@dRegions_Flag_Build'
         - inject s@dRegions_Flag_Build p:event-global
+        - queue clear
         }
       - if !%cache% {
         - if %sameRegion% flag <player> dRegions.rateLimit.build:false d:10s
@@ -1943,6 +1967,7 @@ dRegions:
       - if %cache% == null {
         - define FlagScript 's@dRegions_Flag_Build'
         - inject s@dRegions_Flag_Build p:event-global
+        - queue clear
         }
       - if !%cache% {
         - if %sameRegion% flag <player> dRegions.rateLimit.build:false d:10s
@@ -1984,6 +2009,7 @@ dRegions:
       - if %cache% == null {
         - define FlagScript 's@dRegions_Flag_Build'
         - inject s@dRegions_Flag_Build p:event-global
+        - queue clear
         }
       - if !%cache% {
         - if %sameRegion% flag <player> dRegions.rateLimit.build:false d:10s
@@ -2003,6 +2029,7 @@ dRegions:
 
     on player damaged:
     - define rateLimit '<player.flag[dRegions.rateLimit.player-damage.<c.cause>]||null>'
+    - define sameRegion 'true'
     - if %rateLimit% != null {
       - if %rateLimit% {
         - queue clear
@@ -2113,6 +2140,7 @@ dRegions:
       - if %cache% == null {
         - define FlagScript 's@dRegions_Flag_Enderpearl'
         - inject s@dRegions_Flag_Enderpearl p:event-global
+        - queue clear
         }
       - if !%cache% {
         - if %sameRegion% flag <player> dRegions.rateLimit.enderpearl:false d:10s
@@ -2159,7 +2187,7 @@ dRegions:
         - define FlagScript 's@dRegions_Flag_Mob-Attack'
         - inject s@dRegions_Flag_Mob-Attack p:event-global
         }
-      - if !%cache% {
+        else if !%cache% {
         - remove <c.projectile||li@>
         - attack %attacker% target:cancel
         - run s@dRegions_Flag_Mob-Attack p:wander delay:1t def:%attacker%
@@ -2169,6 +2197,7 @@ dRegions:
       - if %cache% == null {
         - define FlagScript 's@dRegions_Flag_EVE'
         - inject s@dRegions_Flag_EVE p:event-global
+        - queue clear
         }
       - if !%cache% {
         - remove <c.projectile||li@>
@@ -2389,6 +2418,7 @@ dRegions:
       - if %cache% == null {
         - define FlagScript 's@dRegions_Flag_Entity-Drops-OnDeath'
         - inject s@dRegions_Flag_Entity-Drops-OnDeath p:event-global
+        - queue clear
         }
       - if !%cache% {
         - determine no_drops
@@ -2411,6 +2441,7 @@ dRegions:
       - if %cache% == null {
         - define FlagScript 's@dRegions_Flag_Mob-Spawn'
         - inject s@dRegions_Flag_Mob-Spawn p:event-global
+        - queue clear
         }
       - if !%cache% {
         - determine cancelled
@@ -2495,6 +2526,7 @@ dRegions:
       - if %cache% == null {
         - define FlagScript 's@dRegions_Flag_Entity-Grief'
         - inject s@dRegions_Flag_Entity-Grief p:event-global
+        - queue clear
         }
       - if !%cache% {
 #        - run s@dRegions_Flag_Entity-Grief offthread delay:1t def:<c.entity.uuid>
@@ -2524,6 +2556,7 @@ dRegions:
       - if %cache% == null {
         - define FlagScript 's@dRegions_Flag_Entity-Grief'
         - inject s@dRegions_Flag_Entity-Grief p:event-global
+        - queue clear
         }
       - if !%cache% {
         - run s@dRegions_Flag_Entity-Grief offthread delay:1t def:<c.entity.uuid>
@@ -2550,6 +2583,7 @@ dRegions:
       - if %cache% == null {
         - define FlagScript 's@dRegions_Flag_Entity-Explode'
         - inject s@dRegions_Flag_Entity-Explode p:event-global
+        - queue clear
         }
       - if !%cache% {
         - determine cancelled
@@ -2624,7 +2658,7 @@ dRegions:
         - define FlagScript 's@dRegions_Flag_Build'
         - inject s@dRegions_Flag_Build p:event-global
         }
-      - if !%cache% {
+        else if !%cache% {
         - if %sameRegion% flag <player> dRegions.rateLimit.build:false d:10s
         - run s@dRegions_Flag_Build p:msg delay:1t
         - determine cancelled
@@ -2634,6 +2668,7 @@ dRegions:
       - if %cache% == null {
         - define FlagScript 's@dRegions_Flag_Hanging-Break'
         - inject s@dRegions_Flag_Hanging-Break p:event-global
+        - queue clear
         }
       - if !%cache% {
         - if %sameRegion% flag <player> dRegions.rateLimit.hanging-break:false d:10s
