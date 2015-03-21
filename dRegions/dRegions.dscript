@@ -1601,6 +1601,7 @@ dRegions:
       - if %cache% == null {
         - define FlagScript 's@dRegions_Flag_Player-Pickup'
         - inject s@dRegions_Flag_Player-Pickup p:event-global
+        - queue clear
         }
       - if !%cache% {
         - if %sameRegion% flag <player> dRegions.rateLimit.player-pickup:false d:10s
@@ -1872,7 +1873,9 @@ dRegions:
       }
     - if <player.permission[dRegions.admin]||false> || <player.is_op> queue clear
     - define target '<c.entity.entity_type>'
+    - define player '<c.damager>'
     - if <c.entity.location.cuboids.alphanumeric.unseparated||null> == <player.location.cuboids.alphanumeric.unseparated||null> {
+      - define sameRegion 'true'
       - define rateLimit '<player.flag[dRegions.rateLimit.pve.%target%]||null>'
       - if %rateLimit% != null {
         - if %rateLimit% {
@@ -1885,9 +1888,10 @@ dRegions:
           }
         }
       }
+      else {
+      - define sameRegion 'false'
+      }
     - define world '<c.entity.world.name>'
-    - define player '<c.damager>'
-    - define puuid '<c.damager.uuid>'
     - if <c.entity.location.cuboids.is_empty> {
       - define cache '<player.flag[dRegions.cache.%world%.__global__.pve.%target%]||null>'
       - if %cache% == null {
@@ -1896,12 +1900,12 @@ dRegions:
         - queue clear
         }
       - if !%cache% {
-        - flag <player> dRegions.rateLimit.pve.%target%:false d:10s
+        - if %sameRegion% flag <player> dRegions.rateLimit.pve.%target%:false d:10s
         - remove <c.projectile||li@>
         - run s@dRegions_Flag_pve p:msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
         - determine cancelled
         }
-      - flag <player> dRegions.rateLimit.pve.%target%:true d:10s
+      - if %sameRegion% flag <player> dRegions.rateLimit.pve.%target%:true d:10s
       - queue clear
       }
     - define regionPri 'li@'
@@ -2049,7 +2053,6 @@ dRegions:
         - queue clear
         }
         else {
-        - run s@dRegions_Flag_Hunger p:msg delay:1t
         - determine cancelled
         }
       }
@@ -2059,10 +2062,10 @@ dRegions:
       - if %cache% == null {
         - define FlagScript 's@dRegions_Flag_Hunger'
         - inject s@dRegions_Flag_Hunger p:event-global
+        - queue clear
         }
       - if !%cache% {
         - if %sameRegion% flag <player> dRegions.rateLimit.hunger:false d:10s
-        - run s@dRegions_Flag_Hunger p:msg delay:1t
         - determine cancelled
         }
       - if %sameRegion% flag <player> dRegions.rateLimit.hunger:true d:10s
@@ -2300,6 +2303,7 @@ dRegions:
       }
     - define attacker '<c.damager>'
     - define target '<c.damager.entity_type>'
+    - define player '<c.entity>'
     - if <c.damager.location.cuboids.alphanumeric.unseparated||null> == <c.entity.location.cuboids.alphanumeric.unseparated||null> {
       - define sameRegion 'true'
       - define rateLimit '<c.entity.flag[dRegions.rateLimit.mob-damage.%target%]||null>'
@@ -2319,7 +2323,6 @@ dRegions:
       - define sameRegion 'false'
       }
     - define world '<c.entity.world.name>'
-    - define player '<c.entity>'
     - if <c.entity.location.cuboids.is_empty||true> {
 #      - if <c.cause> == entity_explosion {
 #        - define FlagScript 's@dRegions_Flag_Entity-Explode'
@@ -2338,7 +2341,7 @@ dRegions:
         - run delay:1t s@dRegions_Flag_Mob-Damage p:wander 'def:%attacker%'
         - determine cancelled
         }
-      - flag <c.entity> dRegions.rateLimit.mob-damage.%target%:true d:10s
+      - if %sameRegion% flag <c.entity> dRegions.rateLimit.mob-damage.%target%:true d:10s
       - queue clear
       }
     - define regionPri 'li@'

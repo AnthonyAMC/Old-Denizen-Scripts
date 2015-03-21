@@ -849,15 +849,15 @@ dRegions_Flag_Hunger:
         }
       - define player <player>
       - inject s@dRegions_Flags_Processors p:state-withGroup
-      - if %sameRegion% flag <player> dRegions.rateLimit.hunger:true d:10s
+      - if %sameRegion% flag <player> dRegions.rateLimit.hunger:true d:30s
       - flag <player> dRegions.cache.%world%.%thisRegion%.hunger:true
       }
       else {
       - if !%cache% {
-        - if %sameRegion% flag <player> dRegions.rateLimit.hunger:false d:10s
+        - if %sameRegion% flag <player> dRegions.rateLimit.hunger:false d:30s
         - determine cancelled
         }
-      - if %sameRegion% flag <player> dRegions.rateLimit.hunger:true d:10s
+      - if %sameRegion% flag <player> dRegions.rateLimit.hunger:true d:30s
       }
 
   event-global:
@@ -867,9 +867,12 @@ dRegions_Flag_Hunger:
       - define player <player>
       - inject s@dRegions_Flags_Processors p:state-withGroup-global
       }
-    - if %sameRegion% flag <player> dRegions.rateLimit.hunger:true d:10s
+    - if %sameRegion% flag <player> dRegions.rateLimit.hunger:true d:30s
     - flag <player> dRegions.cache.%world%.__global__.hunger:true
-    - define cache 'true'
+
+  event-cleanup:
+    - if %sameRegion% flag <player> dRegions.rateLimit.hunger:false d:30s
+    - flag <player> dRegions.cache.%world%.%thisRegion%.hunger:false
 
 
 dRegions_Flag_Mob-Target:
@@ -932,7 +935,7 @@ dRegions_Flag_Mob-Target:
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|mob-targetlist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
       }
-    - flag %player% dRegions.rateLimit.mob-target.%target%:true d:10s
+    - if %sameRegion% flag %player% dRegions.rateLimit.mob-target.%target%:true d:10s
     - flag %player% dRegions.cache.%world%.__global__.mob-target.%target%:true
 
   event-cleanup:
@@ -1006,7 +1009,7 @@ dRegions_Flag_Mob-Damage:
       - foreach %orderedRegions% {
         - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|mob-damage]>'
         - if %flagObj% != null {
-          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|mob-damagelist].replace[, ].with[|].as_list>'
+          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|mob-damagelist].replace[, ].with[|].as_list>'
           - foreach stop
           }
         }
@@ -1037,14 +1040,14 @@ dRegions_Flag_Mob-Damage:
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|mob-damagelist].replace[, ].with[|].as_list>'
       - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup
       }
-    - flag %player% dRegions.rateLimit.mob-damage.%target%:true d:10s
+    - if %sameRegion% flag %player% dRegions.rateLimit.mob-damage.%target%:true d:10s
     - flag %player% dRegions.cache.%world%.__global__.mob-damage.%target%:true
 
   event-cleanup:
     - remove <c.projectile||li@>
     - attack %attacker% target:cancel
     - run delay:1t locally wander 'def:%attacker%'
-    - flag %player% dRegions.rateLimit.mob-damage.%target%:false d:10s
+    - if %sameRegion% flag %player% dRegions.rateLimit.mob-damage.%target%:false d:10s
     - flag %player% dRegions.cache.%world%.%thisRegion%.mob-damage.%target%:false
 
   wander:
@@ -1406,7 +1409,7 @@ dRegions_Flag_PVE:
       - foreach %orderedRegions% {
         - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|pve]>'
         - if %flagObj% != null {
-          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|pve-moblist].replace[, ].with[|].as_list>'
+          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|pve-moblist].replace[, ].with[|].as_list>'
           - foreach stop
           }
         }
@@ -1579,7 +1582,7 @@ dRegions_Flag_Entity-Interact:
       - foreach %orderedRegions% {
         - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|entity-interact]>'
         - if %flagObj% != null {
-          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|entity-interactlist].replace[, ].with[|].as_list>'
+          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|entity-interactlist].replace[, ].with[|].as_list>'
           - foreach stop
           }
         }
@@ -4463,7 +4466,7 @@ dRegions_Flag_Block-Place:
       - foreach %orderedRegions% {
         - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|block-place]>'
         - if %flagObj% != null {
-          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|block-placelist].replace[, ].with[|].as_list>'
+          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|block-placelist].replace[, ].with[|].as_list>'
           - foreach stop
           }
         }
@@ -4563,7 +4566,7 @@ dRegions_Flag_Block-Break:
       - foreach %orderedRegions% {
         - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|block-break]>'
         - if %flagObj% != null {
-          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|block-breaklist].replace[, ].with[|].as_list>'
+          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|block-breaklist].replace[, ].with[|].as_list>'
           - foreach stop
           }
         }
@@ -4665,7 +4668,7 @@ dRegions_Flag_Chest-Access:
       - foreach %orderedRegions% {
         - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|chest-access]>'
         - if %flagObj% != null {
-          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|chest-access-blocks].replace[, ].with[|].as_list>'
+          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|chest-access-blocks].replace[, ].with[|].as_list>'
           - foreach stop
           }
         }
@@ -4765,7 +4768,7 @@ dRegions_Flag_Door-Access:
       - foreach %orderedRegions% {
         - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|door-access]>'
         - if %flagObj% != null {
-          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|door-access-doors].replace[, ].with[|].as_list>'
+          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|door-access-doors].replace[, ].with[|].as_list>'
           - foreach stop
           }
         }
@@ -4866,7 +4869,7 @@ dRegions_Flag_Use-Switches:
       - foreach %orderedRegions% {
         - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|use-switches]>'
         - if %flagObj% != null {
-          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|use-switches-list].replace[, ].with[|].as_list>'
+          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|use-switches-list].replace[, ].with[|].as_list>'
           - foreach stop
           }
         }
@@ -4967,7 +4970,7 @@ dRegions_Flag_Use-Utilities:
       - foreach %orderedRegions% {
         - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|use-utilities]>'
         - if %flagObj% != null {
-          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|use-utilities-blocks].replace[, ].with[|].as_list>'
+          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|use-utilities-blocks].replace[, ].with[|].as_list>'
           - foreach stop
           }
         }
@@ -5066,7 +5069,7 @@ dRegions_Flag_Player-Damage:
       - foreach %orderedRegions% {
         - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|player-damage]>'
         - if %flagObj% != null {
-          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|player-damage-types].replace[, ].with[|].as_list>'
+          - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|player-damage-types].replace[, ].with[|].as_list>'
           - foreach stop
           }
         }
