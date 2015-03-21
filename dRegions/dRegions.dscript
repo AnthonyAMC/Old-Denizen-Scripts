@@ -121,7 +121,12 @@ dRegions:
 #
 #
     on server start:
-    - run locally start delay:2t
+    - inject locally start
+
+    on server shutdown:
+    - foreach <server.list_worlds.parse[name.to_lowercase]> {
+      - yaml 'savefile:dRegions/worlds/%value%/cache.yml' 'id:dRegions_%value%_cache'
+      }
 
     on world initializes:
     - run locally loadYaml instantly
@@ -691,6 +696,7 @@ dRegions:
 
     on player joins:
     - flag <player> dRegions.cache:!
+    - flag <player> dRegions.rateLimit:!
 
     on player chats:
     - define world '<player.world.name>'
@@ -1052,26 +1058,28 @@ dRegions:
     - if <def[cuboids].is_empty||true> {
       - if li@Build|Vehicle-Place contains %flag% {
         - define cache '<player.flag[dRegions.cache.%world%.__global__.%flag%]||null>'
-        - if %cache% == false {
-          - if %sameRegion% flag <player> dRegions.rateLimit.%flag%:false d:10s
-          - run s@dRegions_Flag_%flag% p:msg delay:1t
-          - determine cancelled
-          }
         - if %cache% == null {
           - define FlagScript 's@dRegions_Flag_%flag%'
           - inject s@dRegions_Flag_%flag% p:event-global
+          - queue clear
+          }
+        - if !%cache% {
+          - if %sameRegion% flag <player> dRegions.rateLimit.%flag%:false d:10s
+          - run s@dRegions_Flag_%flag% p:msg delay:1t
+          - determine cancelled
           }
         - if %sameRegion% flag <player> dRegions.rateLimit.%flag%:true d:10s
         - queue clear
         }
       - define cache '<player.flag[dRegions.cache.%world%.__global__.%flag%.%target%]||null>'
-      - if %cache% == false {
+      - if %cache% == null {
+        - inject s@dRegions_Flag_%flag% p:event-global
+        - queue clear
+        }
+      - if !%cache% {
         - if %sameRegion% flag <player> dRegions.rateLimit.%flag%.%target%:false d:10s
         - run s@dRegions_Flag_%flag% p:msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
         - determine cancelled
-        }
-      - if %cache% == null {
-        - inject s@dRegions_Flag_%flag% p:event-global
         }
       - if %sameRegion% flag <player> dRegions.rateLimit.%flag%.%target%:true d:10s
       - queue clear
@@ -1149,16 +1157,18 @@ dRegions:
       - queue clear
       }
     - define world '<player.world.name>'
+    - define player '<player>'
     - if <c.location.cuboids.is_empty||true> {
       - define cache '<player.flag[dRegions.cache.%world%.__global__.entity-interact.%target%]||null>'
-      - if %cache% == false {
-        - if %sameRegion% flag <player> dRegions.rateLimit.entity-interact.%target%:false d:10s
-        - run s@dRegions_Flag_Entity-Interact p:msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
-        - determine cancelled
-        }
       - if %cache% == null {
         - define FlagScript 's@dRegions_Flag_Entity-Interact'
         - inject s@dRegions_Flag_Entity-Interact p:event-global
+        - queue clear
+        }
+      - if !%cache% {
+        - if %sameRegion% flag <player> dRegions.rateLimit.entity-interact.%target%:false d:10s
+        - run s@dRegions_Flag_Entity-Interact p:msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
+        - determine cancelled
         }
       - if %sameRegion% flag <player> dRegions.rateLimit.entity-interact.%target%:true d:10s
       - queue clear
@@ -1476,9 +1486,6 @@ dRegions:
         }
       - if %sameRegion% flag <player> dRegions.rateLimit.bucket-empty:true d:10s
       - queue clear
-      - define FlagScript 's@dRegions_Flag_Bucket-Empty'
-      - inject s@dRegions_Flag_Bucket-Empty p:event-global
-      - queue clear
       }
     - define regionPri 'li@'
     - foreach <c.relative.cuboids.parse[notable_name].filter[starts_with[dRegions_]].parse[after[dregions_%world%_]].include[__global__]> {
@@ -1491,7 +1498,7 @@ dRegions:
     on player fills bucket:
     - if <player.permission[dRegions.admin]||false> || <player.is_op> queue clear
     - define world '<player.world.name>'
-    - if <c.cuboids.alphanumeric.unseparated> == <player.location.cuboids.alphanumeric.unseparated> {
+    - if <c.location.cuboids.alphanumeric.unseparated> == <player.location.cuboids.alphanumeric.unseparated> {
       - define sameRegion 'true'
       - define rateLimit '<player.flag[dRegions.rateLimit.bucket-fill]||null>'
       - if %rateLimit% != null {
@@ -1872,6 +1879,7 @@ dRegions:
           - queue clear
           }
           else {
+          - remove <c.projectile||li@>
           - run s@dRegions_Flag_pve p:msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
           - determine cancelled
           }
@@ -1882,14 +1890,16 @@ dRegions:
     - define puuid '<c.damager.uuid>'
     - if <c.entity.location.cuboids.is_empty> {
       - define cache '<player.flag[dRegions.cache.%world%.__global__.pve.%target%]||null>'
-      - if %cache% == false {
-        - flag <player> dRegions.rateLimit.pve.%target%:false d:10s
-        - run s@dRegions_Flag_pve p:msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
-        - determine cancelled
-        }
       - if %cache% == null {
         - define FlagScript 's@dRegions_Flag_pve'
         - inject s@dRegions_Flag_pve p:event-global
+        - queue clear
+        }
+      - if !%cache% {
+        - flag <player> dRegions.rateLimit.pve.%target%:false d:10s
+        - remove <c.projectile||li@>
+        - run s@dRegions_Flag_pve p:msg delay:1t 'def:<def[target].to_lowercase.replace[_].with[ ]>'
+        - determine cancelled
         }
       - flag <player> dRegions.rateLimit.pve.%target%:true d:10s
       - queue clear
@@ -2004,19 +2014,20 @@ dRegions:
       }
     - define world '<c.entity.world.name>'
     - define target '<c.cause>'
-    - define puuid '<player.uuid>'
+    - define player '<player>'
     - define readPath 'player-damage'
     - inject s@dRegions p:event_PreProc_Config
     - if <c.entity.location.cuboids.is_empty||true> {
       - define cache '<player.flag[dRegions.cache.%world%.__global__.player-damage.%target%]||null>'
-      - if %cache% == false {
-        - flag <player> dRegions.rateLimit.player-damage.%target%:false d:10s
-        - adjust <player> 'fire_time:0'
-        - determine cancelled
-        }
       - if %cache% == null {
         - define FlagScript 's@dRegions_Flag_Player-Damage'
         - inject s@dRegions_Flag_Player-Damage p:event-global
+        - queue clear
+        }
+      - if !%cache% {
+        - flag <player> dRegions.rateLimit.player-damage.%target%:false d:10s
+        - adjust <player> 'fire_time:0'
+        - determine cancelled
         }
       - flag <player> dRegions.rateLimit.player-damage.%target%:true d:10s
       - queue clear
@@ -2185,7 +2196,6 @@ dRegions:
           - queue clear
           }
           else {
-          - remove <c.projectile||li@>
           - attack %attacker% target:cancel
           - run delay:1t s@dRegions_Flag_Mob-Target p:wander 'def:%attacker%'
           - determine cancelled
@@ -2199,16 +2209,16 @@ dRegions:
     - define world '<c.entity.world.name>'
     - if <c.target.location.cuboids.is_empty> {
       - define cache '<c.target.flag[dRegions.cache.%world%.__global__.flag.%target%]||null>'
-      - if %cache% == false {
-        - remove <c.projectile||li@>
+      - if %cache% == null {
+        - define FlagScript 's@dRegions_Flag_Mob-Target'
+        - inject s@dRegions_Flag_Mob-Target p:event-global
+        - queue clear
+        }
+      - if !%cache% {
         - attack %attacker% target:cancel
         - if %sameRegion% flag %player% dRegions.rateLimit.mob-target.%target%:false d:10s
         - run delay:1t s@dRegions_Flag_Mob-Target p:wander 'def:%attacker%'
         - determine cancelled
-        }
-      - if %cache% == null {
-        - define FlagScript 's@dRegions_Flag_Mob-Target'
-        - inject s@dRegions_Flag_Mob-Target p:event-global
         }
       - if %sameRegion% flag <c.target> dRegions.rateLimit.mob-target.%target%:true d:10s
       - queue clear
@@ -2288,18 +2298,27 @@ dRegions:
     - if <c.damager.prefix> == player {
       - queue clear
       }
+    - define attacker '<c.damager>'
     - define target '<c.damager.entity_type>'
-    - define rateLimit '<c.entity.flag[dRegions.rateLimit.mob-damage.%target%]||null>'
-    - if %rateLimit% != null {
-      - if %rateLimit% {
-        - queue clear
-        }
-        else {
-        - determine cancelled
+    - if <c.damager.location.cuboids.alphanumeric.unseparated||null> == <c.entity.location.cuboids.alphanumeric.unseparated||null> {
+      - define sameRegion 'true'
+      - define rateLimit '<c.entity.flag[dRegions.rateLimit.mob-damage.%target%]||null>'
+      - if %rateLimit% != null {
+        - if %rateLimit% {
+          - queue clear
+          }
+          else {
+          - remove <c.projectile||li@>
+          - attack %attacker% target:cancel
+          - run delay:1t s@dRegions_Flag_Mob-Damage p:wander 'def:%attacker%'
+          - determine cancelled
+          }
         }
       }
+      else {
+      - define sameRegion 'false'
+      }
     - define world '<c.entity.world.name>'
-    - define attacker '<c.damager>'
     - define player '<c.entity>'
     - if <c.entity.location.cuboids.is_empty||true> {
 #      - if <c.cause> == entity_explosion {
@@ -2307,13 +2326,17 @@ dRegions:
 #        - inject s@dRegions_Flag_Entity-Explode p:event-global
 #        }
       - define cache '<c.entity.flag[dRegions.cache.%world%.__global__.flag.%target%]||null>'
-      - if %cache% == false {
-        - flag <c.entity> dRegions.rateLimit.mob-damage.%target%:false d:10s
-        - determine cancelled
-        }
       - if %cache% == null {
         - define FlagScript 's@dRegions_Flag_Mob-Damage'
         - inject s@dRegions_Flag_Mob-Damage p:event-global
+        - queue clear
+        }
+      - if !%cache% {
+        - flag <c.entity> dRegions.rateLimit.mob-damage.%target%:false d:10s
+        - remove <c.projectile||li@>
+        - attack %attacker% target:cancel
+        - run delay:1t s@dRegions_Flag_Mob-Damage p:wander 'def:%attacker%'
+        - determine cancelled
         }
       - flag <c.entity> dRegions.rateLimit.mob-damage.%target%:true d:10s
       - queue clear
@@ -2658,11 +2681,9 @@ dRegions:
       }
 
   testingc:
-    - if ( a == a ) && ( b == b ) && ( c == d ) {
-      - narrate "true"
-      }
-      else {
-      - narrate "false"
+    - define owners '<yaml[dRegions_WGImport_Station].read[regions.flakeslayer-restaurant.owners.unique-ids]>'
+    - foreach %owners% {
+      - narrate %value%
       }
 
 
@@ -2676,7 +2697,10 @@ dRegions:
     - define flagScripts '<server.list_scripts.filter[starts_with[s@dRegions_Flag_]]||li@>'
     - flag server 'dRegions_Flags:!'
     - flag server 'dRegions_Flags:|:%flagScripts%'
-    - run locally saveCache delay:5s
+    - if <queue.exists[dRegions_saveCache]> {
+      - queue q@dRegions_saveCache stop
+      }
+    - run locally saveCache delay:5s id:dRegions_saveCache
 
 
   event_PreProc_Config:
@@ -4311,6 +4335,10 @@ dRegions_Commands:
     - foreach %owners% {
       - if <def[value].starts_with[g;]||false> {
         - define group '<def[value].replace[g;]>'
+        - if <server.list_permission_groups> !contains %group% {
+          - run s@dRegions_Msg 'def:<&c>%group% is not a valid group'
+          - foreach next
+          }
         - define groups '<yaml[dRegions_%world%_regions].read[regions.%name%.owners.groups]||li@>'
         - if <def[groups].contains[%group%]||false> {
           - run s@dRegions_Msg 'def:<&c>Group %group% is already an owner'
@@ -4330,6 +4358,7 @@ dRegions_Commands:
           }
         - define pass true
         - yaml set 'regions.%name%.owners.players:->:<def[value].as_player.uuid>' 'id:dRegions_%world%_regions'
+        - flag <def[value].as_player> 'dRegions.cache.%world%.%name%:!'
         }
       }
     - if <def[pass].exists||false> {
@@ -4373,6 +4402,10 @@ dRegions_Commands:
     - foreach %owners% {
       - if <def[value].starts_with[g;]||false> {
         - define group '<def[value].replace[g;]>'
+        - if <server.list_permission_groups> !contains %group% {
+          - run s@dRegions_Msg 'def:<&c>%group% is not a valid group'
+          - foreach next
+          }
         - define groups '<yaml[dRegions_%world%_regions].read[regions.%name%.owners.groups]||li@>'
         - if <def[groups].contains[%group%].not||true> {
           - run s@dRegions_Msg 'def:<&c>Group %group% is not an owner'
@@ -4392,6 +4425,7 @@ dRegions_Commands:
           }
         - define pass true
         - yaml set 'regions.%name%.owners.players:<-:<def[value].as_player.uuid>' 'id:dRegions_%world%_regions'
+        - flag <def[value].as_player> 'dRegions.cache.%world%.%name%:!'
         }
       }
     - if <def[pass].exists||false> {
@@ -4438,6 +4472,10 @@ dRegions_Commands:
     - foreach %members% {
       - if <def[value].starts_with[g;]||false> {
         - define group '<def[value].replace[g;]>'
+        - if <server.list_permission_groups> !contains %group% {
+          - run s@dRegions_Msg 'def:<&c>%group% is not a valid group'
+          - foreach next
+          }
         - define groups '<yaml[dRegions_%world%_regions].read[regions.%name%.members.groups]||li@>'
         - if <def[groups].contains[%group%]||false> {
           - run s@dRegions_Msg 'def:<&c>Group %group% is already a member'
@@ -4457,6 +4495,7 @@ dRegions_Commands:
           }
         - define pass true
         - yaml set 'regions.%name%.members.players:->:<def[value].as_player.uuid>' 'id:dRegions_%world%_regions'
+        - flag <def[value].as_player> 'dRegions.cache.%world%.%name%:!'
         }
       }
     - if <def[pass].exists||false> {
@@ -4503,6 +4542,10 @@ dRegions_Commands:
     - foreach %members% {
       - if <def[value].starts_with[g;]||false> {
         - define group '<def[value].replace[g;]>'
+        - if <server.list_permission_groups> !contains %group% {
+          - run s@dRegions_Msg 'def:<&c>%group% is not a valid group'
+          - foreach next
+          }
         - define groups '<yaml[dRegions_%world%_regions].read[regions.%name%.members.groups]||li@>'
         - if <def[groups].contains[%group%].not||true> {
           - run s@dRegions_Msg 'def:<&c>Group %group% is not a member'
@@ -4522,6 +4565,7 @@ dRegions_Commands:
           }
         - define pass true
         - yaml set 'regions.%name%.members.players:<-:<def[value].as_player.uuid>' 'id:dRegions_%world%_regions'
+        - flag <def[value].as_player> 'dRegions.cache.%world%.%name%:!'
         }
       }
     - if <def[pass].exists||false> {
@@ -5710,6 +5754,61 @@ dRegions_LineWrap:
       else {
       - determine '<def[string].as_list>'
       }
+
+
+dRegions_WG_Importer:
+  type: task
+  debug: false
+  speed: 0
+
+  script:
+    - announce "<&b>dRegions<&co><&3> Starting WorldGuard region import..." to_console
+    - inject locally loadYaml
+    - foreach <server.list_worlds.parse[name]> {
+      - define world '%value%'
+      - announce "<&b>dRegions<&co><&3> Importing %world% region files..." to_console
+      - foreach <yaml[dRegions_WGImport_%world%].list_keys[regions]> {
+        - define region '%value%'
+        - announce "<&b>dRegions<&co><&3> Importing %region%..." to_console
+        - inject locally importRegion
+        }
+      - yaml 'savefile:dRegions/worlds/<def[world].to_lowercase>/import.yml' 'id:dRegions_%world%_import'
+      }
+    - announce "<&b>dRegions<&co><&3> WorldGuard region import complete!" to_console
+
+  loadYaml:
+    - announce "<&b>dRegions<&co><&3> Loading WorldGuard region files..." to_console
+    - foreach <server.list_worlds.parse[name]> {
+      - define world '%value%'
+      - if <server.has_file[../WorldGuard/worlds/%world%/regions.yml]||false> {
+        - define pass ''
+        - yaml fix_formatting 'load:../WorldGuard/worlds/%world%/regions.yml' 'id:dRegions_WGImport_%world%'
+        - if !<server.has_file[dRegions/worlds/%world%/import.yml]||false> {
+          - yaml create 'id:dRegions_%world%_import'
+          }
+        - if !<yaml.list.contains[dRegions_%world%_import]> {
+          - yaml 'load:dRegions/worlds/%world%/import.yml' 'id:dRegions_%world%_import'
+          }
+        }
+        else {
+        - announce "<&b>dRegions<&co><&c> /WorldGuard/worlds/%world%/regions.yml does not exist!" to_console
+        }
+      }
+    - if <def[pass].exists> {
+      - announce "<&b>dRegions<&co><&3> WorldGuard region files loaded!" to_console
+      }
+
+  importRegion:
+    - define type '<yaml[dRegions_WGImport_%world%].read[regions.%region%.type]>'
+    - yaml set 'regions.%region%.type:%type%' 'id:dRegions_%world%_import'
+    - if %type% == cuboid {
+      - define min '<yaml[dRegions_WGImport_%world%].read[regions.%region%.min.x]>,<yaml[dRegions_WGImport_%world%].read[regions.%region%.min.y]>,<yaml[dRegions_WGImport_%world%].read[regions.%region%.min.z]>,%world%'
+      - define max '<yaml[dRegions_WGImport_%world%].read[regions.%region%.max.x]>,<yaml[dRegions_WGImport_%world%].read[regions.%region%.max.y]>,<yaml[dRegions_WGImport_%world%].read[regions.%region%.max.z]>,%world%'
+#      - define cuboid '<def[min].as_location>|<def[max].as_location>'
+      - yaml set 'regions.%region%.min:<el@val[<def[min].as_location>|<def[max].as_location>].as_cuboid.min.simple>' 'id:dRegions_%world%_import'
+      - yaml set 'regions.%region%.max:<el@val[<def[min].as_location>|<def[max].as_location>].as_cuboid.max.simple>' 'id:dRegions_%world%_import'
+      }
+    - yaml set 'regions.%region%.priority:<yaml[dRegions_WGImport_%world%].read[regions.%region%.priority]>' 'id:dRegions_%world%_import'
 
 
 ################################################################################
