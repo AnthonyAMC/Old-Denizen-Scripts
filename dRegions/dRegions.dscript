@@ -457,6 +457,7 @@ dRegions:
     on liquid spreads:
     - if <c.location.material.bukkit_enum> == <c.destination.material.bukkit_enum> queue clear
     - define mat '<c.location.material.bukkit_enum.split[_].last>'
+    - if li@water|lava !contains %mat% queue clear
     - define target '<c.destination.material.bukkit_enum>'
     - define world '<c.location.world.name>'
     - define readPath 'spread.%mat%'
@@ -1024,6 +1025,7 @@ dRegions:
     - if <player.permission[dRegions.admin]||false> || <player.is_op> {
       - queue clear
       }
+    - define player '<player>'
     - define target '<c.location.material.bukkit_enum||air>'
     - define item '<c.item.material.bukkit_enum.to_lowercase||air>'
     - if %item% == air {
