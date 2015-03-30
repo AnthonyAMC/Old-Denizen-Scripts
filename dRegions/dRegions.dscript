@@ -795,6 +795,7 @@ dRegions:
         - determine cancelled
         }
       }
+    - define player '<player>'
     - define world '<player.world.name>'
     - if <c.cuboids.is_empty||true> {
       - define cache '<player.flag[dRegions.cache.%world%.__global__.use-switches.%target%]||null>'
@@ -5796,32 +5797,44 @@ dRegions_LineWrap:
       }
 
 
+
 dRegions_WG_Importer:
   type: task
   debug: false
   speed: 0
 
   script:
-    - announce "<&b>dRegions<&co><&3> Starting WorldGuard region import..." to_console
-    - inject locally loadYaml
-    - foreach <server.list_worlds.parse[name]> {
+    - ^announce "<&b>dRegions<&co><&3> Starting WorldGuard region import..." to_console
+    - ^inject locally loadYaml
+    - ^foreach %WG_Import_Worlds% {
       - define world '%value%'
       - announce "<&b>dRegions<&co><&3> Importing %world% region files..." to_console
-      - foreach <yaml[dRegions_WGImport_%world%].list_keys[regions]> {
+      - foreach <yaml[dRegions_WGImport_%world%].list_keys[regions]||li@> {
         - define region '%value%'
         - announce "<&b>dRegions<&co><&3> Importing %region%..." to_console
-        - inject locally importRegion
+        - inject locally importRegion instantly
         }
       - yaml 'savefile:dRegions/worlds/<def[world].to_lowercase>/import.yml' 'id:dRegions_%world%_import'
       }
-    - announce "<&b>dRegions<&co><&3> WorldGuard region import complete!" to_console
+    - ^inject locally unloadYaml
+    - ^announce "<&b>dRegions<&co><&3> WorldGuard region import complete!" to_console
+
+  unloadYaml:
+    - yaml unload 'id:dRegions_WGImport_File'
+    - foreach %WG_Import_Worlds% {
+      - yaml unload 'id:dRegions_WGImport_%value%'
+      - yaml unload 'id:dRegions_%value%_import'
+      }
 
   loadYaml:
+    - yaml fix_formatting 'load:<script.relative_filename>' 'id:dRegions_WGImport_File'
     - announce "<&b>dRegions<&co><&3> Loading WorldGuard region files..." to_console
+    - define WG_Import_Worlds 'li@'
     - foreach <server.list_worlds.parse[name]> {
       - define world '%value%'
       - if <server.has_file[../WorldGuard/worlds/%world%/regions.yml]||false> {
         - define pass ''
+        - define WG_Import_Worlds '<def[WG_Import_Worlds].include[%world%]>'
         - yaml fix_formatting 'load:../WorldGuard/worlds/%world%/regions.yml' 'id:dRegions_WGImport_%world%'
         - if !<server.has_file[dRegions/worlds/%world%/import.yml]||false> {
           - yaml create 'id:dRegions_%world%_import'
@@ -5839,16 +5852,172 @@ dRegions_WG_Importer:
       }
 
   importRegion:
+  # Set the region type and coordinates
     - define type '<yaml[dRegions_WGImport_%world%].read[regions.%region%.type]>'
     - yaml set 'regions.%region%.type:%type%' 'id:dRegions_%world%_import'
     - if %type% == cuboid {
       - define min '<yaml[dRegions_WGImport_%world%].read[regions.%region%.min.x]>,<yaml[dRegions_WGImport_%world%].read[regions.%region%.min.y]>,<yaml[dRegions_WGImport_%world%].read[regions.%region%.min.z]>,%world%'
       - define max '<yaml[dRegions_WGImport_%world%].read[regions.%region%.max.x]>,<yaml[dRegions_WGImport_%world%].read[regions.%region%.max.y]>,<yaml[dRegions_WGImport_%world%].read[regions.%region%.max.z]>,%world%'
-#      - define cuboid '<def[min].as_location>|<def[max].as_location>'
       - yaml set 'regions.%region%.min:<el@val[<def[min].as_location>|<def[max].as_location>].as_cuboid.min.simple>' 'id:dRegions_%world%_import'
       - yaml set 'regions.%region%.max:<el@val[<def[min].as_location>|<def[max].as_location>].as_cuboid.max.simple>' 'id:dRegions_%world%_import'
       }
+
+  # Set priority
     - yaml set 'regions.%region%.priority:<yaml[dRegions_WGImport_%world%].read[regions.%region%.priority]>' 'id:dRegions_%world%_import'
+
+  # Set parent/child associations
+    - define parent '<yaml[dRegions_WGImport_%world%].read[regions.%region%.parent]||null>'
+    - if %parent% != null {
+      - yaml set 'regions.%region%.parent:%parent%' 'id:dRegions_%world%_import'
+      - if <yaml[dRegions_%world%_import].read[regions.%parent%.children].as_list||li@> !contains %region% {
+        - yaml set 'regions.%parent%.children:->:%region%' 'id:dRegions_%world%_import'
+        }
+      }
+
+  # Import members and owners
+    - define members-players '<yaml[dRegions_WGImport_%world%].read[regions.%region%.members.unique-ids].as_list.exclude[<yaml[dRegions_%world%_import].read[regions.%region%.members.players]||li@>]||li@>'
+    - foreach %members-players% {
+      - yaml set 'regions.%region%.members.players:->:%value%' 'id:dRegions_%world%_import'
+      }
+    - define members-groups '<yaml[dRegions_WGImport_%world%].read[regions.%region%.members.groups].as_list.exclude[<yaml[dRegions_%world%_import].read[regions.%region%.members.groups]||li@>]||li@>'
+    - foreach %members-groups% {
+      - yaml set 'regions.%region%.members.groups:->:%value%' 'id:dRegions_%world%_import'
+      }
+    - define owners-players '<yaml[dRegions_WGImport_%world%].read[regions.%region%.owners.unique-ids].as_list.exclude[<yaml[dRegions_%world%_import].read[regions.%region%.owners.players]||li@>]||li@>'
+    - foreach %owners-players% {
+      - yaml set 'regions.%region%.owners.players:->:%value%' 'id:dRegions_%world%_import'
+      }
+    - define owners-players '<yaml[dRegions_WGImport_%world%].read[regions.%region%.owners.groups].as_list.exclude[<yaml[dRegions_%world%_import].read[regions.%region%.owners.groups]||li@>]||li@>'
+    - foreach %owners-players% {
+      - yaml set 'regions.%region%.owners.groups:->:%value%' 'id:dRegions_%world%_import'
+      }
+
+  # Import flags
+    - define flags '<yaml[dRegions_WGImport_%world%].list_keys[regions.%region%.flags]||li@>'
+    - foreach %flags% {
+      - define flag '%value%'
+      - define mapping '<script.yaml_key[mapping.%flag%]||null>'
+      - if %mapping% == null {
+        - announce "<&b>dRegions<&co><&c> %flag% flag does not exist in dRegions!" to_console
+        - foreach next
+        }
+      - inject s@dRegions_WG_Importer 'p:<def[mapping].split[/].get[1]>'
+      }
+
+  flag_allowed-cmds:
+    - define commands '<yaml[dRegions_WGImport_%world%].read[regions.%region%.flags.allowed-cmds].as_list.parse[replace[/]]||li@>'
+    - yaml set 'regions.%region%.flags.commands:allow' 'id:dRegions_%world%_import'
+    - yaml set 'regions.%region%.flags.commands-list:<def[commands].replace[li@].replace[|].with[ ; ]>' 'id:dRegions_%world%_import'
+
+  flag_blocked-cmds:
+    - define commands '<yaml[dRegions_WGImport_%world%].read[regions.%region%.flags.allowed-cmds].as_list.parse[replace[/]]||li@>'
+    - yaml set 'regions.%region%.flags.commands:deny' 'id:dRegions_%world%_import'
+    - yaml set 'regions.%region%.flags.commands-list:<def[commands].replace[li@].replace[|].with[ ; ]>' 'id:dRegions_%world%_import'
+
+  flag_entity-explode:
+    - define currentState '<yaml[dRegions_%world%_import].read[regions.%region%.flags.entity-explode]||null>'
+    - define currentList '<yaml[dRegions_%world%_import].read[regions.%region%.flags.entity-explodelist].replace[, ].with[|].as_list||li@>'
+    - define flagVal '<yaml[dRegions_WGImport_%world%].read[regions.%region%.flags.%flag%]>'
+    - define entity '<def[flag].before[-]>'
+    - if %entity% == enderdragon {
+      - define entity 'ender_dragon'
+      }
+      else if %entity% == tnt {
+      - define entity 'primed_tnt|minecart_tnt'
+      }
+      else if %entity% == ghast {
+      - define entity 'fireball'
+      }
+      else if %entity% == other {
+      - define entity 'ender_crystal|fireball|small_fireball|wither|wither_skull'
+      }
+    - if %currentState% == null {
+      - yaml set 'regions.%region%.flags.entity-explode:%flagVal%' 'id:dRegions_%world%_import'
+      - yaml set 'regions.%region%.flags.entity-explodelist:<def[entity].as_list.comma_separated>' 'id:dRegions_%world%_import'
+      }
+      else if ( %currentState% == allow && %flagVal% == allow ) || ( %currentState% == deny && %flagVal% == deny ) {
+      - define newList '<def[currentList].include[%entity%].deduplicate>'
+      - if <def[newList].contains[creeper|ender_crystal|ender_dragon|primed_tnt|minecart_tnt|fireball|small_fireball|wither|wither_skull]> {
+        - define newList 'all'
+        }
+        else {
+        - define newList '<def[newList].comma_separated>'
+        }
+      - yaml set 'regions.%region%.flags.entity-explodelist:%newList%' 'id:dRegions_%world%_import'
+      }
+
+  flag_boolean:
+    - yaml set 'regions.%region%.flags.<def[mapping].split[/].get[2]>:<tern[<yaml[dRegions_WGImport_%world%].read[regions.%region%.flags.%flag%].is[==].to[deny]>]:false||true>' 'id:dRegions_%world%_import'
+
+  flag_generic:
+    - yaml set 'regions.%region%.flags.<def[mapping].split[/].get[2]>:<yaml[dRegions_WGImport_%world%].read[regions.%region%.flags.%flag%]>' 'id:dRegions_%world%_import'
+
+  flag_generic-list:
+    - yaml set 'regions.%region%.flags.<def[mapping].split[/].get[2]>:<yaml[dRegions_WGImport_%world%].read[regions.%region%.flags.%flag%]>' 'id:dRegions_%world%_import'
+    - yaml set 'regions.%region%.flags.<def[mapping].split[/].get[3]>:all' 'id:dRegions_%world%_import'
+
+  flag_generic-group:
+    - define group '<yaml[dRegions_WGImport_%world%].read[regions.%region%.flags.%flag%-group].replace[_].to_lowercase||null>'
+    - if %group% == null {
+      - yaml set 'regions.%region%.flags.<def[mapping].split[/].get[2]>:<yaml[dRegions_WGImport_%world%].read[regions.%region%.flags.%flag%]>' 'id:dRegions_%world%_import'
+      }
+      else {
+      - yaml set 'regions.%region%.flags.<def[mapping].split[/].get[2]>:<yaml[dRegions_WGImport_%world%].read[regions.%region%.flags.%flag%]>/%group%' 'id:dRegions_%world%_import'
+      }
+
+  flag_generic-list-group:
+    - define group '<yaml[dRegions_WGImport_%world%].read[regions.%region%.flags.%flag%-group].replace[_].to_lowercase||null>'
+    - if %group% == null {
+      - yaml set 'regions.%region%.flags.<def[mapping].split[/].get[2]>:<yaml[dRegions_WGImport_%world%].read[regions.%region%.flags.%flag%]>' 'id:dRegions_%world%_import'
+      }
+      else {
+      - yaml set 'regions.%region%.flags.<def[mapping].split[/].get[2]>:<yaml[dRegions_WGImport_%world%].read[regions.%region%.flags.%flag%]>/%group%' 'id:dRegions_%world%_import'
+      }
+    - yaml set 'regions.%region%.flags.<def[mapping].split[/].get[3]>:all' 'id:dRegions_%world%_import'
+
+  mapping:
+    allowed-cmds: flag_allowed-cmds
+    blocked-cmds: flag_blocked-cmds
+    build: flag_generic-group/build
+    block-break: flag_generic-group/block-break
+    block-place: flag_generic-group/block-place
+    chest-access: flag_generic-group/chest-access/chest-access-blocks
+    creeper-explosion: flag_entity-explode
+    ghast-fireball: flag_entity-explode
+    enderdragon-block-damage: flag_entity-explode
+    other-explosion: flag_entity-explode
+    tnt: flag_entity-explode
+#    deny-spawn: flag_mob-spawn/mob-spawnlist
+#    enderman-grief: flag_entity-grief/entity-grieflist
+    enderpearl: flag_generic-group/enderpearl
+    entity-break-itemframe: flag_boolean/entity-item-frame-destroy
+    entity-break-painting: flag_boolean/entity-painting-destroy
+    entry: flag_generic-group/entry
+    exit: flag_generic-group/exit
+#    farewell: flag_farewell
+    feed-amount: flag_generic-group/feed-amount
+    feed-delay: flag_generic/feed-delay
+    feed-max-hunger: flag_generic/feed-max
+    feed-min-hunger: flag_generic/feed-min
+#    fire-sread:
+    game-mode: flag_generic-group/gamemode
+    grass-growth: flag_boolean/grass-spread
+#    greeting:
+    heal-amount: flag_generic-group/heal-amount
+    heal-delay: flag_generic/heal-delay
+    heal-max-hunger: flag_generic/heal-max
+    heal-min-hunger: flag_generic/heal-min
+    ice-form: flag_boolean/ice-form
+    ice-melt: flag_boolean/ice-melt
+#    invincible:
+    item-drop: flag_generic-group/player-drops
+    item-pickup: flag_generic-group/player-pickup
+#    lava-fire:
+#    lava-flow:
+    leaf-decay: flag_boolean/leaf-decay
+
+
+
 
 
 ################################################################################
