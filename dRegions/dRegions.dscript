@@ -2517,6 +2517,9 @@ dRegions:
     - inject %FlagScript% p:event
 
     on entity changes block:
+    # Maybe we want to check block changes here for explosions?
+    # It's currently disabled because even if the explosion is cancelled, the block
+    # change event(s) still fire (yes, one explosion can have multiple block changes)
     - if <c.old_material.bukkit_enum> == soil || li@falling_block|creeper|primed_tnt contains <c.entity.entity_type> {
       - queue clear
       }
@@ -5797,7 +5800,6 @@ dRegions_LineWrap:
       }
 
 
-
 dRegions_WG_Importer:
   type: task
   debug: false
@@ -5926,7 +5928,7 @@ dRegions_WG_Importer:
       - define entity 'primed_tnt|minecart_tnt'
       }
       else if %entity% == ghast {
-      - define entity 'fireball'
+      - define entity 'fireball|small_fireball'
       }
       else if %entity% == other {
       - define entity 'ender_crystal|fireball|small_fireball|wither|wither_skull'
@@ -5944,6 +5946,58 @@ dRegions_WG_Importer:
         - define newList '<def[newList].comma_separated>'
         }
       - yaml set 'regions.%region%.flags.entity-explodelist:%newList%' 'id:dRegions_%world%_import'
+      }
+    - inject locally flag_entity-grief
+
+  flag_deny-spawn:
+    - define currentState '<yaml[dRegions_%world%_import].read[regions.%region%.flags.mob-spawn]||null>'
+    - define currentList '<yaml[dRegions_%world%_import].read[regions.%region%.flags.mob-spawnlist].replace[, ].with[|].as_list||li@>'
+    - define mobSpawn '<yaml[dRegions_WGImport_%world%].read[regions.%region%.flags.mob-spawning]||null>'
+    - define denySpawn '<yaml[dRegions_WGImport_%world%].read[regions.%region%.flags.deny-spawn]||null>'
+
+    - if %denySpawn% != null {
+      - yaml set 'regions.%region%.flags.mob-spawn:deny' 'id:dRegions_%world%_import'
+      - yaml set 'regions.%region%.flags.mob-spawnlist:<def[denySpawn].as_list.comma_separated>' 'id:dRegions_%world%_import'
+      }
+      else {
+      - yaml set 'regions.%region%.flags.mob-spawn:%mobSpawn%' 'id:dRegions_%world%_import'
+      }
+
+  flag_entity-grief:
+    - define currentState '<yaml[dRegions_%world%_import].read[regions.%region%.flags.entity-grief]||null>'
+    - define currentList '<yaml[dRegions_%world%_import].read[regions.%region%.flags.entity-grieflist].replace[, ].with[|].as_list||li@>'
+    - define flagVal '<yaml[dRegions_WGImport_%world%].read[regions.%region%.flags.%flag%]||null>'
+    - define entity '<def[flag].before[-]>'
+
+    - if %entity% == enderdragon {
+      - define entity 'ender_dragon'
+      }
+      else if %entity% == tnt {
+      - define entity 'primed_tnt|minecart_tnt'
+      }
+      else if %entity% == wither {
+      - define entity 'wither|wither_skull'
+      }
+      else if %entity% == ghast {
+      - define entity 'ghast|fireball|small_fireball'
+      }
+      else if %entity% == other {
+      - define entity 'ender_crystal|fireball|small_fireball|wither|wither_skull'
+      }
+
+    - if %currentState% == null {
+      - yaml set 'regions.%region%.flags.entity-grief:%flagVal%' 'id:dRegions_%world%_import'
+      - yaml set 'regions.%region%.flags.entity-grieflist:<def[entity].as_list.comma_separated>' 'id:dRegions_%world%_import'
+      }
+      else if ( %currentState% == allow && %flagVal% == allow ) || ( %currentState% == deny && %flagVal% == deny ) {
+      - define newList '<def[currentList].include[%entity%].deduplicate>'
+      - if <def[newList].contains[creeper|enderman|ender_dragon|ghast|fireball|small_fireball|primed_tnt|minecart_tnt|zombie|wither|wither_skull|sheep]> {
+        - define newList 'all'
+        }
+        else {
+        - define newList '<def[newList].comma_separated>'
+        }
+      - yaml set 'regions.%region%.flags.entity-grieflist:%newList%' 'id:dRegions_%world%_import'
       }
 
   flag_boolean:
@@ -5976,24 +6030,31 @@ dRegions_WG_Importer:
     - yaml set 'regions.%region%.flags.<def[mapping].split[/].get[3]>:all' 'id:dRegions_%world%_import'
 
   mapping:
+  # WorldGuard Flags
     allowed-cmds: flag_allowed-cmds
     blocked-cmds: flag_blocked-cmds
     build: flag_generic-group/build
     block-break: flag_generic-group/block-break
     block-place: flag_generic-group/block-place
-    chest-access: flag_generic-group/chest-access/chest-access-blocks
+    chest-access: flag_generic-list-group/chest-access/chest-access-blocks
+    deny-spawn: flag_deny-spawn
     creeper-explosion: flag_entity-explode
     ghast-fireball: flag_entity-explode
     enderdragon-block-damage: flag_entity-explode
     other-explosion: flag_entity-explode
     tnt: flag_entity-explode
-#    deny-spawn: flag_mob-spawn/mob-spawnlist
-#    enderman-grief: flag_entity-grief/entity-grieflist
+    enderman-grief: flag_entity-grief
     enderpearl: flag_generic-group/enderpearl
-    entity-break-itemframe: flag_boolean/entity-item-frame-destroy
-    entity-break-painting: flag_boolean/entity-painting-destroy
+    entity-item-frame-destroy: flag_generic/entity-break-itemframe
+    entity-painting-destroy: flag_generic/entity-break-painting
     entry: flag_generic-group/entry
+#    entry-deny-message:
     exit: flag_generic-group/exit
+#    exit-deny-message:
+#    exit-override:
+#    exit-via-teleport:
+#    exp-drops:
+#    fall-damage:
 #    farewell: flag_farewell
     feed-amount: flag_generic-group/feed-amount
     feed-delay: flag_generic/feed-delay
@@ -6001,20 +6062,108 @@ dRegions_WG_Importer:
     feed-min-hunger: flag_generic/feed-min
 #    fire-sread:
     game-mode: flag_generic-group/gamemode
-    grass-growth: flag_boolean/grass-spread
+    grass-growth: flag_generic/grass-spread
 #    greeting:
     heal-amount: flag_generic-group/heal-amount
     heal-delay: flag_generic/heal-delay
-    heal-max-hunger: flag_generic/heal-max
-    heal-min-hunger: flag_generic/heal-min
+    heal-max-health: flag_generic/heal-max
+    heal-min-health: flag_generic/heal-min
     ice-form: flag_boolean/ice-form
     ice-melt: flag_boolean/ice-melt
-#    invincible:
+#    interact:
+    invincible: flag_generic-list-group/player-damage/player-damage-types
     item-drop: flag_generic-group/player-drops
     item-pickup: flag_generic-group/player-pickup
 #    lava-fire:
-#    lava-flow:
+    lava-flow: flag_generic-list/lava-spread/lava-spreadblocks
     leaf-decay: flag_boolean/leaf-decay
+    lighter: flag_generic-group/lighter
+    lightning: flag_generic-list/lightning-strike/lightning-strikeblocks
+    mob-damage: flag_generic-list-group/mob-damage/mob-damagelist
+    mob-spawning: flag_deny-spawn
+    mushroom-growth: flag_boolean/mushroom-spread
+    mycelium-spread: flag_boolean/mycel-spread
+    notify-enter: flag_boolean/notify-enter
+    notify-leave: flag_boolean/notify-exit
+    pistons: flag_boolean/pistons
+    potion-splash: flag_boolean/potion-throw
+    pvp: flag_boolean/pvp
+#    recieve-chat:
+#    ride:
+    send-chat: flag_generic-group/send-chat
+    sleep: flag_generic-group/sleep
+    snow-fall: flag_generic-list/snow-fall/snow-fallblocks
+    snow-melt: flag_boolean/snow-melt
+    soil-dry: flag_boolean/soil-dry
+#    spawn:
+#    teleport:
+#    time-lock:
+#    use:
+    vehicle-destroy: flag_generic-group/vehicle-destroy
+    vehicle-place: flag_generic-group/vehicle-place
+    vine-growth: flag_boolean/vine-spread
+    water-flow: flag_generic-list/water-spread/water-spreadblocks
+#    weather-lock:
+
+  # WorldRegions flags http://dev.bukkit.org/bukkit-plugins/worldregions/
+#    allow-blocks:
+#    deny-blocks:
+#    chat-prefix:
+#    chat-suffix:
+#    chunk-unload:
+#    cmds-block:
+#    cmds-allow:
+#    allow-pickup:
+#    death-drop-despawn-time:
+#    death-exp-despawn-time:
+#    drop-despawn-time:
+#    exp-despawn-time:
+#    enderpearls:
+#    allow-explosions:
+#    deny-explosions:
+#    fly:
+#    instabreak:
+#    keep-inventory:
+#    keep-level:
+#    mob-damage-allow:
+#    mob-damage-deny:
+#    allow-damage:
+#    deny-damage:
+#    player-enter-command:
+#    player-leave-command:
+#    server-enter-command:
+#    server-leave-command:
+#    effects:
+#    signs-allow:
+#    signs-block:
+#    respawn-location:
+#    texturepack:
+#    delta-time:
+#    fix-time:
+#    max-time:
+#    min-time:
+#    treefarm:
+
+  # WorldGuard Custom Flags http://dev.bukkit.org/bukkit-plugins/worldguard-custom-flags/pages/flags/
+#    allowed-break: flag_generic-list-group/block-break/block-breaklist
+#    allowed-damage:
+#    allowed-place: flag_generic-list-group/block-place/block-placelist
+#    apply-potion:
+#    blocked-break: flag_generic-list-group/block-break/block-breaklist
+#    blocked-damage:
+#    blocked-place: flag_generic-list-group/block-place/block-placelist
+#    healing:
+#    hunger:
+#    instabreak:
+#    item-pickup:
+#    item-spawn:
+#    mob-targeting:
+#    pve:
+#    regen:
+    sheep-eat: flag_entity-grief
+#    time:
+    wither-block-damage: flag_entity-grief
+    zombie-door-break: flag_entity-grief
 
 
 
