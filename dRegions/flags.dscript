@@ -99,6 +99,7 @@ dRegions_Flag_Entry:
     - ^inject s@dRegions_Flag_Gamemode p:event-enter
     - ^inject s@dRegions_Flag_Heal-Amount p:event
     - ^inject s@dRegions_Flag_Feed-Amount p:event
+    - ^inject s@dRegions_Flag_Receive-Chat p:event-enter
 
   entered-global:
     - ^define world '%1%'
@@ -110,6 +111,7 @@ dRegions_Flag_Entry:
     - ^inject s@dRegions_Flag_Gamemode p:event-enter
     - ^inject s@dRegions_Flag_Heal-Amount p:event-global
     - ^inject s@dRegions_Flag_Feed-Amount p:event-global
+    - ^inject s@dRegions_Flag_Receive-Chat p:event-enter
 
   vehicle:
     - ^if <player.has_flag[dRegions.rateLimit.regionKick]> {
@@ -202,6 +204,7 @@ dRegions_Flag_Exit:
     - ^inject s@dRegions_Flag_Farewell p:event
     - ^inject s@dRegions_Flag_Inventory p:event-exit
     - ^inject s@dRegions_Flag_Gamemode p:event-exit
+    - ^inject s@dRegions_Flag_Receive-Chat p:event-exit
 
   exited-global:
     - ^define world '%1%'
@@ -209,8 +212,9 @@ dRegions_Flag_Exit:
     - ^define player '<player>'
     - ^inject s@dRegions_Flag_Notify-Exit p:event-global
     - ^inject s@dRegions_Flag_Farewell p:event-global
-    - ^inject s@dRegions_Flag_Inventory p:event-Exit
-    - ^inject s@dRegions_Flag_Gamemode p:event-Exit
+    - ^inject s@dRegions_Flag_Inventory p:event-exit
+    - ^inject s@dRegions_Flag_Gamemode p:event-exit
+    - ^inject s@dRegions_Flag_Receive-Chat p:event-exit
 
   vehicle:
     - ^if <player.has_flag[dRegions.rateLimit.regionKick]> {
@@ -808,6 +812,61 @@ dRegions_Flag_Send-Chat:
     - ^if <player.has_flag[dRegions_Message_Cooldown].not> {
       - flag <player> dRegions_Message_Cooldown duration:3s
       - run s@dRegions_Msg delay:1t 'def:<&c><&o>You can not chat here.'
+      }
+
+
+dRegions_Flag_Receive-Chat:
+  type: item
+  speed: 0
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Receive-Chat<&4>]"
+  lore:
+  - <&5>Who can hear chat
+  event_hook: build
+  event_priority: 0
+  flag_type: state-withGroup
+  flag_name: Receive-Chat
+  flag_help: Control who can hear chat in a region. Takes the -g group switch.
+  flag_takeGroup: true
+  flag_defaultValue: allow/all
+  flag_globalDefault: none
+  region_highestOnly: true
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event-enter:
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|receive-chat]>'
+    - if %flagObj% != null {
+      - if <def[flagObj].split[/].get[1]> == allow {
+        - if !<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|%region%|%world%|<player>]> {
+          - flag server 'dRegions.Chat.Deaf:->:<player>'
+          }
+        }
+        else {
+        - if <proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|%region%|%world%|<player>]> {
+          - flag server 'dRegions.Chat.Deaf:->:<player>'
+          }
+        }
+      }
+
+  event-exit:
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|receive-chat]>'
+    - if %flagObj% != null {
+      - if <def[flagObj].split[/].get[1]> == allow {
+        - if !<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|%region%|%world%|<player>]> {
+          - flag server 'dRegions.Chat.Deaf:<-:<player>'
+          }
+        }
+        else {
+        - if <proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|%region%|%world%|<player>]> {
+          - flag server 'dRegions.Chat.Deaf:<-:<player>'
+          }
+        }
       }
 
 
@@ -2528,6 +2587,61 @@ dRegions_Flag_Ice-Form:
         }
       }
     - yaml set 'cache.boolean.__global__.ice-form:true' 'id:dRegions_%world%_cache'
+
+
+dRegions_Flag_Lava-Fire:
+  type: item
+  speed: 0
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Lava-Fire<&4>]"
+  lore:
+  - <&5>Can lava cause fires
+  flag_type: boolean
+  flag_defaultValue: true
+  flag_globalDefault: true
+  flag_help: Boolean flag controlling whether lava can cause fires in this region. Defaults to true.
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event:
+    - define thisRegion '<def[orderedRegions].get[1]>'
+    - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.%thisRegion%.lava-fire]||null>'
+    - if %cache% == null {
+      - foreach %orderedRegions% {
+        - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|lava-fire]>'
+        - if %flagVal% != null {
+          - foreach stop
+          }
+        }
+      - if %flagVal% == null {
+        - define flagVal 'true'
+        }
+      - if !%flagVal% {
+        - yaml set 'cache.boolean.%thisRegion%.lava-fire:false' 'id:dRegions_%world%_cache'
+        - determine cancelled
+        }
+      - yaml set 'cache.boolean.%thisRegion%.lava-fire:true' 'id:dRegions_%world%_cache'
+      }
+      else {
+      - if !%cache% {
+        - determine cancelled
+        }
+      }
+
+  event-global:
+    - define flagVal '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|lava-fire]>'
+    - if %flagVal% != null {
+      - if !%flagVal% {
+        - yaml set 'cache.boolean.__global__.lava-fire:false' 'id:dRegions_%world%_cache'
+        - determine cancelled
+        }
+      }
+    - yaml set 'cache.boolean.__global__.lava-fire:true' 'id:dRegions_%world%_cache'
 
 
 dRegions_Flag_Ice-Melt:

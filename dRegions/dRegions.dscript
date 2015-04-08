@@ -163,13 +163,16 @@ dRegions:
     - define world '<c.location.world.name>'
     - define target '<c.location.material.bukkit_enum>'
     - define readPath 'fire.<c.cause>'
-    - if <c.cause> == flint_and_steel {
+    - inject s@dRegions p:event_PreProc_Config
+    - if <c.cause> == FLINT_AND_STEEL {
       - define cause 'Lighter'
+      }
+      else if <c.cause> == LAVA {
+      - define cause 'Lava-Fire'
       }
       else {
       - define cause 'Fire-Spread'
       }
-    - inject s@dRegions p:event_PreProc_Config
     - if %cause% == Lighter {
       - if <player.permission[dRegions.admin]||false> || <player.is_op> queue clear
       - if <c.location.cuboids.alphanumeric.unseparated> == <player.location.cuboids.alphanumeric.unseparated> {
@@ -203,6 +206,19 @@ dRegions:
           - determine cancelled
           }
         - if %sameRegion% flag <player> dRegions.rateLimit.lighter:true d:10s
+        - queue clear
+        }
+
+      - if %cause% == Lava-Fire {
+        - define cache '<yaml[dRegions_%world%_cache].read[cache.boolean.__global__.lava-fire]||null>'
+        - if %cache% == null {
+          - define FlagScript 's@dRegions_Flag_Lava-Fire'
+          - inject s@dRegions_Flag_Lava-Fire p:event-global
+          - queue clear
+          }
+        - if !%cache% {
+          - determine cancelled
+          }
         - queue clear
         }
 
@@ -739,6 +755,7 @@ dRegions:
     - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
     - define FlagScript 's@dRegions_Flag_Send-Chat'
     - inject s@dRegions_Flag_Send-Chat p:event
+    - determine 'recipients:<context.recipients.exclude[<server.flag[dRegions.Chat.Deaf].as_list||li@>]>'
 
     on player destroys vehicle:
     - if <c.vehicle.location.cuboids.alphanumeric.unseparated> == <player.location.cuboids.alphanumeric.unseparated> {
