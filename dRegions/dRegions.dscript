@@ -725,19 +725,19 @@ dRegions:
     - define sameRegion 'true'
     - define rateLimit '<player.flag[dRegions.rateLimit.send-chat]||null>'
     - if %rateLimit% != null {
-      - if %rateLimit% {
-        - queue clear
-        }
-        else {
+      - if !%rateLimit% {
         - run s@dRegions_Flag_Send-Chat p:msg delay:1t
         - determine cancelled
         }
+      - determine 'recipients:<context.recipients.exclude[<server.flag[dRegions.Chat.Deaf].as_list||li@>]>'
+      - queue clear
       }
     - if <player.location.cuboids.is_empty> {
       - define cache '<player.flag[dRegions.cache.%world%.__global__.send-chat]||null>'
       - if %cache% == null {
         - define FlagScript 's@dRegions_Flag_Send-Chat'
         - inject s@dRegions_Flag_Send-Chat p:event-global
+        - determine 'recipients:<context.recipients.exclude[<server.flag[dRegions.Chat.Deaf].as_list||li@>]>'
         - queue clear
         }
       - if !%cache% {
@@ -746,6 +746,7 @@ dRegions:
         - determine cancelled
         }
       - if %sameRegion% flag <player> dRegions.rateLimit.send-chat:true d:10s
+      - determine 'recipients:<context.recipients.exclude[<server.flag[dRegions.Chat.Deaf].as_list||li@>]>'
       - queue clear
       }
     - define regionPri 'li@'
