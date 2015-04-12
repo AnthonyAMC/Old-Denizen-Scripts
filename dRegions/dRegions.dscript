@@ -110,6 +110,51 @@
 #  This should cover all dRegions related world events.
 #
 #
+
+
+
+
+#dRegions_testing_debug:
+#  type: world
+#  speed: 0
+#  debug: true
+#  events:
+#    on player enters notable cuboid:
+#    # Should we fire an event when the player exits the global region?
+#    - if <c.from.cuboids.is_empty> {
+#      - event 'player exits notable cuboid' 'context:cuboids|<c.from.cuboids.escaped>|from|<c.from>|to|<c.to>' save:exit
+#      - if <entry[exit].determinations.get[1]||null> == cancelled {
+#        - determine cancelled
+#        }
+#      }
+#    - define world '<c.to.world.name.to_lowercase>'
+#    - define cuboids '<c.to.cuboids.unescaped.as_list>'
+#    - if <def[cuboids].is_empty> {
+#      - define cache '<player.flag[dRegions.cache.%world%.__global__.entry]||null>'
+#      - if %cache% == null {
+#        - define FlagScript 's@dRegions_Flag_Entry'
+#        - inject s@dRegions_Flag_Entry p:event-global
+#        - queue clear
+#        }
+#      - if !%cache% {
+#        - run s@dRegions_Flag_Entry p:msg delay:1t
+#        - determine cancelled
+#        }
+#      - run s@dRegions_Flag_Entry p:entered-global delay:1t player:<player> def:%world%|__global__
+#      - queue clear
+#      }
+#    - define regionPri 'li@'
+#    - foreach <def[cuboids].parse[notable_name].filter[starts_with[dRegions_]].parse[after[dregions_%world%_]].include[__global__]> {
+#      - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
+#      }
+#    - define orderedRegions '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
+#    - define FlagScript 's@dRegions_Flag_Entry'
+#    - inject s@dRegions_Flag_Entry p:event
+
+
+
+
+
 dRegions:
   type: world
   speed: 0
@@ -1317,7 +1362,7 @@ dRegions:
         - run s@dRegions_Flag_Entry p:msg delay:1t
         - determine cancelled
         }
-      - run s@dRegions_Flag_Entry p:entered-global delay:1t player:<player> def:%world%|__global__
+      - inject s@dRegions_Flag_Entry p:event-global player:<player>
       - queue clear
       }
     - define regionPri 'li@'
@@ -1342,7 +1387,7 @@ dRegions:
         - run s@dRegions_Flag_Exit p:msg delay:1t
         - determine cancelled
         }
-      - run s@dRegions_Flag_Exit p:exited-global delay:1t player:<player> def:%world%|__global__
+      - inject s@dRegions_Flag_Exit p:event-global player:<player>
       - queue clear
       }
     - define regionPri 'li@'
@@ -3612,7 +3657,7 @@ dRegions_Commands:
           - define result '<def[groups].parse[replace[regex:^].with[g:]]>'
           }
           else {
-          - define result '<server.match_player[%owner%].name||null>'
+          - define result '<server.match_player[%member%].name||null>'
           - if <def[result].is[==].to[null]||true> {
             - define result '<server.list_online_players.parse[name].alphanumeric>'
             }
@@ -3663,7 +3708,7 @@ dRegions_Commands:
           - define result '<def[groups].parse[replace[regex:^].with[g:]]>'
           }
           else {
-          - define result '<server.match_player[%owner%].name||null>'
+          - define result '<server.match_player[%member%].name||null>'
           - if <def[result].is[==].to[null]||true> {
             - define result '<server.list_online_players.parse[name].alphanumeric>'
             }
@@ -5202,7 +5247,7 @@ dRegions_Commands:
     - narrate "<&5>|<&f>"
 
   msgsFooter:
-    - define anthony "text<&co>'<&7>|Anthony|',clickEvent<&co><&chr[007B]>action<&co>open_url,value<&co>'http<&co>//mineconomy.org'<&chr[007D]>,hoverEvent<&co><&chr[007B]>action<&co>show_item,value<&co>'<&chr[007B]><i@AnthonyBanner.json><&chr[007D]>'<&chr[007D]>"
+    - define anthony "text<&co>'<&7>|Anthony|',clickEvent<&co><&chr[007B]>action<&co>open_url,value<&co>'http<&co>//mineconomy.org'<&chr[007D]>,hoverEvent<&co><&chr[007B]>action<&co>show_item,value<&co>'<&chr[007B]><i@dRegions_Author_Anthony.json><&chr[007D]>'<&chr[007D]>"
     - define spacer "text<&co>'  '"
     - define prefix "text<&co>'<&5>|  <&f>Authors<&co>  '"
     - if <player.is_player||false> {

@@ -73,7 +73,7 @@ dRegions_Flag_Entry:
       - flag <player> dRegions.cache.%world%.__global__.entry:true
       }
     - flag <player> dRegions.rateLimit:!
-    - run locally entered-global delay:1t player:<player> def:%world%|__global__
+    - run locally entered-global delay:1t player:<player> 'def:%world%|__global__|none|<player>'
 
   event-cleanup:
     - if <player.is_inside_vehicle> {
@@ -89,29 +89,34 @@ dRegions_Flag_Entry:
       }
 
   entered:
-    - ^define world '%1%'
-    - ^define region '%2%'
-    - ^define orderedRegions '<def[3].unescaped>'
-    - ^define player '<player>'
-    - ^inject s@dRegions_Flag_Notify-Enter p:event
-    - ^inject s@dRegions_Flag_Greeting p:event
-    - ^inject s@dRegions_Flag_Inventory p:event-enter
-    - ^inject s@dRegions_Flag_Gamemode p:event-enter
-    - ^inject s@dRegions_Flag_Heal-Amount p:event
-    - ^inject s@dRegions_Flag_Feed-Amount p:event
-    - ^inject s@dRegions_Flag_Receive-Chat p:event-enter
+#    - ^define world '%1%'
+#    - ^define region '%2%'
+#    - ^define orderedRegions '<def[3].unescaped>'
+#    - ^define player '<player>'
+    - ^run s@dRegions_Flag_Notify-Enter p:event 'def:%1%|%2%|%3%|<player>'
+    - ^run s@dRegions_Flag_Greeting p:event 'def:%1%|%2%|%3%|<player>'
+    - ^run s@dRegions_Flag_Inventory p:event-enter 'def:%1%|%2%|%3%|<player>'
+    - ^run s@dRegions_Flag_Gamemode p:event-enter 'def:%1%|%2%|%3%|<player>'
+    - ^run s@dRegions_Flag_Heal-Amount p:event 'def:%1%|%2%|%3%|<player>'
+    - ^run s@dRegions_Flag_Feed-Amount p:event 'def:%1%|%2%|%3%|<player>'
+    - ^run s@dRegions_Flag_Receive-Chat p:event-enter 'def:%1%|%2%|%3%|<player>'
+    - ^run s@dRegions_Flag_Weather-Lock p:event-enter 'def:%1%|%2%|%3%|<player>'
+    - ^run s@dRegions_Flag_Time-Lock p:event-enter 'def:%1%|%2%|%3%|<player>'
 
   entered-global:
-    - ^define world '%1%'
-    - ^define region '%2%'
-    - ^define player '<player>'
-    - ^inject s@dRegions_Flag_Notify-Enter p:event-global
-    - ^inject s@dRegions_Flag_Greeting p:event-global
-    - ^inject s@dRegions_Flag_Inventory p:event-enter
-    - ^inject s@dRegions_Flag_Gamemode p:event-enter
-    - ^inject s@dRegions_Flag_Heal-Amount p:event-global
-    - ^inject s@dRegions_Flag_Feed-Amount p:event-global
-    - ^inject s@dRegions_Flag_Receive-Chat p:event-enter
+#    - ^define world '%1%'
+#    - ^define region '%2%'
+#    - ^define player '<player>'
+#    - ^narrate "%1% %2% %3% %4%"
+    - ^run s@dRegions_Flag_Notify-Enter p:event-global 'def:%1%|%2%|%3%|<player>'
+    - ^run s@dRegions_Flag_Greeting p:event-global 'def:%1%|%2%|%3%|<player>'
+    - ^run s@dRegions_Flag_Inventory p:event-enter 'def:%1%|%2%|%3%|<player>'
+    - ^run s@dRegions_Flag_Gamemode p:event-enter 'def:%1%|%2%|%3%|<player>'
+    - ^run s@dRegions_Flag_Heal-Amount p:event-global 'def:%1%|%2%|%3%|<player>'
+    - ^run s@dRegions_Flag_Feed-Amount p:event-global 'def:%1%|%2%|%3%|<player>'
+    - ^run s@dRegions_Flag_Receive-Chat p:event-enter 'def:%1%|%2%|%3%|<player>'
+    - ^run s@dRegions_Flag_Weather-Lock p:event-enter 'def:%1%|%2%|%3%|<player>'
+    - ^run s@dRegions_Flag_Time-Lock p:event-enter 'def:%1%|%2%|%3%|<player>'
 
   vehicle:
     - ^if <player.has_flag[dRegions.rateLimit.regionKick]> {
@@ -179,7 +184,7 @@ dRegions_Flag_Exit:
       - flag <player> dRegions.cache.%world%.__global__.exit:true
       }
     - flag <player> dRegions.rateLimit:!
-    - run locally exited-global delay:1t player:<player> def:%world%|__global__
+    - run locally exited-global delay:1t player:<player> 'def:%world%|__global__|null|<player>'
 
   event-cleanup:
     - if <player.is_inside_vehicle||false> {
@@ -196,25 +201,29 @@ dRegions_Flag_Exit:
       }
 
   exited:
-    - ^define world '%1%'
-    - ^define region '%2%'
-    - ^define orderedRegions '<def[3].unescaped>'
-    - ^define player '<player>'
-    - ^inject s@dRegions_Flag_Notify-Exit p:event
-    - ^inject s@dRegions_Flag_Farewell p:event
-    - ^inject s@dRegions_Flag_Inventory p:event-exit
-    - ^inject s@dRegions_Flag_Gamemode p:event-exit
-    - ^inject s@dRegions_Flag_Receive-Chat p:event-exit
+#    - ^define world '%1%'
+#    - ^define region '%2%'
+#    - ^define orderedRegions '<def[3].unescaped>'
+#    - ^define player '<player>'
+    - ^run s@dRegions_Flag_Notify-Exit p:event 'def:%1%|%2%|%3%|<player>'
+    - ^run s@dRegions_Flag_Farewell p:event 'def:%1%|%2%|%3%|<player>'
+    - ^run s@dRegions_Flag_Inventory p:event-exit 'def:%1%|%2%|%3%|<player>'
+    - ^run s@dRegions_Flag_Gamemode p:event-exit 'def:%1%|%2%|%3%|<player>'
+    - ^run s@dRegions_Flag_Receive-Chat p:event-exit 'def:%1%|%2%|%3%|<player>'
+    - ^run s@dRegions_Flag_Weather-Lock p:event-exit 'def:%1%|%2%|%3%|<player>'
+    - ^run s@dRegions_Flag_Time-Lock p:event-exit 'def:%1%|%2%|%3%|<player>'
 
   exited-global:
-    - ^define world '%1%'
-    - ^define region '%2%'
-    - ^define player '<player>'
-    - ^inject s@dRegions_Flag_Notify-Exit p:event-global
-    - ^inject s@dRegions_Flag_Farewell p:event-global
-    - ^inject s@dRegions_Flag_Inventory p:event-exit
-    - ^inject s@dRegions_Flag_Gamemode p:event-exit
-    - ^inject s@dRegions_Flag_Receive-Chat p:event-exit
+#    - ^define world '%1%'
+#    - ^define region '%2%'
+#    - ^define player '<player>'
+    - ^run s@dRegions_Flag_Notify-Exit p:event-global 'def:%1%|%2%|%3%|<player>'
+    - ^run s@dRegions_Flag_Farewell p:event-global 'def:%1%|%2%|%3%|<player>'
+    - ^run s@dRegions_Flag_Inventory p:event-exit 'def:%1%|%2%|%3%|<player>'
+    - ^run s@dRegions_Flag_Gamemode p:event-exit 'def:%1%|%2%|%3%|<player>'
+    - ^run s@dRegions_Flag_Receive-Chat p:event-exit 'def:%1%|%2%|%3%|<player>'
+    - ^run s@dRegions_Flag_Weather-Lock p:event-exit 'def:%1%|%2%|%3%|<player>'
+    - ^run s@dRegions_Flag_Time-Lock p:event-exit 'def:%1%|%2%|%3%|<player>'
 
   vehicle:
     - ^if <player.has_flag[dRegions.rateLimit.regionKick]> {
@@ -236,6 +245,7 @@ dRegions_Flag_Notify-Enter:
   display name: "<&4>[<&6>Notify-Enter<&4>]"
   lore:
   - <&5>Send notification to marked players
+  definitions: world|region|orderedRegions|player
   event_hook: regionEnter
   event_priority: 5
   flag_type: boolean
@@ -276,6 +286,7 @@ dRegions_Flag_Notify-Exit:
   display name: "<&4>[<&6>Notify-Exit<&4>]"
   lore:
   - <&5>Send notification to marked players
+  definitions: world|region|orderedRegions|player
   event_hook: regionExit
   event_priority: 5
   flag_type: boolean
@@ -316,6 +327,7 @@ dRegions_Flag_Greeting:
   display name: "<&4>[<&6>Greeting<&4>]"
   lore:
   - <&5>Message on enter region
+  definitions: world|region|orderedRegions|player
   event_hook: regionEnter
   event_priority: 10
   flag_type: string
@@ -354,6 +366,7 @@ dRegions_Flag_Farewell:
   display name: "<&4>[<&6>Farewell<&4>]"
   lore:
   - <&5>Message on exit region
+  definitions: world|region|orderedRegions|player
   event_hook: regionExit
   event_priority: 10
   flag_type: string
@@ -392,6 +405,7 @@ dRegions_Flag_Inventory:
   display name: "<&4>[<&6>Inventory<&4>]"
   lore:
   - <&5>Save inventory before going into a region
+  definitions: world|region|orderedRegions|player
   event_hook: regionToggle
   event_priority: 10
   flag_type: custom
@@ -485,6 +499,7 @@ dRegions_Flag_Gamemode:
   display name: "<&4>[<&6>Gamemode<&4>]"
   lore:
   - <&5>Change gamemode inside a region
+  definitions: world|region|orderedRegions|player
   event_hook: regionToggle
   event_priority: 20
   flag_type: custom
@@ -520,6 +535,127 @@ dRegions_Flag_Gamemode:
           - run s@dRegions_Msg delay:1t 'def:<&7><&o>Your gamemode has been updated.'
           }
         - flag <player> 'dRegions_%world%_%region%_PreviousGamemode:!'
+        }
+      }
+
+
+dRegions_Flag_Weather-Lock:
+  type: item
+  speed: 0
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Weather-Lock<&4>]"
+  lore:
+  - <&5>Set the weather
+  definitions: world|region|orderedRegions|player
+  event_hook: regionToggle
+  event_priority: 0
+  flag_type: custom
+  flag_type_customVal: clear|downfall
+  flag_name: Weather-Lock
+  flag_help: Control what players see the weather as. Can be set to clear or downfall. Takes the -g group switch.
+  flag_takeGroup: true
+  flag_defaultValue: none
+  flag_globalDefault: none
+  region_highestOnly: true
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  event-enter:
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|weather-lock]>'
+    - if %flagObj% != null {
+      - if <proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|%region%|%world%|<player>]> {
+        - if <def[flagObj].split[/].get[1]> == clear {
+          - adjust <player> 'weather:clear'
+          }
+          else {
+          - adjust <player> 'weather:downfall'
+          }
+        }
+      }
+
+  event-exit:
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|weather-lock]>'
+    - if %flagObj% != null {
+      - if <proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|%region%|%world%|<player>]> {
+        - adjust <player> 'reset_weather'
+        }
+      }
+
+
+dRegions_Flag_Time-Lock:
+  type: item
+  speed: 0
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Time-Lock<&4>]"
+  lore:
+  - <&5>Set the Time
+  definitions: world|region|orderedRegions|player
+  event_hook: regionToggle
+  event_priority: 0
+  flag_type: number
+  flag_name: Time-Lock
+  flag_help: Control what players see the time as. Valid range is 0-23999. Use + or - to adjust the time relative to the current world time. Takes the -g group switch.
+  flag_takeGroup: true
+  flag_defaultValue: none
+  flag_globalDefault: none
+  region_highestOnly: true
+  script:
+    - narrate "A handy container for region flags."
+    - narrate "We<&sq>ll have subscripts for various tasks."
+
+  button_click:
+    - narrate "This will be useful when it comes time to make the GUI for region management."
+
+  command_handler:
+    - if <def[flagValue].starts_with[+]> || <def[flagValue].starts_with[-]> {
+      - define d '<def[flagVal].replace[regex:[0-9]]>'
+      - define time '<def[flagValue].after[%d%]>'
+      }
+      else {
+      - define time '%flagValue%'
+      }
+    - if %time% !matches number || %time% < 0 || %time% > 23999 {
+      - run s@dRegions_Msg delay:1t 'def:<&c>Valid time range is 0 - 23999!'
+      - queue clear
+      }
+
+  event-enter:
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|time-lock]>'
+    - if %flagObj% != null {
+      - if <proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|%region%|%world%|<player>]> {
+        - define flagValue '<def[flagObj].split[/].get[1]>'
+        - if <def[flagValue].starts_with[+]> || <def[flagValue].starts_with[-]> {
+          - define d '<def[flagVal].replace[regex:[0-9]]>'
+          - define time '<def[flagValue].after[%d%]>'
+          }
+          else {
+          - define time '%flagValue%'
+          }
+        - if <def[d].exists> {
+          - if %d% == + {
+            - adjust <player> 'freeze_time:<player.world.time.add[%time%]>'
+            }
+            else {
+            - adjust <player> 'freeze_time:<player.world.time.sub[%time%]>'
+            }
+          }
+          else {
+          - adjust <player> 'freeze_time:%time%'
+          }
+        }
+      }
+
+  event-exit:
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|time-lock]>'
+    - if %flagObj% != null {
+      - if <proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|%region%|%world%|<player>]> {
+        - adjust <player> 'reset_time'
         }
       }
 
@@ -823,7 +959,8 @@ dRegions_Flag_Receive-Chat:
   display name: "<&4>[<&6>Receive-Chat<&4>]"
   lore:
   - <&5>Who can hear chat
-  event_hook: build
+  definitions: world|region|orderedRegions|player
+  event_hook: regionToggle
   event_priority: 0
   flag_type: state-withGroup
   flag_name: Receive-Chat
@@ -5332,6 +5469,7 @@ dRegions_Flag_Heal-Amount:
   display name: "<&4>[<&6>Heal-Amount<&4>]"
   lore:
   - <&5>The amount to heal or harm.
+#  definitions: world|region|orderedRegions|player
   event_hook: regionEnter
   event_priority: 10
   flag_type: number
@@ -5344,6 +5482,10 @@ dRegions_Flag_Heal-Amount:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
+    - define world '%1%'
+    - define region '%2%'
+    - define orderedRegions '<def[3].unescaped>'
+    - define player '<player>'
     - define healAmount '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|heal-amount]>'
     - if %healAmount% != null {
       - define healDelay '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|heal-delay]>'
@@ -5366,6 +5508,10 @@ dRegions_Flag_Heal-Amount:
       }
 
   event-global:
+    - define world '%1%'
+    - define region '%2%'
+    - define orderedRegions '<def[3].unescaped>'
+    - define player '<player>'
     - define healAmount '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|heal-amount]>'
     - if %healAmount% != null {
       - define healDelay '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|heal-delay]>'
@@ -5519,6 +5665,7 @@ dRegions_Flag_Feed-Amount:
   display name: "<&4>[<&6>Feed-Amount<&4>]"
   lore:
   - <&5>The amount to feed or starve.
+#  definitions: world|region|orderedRegions|player
   event_hook: regionEnter
   event_priority: 10
   flag_type: number
@@ -5531,6 +5678,10 @@ dRegions_Flag_Feed-Amount:
     - narrate "This will be useful when it comes time to make the GUI for region management."
 
   event:
+    - define world '%1%'
+    - define region '%2%'
+    - define orderedRegions '<def[3].unescaped>'
+    - define player '<player>'
     - define feedAmount '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|feed-amount]>'
     - if %feedAmount% != null {
       - define feedDelay '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|feed-delay]>'
@@ -5552,6 +5703,10 @@ dRegions_Flag_Feed-Amount:
       }
 
   event-global:
+    - define world '%1%'
+    - define region '%2%'
+    - define orderedRegions '<def[3].unescaped>'
+    - define player '<player>'
     - define feedAmount '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|feed-amount]>'
     - if %feedAmount% != null {
       - define feedDelay '<proc[dRegions_GetInheritedFlag].context[%world%|__global__|feed-delay]>'
