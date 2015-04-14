@@ -1,0 +1,275 @@
+# ---------------------------------------------------------------------------- #
+#                                                                              |
+#                                                                              |
+#                         D e n i z e n   S Q L A P I                          |
+#                                                                              |
+#                 An API for scripters to easily implement SQL                 |
+#                                                                              |
+#                               *REQUIRES MYSQL*                               |
+#                                                                              |
+#                                                                              |
+#   Author: |Anthony|                                                          |
+#   Version: 0.1                                                               |
+#   dScript Version: 0.9.6-b1573                                               |
+#                                                                              |
+#   Dependencies:                                                              |
+#   - SQLManager:             http://mcmonkey.org/denizen/repo/entry/19        |
+#   - ConfigFileGenerator:    http://mcmonkey.org/denizen/repo/entry/7         |
+#                                                                              |
+# ---------------------------------------------------------------------------- #
+#
+#
+# ABOUT:
+#
+#     SQLAPI is a library or API for Denizen scripters to easily implement SQL
+#   in their scripts. It is intended to suppliment the denizen flag system for
+#   those who require data to be shared across a network of servers since
+#   Denizen currently has no cross server flag capability.
+#
+#     The SQL backend functions are almost /completely/ handled by SQLManager.
+#   Automatically goes into offline caching mode if the sql database goes
+#   offline!
+#
+#
+# USAGE:
+#
+# -- Setup
+#
+#   1.
+#
+#   2.
+#
+#   3.
+#
+#
+# -- Permissions
+#
+#    Admin permission: sqlapi.admin
+#
+#------------------------------------------------
+#
+#               C h a n g e l o g
+#
+# - v0.1  -  4/13/15
+#   - Initial commit
+#
+#
+#------------------------------------------------
+#
+#          TODO - Future Feature Fluff
+#
+#
+#______________________________________________________________________________#
+
+SQLAPI:
+  type: world
+  speed: 0
+  debug: false
+
+  events:
+    on server start:
+    - run locally start delay:1t
+
+    on sqlapi command:
+    - if !<player.permission[sqlapi.admin]||false> && !<player.is_op> && !<c.server> {
+      - queue clear
+      }
+    - determine passively FULFILLED
+    - define arg1 '<c.args.get[1].escaped||null>'
+    - if <def[arg1].is[==].to[--restart]> {
+      - narrate "<&b>SQLAPI<&co> <&d>Restarting System!"
+      - define isRelaod ''
+      - inject locally start
+      }
+
+  start:
+    - ^define yamlName 'SQLAPI'
+    - ^define scriptName '<script.name>'
+    - ^inject locally reloadYaml instantly
+    - ^inject locally loadData instantly
+    - ^if %useSql% {
+      - announce "<&b>SQLAPI<&co><&c> Must be configured to use MySQL!" to_console
+      - inject locally unload
+      - queue stop
+      }
+    # Verify SQLManager is installed and ready
+    - ^if !<server.list_scripts.parse[name].contains[SQLManager]> {
+      - announce "<&b>SQLAPI<&co><&c> SQLManager not installed!" to_console
+      - inject locally unload
+      - queue stop
+      }
+    - ^repeat %retry% {
+      - if !<yaml.list.contains[SQLManager_Offline]> {
+        - announce "<&b>SQLAPI<&co><&c> Could not connect to SQLManager!" to_console
+        - if %loop_index% == %retry% {
+          - inject locally unload
+          - queue stop
+          }
+        - announce "<&b>SQLAPI<&co><&c> Will attempt again in %retryDelay%..." to_console
+        - wait %retryDelay%
+        }
+      }
+    # This checks the status as set by SQLManager to not duplicate restart
+    # processes. This is the only time this script needs to set the status.
+    # The SQLManager will handle every other situation.
+    - ^define status '<yaml[SQLManager_Offline].read[Offline_Cache.databases.%db%.status]||null>'
+    - ^if <def[status].is[==].to[connecting]> {
+      - announce "<&b>SQLManager<&co><&c> Already attempting to reconnect to %db% database!" to_console
+      - queue stop
+      }
+      else {
+      - yaml set 'id:SQLManager_Offline' 'Offline_Cache.databases.%db%.status:connecting'
+      - yaml 'savefile:SQLManager/cache.yml' 'id:SQLManager_Offline'
+      }
+    - ^if <def[isReload].exists||false> {
+      - run s@SQLManager p:restart delay:1t def:%yamlName%|%scriptName%|%db%
+      - queue clear
+      }
+    - ^inject s@SQLManager
+    - ^announce "<&b>SQLAPI<&co><&a> System loaded!" to_console
+    - queue stop
+
+  reloadYaml:
+  # Reloads the yaml files and generates default files if they don't exist.
+    - announce "<&b>SQLAPI<&co><&3> Loading system config files..." to_console
+    - if !<server.has_file[SQLAPI/config.yml]> {
+      - if <player> != null {
+        - flag <player> ConfigFileGeneratorNotify:true
+        - run s@ConfigFileGeneratorHelper def:SQLAPI|Configurations|false|false|false instantly
+        - flag <player> ConfigFileGeneratorNotify:!
+        }
+        else {
+        - run s@ConfigFileGeneratorHelper def:SQLAPI|Configurations instantly
+        }
+      }
+    - if <yaml.list.contains[SQLAPI_config]> yaml unload 'id:SQLAPI_config'
+    - yaml 'load:SQLAPI/config.yml' 'id:SQLAPI_config'
+    - inject s@SQLAPI_SQLTables
+    - announce "<&b>SQLAPI<&co><&a> System config files Loaded!" to_console
+
+  loadData:
+    - ^define yamlName 'SQLAPI'
+    - ^define scriptName '<script.name>'
+    - ^define useSql '<yaml[SQLAPI_config].read[config.MySQL.useSql]||false>'
+    - ^define retry '<yaml[SQLAPI_config].read[config.MySQL.retry]||3>'
+    - ^define retryDelay '<yaml[SQLAPI_config].read[config.MySQL.retryDelay]||10s>'
+    - ^define db '<yaml[SQLAPI_config].read[config.MySQL.database]||false>'
+    - ^define PlayerSQLFLagsTable '<yaml[SQLAPI_config].read[config.MySQL.tables.PlayerSQLFLags]||dsqlapi_playersqlflags>'
+    - ^define NPCSQLFLagsTable '<yaml[SQLAPI_config].read[config.MySQL.tables.NPCSQLFLags]||dsqlapi_npcsqlflags>'
+    - ^define EntitySQLFLagsTable '<yaml[SQLAPI_config].read[config.MySQL.tables.EntitySQLFLags]||dsqlapi_entitysqlflags>'
+    - ^define ServerSQLFLagsTable '<yaml[SQLAPI_config].read[config.MySQL.tables.ServerSQLFLags]||dsqlapi_serversqlflags>'
+
+  unload:
+    - ^if <yaml.list.contains[SQLAPI_config]> {
+      - announce "<&b>SQLAPI<&co><&3> Unloading config.yml file..." to_console
+      - yaml unload 'id:SQLAPI_config'
+      }
+    - ^if <yaml.list.contains[SQLAPI_SQLTables]> {
+      - announce "<&b>SQLAPI<&co><&3> Unloading SQLAPI_SQLTables file..." to_console
+      - yaml unload 'id:SQLAPI_SQLTables'
+      }
+    - ^announce "<&b>SQLAPI<&co><&c> System disabled..." to_console
+
+
+
+
+
+
+################################################################################
+#                                                                              #
+# Configuration Files                                                          #
+#                                                                              #
+#   These are the default config files. They will be used to build the default #
+# config file and data storage files.                                          #
+#                                                                              #
+#______________________________________________________________________________#
+#                                                                              #
+#______________________________DO_NOT_EDIT_THIS_DATA___________________________#
+#______________________________________________________________________________#
+
+
+SQLAPI_Configurations:
+  type: yaml data
+  debug: false
+
+  config:
+    MySQL:
+      useSql: false
+      connection:
+        keepAlive: 5m
+        retry: 3
+        retryDelay: 10s
+        host: localhost
+        port: 3306
+        username: root
+        password: password
+      database: SQLAPI
+      tables:
+        PlayerSQLFLags: dsqlapi_playersqlflags
+        NPCSQLFLags: dsqlapi_npcsqlflags
+        EntitySQLFLags: dsqlapi_entitysqlflags
+        ServerSQLFLags: dsqlapi_serversqlflags
+
+
+################################################################################
+#                                                                              #
+# SQL Table Structure                                                          #
+#                                                                              #
+#   This is where the table structure is defined. It would be best if you do   #
+# not touch anything in this section!                                          #
+#                                                                              #
+#______________________________________________________________________________#
+#                                                                              #
+#______________________________DO_NOT_EDIT_THIS_DATA___________________________#
+#______________________________________________________________________________#
+
+
+SQLAPI_SQLTables:
+# This script gets injected from the SQLManager on system start. It sets up some
+# data it needs and loads the table structure so it's ready for the SQLManager.
+  type: task
+  debug: false
+
+  script:
+    - define sqlScriptName '<script.name>'
+    - define sqlFile '<script.relative_filename>'
+    - if <yaml.list.contains[%sqlScriptName%]> yaml unload 'id:%sqlScriptName%'
+    - yaml 'load:%sqlFile%' fix_formatting 'id:%sqlScriptName%'
+    - if !<yaml.list.contains[%sqlScriptName%]> {
+      - announce "<&c>SQLAPI<&co><&b> An error occurred while loading %sqlScriptname%!" to_console
+      - announce "<&b>SQLAPI<&co><&3> Aborting..." to_console
+      - inject s@%scriptName% p:unload
+      - queue stop
+      }
+
+  tables:
+    PlayerSQLFLags:
+      columns:
+        id: INT AUTO_INCREMENT PRIMARY KEY
+        uuid: varchar(36)
+        flag: BLOB
+        value: MEDIUMBLOB
+        expiration: BIGINT
+    NPCSQLFLags:
+      columns:
+        id: INT AUTO_INCREMENT PRIMARY KEY
+        uuid: varchar(36)
+        flag: BLOB
+        value: MEDIUMBLOB
+        expiration: BIGINT
+    EntitySQLFLags:
+      columns:
+        id: INT AUTO_INCREMENT PRIMARY KEY
+        uuid: varchar(36)
+        flag: BLOB
+        value: MEDIUMBLOB
+        expiration: BIGINT
+    ServerSQLFLags:
+      columns:
+        id: INT AUTO_INCREMENT PRIMARY KEY
+        flag: BLOB
+        value: MEDIUMBLOB
+        expiration: BIGINT
+
+
+#
