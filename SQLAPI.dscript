@@ -22,7 +22,7 @@
 # ABOUT:
 #
 #     SQLAPI is a library or API for Denizen scripters to easily implement SQL
-#   in their scripts. It is intended to suppliment the denizen flag system for
+#   in their scripts. It is intended to supplement the denizen flag system for
 #   those who require data to be shared across a network of servers since
 #   Denizen currently has no cross server flag capability.
 #
@@ -31,20 +31,134 @@
 #   offline!
 #
 #
+#------------------------------------------------
+#
 # USAGE:
 #
 # -- Setup
 #
-#   1.
+#   1. Create an empty SQL database on your server. You can name it anything you
+#      like. The default name is SQLAPI.
+#      Consult your operating system manual or other online documentation for
+#      instructions how to install and setup an sql server if needed. That is
+#      beyond the scope of this documentation.
 #
-#   2.
+#   2. Install SQLManager.dscript following the instructions provided. SQLAPI
+#      Will not load if SQLManager is not installed!
 #
-#   3.
+#   3. Install sqlapi.dscript to you Denizen scripts folder and type:
+#      /denizen reload scripts
+#
+#   4. From console or in game (with sqlapi.admin permission) type:
+#      /sqlapi --restart
+#      This will extract the config file to /Denizen/SQLAPI/config.yml
+#      SQLAPI will begin the connection attempt process, but will fail until
+#      you edit the config.yml file with valid connection information.
+#
+#   5. Edit the config.yml file with valid connection information for your SQL
+#      database created in step 1. If you have edit config.yml before the
+#      connection attempt cycle expires, SQLAPI will proceed with setup, if not
+#      you will need to repeat step 4.
+#
+#   6. SQLAPI is now installed! Rejoice!
 #
 #
 # -- Permissions
 #
 #    Admin permission: sqlapi.admin
+#
+#
+#------------------------------------------------
+#
+# API Guidelines and Explanation
+#
+# -- Notes
+#
+#  - SQLAPI utilizes the events system for setting/editing/deleting sql flags.
+#    - Learn more about the events command: http://mcmonkey.org/denizen/cmds/event
+#
+#    - The events command in Denizen lacks the ability to handle lists directly
+#      in the context section. You MUST use the .escaped tag when supplying a
+#      list value!
+#
+# -- Setting/Editing/Deleting Flags
+#
+#    Working with SQL flags is easy! You must specify the type, flagName,
+#  and flagValue context fields when you do. The duration field is optional. The
+#  owner field is not used for the server type flags.
+#
+#    Full Example:
+#    - event 'slqflag set' 'context:type|player|owner|<playerObject>|flagName|myFlag|flagValue|potato|duration|5s'
+#
+#
+# -- Context Fields
+#
+#  ~ Type
+#
+#    There are four (4) flag types available through SQLAPI.
+#    - Type Values
+#      - server - Global flags with no owner
+#      - player - Player specific flags
+#      - npc    - NPC specific flags
+#      - entity - Entity specific flags (not fully implemented)
+#
+#    Example:
+#    'context:type|player'
+#
+#
+#  ~ Owner
+#
+#    The owner field is required for player, npc, and entity flag types, but is
+#   NOT required for server type flags. The owner field must contain a valid
+#   entity object for that particular flag type. A player type flag must have
+#   a <player> object in the owner field. An NPC flag must have an <npc> object
+#   in the owner field. An entity flag must have an <entity> object in the owner
+#   field.
+#
+#    Example:
+#    'context:owner|<player>'
+#
+#
+#  ~ FlagName
+#
+#    The flagName field is where you declare the name of your flag. Flag names
+#   MUST be unique. Setting a flag value on an existing flag will overwrite it.
+#   Players, NPCs, and entities all have their own flag associations, which
+#   means that player A and player B can both have a flag named 'potato' with no
+#   conflicts.
+#
+#    Flag names are limited to roughly 21,844 UTF-8 characters. You should have
+#   plenty of room for exotic flag names.
+#
+#    Example:
+#    'context:flagName|potato'
+#
+#
+#  ~ FlagValue
+#
+#    The flagValue field is where you store the value of your flag. It can hold
+#   any string, integer, decimal, boolean, or list value you like. It has a
+#   theoretical limit of 5,592,404 UTF-8 characters.
+#
+#    When working with a list flagValue, you must escape the whole list. This is
+#   required to overcome a limitation with the events command. Your data will be
+#   stored and returned to you correctly. You may also choose to use your own
+#   delimiter. You will be responsible for recreating your lists when you
+#   retrieve the value.
+#    Example:
+#    - define list 'li@a|b|c'
+#    - event 'slqflag set' 'context:type|server|flagName|myFlag|flagValue|<def[list].escaped>'
+#
+#
+#  ~ Duration
+#
+#    The duration field is an optional field for all flags. Setting a duration
+#   on a flag will make the flag available for specific amount of time. The
+#   value for the duration field can be provided in any of the following
+#   formats: T=ticks, M=minutes, S=seconds, H=hours, D=days, W = Weeks.
+#   Not using a unit will imply seconds.
+#    Example:
+#    - event 'slqflag set' 'context:duration|10s'
 #
 #------------------------------------------------
 #
@@ -52,6 +166,30 @@
 #
 # - v0.1  -  4/13/15
 #   - Initial commit
+#
+# - v0.1.1  -  4/20/15
+#   - sqlflag command
+#     - Allows setting/editing/deleting flags in game with a command
+#     - Currently only the set flag code is written. Don't try to do any list
+#       flags or removing flags yet!
+#   - Added <proc[SQLAPI_GetFlagRecord].context[tablename|owner|flag]||null>
+#     - Returns a raw flag record li@flagName|flagValue|expiriation
+#     - Returns "SQLAPI OFFLINE" if the db is offline
+#     - Really only meant for internal usage. There will be more user friendly
+#       options available in the future.
+#   - Added <proc[SQLAPI_FlagExists].context[tablename|owner|flag]>
+#     - Boolean tag to check if a flag exists
+#     - Does not return if the db is offline
+#     - Really only meant for internal usage.
+#   - Added <proc[SQLAPI_IsExpired].context[tablename|owner|flag]>
+#     - Boolean tag to check if a flag exists
+#     - Does not return if the flag does not exist OR the db is offline.
+#     - Really only meant for internal usage.
+#   - Added <proc[SQLAPI_HasFlag].context[tablename|owner|flag]>
+#     - Boolean tag to check if a object has a flag.
+#     - Returns true if the flag exists and is not expired.
+#     - Returns false if the flag does not exist or is expired.
+#     - Does not return if the db is offline.
 #
 #
 #------------------------------------------------
@@ -65,10 +203,65 @@ SQLAPI:
   type: world
   speed: 0
   debug: false
+  action_map:
+    set_list: '&pipe'
+    include: '-&gt'
+    remove: '&lt-'
+    increment: '++|+'
+    decrement: '--|-'
+    clear: '&exc'
 
   events:
     on server start:
     - run locally start delay:1t
+
+    on sqlflag set:
+    - define type '<c.type>'
+    - define owner '<c.owner>'
+    - define flagName '<c.flagName.sql_escaped>'
+    - define flagValue '<c.flagValue.unescaped.sql_escaped>'
+    - define expiration '<c.expiration.sql_escaped||null>'
+    - inject locally set_flag
+
+    on sqlflag clear:
+    - define type '<c.type>'
+    - define owner '<c.owner>'
+    - define flagName '<c.flagName.sql_escaped>'
+    - define flagValue '<c.flagValue.unescaped.sql_escaped>'
+    - define expiration '<c.expiration.sql_escaped||null>'
+    - inject locally clear_flag
+
+    on sqlflag include:
+    - define type '<c.type>'
+    - define owner '<c.owner>'
+    - define flagName '<c.flagName.sql_escaped>'
+    - define flagValue '<c.flagValue.unescaped.sql_escaped>'
+    - define expiration '<c.expiration.sql_escaped||null>'
+    - inject locally include_flag
+
+    on sqlflag remove:
+    - define type '<c.type>'
+    - define owner '<c.owner>'
+    - define flagName '<c.flagName.sql_escaped>'
+    - define flagValue '<c.flagValue.unescaped.sql_escaped>'
+    - define expiration '<c.expiration.sql_escaped||null>'
+    - inject locally remove_flag
+
+    on sqlflag increment:
+    - define type '<c.type>'
+    - define owner '<c.owner>'
+    - define flagName '<c.flagName.sql_escaped>'
+    - define flagValue '<c.flagValue.unescaped.sql_escaped>'
+    - define expiration '<c.expiration.sql_escaped||null>'
+    - inject locally increment_flag
+
+    on sqlflag decrement:
+    - define type '<c.type>'
+    - define owner '<c.owner>'
+    - define flagName '<c.flagName.sql_escaped>'
+    - define flagValue '<c.flagValue.unescaped.sql_escaped>'
+    - define expiration '<c.expiration.sql_escaped||null>'
+    - inject locally decrement_flag
 
     on sqlapi command:
     - if !<player.permission[sqlapi.admin]||false> && !<player.is_op> && !<c.server> {
@@ -81,6 +274,150 @@ SQLAPI:
       - define isRelaod ''
       - inject locally start
       }
+
+    on sqlflag command:
+    - if !<player.permission[sqlapi.admin]||false> && !<player.is_op> && !<c.server> {
+      - queue clear
+      }
+    - determine passively FULFILLED
+#    - define expiration '<c.args.filter[starts_with[d<&co>]]>'
+    - if <c.args.size> < 2 {
+      - narrate "<&b>SQLAPI<&co><&c> /sqlflag <&lt>owner<&gt> flagName(<&co>action)(<&co>value) (expiration<&co>duration)"
+      - queue clear
+      }
+
+    - define owner '<c.args.get[1]||null>'
+    - if %owner% == server {
+      - define type 'server'
+      }
+      else if %owner% == player {
+      - if <c.server> {
+        - announce to_console "<&b>SQLAPI<&co><&c> Must specify valid player object from console!"
+        - queue clear
+        }
+      - define type 'player'
+      - define owner '<player>'
+      }
+      else {
+      - inject locally parseOwner
+      }
+
+    - define preparse '<c.args.get[2].escaped.split[&co]||null>'
+    - define size '<def[preparse].size>'
+    - define flagName '<def[preparse].get[1]||null>'
+
+    - if %size% == 1 {
+      - define flagValue 'true'
+      - define action 'set'
+      }
+      else if %size% == 2 {
+      - define action '<def[preparse].get[2]||null>'
+      - inject locally parseAction
+      - if %action% == set {
+        - define flagValue '<def[preparse].get[2]>'
+        }
+        else if <li@increment|decrement|multiply|divide> contains %action% {
+        - define flagValue '1'
+        }
+        else if %action% == clear {
+        - define flagValue 'null'
+        }
+        else {
+        - narrate "<&b>SQLAPI<&co><&c> Must specify a flag value for %action% flag action!"
+        - announce to_console "<&b>SQLAPI<&co><&c> Must specify a flag value for %action% flag action!"
+        - queue clear
+        }
+      }
+      else {
+      - define flagValue '<def[preparse].get[3].to[%size%].replace[|].with[<&co>].replace[li@]||null>'
+      - define action '<def[preparse].get[2]||null>'
+      - inject locally parseAction
+      - if %action% == set {
+        - define flagValue '<def[preparse].get[2].to[%size%].replace[|].with[<&co>].replace[li@]||null>'
+        }
+        else if <li@increment|decrement|multiply|divide> contains %action% {
+        - if %flagValue% !matches number {
+          - narrate "<&b>SQLAPI<&co><&c> %flagValue% is not a valid number!"
+          - queue clear
+          }
+        }
+        else if %action% == clear {
+        - define flagValue 'null'
+        }
+        else if %action% == set_list {
+        - define flagValue '<def[flagValue].unescaped>'
+        }
+        else if %action% == include {
+        - define flagValue '<def[flagValue].unescaped>'
+        }
+        else if %action% == remove {
+        - define flagValue '<def[flagValue].unescaped>'
+        }
+      }
+
+    - define duration '<c.args.get[3]||null>'
+    - if <def[duration].starts_with[d<&co>]> || <def[duration].starts_with[duration<&co>]> {
+      - define expiration '<def[duration].split[<&co>].get[2].as_duration||null>'
+      - if %expiration% == null {
+        - announce to_console '<&b>SQLAPI<&co><&c> <def[expiration].split[<&co>].get[2]||null> is not a valid duration!'
+        - define expiration '0'
+        }
+        else {
+
+        - define expiration '<def[expiration].in_milliseconds.add_int[<server.current_time_milliseconds>]>'
+        }
+      }
+      else {
+      - define expiration '0'
+      }
+#    - announce "Narrate values"
+#    - narrate "<&2>==="
+#    - narrate "size %size%"
+#    - narrate "owner %owner% %type% <def[owner].uuid>"
+#    - narrate "flag %flagName%"
+#    - narrate "action %action%"
+#    - narrate "flagvalue %flagvalue%"
+#    - narrate "expiration %expiration%"
+    - inject locally %action%_flag
+    - narrate "<&b>SQLAPI<&co><&7> Set %flagName% for %owner% to %flagValue%<tern[<def[expiration].is[==].to[0]>]:<&dot>||<&sp>for <def[duration].split[<&co>].get[2].as_duration.formatted>>"
+    - queue clear
+
+  parseAction:
+    - define actions '<script.list_keys[action_map]>'
+    - foreach %actions% {
+      - define map '<script.yaml_key[action_map.%value%].as_list||li@>'
+      - if <def[map].contains_any[%action%]||false> {
+        - define action '<def[value].to_lowercase>'
+        - foreach stop
+        }
+      }
+    - if %actions% !contains %action% {
+      - define action 'set'
+      }
+
+  parseOwner:
+    - define owner "<parse:<def[owner]>>"
+    - if <def[owner].type||null> == player {
+      - define type 'player'
+      - define owner '<def[owner].as_player>'
+      }
+      else if <def[owner].type||null> == entity {
+      - define type 'entity'
+      - define owner '<def[owner].as_entity>'
+      }
+      else if <def[owner].type||null> == npc {
+      - define type 'npc'
+      - define owner '<def[owner].as_npc>'
+      }
+      else {
+      - if <player.is[!=].to[null]||false> {
+        - narrate "<&b>SQLAPI<&co><&c> Must specify valid owner object!"
+        }
+      - announce to_console "<&b>SQLAPI<&co><&c> Must specify valid owner object!"
+      - announce to_console "<&b>SQLAPI<&co><&b> Attempted<&co> to flag %owner%"
+      - queue clear
+      }
+
 
   start:
     - ^define yamlName 'SQLAPI'
@@ -153,7 +490,7 @@ SQLAPI:
     - ^define useSql '<yaml[SQLAPI_config].read[config.MySQL.useSql]||false>'
     - ^define retry '<yaml[SQLAPI_config].read[config.MySQL.retry]||3>'
     - ^define retryDelay '<yaml[SQLAPI_config].read[config.MySQL.retryDelay]||10s>'
-    - ^define db '<yaml[SQLAPI_config].read[config.MySQL.database]||false>'
+    - ^define db '<yaml[SQLAPI_config].read[config.MySQL.database]||SQLAPI>'
     - ^define PlayerSQLFLagsTable '<yaml[SQLAPI_config].read[config.MySQL.tables.PlayerSQLFLags]||dsqlapi_playersqlflags>'
     - ^define NPCSQLFLagsTable '<yaml[SQLAPI_config].read[config.MySQL.tables.NPCSQLFLags]||dsqlapi_npcsqlflags>'
     - ^define EntitySQLFLagsTable '<yaml[SQLAPI_config].read[config.MySQL.tables.EntitySQLFLags]||dsqlapi_entitysqlflags>'
@@ -171,8 +508,159 @@ SQLAPI:
     - ^announce "<&b>SQLAPI<&co><&c> System disabled..." to_console
 
 
+  set_flag:
+    - define yamlName 'SQLAPI'
+    - define scriptName 'SQLAPI'
+    - define db '<yaml[SQLAPI_config].read[config.MySQL.database]||SQLAPI>'
+    - define tableName '<yaml[SQLAPI_config].read[config.MySQL.tables.%type%SQLFLags]||dsqlapi_%type%sqlflags>'
+#    - define flagExists '<proc[SQLAPI_FlagExists].context[%tablename%|%owner%|%flagName%]>'
+
+    - if %type% == server {
+      - define flagExists '<proc[SQLAPI_flagExists].context[%tablename%|server|%flagName%]||offline>'
+      - if %flagExists% == offline {
+        - announce "<&b>SQLAPI<&co><&c> System Offline! Can not set %flagName% for %owner% to %flagValue% in %tableName%!"
+        }
+        else if %flagExists% {
+#        - announce "<&b>SQLAPI<&co><&c> Meow Updating %flagName% for %owner% to %flagValue% in %tableName%!"
+        - define statement "UPDATE %tableName% SET expiration = '%expiration%', value = '%flagValue%' WHERE flag='%flagName%';"
+        }
+        else {
+#        - announce "<&b>SQLAPI<&co><&c> Setting %flagName% for %owner% to %flagValue% in %tableName%!"
+        - define statement "INSERT INTO %tableName% (flag, value, expiration) VALUES ('%flagName%', '%flagValue%', '%expiration%');"
+        }
+      }
+      else {
+      - define flagExists '<proc[SQLAPI_flagExists].context[%tablename%|%owner%|%flagName%]||offline>'
+      - define uuid '<tern[<def[type].is[==].to[npc]>]:<def[owner].id>||<def[owner].uuid>>'
+      - if %flagExists% == offline {
+        - narrate "stub"
+        }
+        else if %flagExists% {
+#        - announce "<&b>SQLAPI<&co><&c> Updating %flagName% for %owner% to %flagValue% in %tableName%!"
+        - define statement "UPDATE %tableName% SET expiration = '%expiration%', value = '%flagValue%' WHERE flag='%flagName%' AND uuid='%uuid%';"
+        }
+        else {
+#        - announce "<&b>SQLAPI<&co><&c> Setting %flagName% for %owner% to %flagValue% in %tableName%!"
+        - define statement "INSERT INTO %tableName% (uuid, flag, value, expiration) VALUES ('%uuid%', '%flagName%', '%flagValue%', '%expiration%');"
+        }
+      }
+    - inject s@SQLManager_Offline p:managedUpdateStatement
+
+  set_list_flag:
+    - narrate "stub"
+
+  clear_flag:
+    - narrate "stub"
+
+  include_flag:
+    - narrate "stub"
+
+  remove_flag:
+    - narrate "stub"
+
+  increment_flag:
+    - narrate "stub"
+
+  decrement_flag:
+    - narrate "stub"
 
 
+
+SQLAPI_GetFlagRecord:
+# Usage: <proc[SQLAPI_GetFlagRecord].context[tablename|owner|flag]||null>
+  type: procedure
+  debug: false
+  definitions: tablename|owner|flag
+  script:
+    - define db '<yaml[SQLAPI_config].read[config.MySQL.database]||SQLAPI>'
+    - if <proc[SQLManager_ConnectionCheck].context[%db%]> {
+      - if %owner% == server {
+        - sql id:%db% "query:SELECT flag,value,expiration FROM %tablename% WHERE flag='%flag%';" save:record
+        }
+        else {
+        - define uuid '<tern[<def[owner].type.is[==].to[npc]>]:<def[owner].id>||<def[owner].uuid>>'
+        - sql id:%db% "query:SELECT flag,value,expiration FROM %tablename% WHERE flag='%flag%' AND uuid='%uuid%';" save:record
+        }
+      - define record '<entry[record].result>'
+      - if <def[record].size> == 1 {
+        - determine '<entry[record].result.get[1].split[/]||null>'
+        }
+        else {
+        - if <def[record].size> != 0 {
+          - announce to_console "<&b>SQLAPI<&co> <&c>%tablename% has <def[record].size> records of %flag% for %uuid%!"
+          - announce to_console "<&b>SQLAPI<&co> <&c>Only returning the first record!"
+          - determine '<entry[record].result.get[1].split[/]||null>'
+          }
+        }
+      }
+      else {
+      - announce to_console "<&b>SQLAPI<&co> <&c>Database Offline!"
+      - yaml set 'id:SQLManager_Offline' 'Offline_Cache.databases.%db%.status:offline'
+      - yaml 'savefile:SQLManager/cache.yml' 'id:SQLManager_Offline'
+      - run s@SQLManager p:restart def:SQLAPI|SQLAPI|%db%
+      - determine 'SQLAPI OFFLINE'
+      }
+
+
+SQLAPI_FlagExists:
+# Usage: <proc[SQLAPI_FlagExists].context[tablename|owner|flag]>
+  type: procedure
+  debug: false
+  definitions: tablename|owner|flag
+  script:
+    - define record '<proc[SQLAPI_GetFlagRecord].context[%tablename%|%owner%|%flag%]||null>'
+    - if '<def[record].equals_case_sensitive[SQLAPI OFFLINE]>' {
+      - queue clear
+      }
+    - if %record% != null {
+      - determine 'true'
+      }
+    - determine 'false'
+
+
+SQLAPI_IsExpired:
+# Usage: <proc[SQLAPI_IsExpired].context[tablename|owner|flag]>
+  type: procedure
+  debug: false
+  definitions: tablename|owner|flag
+  script:
+    - define record '<proc[SQLAPI_GetFlagRecord].context[%tablename%|%owner%|%flag%]||null>'
+    - if '<def[record].equals_case_sensitive[SQLAPI OFFLINE].not>' {
+      - queue clear
+      }
+    - if %record% != null {
+      - define expiration '<def[record].get[3].unescaped||null>'
+      - if %expiration% == null || %expiration% => <server.current_time_millis> {
+        - determine 'false'
+        }
+        else {
+        - determine 'true'
+        }
+      }
+
+
+SQLAPI_HasFlag:
+# Usage: <proc[SQLAPI_HasFlag].context[tablename|owner|flag]>
+  type: procedure
+  debug: false
+  definitions: tablename|owner|flag
+  script:
+    - define record '<proc[SQLAPI_GetFlagRecord].context[%tablename%|%owner%|%flag%]||null>'
+    - if '<def[record].equals_case_sensitive[SQLAPI OFFLINE].not>' {
+      - queue clear
+      }
+    - if %record% != null {
+      - define expiration '<def[record].get[3].unescaped||null>'
+      - if %expiration% != null && %expiration% <= <server.current_time_millis> {
+        - determine 'false'
+        }
+        else {
+        - determine 'true'
+        }
+      }
+      else {
+      - determine 'false'
+      }
 
 
 ################################################################################
