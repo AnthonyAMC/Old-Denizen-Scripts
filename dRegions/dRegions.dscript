@@ -2454,6 +2454,7 @@ dRegions:
     on player dies:
     - define world '<c.entity.world.name>'
     - define target '<c.entity.entity_type>'
+    - define sameRegion 'true'
     - if <c.entity.location.cuboids.is_empty||true> {
       - run player:<c.entity> s@dRegions_Flag_Spawn p:event-global def:%world% delay:1t
       - define FlagScript 's@dRegions_Flag_Player-KeepItems'
@@ -3215,16 +3216,24 @@ dRegions_Commands:
       permissions: []
     reload:
       usage: '/drg reload'
-      permissions: []
+      permissions:
+        - dregions.reload
     restart:
       usage: '/drg restart'
-      permissions: []
+      permissions:
+        - dregions.restart
     define:
       usage: '/drg define [ID] (g:group) (player)'
-      permissions: []
+      permissions:
+        - dregions.define
     redefine:
       usage: '/drg redefine [ID]'
-      permissions: []
+      permissions:
+        - dregions.redefine
+        - dregions.redefine.own.*
+        - dregions.redefine.own.%region%
+        - dregions.redefine.member.*
+        - dregions.redefine.member.%region%
     claim:
       usage: '/drg claim [ID]'
       permissions: []
@@ -3233,37 +3242,96 @@ dRegions_Commands:
       permissions: []
     info:
       usage: '/drg info [ID] -w world'
-      permissions: []
+      permissions:
+        - dregions.info
+        - dregions.info.own.*
+        - dregions.info.own.%region%
+        - dregions.info.member.*
+        - dregions.info.member.%region%
     addowner:
       usage: '/drg addowner [ID] g:group player -w world'
-      permissions: []
+      permissions:
+        - dregions.addowner
+        - dregions.addowner.own.*
+        - dregions.addowner.own.%region%
+        - dregions.addowner.member.*
+        - dregions.addowner.member.%region%
     removeowner:
       usage: '/drg removeowner [ID] g:group player -w world'
-      permissions: []
+      permissions:
+        - dregions.removeowner
+        - dregions.removeowner.own.*
+        - dregions.removeowner.own.%region%
+        - dregions.removeowner.member.*
+        - dregions.removeowner.member.%region%
     addmember:
       usage: '/drg addmember [ID] g:group player -w world'
-      permissions: []
+      permissions:
+        - dregions.addmember
+        - dregions.addmember.own.*
+        - dregions.addmember.own.%region%
+        - dregions.addmember.member.*
+        - dregions.addmember.member.%region%
     removemember:
       usage: '/drg removemember [ID] g:group player -w world'
-      permissions: []
+      permissions:
+        - dregions.removemember
+        - dregions.removemember.own.*
+        - dregions.removemember.own.%region%
+        - dregions.removemember.member.*
+        - dregions.removemember.member.%region%
     list:
       usage: '/drg list (page<&ns>) -h -r region -w world -p player'
-      permissions: []
+      permissions:
+        - dregions.list
+        - dregions.list.own.*
+        - dregions.list.own.%region%
+        - dregions.list.member.*
+        - dregions.list.member.%region%
     flag:
       usage: '/drg flag [ID] [flag] [value] -g group -w world'
-      permissions: []
+      permissions:
+        - dregions.flags.*
+        - dregions.flags.<def[flag]>
+        - dregions.flag
+        - dregions.flag.flags.*
+        - dregions.flag.flags.<def[flag]>
+        - dregions.flag.own.*
+        - dregions.flag.own.<def[region]>
+        - dregions.flag.member.*
+        - dregions.flag.member.<def[region]>
     setpriority:
       usage: '/drg setpriority [ID] [<&ns>]'
-      permissions: []
+      permissions:
+        - dregions.setpriority
+        - dregions.setpriority.own.*
+        - dregions.setpriority.own.%region%
+        - dregions.setpriority.member.*
+        - dregions.setpriority.member.%region%
     setparent:
       usage: '/drg setparent [ID] [parent]'
-      permissions: []
+      permissions:
+        - dregions.setparent
+        - dregions.setparent.own.*
+        - dregions.setparent.own.%region%
+        - dregions.setparent.member.*
+        - dregions.setparent.member.%region%
     teleport:
       usage: '/drg teleport [ID] -w world'
-      permissions: []
+      permissions:
+        - dregions.teleport
+        - dregions.teleport.own.*
+        - dregions.teleport.own.%region%
+        - dregions.teleport.member.*
+        - dregions.teleport.member.%region%
     remove:
       usage: '/drg remove [ID] -w world'
-      permissions: []
+      permissions:
+        - dregions.remove
+        - dregions.remove.own.*
+        - dregions.remove.own.%region%
+        - dregions.remove.member.*
+        - dregions.remove.member.%region%
 
   tab complete:
     - define args '<script.list_keys[commandArgs].alphanumeric.to_lowercase||li@>'
@@ -3953,6 +4021,7 @@ dRegions_Commands:
 
   tab_teleport:
   # TODO
+  # /drg teleport [ID] -w world
     - define result 'li@'
 
   tab_remove:
@@ -5049,7 +5118,32 @@ dRegions_Commands:
     - run s@dRegions_Msg 'def:<&f><&o>%name%<&7><&o> set parent to <&f><&o>%parent%'
 
   teleport:
+  # /drg teleport [ID] -w world
     - narrate "Stub"
+    - inject locally prerun instantly
+    # Check if region exists
+    - define exists '<proc[dRegions_RegionExists].context[%name%|%world%]>'
+    - if <def[exists]> == orphan {
+      - run s@dRegions_Msg 'def:<&c>There is an orphaned region by this name!'
+      - run s@dRegions_Msg 'def:<&c>Please notify an admin!'
+      - queue clear
+      }
+      else if !%exists% {
+      - run s@dRegions_Msg 'def:<&c>There is no region by this name!'
+      - queue clear
+      }
+    # Check if is owner
+    - if !<player.permission[dregions.admin]||false> && !<player.is_op> {
+      - if <proc[dRegions_IsOwner].context[%name%|%world%|<player>].not> {
+        - run s@dRegions_Msg 'def:<&c>You are not an owner of this region!'
+        - queue clear
+        }
+      }
+    # Check for teleport perms
+    - if !<player.permission[dregions.teleport]||false> && !<player.permission[dregions.teleport.own]||false> && !<player.permission[dregions.teleport.own.%name%]||false> {
+      - run s@dRegions_Msg 'def:<&c>You do not have permission!'
+      - queue clear
+      }
 
   remove:
   # /drg remove [ID] -w world
@@ -5104,7 +5198,7 @@ dRegions_Commands:
 #
   prerun:
   # Block of checks run before /most/ commands
-    - if !<player.permission[dRegions.%command%]||<player.is_op||false>> {
+    - if !<player.permission[dRegions.%command%]||false> && !<player.is_op> {
       - inject locally help
       - queue clear
       }
@@ -5307,6 +5401,7 @@ dRegions_Commands:
 
 #
 #  END dRegions Command Messages
+#
 #--------------------------------------
 #
 #  I want to test moving all command arguments to their own command script so I
@@ -5341,16 +5436,16 @@ dRegions_Commands:
 #      }
 #      else inject locally tab_%arg%
 #    - determine '<def[result]||li@>'
-
+#
 #  script:
 #  # We only want to run it if the user issues the alias /.sel command
 #    - if <c.alias.is[!=].to[.sel]||true> queue clear
-
+#
 #    - define command 'select'
 #    - define args 'li@help|reload|select|define|redefine|remove|addowner|addmember|setparent|setpriority'
 #    - if !<def[args].contains[%command%]> inject locally help instantly
 #      else inject locally %command% instantly
-
+#
 #  sel:
 #  # /drg select [ID]
 #    - inject locally prerun instantly
@@ -5378,7 +5473,7 @@ dRegions_Commands:
 #    - flag <player> dWEWand:!
 #    - flag <player> dWEWand:|:%min%|%max%
 #    - run s@dRegions_Msg 'def:<&7><&o>Selected <&f><&o>%name%'
-
+#
 #  prerun:
 #  # Block of checks run before /most/ commands
 #    - if !<player.permission[dRegions.%command%]||<player.is_op||false>> {
@@ -5420,46 +5515,82 @@ dRegions_Commands:
 #      - run s@dRegions_Msg 'def:<&c>You must specify a name!'
 #      - queue stop
 #      }
-
 #
 #  END dRegions Command Script Basics
 #--------------------------------------
 #
-#  dRegions Command TAB Completion
-#
-# Each of these subscripts handles TAB completion for the positional argument.
-#
-#
-#--------------------------------------
+################################################################################
 #
 #  dRegions Other Utilities
 #
 # Other Utility functions used throughout dRegions
 #
-##dRegions_HasPerm:
-##  I have to think about this more...
-##  # A procedure script to check if a player has any of the required permissions for a command
-##  # <proc[dRegions_HasPerm].context[command|player|region]>
-##  type: procedure
-##  definition: command|player|region
-##  constants:
-##    define:
-##    - admin
-##    - define
-##    redefine:
-##    - admin
-##    - redefine
-##    - redefine.own.*
-##    - redefine.own.%region%
-##    - redefine.member.*
-##    - redefine.member.%region%
-##
-##  script:
-##    - if '<def[region].exsits.not||true>' determine false
-##    - define perms <script.constant[%command%]>
+#--------------------------------------
+#
+#  Command Permission Check Procedure script
+#
+#   Used to check if a player has permission to use a command.
+#
+#  I have to think about this more...
+#  # A procedure script to check if a player has any of the required permissions for a command
+#  # <proc[dRegions_HasPerm_Command].context[command|player|region|option]>
+#
+dRegions_HasPerm_Command:
+  type: procedure
+  speed: 0
+  debug: false
+  definitions: command|player|region|option
+
+  script:
+    - if <player.permission[a]||null> == null {
+      - if <player.is_op> {
+        - determine true
+        }
+        else {
+        - determine false
+        }
+      }
+    - if %option% == null {
+      - inject locally permCheck
+      }
+      else {
+      - inject locally permCheck-%command%
+      }
+
+  permCheck:
+    - narrate "permCheck <s@dRegions_Commands.yaml_key[commandArgs.%command%.permissions]||li@>"
+    - if <player.is_op> || <player.permission[dregions.admin]> {
+      - determine true
+      }
+    - define perms "<s@dRegions_Commands.yaml_key[commandArgs.%command%.permissions]||li@>"
+    - foreach %perms% {
+      - define perm '<parse:%value%>'
+      - if <player.permission[%perm%]> {
+        - determine true
+        }
+      }
+    - determine false
+
+  permCheck-flag:
+    - define flag '%option%'
+    - narrate "permCheck-flag <parse:<s@dRegions_Commands.yaml_key[commandArgs.%command%.permissions]||li@>>"
+    - if <player.is_op> || <player.permission[dregions.admin]> {
+      - determine true
+      }
+    - define perms "<s@dRegions_Commands.yaml_key[commandArgs.%command%.permissions]||li@>"
+    - foreach %perms% {
+      - define perm '<parse:%value%>'
+      - narrate "<player.permission[%perm%]> %perm%"
+      - if <player.permission[%perm%]> {
+        - determine true
+        }
+      }
+    - determine false
 
 
 dRegions_RegionSort:
+# An attempt to sort regions by priority. The existing method is faster.
+# Keeping for reference and lulz.
   type: procedure
   definitions: region1|region2
   speed: 0
@@ -5571,6 +5702,7 @@ dRegions_RegionExists:
 
 
 dRegions_HighestPriority:
+# Used sparingly in some commands. Events implement this method directly.
   # Filter a list of regions by priority in descending order
   # <proc[dRegions_HighestPriority].context[world|region1,...]>
   type: procedure
@@ -5654,6 +5786,8 @@ dRegions_PlayerMatchRegionGroup:
 
 
 dRegions_CuboidIsWithinCuboid:
+# Not used anywhere since Denizen implemented its own which is faster.
+# Keeping for reference.
   # Checks if one cuboid is completely within another cuboid
   # <proc[dRegions_CuboidIsWithinCuboid].context[inner|outer]>
   type: procedure
@@ -5700,6 +5834,7 @@ dRegions_GetInheritedFlag:
 
 
 dRegions_CanUse_Block:
+# Not used internally. It's intended as part of an API for external scripts.
 # Procedure script to determine if a player can use a block at a location.
 # Will work for any block that can be interacted with (chests, doors, levers, etc.)
 # <proc[dRegions_CanUse_Block].context[player|location]>
@@ -5799,6 +5934,7 @@ dRegions_CanUse_Block:
 
 
 dRegions_getRelativeLocation:
+# Not used anywhere, but still fun to look at.
   # A procedure script to get a location relative to another location.
   # Specify the direction as   n s e w u d
   # <proc[dRegions_getRelativeLocation].context[location|direction|distance]>
@@ -5864,6 +6000,8 @@ dRegions_LineWrap:
 
 
 dRegions_WG_Importer:
+# Import WorldGuard regions to dRegions in one fell swoop.
+# Also covers popular WG extensions like WorldGuard Custom Flags and WorldRegions
   type: task
   debug: false
   speed: 0
@@ -6254,6 +6392,7 @@ dRegions_WG_Importer:
 #       }
 #
 dRegion_FlagTypeMatch:
+# Used to check if the value supplied when setting a flag is valid for the flag type.
   type: procedure
   speed: 0
   debug: false
