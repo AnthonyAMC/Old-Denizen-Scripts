@@ -96,6 +96,10 @@
 #
 #               C h a n g e l o g
 #
+# - v0.6  -  4/21/15
+#   - Fix error in /perkadmin command handler
+#   - Unescape sql return values
+#
 # - v0.6  -  4/13/15
 #   - Remove all escape characters
 #   - Fix an unbraced else statement
@@ -370,7 +374,7 @@ PerkPointSystem:
     - inject locally msgsHeader instantly
     - if <proc[SQLManager_ConnectionCheck].context[%db%]> {
       - sql id:%db% "query:SELECT playeruuid,created,totalvotes,pointsearned,pointsspent,pointsbalance FROM %tableName% WHERE playeruuid='%uuid%';" save:stats
-      - define stats '<entry[stats].result.get[1].split[/]||null>'
+      - define stats '<entry[stats].result.get[1].split[/].unescaped||null>'
       - inject locally msgsStats instantly
       }
       else {
@@ -431,7 +435,7 @@ PerkPointSystem:
 
   getPlayerPointRecord:
     - sql id:%db% "query:SELECT * FROM %tablename% WHERE playeruuid='%uuid%';" save:record
-    - define record '<entry[record].result.get[1].split[/]||null>'
+    - define record '<entry[record].result.get[1].split[/].unescaped||null>'
     - define playerUuid '<def[record].get[1]||null>'
     - define created '<def[record].get[2]||null>'
     - define totalVotes '<def[record].get[3]||null>'
@@ -442,7 +446,7 @@ PerkPointSystem:
   checkPlayerRecord:
     - if <proc[SQLManager_ConnectionCheck].context[%db%]> {
       - sql id:%db% "query:SELECT COUNT(playeruuid) FROM %tablename% WHERE playeruuid='%uuid%';" save:idcount
-      - define idcount '<entry[idcount].result.get[1].split[/].get[1]||null>'
+      - define idcount '<entry[idcount].result.get[1].split[/].get[1].unescaped||null>'
       - if <def[idcount].is[==].to[0]> {
         - announce "<&b>PerkPoints<&co> <&a>Creating player record for %uuid%" to_console
         - define statement "INSERT INTO %tableName% (playeruuid) VALUES ('%uuid%');"
@@ -473,7 +477,7 @@ PerkPointSystem:
       - sql id:%db% "query:SELECT * FROM %transactionTable% WHERE expires='1' AND expired='0' AND activated='1' AND expiredate<='%now%' AND servers='%serverName%';" save:packList
       - define packList '<entry[packList].result||null>'
       - foreach %packList% {
-        - define packInfo '<def[value].split[/]>'
+        - define packInfo '<def[value].split[/].unescaped>'
         - if <def[packInfo].is_empty||true> foreach next
         - define id '<def[packInfo].get[1]>'
         - define uuid '<def[packInfo].get[2]>'
@@ -497,7 +501,7 @@ PerkPointSystem:
       - sql id:%db% "query:SELECT * FROM %transactionTable% WHERE playeruuid='%uuid%' AND expires='1' AND expired='0' AND activated='1' AND servers='%serverName%' AND expiredate<='%now%';" save:packList
       - define packList '<entry[packList].result||null>'
       - foreach %packList% {
-        - define packInfo '<def[value].split[/]>'
+        - define packInfo '<def[value].split[/].unescaped>'
         - if <def[packInfo].is_empty||true> foreach next
         - define id '<def[packInfo].get[1]>'
         - define pack '<def[packInfo].get[3]>'
@@ -522,7 +526,7 @@ PerkPointSystem:
     - define yamlName 'PerkPoints'
     - define scriptName '<script.name>'
     - define username '<context.username.sql_escaped||null>'
-    - define uuid '<tern[<util.player_is_valid[%username%]>]:<def[username].as_player.uuid> || null>'
+    - define uuid '<tern[<server.player_is_valid[%username%]>]:<def[username].as_player.uuid> || null>'
     - define service '<context.service.sql_escaped.replace[.].with[-]||null>'
     - define time '<context.time||null>'
     - if <def[uuid].is[==].to[null]> {
@@ -572,7 +576,7 @@ PerkPointSystem:
         }
         else {
         - foreach %services% {
-          - define service '<def[value].replace[/]>'
+          - define service '<def[value].replace[/].unescaped>'
           - narrate "<&5>|<&sp><&f>%loop_index%<&co> <def[service].replace[-].with[.].unescaped>"
           }
         }
@@ -1115,7 +1119,7 @@ PerkPointSystem:
       else {
       - if <def[limit].is[MORE].than[0]> {
         - sql id:%db% "query:SELECT COUNT(*) FROM %transactionTable% WHERE playeruuid='%uuid%' AND package='%pack%' AND servers='%serverName%';" save:purchased
-        - define purchased '<entry[purchased].result.get[1].split[/].get[1]||null>'
+        - define purchased '<entry[purchased].result.get[1].split[/].get[1].unescaped||null>'
         - if <def[purchased].is[OR_MORE].than[%limit%]> {
           - define fail 'true'
           - narrate "<&5>|<&sp> <&c>You have already purchased this Perk Package %limit% times!"
@@ -1130,7 +1134,7 @@ PerkPointSystem:
       else {
       - if <def[concurrentLimit].is[MORE].than[0]> {
         - sql id:%db% "query:SELECT COUNT(*) FROM %transactionTable% WHERE playeruuid='%uuid%' AND package='%pack%' AND servers='%serverName%' AND expires='1' AND expired='0';" save:purchased
-        - define purchased '<entry[purchased].result.get[1].split[/].get[1]||null>'
+        - define purchased '<entry[purchased].result.get[1].split[/].get[1].unescaped||null>'
         - if <def[purchased].is[OR_MORE].than[%concurrentLimit%]> {
           - define fail 'true'
           - narrate "<&5>|<&sp> <&c>You can only have %concurrentLimit% %pack% packages active at once!"
@@ -1145,7 +1149,7 @@ PerkPointSystem:
       else {
       - if !<def[prerequisites].is_empty> {
         - sql id:%db% "query:SELECT COUNT(DISTINCT package) FROM %transactionTable% WHERE package IN (<&sq><def[prerequisites].comma_separated.replace[, ].with[<&sq>, <&sq>]><&sq>) AND servers='%serverName%';" save:purchased
-        - define purchased '<entry[purchased].result.get[1].split[/].get[1]||null>'
+        - define purchased '<entry[purchased].result.get[1].split[/].get[1].unescaped||null>'
         - if <def[prerequisites].size.is[MORE].than[%purchased%]> {
           - define fail 'true'
           - narrate "<&5>|<&sp> <&c>You do not have all of the prerequisite packages!"
@@ -1264,7 +1268,7 @@ PerkPointSystem:
       - narrate "<&5>|<&sp> <&3>Activating %pack%..."
       - narrate "<&5>|"
       - narrate "<&5>|<&sp> <&f>Thank you for showing your support!"
-      - define id "<def[packList].get[1].split[/].get[1]>"
+      - define id "<def[packList].get[1].split[/].get[1].unescaped>"
       - define yamlName 'PerkPoints'
       - define scriptName '<script.name>'
       - inject locally msgsFooter instantly
@@ -1511,18 +1515,13 @@ PerkPointSystem:
       - run s@SQLManager p:restart def:%yamlName%|%scriptName%|%db%
       - queue stop
       }
-    - if <def[arg1].is[==].to[service]>
-      || <def[arg1].is[==].to[-s]> {
+    - if <def[arg1].is[==].to[service]> || <def[arg1].is[==].to[-s]> {
       - define arg2 '<c.args.get[2].escaped||null>'
-      - if <def[arg2].is[==].to[register]>
-        || <def[arg2].is[==].to[-r]> {
+      - if <def[arg2].is[==].to[register]> || <def[arg2].is[==].to[-r]> {
         - inject locally registerService
         }
-        else {
-        - if <def[arg2].is[==].to[unregister]>
-          || <def[arg2].is[==].to[-ur]> {
-          - inject locally unRegisterService
-          }
+        else if <def[arg2].is[==].to[unregister]> || <def[arg2].is[==].to[-ur]> {
+        - inject locally unRegisterService
         }
         else {
         - narrate format:CmdSynFormat "/perkadmin service <&lt>register/unregister<&gt> <&lt>service<&gt> <&lb>pointValue<&rb> <&lb>url<&rb>"
@@ -1590,7 +1589,7 @@ PerkPointSystem:
     - if <def[arg1].is[==].to[stats]> {
       - if <def[arg2].is[!=].to[null]>
         && <player.has_permission[perkpoints.admin]> {
-        - if <util.player_is_valid[%arg2%]> {
+        - if <server.player_is_valid[%arg2%]> {
           - define uuid '<def[arg2].as_player.uuid||null>'
           }
           else {
@@ -1636,7 +1635,7 @@ PerkPointSystem:
       - define player '<c.args.get[3].escaped||null>'
       - define pointValue '<c.args.get[4].escaped||null>'
       - if <def[player].is[==].to[null]>
-        || !<util.player_is_valid[%player%]> {
+        || !<server.player_is_valid[%player%]> {
         - narrate "<&b>PerkPoints<&co> <&c>%player% is an unknown player!"
         - queue stop
         }
