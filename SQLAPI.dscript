@@ -164,6 +164,10 @@
 #
 #               C h a n g e l o g
 #
+# - v0.1.1  -  4/27/15
+#   - Correctly distinguish between existent and expired flags when editing lists
+#   - Math functions. Can now increment, decrement, mulitiply, and divide flags
+#
 # - v0.1.1  -  4/26/15
 #   - Make <proc[SQLAPI_GetFlag].context[owner|flag]||null> handle lists natively
 #   - Set list function works, may be expanded/revised at a later date
@@ -235,7 +239,7 @@ SQLAPI:
     increment: '++|+'
     decrement: '--|-'
     multiply: '**|*'
-    divide: '//|/'
+    divide: '&fs&fs|&fs'
     clear: '&exc'
 
   events:
@@ -364,7 +368,7 @@ SQLAPI:
         - define flagValue '<def[preparse].get[2].to[%size%].replace[li@].sql_escaped||null>'
         }
         else if <li@increment|decrement|multiply|divide> contains %action% {
-        - if %flagValue% !matches number {
+        - if %flagValue% !matches decimal {
           - narrate "<&b>SQLAPI<&co><&c> %flagValue% is not a valid number!"
           - queue clear
           }
@@ -580,19 +584,20 @@ SQLAPI:
       - queue clear
       }
     - if %record% != null {
+      - define flagExists 'true'
       - define expires '<def[record].get[3].unescaped||0>'
       - if %expires% == 0 || %expires% > <server.current_time_millis> {
-        - define flagExists 'true'
+        - define isExpired 'false'
         }
         else {
-        - define flagExists 'false'
+        - define isExpired 'true'
         }
       }
       else {
       - define flagExists 'false'
       }
 
-    - if %flagExists% {
+    - if %flagExists% && !%isExpired% {
       - define flagVal '<def[record].get[2].unescaped||null>'
       - if <def[flagVal].starts_with[|]> {
         - define flagVal '<def[flagVal].as_list>'
@@ -636,19 +641,20 @@ SQLAPI:
       - queue clear
       }
     - if %record% != null {
+      - define flagExists 'true'
       - define expires '<def[record].get[3].unescaped||0>'
       - if %expires% == 0 || %expires% > <server.current_time_millis> {
-        - define flagExists 'true'
+        - define isExpired 'false'
         }
         else {
-        - define flagExists 'false'
+        - define isExpired 'true'
         }
       }
       else {
       - define flagExists 'false'
       }
 
-    - if %flagExists% {
+    - if %flagExists% && !%isExpired% {
       - define flagVal '<def[record].get[2].unescaped||null>'
       - if <def[flagVal].starts_with[|]> {
         - define flagVal '<def[flagVal].as_list>'
@@ -750,21 +756,300 @@ SQLAPI:
     - inject s@SQLManager_Offline p:managedUpdateStatement
 
   increment_flag:
-    - narrate "stub"
+    - if %flagValue% !matches decimal {
+      - announce to_console "<&b>SQLAPI<&co><&c> %flagValue% is not a valid number! Not incrementing %flagName% for %owner%!"
+      - if <player.is[!=].to[null]||false> {
+        - narrate "<&b>SQLAPI<&co><&c> %flagValue% is not a valid number! Not incrementing %flagName% for %owner%!"
+        }
+      - queue clear
+      }
+    - define yamlName 'SQLAPI'
+    - define scriptName 'SQLAPI'
+    - define db '<yaml[SQLAPI_config].read[config.MySQL.database]||SQLAPI>'
+    - define tableName '<yaml[SQLAPI_config].read[config.MySQL.tables.%type%SQLFLags]||dsqlapi_%type%sqlflags>'
+    - define record '<proc[SQLAPI_GetFlagRecord].context[%owner%|%flagName%]||null>'
+    - if '<def[record].equals_case_sensitive[SQLAPI OFFLINE]>' {
+      - announce to_console "<&b>SQLAPI<&co><&c> System Offline! Can not set %flagName% for %owner% to %flagValue% in %tableName%!"
+      - queue clear
+      }
+    - if %record% != null {
+      - define flagExists 'true'
+      - define expires '<def[record].get[3].unescaped||0>'
+      - if %expires% == 0 || %expires% > <server.current_time_millis> {
+        - define isExpired 'false'
+        }
+        else {
+        - define isExpired 'true'
+        }
+      }
+      else {
+      - define flagExists 'false'
+      }
+
+    - if %flagExists% {
+      - define flagVal '<def[record].get[2].unescaped||null>'
+      - if %flagVal% !matches decimal {
+        - announce to_console "<&b>SQLAPI<&co> <&c>Not incrementing %flagName% for %owner%! Current value %flagVal% is not numeric!"
+        - if <player.is[!=].to[null]||false> {
+          - narrate "<&b>SQLAPI<&co> <&c>Not incrementing %flagName% for %owner%! Current value %flagVal% is not numeric!"
+          }
+        - queue clear
+        }
+      }
+
+    - if %type% == server {
+      - if %flagExists% {
+        - if %isExpired% {
+          - define statement "UPDATE %tableName% SET expiration = '%expiration%', value = '%flagValue%' WHERE flag='%flagName%';"
+          }
+          else {
+          - define statement "UPDATE %tableName% SET expiration = '%expiration%', value = value + '%flagValue%' WHERE flag='%flagName%';"
+          }
+        }
+        else {
+        - define statement "INSERT INTO %tableName% (flag, value, expiration) VALUES ('%flagName%', '%flagValue%', '%expiration%');"
+        }
+      }
+      else {
+      - define uuid '<tern[<def[type].is[==].to[npc]>]:<def[owner].id>||<def[owner].uuid>>'
+      - if %flagExists% {
+        - if %isExpired% {
+          - define statement "UPDATE %tableName% SET expiration = '%expiration%', value = '%flagValue%' WHERE flag='%flagName%' AND uuid='%uuid%';"
+          }
+          else {
+          - define statement "UPDATE %tableName% SET expiration = '%expiration%', value = value + '%flagValue%' WHERE flag='%flagName%' AND uuid='%uuid%';"
+          }
+        }
+        else {
+        - define statement "INSERT INTO %tableName% (uuid, flag, value, expiration) VALUES ('%uuid%', '%flagName%', '%flagValue%', '%expiration%');"
+        }
+      }
+    - inject s@SQLManager_Offline p:managedUpdateStatement
 
   decrement_flag:
-    - narrate "stub"
+    - if %flagValue% !matches decimal {
+      - announce to_console "<&b>SQLAPI<&co><&c> %flagValue% is not a valid number! Not decrementing %flagName% for %owner%!"
+      - if <player.is[!=].to[null]||false> {
+        - narrate "<&b>SQLAPI<&co><&c> %flagValue% is not a valid number! Not decrementing %flagName% for %owner%!"
+        }
+      - queue clear
+      }
+    - define yamlName 'SQLAPI'
+    - define scriptName 'SQLAPI'
+    - define db '<yaml[SQLAPI_config].read[config.MySQL.database]||SQLAPI>'
+    - define tableName '<yaml[SQLAPI_config].read[config.MySQL.tables.%type%SQLFLags]||dsqlapi_%type%sqlflags>'
+    - define record '<proc[SQLAPI_GetFlagRecord].context[%owner%|%flagName%]||null>'
+    - if '<def[record].equals_case_sensitive[SQLAPI OFFLINE]>' {
+      - announce to_console "<&b>SQLAPI<&co><&c> System Offline! Can not set %flagName% for %owner% to %flagValue% in %tableName%!"
+      - queue clear
+      }
+    - if %record% != null {
+      - define flagExists 'true'
+      - define expires '<def[record].get[3].unescaped||0>'
+      - if %expires% == 0 || %expires% > <server.current_time_millis> {
+        - define isExpired 'false'
+        }
+        else {
+        - define isExpired 'true'
+        }
+      }
+      else {
+      - define flagExists 'false'
+      }
+
+    - if %flagExists% {
+      - define flagVal '<def[record].get[2].unescaped||null>'
+      - if %flagVal% !matches decimal {
+        - announce to_console "<&b>SQLAPI<&co> <&c>Not decrementing %flagName% for %owner%! Current value %flagVal% is not numeric!"
+        - if <player.is[!=].to[null]||false> {
+          - narrate "<&b>SQLAPI<&co> <&c>Not decrementing %flagName% for %owner%! Current value %flagVal% is not numeric!"
+          }
+        - queue clear
+        }
+      }
+
+    - if %type% == server {
+      - if %flagExists% {
+        - if %isExpired% {
+          - define statement "UPDATE %tableName% SET expiration = '%expiration%', value = '%flagValue%' WHERE flag='%flagName%';"
+          }
+          else {
+          - define statement "UPDATE %tableName% SET expiration = '%expiration%', value = value - '%flagValue%' WHERE flag='%flagName%';"
+          }
+        }
+        else {
+        - define statement "INSERT INTO %tableName% (flag, value, expiration) VALUES ('%flagName%', '%flagValue%', '%expiration%');"
+        }
+      }
+      else {
+      - define uuid '<tern[<def[type].is[==].to[npc]>]:<def[owner].id>||<def[owner].uuid>>'
+      - if %flagExists% {
+        - if %isExpired% {
+          - define statement "UPDATE %tableName% SET expiration = '%expiration%', value = '%flagValue%' WHERE flag='%flagName%' AND uuid='%uuid%';"
+          }
+          else {
+          - define statement "UPDATE %tableName% SET expiration = '%expiration%', value = value - '%flagValue%' WHERE flag='%flagName%' AND uuid='%uuid%';"
+          }
+        }
+        else {
+        - define statement "INSERT INTO %tableName% (uuid, flag, value, expiration) VALUES ('%uuid%', '%flagName%', '%flagValue%', '%expiration%');"
+        }
+      }
+    - inject s@SQLManager_Offline p:managedUpdateStatement
 
   multiply_flag:
-    - narrate "stub"
+    - if %flagValue% !matches decimal {
+      - announce to_console "<&b>SQLAPI<&co><&c> %flagValue% is not a valid number! Not multiplying %flagName% for %owner%!"
+      - if <player.is[!=].to[null]||false> {
+        - narrate "<&b>SQLAPI<&co><&c> %flagValue% is not a valid number! Not multiplying %flagName% for %owner%!"
+        }
+      - queue clear
+      }
+    - define yamlName 'SQLAPI'
+    - define scriptName 'SQLAPI'
+    - define db '<yaml[SQLAPI_config].read[config.MySQL.database]||SQLAPI>'
+    - define tableName '<yaml[SQLAPI_config].read[config.MySQL.tables.%type%SQLFLags]||dsqlapi_%type%sqlflags>'
+    - define record '<proc[SQLAPI_GetFlagRecord].context[%owner%|%flagName%]||null>'
+    - if '<def[record].equals_case_sensitive[SQLAPI OFFLINE]>' {
+      - announce to_console "<&b>SQLAPI<&co><&c> System Offline! Can not set %flagName% for %owner% to %flagValue% in %tableName%!"
+      - queue clear
+      }
+    - if %record% != null {
+      - define flagExists 'true'
+      - define expires '<def[record].get[3].unescaped||0>'
+      - if %expires% == 0 || %expires% > <server.current_time_millis> {
+        - define isExpired 'false'
+        }
+        else {
+        - define isExpired 'true'
+        }
+      }
+      else {
+      - define flagExists 'false'
+      }
+
+    - if %flagExists% {
+      - define flagVal '<def[record].get[2].unescaped||null>'
+      - if %flagVal% !matches decimal {
+        - announce to_console "<&b>SQLAPI<&co> <&c>Not multiplying %flagName% for %owner%! Current value %flagVal% is not numeric!"
+        - if <player.is[!=].to[null]||false> {
+          - narrate "<&b>SQLAPI<&co> <&c>Not multiplying %flagName% for %owner%! Current value %flagVal% is not numeric!"
+          }
+        - queue clear
+        }
+      }
+
+    - if %type% == server {
+      - if %flagExists% {
+        - if %isExpired% {
+          - define statement "UPDATE %tableName% SET expiration = '%expiration%', value = '%flagValue%' WHERE flag='%flagName%';"
+          }
+          else {
+          - define statement "UPDATE %tableName% SET expiration = '%expiration%', value = value * '%flagValue%' WHERE flag='%flagName%';"
+          }
+        }
+        else {
+        - define statement "INSERT INTO %tableName% (flag, value, expiration) VALUES ('%flagName%', '%flagValue%', '%expiration%');"
+        }
+      }
+      else {
+      - define uuid '<tern[<def[type].is[==].to[npc]>]:<def[owner].id>||<def[owner].uuid>>'
+      - if %flagExists% {
+        - if %isExpired% {
+          - define statement "UPDATE %tableName% SET expiration = '%expiration%', value = '%flagValue%' WHERE flag='%flagName%' AND uuid='%uuid%';"
+          }
+          else {
+          - define statement "UPDATE %tableName% SET expiration = '%expiration%', value = value * '%flagValue%' WHERE flag='%flagName%' AND uuid='%uuid%';"
+          }
+        }
+        else {
+        - define statement "INSERT INTO %tableName% (uuid, flag, value, expiration) VALUES ('%uuid%', '%flagName%', '%flagValue%', '%expiration%');"
+        }
+      }
+    - inject s@SQLManager_Offline p:managedUpdateStatement
 
   divide_flag:
-    - narrate "stub"
+    - if %flagValue% !matches decimal {
+      - announce to_console "<&b>SQLAPI<&co><&c> %flagValue% is not a valid number! Not dividing %flagName% for %owner%!"
+      - if <player.is[!=].to[null]||false> {
+        - narrate "<&b>SQLAPI<&co><&c> %flagValue% is not a valid number! Not dividing %flagName% for %owner%!"
+        }
+      - queue clear
+      }
+    - if %flagValue% == 0 {
+      - announce to_console "<&b>SQLAPI<&co><&c> Can not divide by 0! Not dividing %flagName% for %owner%!"
+      - if <player.is[!=].to[null]||false> {
+        - narrate "<&b>SQLAPI<&co><&c> Can not divide by 0! Not dividing %flagName% for %owner%!"
+        }
+      - queue clear
+      }
+    - define yamlName 'SQLAPI'
+    - define scriptName 'SQLAPI'
+    - define db '<yaml[SQLAPI_config].read[config.MySQL.database]||SQLAPI>'
+    - define tableName '<yaml[SQLAPI_config].read[config.MySQL.tables.%type%SQLFLags]||dsqlapi_%type%sqlflags>'
+    - define record '<proc[SQLAPI_GetFlagRecord].context[%owner%|%flagName%]||null>'
+    - if '<def[record].equals_case_sensitive[SQLAPI OFFLINE]>' {
+      - announce to_console "<&b>SQLAPI<&co><&c> System Offline! Can not set %flagName% for %owner% to %flagValue% in %tableName%!"
+      - queue clear
+      }
+    - if %record% != null {
+      - define flagExists 'true'
+      - define expires '<def[record].get[3].unescaped||0>'
+      - if %expires% == 0 || %expires% > <server.current_time_millis> {
+        - define isExpired 'false'
+        }
+        else {
+        - define isExpired 'true'
+        }
+      }
+      else {
+      - define flagExists 'false'
+      }
+
+    - if %flagExists% {
+      - define flagVal '<def[record].get[2].unescaped||null>'
+      - if %flagVal% !matches decimal {
+        - announce to_console "<&b>SQLAPI<&co> <&c>Not dividing %flagName% for %owner%! Current value %flagVal% is not numeric!"
+        - if <player.is[!=].to[null]||false> {
+          - narrate "<&b>SQLAPI<&co> <&c>Not dividing %flagName% for %owner%! Current value %flagVal% is not numeric!"
+          }
+        - queue clear
+        }
+      }
+
+    - if %type% == server {
+      - if %flagExists% {
+        - if %isExpired% {
+          - define statement "UPDATE %tableName% SET expiration = '%expiration%', value = '%flagValue%' WHERE flag='%flagName%';"
+          }
+          else {
+          - define statement "UPDATE %tableName% SET expiration = '%expiration%', value = value / '%flagValue%' WHERE flag='%flagName%';"
+          }
+        }
+        else {
+        - define statement "INSERT INTO %tableName% (flag, value, expiration) VALUES ('%flagName%', '%flagValue%', '%expiration%');"
+        }
+      }
+      else {
+      - define uuid '<tern[<def[type].is[==].to[npc]>]:<def[owner].id>||<def[owner].uuid>>'
+      - if %flagExists% {
+        - if %isExpired% {
+          - define statement "UPDATE %tableName% SET expiration = '%expiration%', value = '%flagValue%' WHERE flag='%flagName%' AND uuid='%uuid%';"
+          }
+          else {
+          - define statement "UPDATE %tableName% SET expiration = '%expiration%', value = value / '%flagValue%' WHERE flag='%flagName%' AND uuid='%uuid%';"
+          }
+        }
+        else {
+        - define statement "INSERT INTO %tableName% (uuid, flag, value, expiration) VALUES ('%uuid%', '%flagName%', '%flagValue%', '%expiration%');"
+        }
+      }
+    - inject s@SQLManager_Offline p:managedUpdateStatement
 
 #########################
 # Command messages
   msg_set:
-    - narrate "<&b>SQLAPI<&co><&7> Set <def[flagName].unescaped> to <def[flagValue].unescaped.after[<&pipe>]> for %owner%<tern[<def[expiration].is[==].to[0]>]:<&dot>||<&dot> Expires in <def[duration].split[<&co>].get[2].as_duration.formatted><&dot>>"
+    - narrate "<&b>SQLAPI<&co><&7> Set <def[flagName].unescaped> to <def[flagValue].unescaped> for %owner%<tern[<def[expiration].is[==].to[0]>]:<&dot>||<&dot> Expires in <def[duration].split[<&co>].get[2].as_duration.formatted><&dot>>"
 
   msg_clear:
     - narrate "<&b>SQLAPI<&co><&7> Cleared <def[flagName].unescaped> for %owner%"
