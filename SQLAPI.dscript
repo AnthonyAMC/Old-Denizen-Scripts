@@ -164,9 +164,14 @@
 #
 #               C h a n g e l o g
 #
+# - v0.1.1  -  4/28/15
+#   - List index manipulations
+#     - Insert: Inserts additional values starting at the specified index
+#     - Set: Inserts additional values replacing the specified index
+#
 # - v0.1.1  -  4/27/15
 #   - Correctly distinguish between existent and expired flags when editing lists
-#   - Math functions. Can now increment, decrement, mulitiply, and divide flags
+#   - Math functions. Can now increment, decrement, multiply, and divide flags
 #
 # - v0.1.1  -  4/26/15
 #   - Make <proc[SQLAPI_GetFlag].context[owner|flag]||null> handle lists natively
@@ -312,7 +317,7 @@ SQLAPI:
       }
     - determine passively FULFILLED
     - if <c.args.size> < 2 {
-      - narrate "<&b>SQLAPI<&co><&c> /sqlflag <&lt>owner<&gt> flagName(<&co>action)(<&co>value) (expiration<&co>duration)"
+      - narrate "<&b>SQLAPI<&co><&c> /sqlflag <&lt>owner<&gt> flagName(<&co>action)(<&co>value) (duration<&co>duration)"
       - queue clear
       }
 
@@ -337,6 +342,13 @@ SQLAPI:
     - define preparse '<c.args.get[2].escaped.split[&co]||null>'
     - define size '<def[preparse].size>'
     - define flagName '<def[preparse].get[1].to_lowercase.sql_escaped||null>'
+    - if %flagName% contains &lb {
+      - define index '<def[flagName].after[&lb].replace[&rb]>'
+      - define flagName '<def[flagName].before[&lb]>'
+      - if <def[index].length> == 0 || <def[index].is[matches].to[number].not||true> {
+        - define index:!
+        }
+      }
 
     - if %size% == 1 {
       - define flagValue 'true'
@@ -347,6 +359,9 @@ SQLAPI:
       - inject locally parseAction
       - if %action% == set {
         - define flagValue '<def[preparse].get[2].unescaped.sql_escaped>'
+        - if <def[index].exists> {
+          - define action 'set_index'
+          }
         }
         else if <li@increment|decrement|multiply|divide> contains %action% {
         - define flagValue '1'
@@ -361,11 +376,14 @@ SQLAPI:
         }
       }
       else {
-      - define flagValue '<def[preparse].get[3].to[%size%].unescaped.replace[li@].sql_escaped||null>'
+      - define flagValue '<c.args.get[2].after[<def[preparse].get[2].unescaped><&co>].sql_escaped||null>'
       - define action '<def[preparse].get[2]||null>'
       - inject locally parseAction
       - if %action% == set {
-        - define flagValue '<def[preparse].get[2].to[%size%].replace[li@].sql_escaped||null>'
+        - define flagValue '<c.args.get[2].after[<def[preparse].get[1].unescaped><&co>].sql_escaped||null>'
+        - if <def[index].exists> {
+          - define action 'set_index'
+          }
         }
         else if <li@increment|decrement|multiply|divide> contains %action% {
         - if %flagValue% !matches decimal {
@@ -373,17 +391,15 @@ SQLAPI:
           - queue clear
           }
         }
-        else if %action% == clear {
-        - define flagValue 'null'
-        }
         else if %action% == set_list {
-        - define flagValue '<def[flagValue].unescaped>'
+        - if <def[index].exists> {
+          - define action 'set_index'
+          }
         }
         else if %action% == include {
-        - define flagValue '<def[flagValue].unescaped>'
-        }
-        else if %action% == remove {
-        - define flagValue '<def[flagValue].unescaped>'
+        - if <def[index].exists> {
+          - define action 'insert_index'
+          }
         }
       }
 
@@ -395,7 +411,6 @@ SQLAPI:
         - define expiration '0'
         }
         else {
-
         - define expiration '<def[expiration].in_milliseconds.add_int[<server.current_time_milliseconds>]>'
         }
       }
@@ -573,6 +588,64 @@ SQLAPI:
       }
     - inject s@SQLManager_Offline p:managedUpdateStatement
 
+  set_index_flag:
+    - define yamlName 'SQLAPI'
+    - define scriptName 'SQLAPI'
+    - define db '<yaml[SQLAPI_config].read[config.MySQL.database]||SQLAPI>'
+    - define tableName '<yaml[SQLAPI_config].read[config.MySQL.tables.%type%SQLFLags]||dsqlapi_%type%sqlflags>'
+    - define record '<proc[SQLAPI_GetFlagRecord].context[%owner%|%flagName%]||null>'
+    - if '<def[record].equals_case_sensitive[SQLAPI OFFLINE]>' {
+      - announce to_console "<&b>SQLAPI<&co><&c> System Offline! Can not set index %index% %flagName% for %owner% to %flagValue% in %tableName%!"
+      - queue clear
+      }
+    - if %record% != null {
+      - define flagExists 'true'
+      - define expires '<def[record].get[3].unescaped||0>'
+      - if %expires% == 0 || %expires% > <server.current_time_millis> {
+        - define isExpired 'false'
+        }
+        else {
+        - define isExpired 'true'
+        }
+      }
+      else {
+      - define flagExists 'false'
+      - define isExpired 'true'
+      }
+
+    - if %flagExists% && !%isExpired% {
+      - define flagVal '<def[record].get[2].unescaped||null>'
+      - if <def[flagVal].starts_with[|]> {
+        - define flagVal '<def[flagVal].as_list>'
+        - define flagValue '<&pipe><def[flagVal].get[2].to[<def[flagVal].size>].set[%flagValue%].at[%index%].replace[li@]>'
+        }
+        else {
+        - define flagValue '<&pipe>%flagValue%'
+        }
+      }
+      else {
+      - define flagValue '<&pipe>%flagValue%'
+      }
+
+    - if %type% == server {
+      - if %flagExists% {
+        - define statement "UPDATE %tableName% SET expiration = '%expiration%', value = '%flagValue%' WHERE flag='%flagName%';"
+        }
+        else {
+        - define statement "INSERT INTO %tableName% (flag, value, expiration) VALUES ('%flagName%', '%flagValue%', '%expiration%');"
+        }
+      }
+      else {
+      - define uuid '<tern[<def[type].is[==].to[npc]>]:<def[owner].id>||<def[owner].uuid>>'
+      - if %flagExists% {
+        - define statement "UPDATE %tableName% SET expiration = '%expiration%', value = '%flagValue%' WHERE flag='%flagName%' AND uuid='%uuid%';"
+        }
+        else {
+        - define statement "INSERT INTO %tableName% (uuid, flag, value, expiration) VALUES ('%uuid%', '%flagName%', '%flagValue%', '%expiration%');"
+        }
+      }
+    - inject s@SQLManager_Offline p:managedUpdateStatement
+
   set_list_flag:
     - define yamlName 'SQLAPI'
     - define scriptName 'SQLAPI'
@@ -595,6 +668,7 @@ SQLAPI:
       }
       else {
       - define flagExists 'false'
+      - define isExpired 'true'
       }
 
     - if %flagExists% && !%isExpired% {
@@ -637,7 +711,7 @@ SQLAPI:
     - define tableName '<yaml[SQLAPI_config].read[config.MySQL.tables.%type%SQLFLags]||dsqlapi_%type%sqlflags>'
     - define record '<proc[SQLAPI_GetFlagRecord].context[%owner%|%flagName%]||null>'
     - if '<def[record].equals_case_sensitive[SQLAPI OFFLINE]>' {
-      - announce to_console "<&b>SQLAPI<&co><&c> System Offline! Can not set %flagName% for %owner% to %flagValue% in %tableName%!"
+      - announce to_console "<&b>SQLAPI<&co><&c> System Offline! Can not include %flagValue% in %flagName% for %owner% in %tableName%!"
       - queue clear
       }
     - if %record% != null {
@@ -652,6 +726,7 @@ SQLAPI:
       }
       else {
       - define flagExists 'false'
+      - define isExpired 'true'
       }
 
     - if %flagExists% && !%isExpired% {
@@ -687,6 +762,65 @@ SQLAPI:
       }
     - inject s@SQLManager_Offline p:managedUpdateStatement
 
+  insert_index_flag:
+    - define yamlName 'SQLAPI'
+    - define scriptName 'SQLAPI'
+    - define db '<yaml[SQLAPI_config].read[config.MySQL.database]||SQLAPI>'
+    - define tableName '<yaml[SQLAPI_config].read[config.MySQL.tables.%type%SQLFLags]||dsqlapi_%type%sqlflags>'
+    - define record '<proc[SQLAPI_GetFlagRecord].context[%owner%|%flagName%]||null>'
+    - if '<def[record].equals_case_sensitive[SQLAPI OFFLINE]>' {
+      - announce to_console "<&b>SQLAPI<&co><&c> System Offline! Can not insert %flagValue% at index %index% for %flagName% for %owner% in %tableName%!"
+      - queue clear
+      }
+    - if %record% != null {
+      - define flagExists 'true'
+      - define expires '<def[record].get[3].unescaped||0>'
+      - if %expires% == 0 || %expires% > <server.current_time_millis> {
+        - define isExpired 'false'
+        }
+        else {
+        - define isExpired 'true'
+        }
+      }
+      else {
+      - define flagExists 'false'
+      - define isExpired 'true'
+      }
+
+    - narrate "%flagValue%"
+    - if %flagExists% && !%isExpired% {
+      - define flagVal '<def[record].get[2].unescaped||null>'
+      - if <def[flagVal].starts_with[|]> {
+        - define flagVal '<def[flagVal].as_list>'
+        - define flagValue '<&pipe><def[flagVal].get[2].to[<def[flagVal].size>].insert[%flagValue%].at[%index%].replace[li@]>'
+        }
+        else {
+        - define flagValue '<&pipe>%flagValue%'
+        }
+      }
+      else {
+      - define flagValue '<&pipe>%flagValue%'
+      }
+
+    - if %type% == server {
+      - if %flagExists% {
+        - define statement "UPDATE %tableName% SET expiration = '%expiration%', value = '%flagValue%' WHERE flag='%flagName%';"
+        }
+        else {
+        - define statement "INSERT INTO %tableName% (flag, value, expiration) VALUES ('%flagName%', '%flagValue%', '%expiration%');"
+        }
+      }
+      else {
+      - define uuid '<tern[<def[type].is[==].to[npc]>]:<def[owner].id>||<def[owner].uuid>>'
+      - if %flagExists% {
+        - define statement "UPDATE %tableName% SET expiration = '%expiration%', value = '%flagValue%' WHERE flag='%flagName%' AND uuid='%uuid%';"
+        }
+        else {
+        - define statement "INSERT INTO %tableName% (uuid, flag, value, expiration) VALUES ('%uuid%', '%flagName%', '%flagValue%', '%expiration%');"
+        }
+      }
+    - inject s@SQLManager_Offline p:managedUpdateStatement
+
   remove_flag:
     - define yamlName 'SQLAPI'
     - define scriptName 'SQLAPI'
@@ -694,7 +828,7 @@ SQLAPI:
     - define tableName '<yaml[SQLAPI_config].read[config.MySQL.tables.%type%SQLFLags]||dsqlapi_%type%sqlflags>'
     - define record '<proc[SQLAPI_GetFlagRecord].context[%owner%|%flagName%]||null>'
     - if '<def[record].equals_case_sensitive[SQLAPI OFFLINE]>' {
-      - announce to_console "<&b>SQLAPI<&co><&c> System Offline! Can not set %flagName% for %owner% to %flagValue% in %tableName%!"
+      - announce to_console "<&b>SQLAPI<&co><&c> System Offline! Can not remove %flagValue% from %flagName% for %owner% in %tableName%!"
       - queue clear
       }
     - if %record% != null {
@@ -769,7 +903,7 @@ SQLAPI:
     - define tableName '<yaml[SQLAPI_config].read[config.MySQL.tables.%type%SQLFLags]||dsqlapi_%type%sqlflags>'
     - define record '<proc[SQLAPI_GetFlagRecord].context[%owner%|%flagName%]||null>'
     - if '<def[record].equals_case_sensitive[SQLAPI OFFLINE]>' {
-      - announce to_console "<&b>SQLAPI<&co><&c> System Offline! Can not set %flagName% for %owner% to %flagValue% in %tableName%!"
+      - announce to_console "<&b>SQLAPI<&co><&c> System Offline! Can not increment %flagName% for %owner% by %flagValue% in %tableName%!"
       - queue clear
       }
     - if %record% != null {
@@ -784,6 +918,7 @@ SQLAPI:
       }
       else {
       - define flagExists 'false'
+      - define isExpired 'true'
       }
 
     - if %flagExists% {
@@ -840,7 +975,7 @@ SQLAPI:
     - define tableName '<yaml[SQLAPI_config].read[config.MySQL.tables.%type%SQLFLags]||dsqlapi_%type%sqlflags>'
     - define record '<proc[SQLAPI_GetFlagRecord].context[%owner%|%flagName%]||null>'
     - if '<def[record].equals_case_sensitive[SQLAPI OFFLINE]>' {
-      - announce to_console "<&b>SQLAPI<&co><&c> System Offline! Can not set %flagName% for %owner% to %flagValue% in %tableName%!"
+      - announce to_console "<&b>SQLAPI<&co><&c> System Offline! Can not decrement %flagName% for %owner% by %flagValue% in %tableName%!"
       - queue clear
       }
     - if %record% != null {
@@ -855,6 +990,7 @@ SQLAPI:
       }
       else {
       - define flagExists 'false'
+      - define isExpired 'true'
       }
 
     - if %flagExists% {
@@ -911,7 +1047,7 @@ SQLAPI:
     - define tableName '<yaml[SQLAPI_config].read[config.MySQL.tables.%type%SQLFLags]||dsqlapi_%type%sqlflags>'
     - define record '<proc[SQLAPI_GetFlagRecord].context[%owner%|%flagName%]||null>'
     - if '<def[record].equals_case_sensitive[SQLAPI OFFLINE]>' {
-      - announce to_console "<&b>SQLAPI<&co><&c> System Offline! Can not set %flagName% for %owner% to %flagValue% in %tableName%!"
+      - announce to_console "<&b>SQLAPI<&co><&c> System Offline! Can not multiply %flagName% for %owner% by %flagValue% in %tableName%!"
       - queue clear
       }
     - if %record% != null {
@@ -926,6 +1062,7 @@ SQLAPI:
       }
       else {
       - define flagExists 'false'
+      - define isExpired 'true'
       }
 
     - if %flagExists% {
@@ -989,7 +1126,7 @@ SQLAPI:
     - define tableName '<yaml[SQLAPI_config].read[config.MySQL.tables.%type%SQLFLags]||dsqlapi_%type%sqlflags>'
     - define record '<proc[SQLAPI_GetFlagRecord].context[%owner%|%flagName%]||null>'
     - if '<def[record].equals_case_sensitive[SQLAPI OFFLINE]>' {
-      - announce to_console "<&b>SQLAPI<&co><&c> System Offline! Can not set %flagName% for %owner% to %flagValue% in %tableName%!"
+      - announce to_console "<&b>SQLAPI<&co><&c> System Offline! Can not divide %flagName% for %owner% by %flagValue% in %tableName%!"
       - queue clear
       }
     - if %record% != null {
@@ -1004,6 +1141,7 @@ SQLAPI:
       }
       else {
       - define flagExists 'false'
+      - define isExpired 'true'
       }
 
     - if %flagExists% {
@@ -1057,8 +1195,14 @@ SQLAPI:
   msg_set_list:
     - narrate "<&b>SQLAPI<&co><&7> Set list flag <def[flagName].unescaped.after[<&pipe>]> to <def[flagValue].unescaped.after[<&pipe>]> for %owner%<tern[<def[expiration].is[==].to[0]>]:<&dot>||<&dot> Expires in <def[duration].split[<&co>].get[2].as_duration.formatted><&dot>>"
 
+  msg_set_index:
+    - narrate "<&b>SQLAPI<&co><&7> Set <def[flagName].unescaped> list to <def[flagValue].unescaped.after[<&pipe>]> starting at index %index% for %owner%<tern[<def[expiration].is[==].to[0]>]:<&dot>||<&dot> Expires in <def[duration].split[<&co>].get[2].as_duration.formatted><&dot>>"
+
   msg_include:
     - narrate "<&b>SQLAPI<&co><&7> Included <def[flagValue].unescaped.after[<&pipe>]> in <def[flagName].unescaped> list for %owner%<tern[<def[expiration].is[==].to[0]>]:<&dot>||<&dot> Expires in <def[duration].split[<&co>].get[2].as_duration.formatted><&dot>>"
+
+  msg_insert_index:
+    - narrate "<&b>SQLAPI<&co><&7> Included <def[flagValue].unescaped.after[<&pipe>]> in <def[flagName].unescaped> list starting at index %index% for %owner%<tern[<def[expiration].is[==].to[0]>]:<&dot>||<&dot> Expires in <def[duration].split[<&co>].get[2].as_duration.formatted><&dot>>"
 
   msg_remove:
     - if <def[flagValue].is[==].to[<&pipe>]> {
