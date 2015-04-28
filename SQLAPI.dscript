@@ -168,6 +168,23 @@
 #   - List index manipulations
 #     - Insert: Inserts additional values starting at the specified index
 #     - Set: Inserts additional values replacing the specified index
+#   - Added <proc[SQLAPI_Expiration].context[owner|flag]>
+#     - Returns a Duration of the time remaining on the flag
+#     - Returns d@0t if the flag does not expire
+#     - Does not return if the flag is expired or is not set
+#     - Owner can be server, or any valid <player>, <npc>, or <entity> object
+#   - Added <proc[SQLAPI_ListFlags].context[owner]||null>
+#     - List all unexpired flags for <owner>
+#     - Owner can be server, or any valid <player>, <npc>, or <entity> object
+#   - Added <proc[SQLAPI_GetFlagged].context[type|flag]||null>
+#     - List all owners of the specified type that have the specified flag set.
+#     - Valid types are player, npc, and entity
+#   - Added <proc[SQLAPI_GetCurrentFlagged].context[type|flag]||null>
+#     - List all owners of the specified type that have the specified flag set.
+#     - Valid types are player, npc, and entity
+#     - Will only return owner objects for those (players) that are online or
+#       (npcs or entities) that are spawned.
+#
 #
 # - v0.1.1  -  4/27/15
 #   - Correctly distinguish between existent and expired flags when editing lists
@@ -1324,7 +1341,28 @@ SQLAPI_IsExpired:
       - if %expiration% == 0 || %expiration% > <server.current_time_millis> {
         - determine 'false'
         }
-      - determine 'true'
+      }
+    - determine 'true'
+
+
+SQLAPI_Expiration:
+# Usage: <proc[SQLAPI_Expiration].context[owner|flag]>
+  type: procedure
+  debug: false
+  definitions: owner|flag
+  script:
+    - define record '<proc[SQLAPI_GetFlagRecord].context[%owner%|%flag%]||null>'
+    - if '<def[record].equals_case_sensitive[SQLAPI OFFLINE]>' {
+      - queue clear
+      }
+    - if %record% != null {
+      - define expiration '<def[record].get[3].unescaped||null>'
+      - if %expiration% == 0 {
+        - determine '<el@val[0].as_duration>'
+        }
+      - if %expiration% > <server.current_time_millis> {
+        - determine '<el@val[<def[expiration].sub_int[<server.current_time_millis>].div[1000]>s].as_duration>'
+        }
       }
 
 
@@ -1367,6 +1405,93 @@ SQLAPI_GetFlag:
         else {
         - determine '%flagVal%'
         }
+      }
+
+
+SQLAPI_ListFlags:
+# Usage: <proc[SQLAPI_ListFlags].context[owner]||null>
+  type: procedure
+  debug: false
+  definitions: owner
+  script:
+    - define type '<proc[SQLAPI_ParseOwner].context[%owner%]||null>'
+    - if li@player|entity|npc|server !contains %type% {
+      - announce to_console "<&b>SQLAPI<&co> <&c>Invalid type specified in flag lookup!"
+      - announce to_console "<&b>SQLAPI<&co> <&b>Attempted<&co> %owner% %type%"
+      - queue clear
+      }
+    - define tableName '<yaml[SQLAPI_config].read[config.MySQL.tables.%type%SQLFLags]||dsqlapi_%type%sqlflags>'
+    - define db '<yaml[SQLAPI_config].read[config.MySQL.database]||SQLAPI>'
+    - if !<proc[SQLManager_ConnectionCheck].context[%db%]> {
+      - announce to_console "<&b>SQLAPI<&co> <&c>Database Offline!"
+      - yaml set 'id:SQLManager_Offline' 'Offline_Cache.databases.%db%.status:offline'
+      - yaml 'savefile:SQLManager/cache.yml' 'id:SQLManager_Offline'
+      - run s@SQLManager p:restart def:SQLAPI|SQLAPI|%db%
+      - determine 'SQLAPI OFFLINE'
+      }
+    - define now '<server.current_time_millis>'
+    - if %owner% == server {
+      - sql id:%db% "query:SELECT flag FROM %tablename% WHERE expiration>'%now%' OR expiration='0';" save:record
+      }
+      else {
+      - define uuid '<tern[<def[owner].type.is[==].to[npc]>]:<def[owner].id>||<def[owner].uuid>>'
+      - sql id:%db% "query:SELECT flag FROM %tablename% WHERE uuid='%uuid%' AND (expiration>'%now%' OR expiration='0');" save:record
+      }
+    - determine '<entry[record].result.parse[before[/]]>'
+
+
+SQLAPI_GetFlagged:
+# Usage: <proc[SQLAPI_GetFlagged].context[type|flag]||null>
+  type: procedure
+  debug: false
+  definitions: type|flag
+  script:
+    - if li@player|entity|npc !contains %type% {
+      - announce to_console "<&b>SQLAPI<&co> <&c>Invalid type specified in flag lookup!"
+      - announce to_console "<&b>SQLAPI<&co> <&b>Attempted<&co> %owner% %type%"
+      - queue clear
+      }
+    - define tableName '<yaml[SQLAPI_config].read[config.MySQL.tables.%type%SQLFLags]||dsqlapi_%type%sqlflags>'
+    - define db '<yaml[SQLAPI_config].read[config.MySQL.database]||SQLAPI>'
+    - if !<proc[SQLManager_ConnectionCheck].context[%db%]> {
+      - announce to_console "<&b>SQLAPI<&co> <&c>Database Offline!"
+      - yaml set 'id:SQLManager_Offline' 'Offline_Cache.databases.%db%.status:offline'
+      - yaml 'savefile:SQLManager/cache.yml' 'id:SQLManager_Offline'
+      - run s@SQLManager p:restart def:SQLAPI|SQLAPI|%db%
+      - determine 'SQLAPI OFFLINE'
+      }
+    - define now '<server.current_time_millis>'
+    - sql id:%db% "query:SELECT uuid FROM %tablename% WHERE flag='%flag%' AND (expiration>'%now%' OR expiration='0');" save:record
+    - determine '<entry[record].result.parse[before[/]].parse[as_%type%]>'
+
+
+SQLAPI_GetCurrentFlagged:
+# Usage: <proc[SQLAPI_GetCurrentFlagged].context[type|flag]||null>
+  type: procedure
+  debug: false
+  definitions: type|flag
+  script:
+    - if li@player|entity|npc !contains %type% {
+      - announce to_console "<&b>SQLAPI<&co> <&c>Invalid type specified in flag lookup!"
+      - announce to_console "<&b>SQLAPI<&co> <&b>Attempted<&co> %owner% %type%"
+      - queue clear
+      }
+    - define tableName '<yaml[SQLAPI_config].read[config.MySQL.tables.%type%SQLFLags]||dsqlapi_%type%sqlflags>'
+    - define db '<yaml[SQLAPI_config].read[config.MySQL.database]||SQLAPI>'
+    - if !<proc[SQLManager_ConnectionCheck].context[%db%]> {
+      - announce to_console "<&b>SQLAPI<&co> <&c>Database Offline!"
+      - yaml set 'id:SQLManager_Offline' 'Offline_Cache.databases.%db%.status:offline'
+      - yaml 'savefile:SQLManager/cache.yml' 'id:SQLManager_Offline'
+      - run s@SQLManager p:restart def:SQLAPI|SQLAPI|%db%
+      - determine 'SQLAPI OFFLINE'
+      }
+    - define now '<server.current_time_millis>'
+    - sql id:%db% "query:SELECT uuid FROM %tablename% WHERE flag='%flag%' AND (expiration>'%now%' OR expiration='0');" save:record
+    - if %type% == player {
+      - determine '<entry[record].result.parse[before[/]].parse[as_%type%].filter[is_online]>'
+      }
+      else {
+      - determine '<entry[record].result.parse[before[/]].parse[as_%type%].filter[is_spawned]>'
       }
 
 
