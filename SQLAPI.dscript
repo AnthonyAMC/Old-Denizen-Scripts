@@ -9,8 +9,8 @@
 #                                                                              |
 #                                                                              |
 #   Author: |Anthony|                                                          |
-#   Version: 0.1.1                                                             |
-#   dScript Version: 0.9.6-b1573                                               |
+#   Version: 0.1.3                                                             |
+#   dScript Version: 0.9.6-dev-199                                             |
 #                                                                              |
 #   Dependencies:                                                              |
 #   - SQLManager:             http://mcmonkey.org/denizen/repo/entry/19        |
@@ -88,7 +88,7 @@
 #  owner field is not used for the server type flags.
 #
 #    Full Example:
-#    - event 'slqflag set' 'context:type|player|owner|<playerObject>|flagName|myFlag|flagValue|potato|duration|5s'
+#    - event 'sqlflag set' 'context:owner|<playerObject>|flagName|myFlag|flagValue|potato|duration|5s'
 #
 #
 # -- Context Fields
@@ -147,7 +147,7 @@
 #   retrieve the value.
 #    Example:
 #    - define list 'li@a|b|c'
-#    - event 'slqflag set' 'context:type|server|flagName|myFlag|flagValue|<def[list].escaped>'
+#    - event 'sqlflag set' 'context:type|server|flagName|myFlag|flagValue|<def[list].escaped>'
 #
 #
 #  ~ Duration
@@ -158,13 +158,21 @@
 #   formats: T=ticks, M=minutes, S=seconds, H=hours, D=days, W = Weeks.
 #   Not using a unit will imply seconds.
 #    Example:
-#    - event 'slqflag set' 'context:duration|10s'
+#    - event 'sqlflag set' 'context:duration|10s'
 #
 #------------------------------------------------
 #
 #               C h a n g e l o g
 #
-# - v0.1.1  -  4/28/15
+# - v0.1.3  -  4/29/15
+#   - Implement the event system
+#     - Scripts are encouraged to use the event system and NOT the command system
+#   - Break up the sqlflag command into its constituent parts.
+#     - Results in a flagString parser
+#   - Add fancy linewrapp and formatted message system
+#     - Run almost all messages through the message system
+#
+# - v0.1.2  -  4/28/15
 #   - List index manipulations
 #     - Insert: Inserts additional values starting at the specified index
 #     - Set: Inserts additional values replacing the specified index
@@ -269,52 +277,194 @@ SQLAPI:
     - run locally start delay:1t
 
     on sqlflag set:
-    - define type '<c.type>'
     - define owner '<c.owner>'
-    - define flagName '<c.flagName.sql_escaped>'
-    - define flagValue '<c.flagValue.unescaped.sql_escaped>'
-    - define expiration '<c.expiration.sql_escaped||null>'
+    - define type '<proc[SQLAPI_ParseOwner].context[%owner%]||null>'
+    - if %type% == null {
+      - run s@SQLAPI_Msg delay:1t 'def:<&c>Must specify valid flag holder!'
+      - queue clear
+      }
+    - if %type% != server {
+      - define owner '<def[owner].as_%type%>'
+      }
+    - define flagName '<c.flagName.sql_escaped||null>'
+    - if %flagName% == null || <def[flagName].length> == 0 {
+      - run s@SQLAPI_Msg delay:1t 'def:<&c>Must specify valid flagName!'
+      - queue clear
+      }
+    - define flagValue '<c.flagValue.unescaped.sql_escaped||true>'
+    - define expiration '<c.expiration.sql_escaped.as_duration.in_milliseconds.add_int[<server.current_time_milliseconds>]||0>'
     - inject locally set_flag
 
-    on sqlflag clear:
-    - define type '<c.type>'
+    on sqlflag set_index:
     - define owner '<c.owner>'
-    - define flagName '<c.flagName.sql_escaped>'
-    - define flagValue '<c.flagValue.unescaped.sql_escaped>'
-    - define expiration '<c.expiration.sql_escaped||null>'
+    - define type '<proc[SQLAPI_ParseOwner].context[%owner%]||null>'
+    - if %type% == null {
+      - run s@SQLAPI_Msg delay:1t 'def:<&c>Must specify valid flag holder!'
+      - queue clear
+      }
+    - if %type% != server {
+      - define owner '<def[owner].as_%type%>'
+      }
+    - define flagName '<c.flagName.sql_escaped||null>'
+    - if %flagName% == null || <def[flagName].length> == 0 {
+      - run s@SQLAPI_Msg delay:1t 'def:<&c>Must specify valid flagName!'
+      - queue clear
+      }
+    - define index '<c.index.unescaped.sql_escaped.as_int||1>'
+    - define flagValue '<c.flagValue.unescaped.sql_escaped||true>'
+    - define expiration '<c.expiration.sql_escaped.as_duration.in_milliseconds.add_int[<server.current_time_milliseconds>]||0>'
+    - inject locally set_index_flag
+
+    on sqlflag clear:
+    - define owner '<c.owner>'
+    - define type '<proc[SQLAPI_ParseOwner].context[%owner%]||null>'
+    - if %type% == null {
+      - run s@SQLAPI_Msg delay:1t 'def:<&c>Must specify valid flag holder!'
+      - queue clear
+      }
+    - if %type% != server {
+      - define owner '<def[owner].as_%type%>'
+      }
+    - define flagName '<c.flagName.sql_escaped||null>'
+    - if %flagName% == null || <def[flagName].length> == 0 {
+      - run s@SQLAPI_Msg delay:1t 'def:<&c>Must specify valid flagName!'
+      - queue clear
+      }
     - inject locally clear_flag
 
     on sqlflag include:
-    - define type '<c.type>'
     - define owner '<c.owner>'
-    - define flagName '<c.flagName.sql_escaped>'
+    - define type '<proc[SQLAPI_ParseOwner].context[%owner%]||null>'
+    - if %type% == null {
+      - run s@SQLAPI_Msg delay:1t 'def:<&c>Must specify valid flag holder!'
+      - queue clear
+      }
+    - if %type% != server {
+      - define owner '<def[owner].as_%type%>'
+      }
+    - define flagName '<c.flagName.sql_escaped||null>'
+    - if %flagName% == null || <def[flagName].length> == 0 {
+      - run s@SQLAPI_Msg delay:1t 'def:<&c>Must specify valid flagName!'
+      - queue clear
+      }
     - define flagValue '<c.flagValue.unescaped.sql_escaped>'
-    - define expiration '<c.expiration.sql_escaped||null>'
+    - define expiration '<c.expiration.sql_escaped.as_duration.in_milliseconds.add_int[<server.current_time_milliseconds>]||0>'
     - inject locally include_flag
 
-    on sqlflag remove:
-    - define type '<c.type>'
+    on sqlflag insert_index:
     - define owner '<c.owner>'
-    - define flagName '<c.flagName.sql_escaped>'
+    - define type '<proc[SQLAPI_ParseOwner].context[%owner%]||null>'
+    - if %type% == null {
+      - run s@SQLAPI_Msg delay:1t 'def:<&c>Must specify valid flag holder!'
+      - queue clear
+      }
+    - if %type% != server {
+      - define owner '<def[owner].as_%type%>'
+      }
+    - define flagName '<c.flagName.sql_escaped||null>'
+    - if %flagName% == null || <def[flagName].length> == 0 {
+      - run s@SQLAPI_Msg delay:1t 'def:<&c>Must specify valid flagName!'
+      - queue clear
+      }
+    - define index '<c.index.unescaped.sql_escaped.as_int||1>'
+    - define flagValue '<c.flagValue.unescaped.sql_escaped||true>'
+    - define expiration '<c.expiration.sql_escaped.as_duration.in_milliseconds.add_int[<server.current_time_milliseconds>]||0>'
+    - inject locally insert_index_flag
+
+    on sqlflag remove:
+    - define owner '<c.owner>'
+    - define type '<proc[SQLAPI_ParseOwner].context[%owner%]||null>'
+    - if %type% == null {
+      - run s@SQLAPI_Msg delay:1t 'def:<&c>Must specify valid flag holder!'
+      - queue clear
+      }
+    - if %type% != server {
+      - define owner '<def[owner].as_%type%>'
+      }
+    - define flagName '<c.flagName.sql_escaped||null>'
+    - if %flagName% == null || <def[flagName].length> == 0 {
+      - run s@SQLAPI_Msg delay:1t 'def:<&c>Must specify valid flagName!'
+      - queue clear
+      }
     - define flagValue '<c.flagValue.unescaped.sql_escaped>'
-    - define expiration '<c.expiration.sql_escaped||null>'
+    - define expiration '<c.expiration.sql_escaped.as_duration.in_milliseconds.add_int[<server.current_time_milliseconds>]||0>'
     - inject locally remove_flag
 
     on sqlflag increment:
-    - define type '<c.type>'
     - define owner '<c.owner>'
-    - define flagName '<c.flagName.sql_escaped>'
-    - define flagValue '<c.flagValue.unescaped.sql_escaped>'
-    - define expiration '<c.expiration.sql_escaped||null>'
+    - define type '<proc[SQLAPI_ParseOwner].context[%owner%]||null>'
+    - if %type% == null {
+      - run s@SQLAPI_Msg delay:1t 'def:<&c>Must specify valid flag holder!'
+      - queue clear
+      }
+    - if %type% != server {
+      - define owner '<def[owner].as_%type%>'
+      }
+    - define flagName '<c.flagName.sql_escaped||null>'
+    - if %flagName% == null || <def[flagName].length> == 0 {
+      - run s@SQLAPI_Msg delay:1t 'def:<&c>Must specify valid flagName!'
+      - queue clear
+      }
+    - define flagValue '<c.flagValue.unescaped.sql_escaped.as_decimal||1>'
+    - define expiration '<c.expiration.sql_escaped.as_duration.in_milliseconds.add_int[<server.current_time_milliseconds>]||0>'
     - inject locally increment_flag
 
     on sqlflag decrement:
-    - define type '<c.type>'
     - define owner '<c.owner>'
-    - define flagName '<c.flagName.sql_escaped>'
-    - define flagValue '<c.flagValue.unescaped.sql_escaped>'
-    - define expiration '<c.expiration.sql_escaped||null>'
+    - define type '<proc[SQLAPI_ParseOwner].context[%owner%]||null>'
+    - if %type% == null {
+      - run s@SQLAPI_Msg delay:1t 'def:<&c>Must specify valid flag holder!'
+      - queue clear
+      }
+    - if %type% != server {
+      - define owner '<def[owner].as_%type%>'
+      }
+    - define flagName '<c.flagName.sql_escaped||null>'
+    - if %flagName% == null || <def[flagName].length> == 0 {
+      - run s@SQLAPI_Msg delay:1t 'def:<&c>Must specify valid flagName!'
+      - queue clear
+      }
+    - define flagValue '<c.flagValue.unescaped.sql_escaped.as_decimal||1>'
+    - define expiration '<c.expiration.sql_escaped.as_duration.in_milliseconds.add_int[<server.current_time_milliseconds>]||0>'
     - inject locally decrement_flag
+
+    on sqlflag multiply:
+    - define owner '<c.owner>'
+    - define type '<proc[SQLAPI_ParseOwner].context[%owner%]||null>'
+    - if %type% == null {
+      - run s@SQLAPI_Msg delay:1t 'def:<&c>Must specify valid flag holder!'
+      - queue clear
+      }
+    - if %type% != server {
+      - define owner '<def[owner].as_%type%>'
+      }
+    - define flagName '<c.flagName.sql_escaped||null>'
+    - if %flagName% == null || <def[flagName].length> == 0 {
+      - run s@SQLAPI_Msg delay:1t 'def:<&c>Must specify valid flagName!'
+      - queue clear
+      }
+    - define flagValue '<c.flagValue.unescaped.sql_escaped.as_decimal||1>'
+    - define expiration '<c.expiration.sql_escaped.as_duration.in_milliseconds.add_int[<server.current_time_milliseconds>]||0>'
+    - inject locally multiply_flag
+
+    on sqlflag divide:
+    - define owner '<c.owner>'
+    - define type '<proc[SQLAPI_ParseOwner].context[%owner%]||null>'
+    - if %type% == null {
+      - run s@SQLAPI_Msg delay:1t 'def:<&c>Must specify valid flag holder!'
+      - queue clear
+      }
+    - if %type% != server {
+      - define owner '<def[owner].as_%type%>'
+      }
+    - define flagName '<c.flagName.sql_escaped||null>'
+    - if %flagName% == null || <def[flagName].length> == 0 {
+      - run s@SQLAPI_Msg delay:1t 'def:<&c>Must specify valid flagName!'
+      - queue clear
+      }
+    - define flagValue '<c.flagValue.unescaped.sql_escaped.as_decimal||1>'
+    - define expiration '<c.expiration.sql_escaped.as_duration.in_milliseconds.add_int[<server.current_time_milliseconds>]||0>'
+    - inject locally divide_flag
 
     on sqlapi command:
     - if !<player.permission[sqlapi.admin]||false> && !<player.is_op> && !<c.server> {
@@ -323,25 +473,26 @@ SQLAPI:
     - determine passively FULFILLED
     - define arg1 '<c.args.get[1].escaped||null>'
     - if <def[arg1].is[==].to[--restart]> {
-      - narrate "<&b>SQLAPI<&co> <&d>Restarting System!"
+      - run s@SQLAPI_Msg delay:1t 'def:<&d>Restarting System!'
       - define isRelaod ''
       - inject locally start
       }
 
     on sqlflag command:
+    - define time '<server.current_time_millis>'
     - if !<player.permission[sqlapi.admin]||false> && !<player.is_op> && !<c.server> {
       - queue clear
       }
     - determine passively FULFILLED
     - if <c.args.size> < 2 {
-      - narrate "<&b>SQLAPI<&co><&c> /sqlflag <&lt>owner<&gt> flagName(<&co>action)(<&co>value) (duration<&co>duration)"
+      - run s@SQLAPI_Msg delay:1t 'def:<&c>/sqlflag <&lt>owner<&gt> flagName(<&lb>#<&rb>)(<&co>action)(<&co>value) (duration<&co>duration)'
       - queue clear
       }
 
     - define owner '<parse:<c.args.get[1]||null>>'
     - define type '<proc[SQLAPI_ParseOwner].context[%owner%]||null>'
     - if %type% == null {
-      - narrate "<&b>SQLAPI<&co><&c> Must specify valid flag holder!"
+      - run s@SQLAPI_Msg delay:1t 'def:<&c>Must specify valid flag holder!'
       - queue clear
       }
       else if %type% == thisPlayer {
@@ -355,70 +506,8 @@ SQLAPI:
       else if %type% != server {
       - define owner '<def[owner].as_%type%>'
       }
-
-    - define preparse '<c.args.get[2].escaped.split[&co]||null>'
-    - define size '<def[preparse].size>'
-    - define flagName '<def[preparse].get[1].to_lowercase.sql_escaped||null>'
-    - if %flagName% contains &lb {
-      - define index '<def[flagName].after[&lb].replace[&rb]>'
-      - define flagName '<def[flagName].before[&lb]>'
-      - if <def[index].length> == 0 || <def[index].is[matches].to[number].not||true> {
-        - define index:!
-        }
-      }
-
-    - if %size% == 1 {
-      - define flagValue 'true'
-      - define action 'set'
-      }
-      else if %size% == 2 {
-      - define action '<def[preparse].get[2]||null>'
-      - inject locally parseAction
-      - if %action% == set {
-        - define flagValue '<def[preparse].get[2].unescaped.sql_escaped>'
-        - if <def[index].exists> {
-          - define action 'set_index'
-          }
-        }
-        else if <li@increment|decrement|multiply|divide> contains %action% {
-        - define flagValue '1'
-        }
-        else if %action% == clear {
-        - define flagValue 'null'
-        }
-        else {
-        - narrate "<&b>SQLAPI<&co><&c> Must specify a flag value for %action% flag action!"
-        - announce to_console "<&b>SQLAPI<&co><&c> Must specify a flag value for %action% flag action!"
-        - queue clear
-        }
-      }
-      else {
-      - define flagValue '<c.args.get[2].after[<def[preparse].get[2].unescaped><&co>].sql_escaped||null>'
-      - define action '<def[preparse].get[2]||null>'
-      - inject locally parseAction
-      - if %action% == set {
-        - define flagValue '<c.args.get[2].after[<def[preparse].get[1].unescaped><&co>].sql_escaped||null>'
-        - if <def[index].exists> {
-          - define action 'set_index'
-          }
-        }
-        else if <li@increment|decrement|multiply|divide> contains %action% {
-        - if %flagValue% !matches decimal {
-          - narrate "<&b>SQLAPI<&co><&c> %flagValue% is not a valid number!"
-          - queue clear
-          }
-        }
-        else if %action% == set_list {
-        - if <def[index].exists> {
-          - define action 'set_index'
-          }
-        }
-        else if %action% == include {
-        - if <def[index].exists> {
-          - define action 'insert_index'
-          }
-        }
-      }
+    - define flagString '<c.args.get[2]>'
+    - inject locally parse_FlagString
 
     - define duration '<c.args.get[3]||null>'
     - if <def[duration].starts_with[d<&co>]> || <def[duration].starts_with[duration<&co>]> {
@@ -444,6 +533,7 @@ SQLAPI:
 #    - narrate "expiration %expiration%"
     - inject locally %action%_flag
     - inject locally msg_%action%
+    - narrate "Time taken<&co> <server.current_time_millis.sub_int[%time%]>ms"
     - queue clear
 
   parseAction:
@@ -457,6 +547,69 @@ SQLAPI:
       }
     - if %actions% !contains %action% {
       - define action 'set'
+      }
+
+
+  parse_FlagString:
+    - define preparse '<def[flagString].escaped.split[&co]||null>'
+    - define size '<def[preparse].size>'
+    - define flagName '<def[preparse].get[1].unescaped.to_lowercase.sql_escaped||null>'
+    - if %flagName% contains <&lb> {
+      - define index '<def[flagName].after[<&lb>].replace[<&rb>]>'
+      - define flagName '<def[flagName].before[<&lb>]>'
+      - if <def[index].length> == 0 || %index% !matches number {
+        - define index:!
+        }
+      }
+    - if %size% > 2 {
+      - define size 'extra'
+      }
+    - inject locally parse_flagString_%size%
+
+  parse_flagString_1:
+    - define flagValue 'true'
+    - define action 'set'
+
+  parse_flagString_2:
+    - define action '<def[preparse].get[2]||null>'
+    - inject locally parseAction
+    - if <li@set|clear|increment|decrement|multiply|divide> contains %action% {
+      - if %action% == set {
+        - define flagValue '<def[preparse].get[2].unescaped.sql_escaped>'
+        - if <def[index].exists> {
+          - define action 'set_index'
+          }
+        }
+        else if %action% != clear {
+        - narrate "set value to 1"
+        - define flagValue '1'
+        }
+      }
+      else {
+      - run s@SQLAPI_Msg delay:1t 'def:<&c>Must specify a flag value for %action% flag action!'
+      - queue clear
+      }
+
+  parse_flagString_Extra:
+    - define flagValue '<def[flagString].after[<def[preparse].get[2].unescaped><&co>].sql_escaped||null>'
+    - define action '<def[preparse].get[2]||null>'
+    - inject locally parseAction
+    - if <def[index].exists> {
+      - if li@set|set_list contains %action% {
+        - define action 'set_index'
+        }
+        else if %action% == include {
+        - define action 'insert_index'
+        }
+      }
+    - if %action% == set {
+      - define flagValue '<def[flagString].after[<def[preparse].get[1].unescaped><&co>].sql_escaped||null>'
+      }
+      else if <li@increment|decrement|multiply|divide> contains %action% {
+      - if %flagValue% !matches decimal {
+        - run s@SQLAPI_Msg delay:1t 'def:<&c>%flagValue% is not a valid number!'
+        - queue clear
+        }
       }
 
 
@@ -560,10 +713,7 @@ SQLAPI:
       - queue clear
       }
     - if !%flagExists% {
-      - announce to_console "<&b>SQLAPI<&co><&c> %owner% does not set %flagName%!"
-      - if <player.is[!=].to[null]||false> {
-        - narrate "<&b>SQLAPI<&co><&c> %owner% does not set %flagName%!"
-        }
+      - run s@SQLAPI_Msg delay:1t 'def:<&c>%owner% does not set %flagName%!'
       - queue clear
       }
     - if %type% == server {
@@ -573,6 +723,7 @@ SQLAPI:
       - define uuid '<tern[<def[type].is[==].to[npc]>]:<def[owner].id>||<def[owner].uuid>>'
       - define statement "DELETE FROM %tableName% WHERE flag='%flagName%' AND uuid='%uuid%';"
       }
+#    - sql id:%db% "update:<def[statement]>" save:id
     - inject s@SQLManager_Offline p:managedUpdateStatement
 
   set_flag:
@@ -670,7 +821,7 @@ SQLAPI:
     - define tableName '<yaml[SQLAPI_config].read[config.MySQL.tables.%type%SQLFLags]||dsqlapi_%type%sqlflags>'
     - define record '<proc[SQLAPI_GetFlagRecord].context[%owner%|%flagName%]||null>'
     - if '<def[record].equals_case_sensitive[SQLAPI OFFLINE]>' {
-      - announce to_console "<&b>SQLAPI<&co><&c> System Offline! Can not set %flagName% for %owner% to %flagValue% in %tableName%!"
+      - run s@SQLAPI_Msg delay:1t 'def:<&c>System Offline! Can not set %flagName% for %owner% to %flagValue% in %tableName%!'
       - queue clear
       }
     - if %record% != null {
@@ -728,7 +879,7 @@ SQLAPI:
     - define tableName '<yaml[SQLAPI_config].read[config.MySQL.tables.%type%SQLFLags]||dsqlapi_%type%sqlflags>'
     - define record '<proc[SQLAPI_GetFlagRecord].context[%owner%|%flagName%]||null>'
     - if '<def[record].equals_case_sensitive[SQLAPI OFFLINE]>' {
-      - announce to_console "<&b>SQLAPI<&co><&c> System Offline! Can not include %flagValue% in %flagName% for %owner% in %tableName%!"
+      - run s@SQLAPI_Msg delay:1t 'def:<&c>System Offline! Can not include %flagValue% in %flagName% for %owner% in %tableName%!'
       - queue clear
       }
     - if %record% != null {
@@ -786,7 +937,7 @@ SQLAPI:
     - define tableName '<yaml[SQLAPI_config].read[config.MySQL.tables.%type%SQLFLags]||dsqlapi_%type%sqlflags>'
     - define record '<proc[SQLAPI_GetFlagRecord].context[%owner%|%flagName%]||null>'
     - if '<def[record].equals_case_sensitive[SQLAPI OFFLINE]>' {
-      - announce to_console "<&b>SQLAPI<&co><&c> System Offline! Can not insert %flagValue% at index %index% for %flagName% for %owner% in %tableName%!"
+      - run s@SQLAPI_Msg delay:1t 'def:<&c>System Offline! Can not insert %flagValue% at index %index% for %flagName% for %owner% in %tableName%!'
       - queue clear
       }
     - if %record% != null {
@@ -804,7 +955,6 @@ SQLAPI:
       - define isExpired 'true'
       }
 
-    - narrate "%flagValue%"
     - if %flagExists% && !%isExpired% {
       - define flagVal '<def[record].get[2].unescaped||null>'
       - if <def[flagVal].starts_with[|]> {
@@ -845,7 +995,7 @@ SQLAPI:
     - define tableName '<yaml[SQLAPI_config].read[config.MySQL.tables.%type%SQLFLags]||dsqlapi_%type%sqlflags>'
     - define record '<proc[SQLAPI_GetFlagRecord].context[%owner%|%flagName%]||null>'
     - if '<def[record].equals_case_sensitive[SQLAPI OFFLINE]>' {
-      - announce to_console "<&b>SQLAPI<&co><&c> System Offline! Can not remove %flagValue% from %flagName% for %owner% in %tableName%!"
+      - run s@SQLAPI_Msg delay:1t 'def:<&c>System Offline! Can not remove %flagValue% from %flagName% for %owner% in %tableName%!'
       - queue clear
       }
     - if %record% != null {
@@ -862,10 +1012,7 @@ SQLAPI:
       }
 
     - if !%flagExists% {
-      - announce to_console "<&b>SQLAPI<&co><&c> %owner% does not set %flagName%!"
-      - if <player.is[!=].to[null]||false> {
-        - narrate "<&b>SQLAPI<&co><&c> %owner% does not set %flagName%!"
-        }
+      - run s@SQLAPI_Msg delay:1t 'def:<&c>%owner% does not set %flagName%!'
       - queue clear
       }
     - define flagVal '<def[record].get[2].unescaped.as_list||null>'
@@ -873,10 +1020,7 @@ SQLAPI:
       - define flagValue '<&pipe><def[flagVal].get[2].to[<def[flagVal].size>].exclude[%flagValue%].replace[li@]>'
       }
       else {
-      - announce to_console "<&b>SQLAPI<&co><&c> %flagName% does not contain any %flagValue% for %owner%!"
-      - if <player.is[!=].to[null]||false> {
-        - narrate "<&b>SQLAPI<&co><&c> %flagName% does not contain any %flagValue% for %owner%!"
-        }
+      - run s@SQLAPI_Msg delay:1t 'def:<&c>%flagName% does not contain any %flagValue% for %owner%!'
       - queue clear
       }
 
@@ -908,10 +1052,7 @@ SQLAPI:
 
   increment_flag:
     - if %flagValue% !matches decimal {
-      - announce to_console "<&b>SQLAPI<&co><&c> %flagValue% is not a valid number! Not incrementing %flagName% for %owner%!"
-      - if <player.is[!=].to[null]||false> {
-        - narrate "<&b>SQLAPI<&co><&c> %flagValue% is not a valid number! Not incrementing %flagName% for %owner%!"
-        }
+      - run s@SQLAPI_Msg delay:1t 'def:<&c>%flagValue% is not a valid number! Not incrementing %flagName% for %owner%!'
       - queue clear
       }
     - define yamlName 'SQLAPI'
@@ -920,7 +1061,7 @@ SQLAPI:
     - define tableName '<yaml[SQLAPI_config].read[config.MySQL.tables.%type%SQLFLags]||dsqlapi_%type%sqlflags>'
     - define record '<proc[SQLAPI_GetFlagRecord].context[%owner%|%flagName%]||null>'
     - if '<def[record].equals_case_sensitive[SQLAPI OFFLINE]>' {
-      - announce to_console "<&b>SQLAPI<&co><&c> System Offline! Can not increment %flagName% for %owner% by %flagValue% in %tableName%!"
+      - run s@SQLAPI_Msg delay:1t 'def:<&c>System Offline! Can not increment %flagName% for %owner% by %flagValue% in %tableName%!'
       - queue clear
       }
     - if %record% != null {
@@ -941,10 +1082,7 @@ SQLAPI:
     - if %flagExists% {
       - define flagVal '<def[record].get[2].unescaped||null>'
       - if %flagVal% !matches decimal {
-        - announce to_console "<&b>SQLAPI<&co> <&c>Not incrementing %flagName% for %owner%! Current value %flagVal% is not numeric!"
-        - if <player.is[!=].to[null]||false> {
-          - narrate "<&b>SQLAPI<&co> <&c>Not incrementing %flagName% for %owner%! Current value %flagVal% is not numeric!"
-          }
+        - run s@SQLAPI_Msg delay:1t 'def:<&c>Not incrementing %flagName% for %owner%! Current value %flagVal% is not numeric!'
         - queue clear
         }
       }
@@ -980,10 +1118,7 @@ SQLAPI:
 
   decrement_flag:
     - if %flagValue% !matches decimal {
-      - announce to_console "<&b>SQLAPI<&co><&c> %flagValue% is not a valid number! Not decrementing %flagName% for %owner%!"
-      - if <player.is[!=].to[null]||false> {
-        - narrate "<&b>SQLAPI<&co><&c> %flagValue% is not a valid number! Not decrementing %flagName% for %owner%!"
-        }
+      - run s@SQLAPI_Msg delay:1t 'def:<&c>%flagValue% is not a valid number! Not decrementing %flagName% for %owner%!'
       - queue clear
       }
     - define yamlName 'SQLAPI'
@@ -992,7 +1127,7 @@ SQLAPI:
     - define tableName '<yaml[SQLAPI_config].read[config.MySQL.tables.%type%SQLFLags]||dsqlapi_%type%sqlflags>'
     - define record '<proc[SQLAPI_GetFlagRecord].context[%owner%|%flagName%]||null>'
     - if '<def[record].equals_case_sensitive[SQLAPI OFFLINE]>' {
-      - announce to_console "<&b>SQLAPI<&co><&c> System Offline! Can not decrement %flagName% for %owner% by %flagValue% in %tableName%!"
+      - run s@SQLAPI_Msg delay:1t 'def:<&c>System Offline! Can not decrement %flagName% for %owner% by %flagValue% in %tableName%!'
       - queue clear
       }
     - if %record% != null {
@@ -1013,10 +1148,7 @@ SQLAPI:
     - if %flagExists% {
       - define flagVal '<def[record].get[2].unescaped||null>'
       - if %flagVal% !matches decimal {
-        - announce to_console "<&b>SQLAPI<&co> <&c>Not decrementing %flagName% for %owner%! Current value %flagVal% is not numeric!"
-        - if <player.is[!=].to[null]||false> {
-          - narrate "<&b>SQLAPI<&co> <&c>Not decrementing %flagName% for %owner%! Current value %flagVal% is not numeric!"
-          }
+        - run s@SQLAPI_Msg delay:1t 'def:<&c>Not decrementing %flagName% for %owner%! Current value %flagVal% is not numeric!'
         - queue clear
         }
       }
@@ -1052,10 +1184,7 @@ SQLAPI:
 
   multiply_flag:
     - if %flagValue% !matches decimal {
-      - announce to_console "<&b>SQLAPI<&co><&c> %flagValue% is not a valid number! Not multiplying %flagName% for %owner%!"
-      - if <player.is[!=].to[null]||false> {
-        - narrate "<&b>SQLAPI<&co><&c> %flagValue% is not a valid number! Not multiplying %flagName% for %owner%!"
-        }
+      - run s@SQLAPI_Msg delay:1t 'def:<&c>%flagValue% is not a valid number! Not multiplying %flagName% for %owner%!'
       - queue clear
       }
     - define yamlName 'SQLAPI'
@@ -1064,7 +1193,7 @@ SQLAPI:
     - define tableName '<yaml[SQLAPI_config].read[config.MySQL.tables.%type%SQLFLags]||dsqlapi_%type%sqlflags>'
     - define record '<proc[SQLAPI_GetFlagRecord].context[%owner%|%flagName%]||null>'
     - if '<def[record].equals_case_sensitive[SQLAPI OFFLINE]>' {
-      - announce to_console "<&b>SQLAPI<&co><&c> System Offline! Can not multiply %flagName% for %owner% by %flagValue% in %tableName%!"
+      - run s@SQLAPI_Msg delay:1t 'def:<&c>System Offline! Can not multiply %flagName% for %owner% by %flagValue% in %tableName%!'
       - queue clear
       }
     - if %record% != null {
@@ -1085,10 +1214,7 @@ SQLAPI:
     - if %flagExists% {
       - define flagVal '<def[record].get[2].unescaped||null>'
       - if %flagVal% !matches decimal {
-        - announce to_console "<&b>SQLAPI<&co> <&c>Not multiplying %flagName% for %owner%! Current value %flagVal% is not numeric!"
-        - if <player.is[!=].to[null]||false> {
-          - narrate "<&b>SQLAPI<&co> <&c>Not multiplying %flagName% for %owner%! Current value %flagVal% is not numeric!"
-          }
+        - run s@SQLAPI_Msg delay:1t 'def:<&c>Not multiplying %flagName% for %owner%! Current value %flagVal% is not numeric!'
         - queue clear
         }
       }
@@ -1124,17 +1250,11 @@ SQLAPI:
 
   divide_flag:
     - if %flagValue% !matches decimal {
-      - announce to_console "<&b>SQLAPI<&co><&c> %flagValue% is not a valid number! Not dividing %flagName% for %owner%!"
-      - if <player.is[!=].to[null]||false> {
-        - narrate "<&b>SQLAPI<&co><&c> %flagValue% is not a valid number! Not dividing %flagName% for %owner%!"
-        }
+      - run s@SQLAPI_Msg delay:1t 'def:<&c>%flagValue% is not a valid number! Not dividing %flagName% for %owner%!'
       - queue clear
       }
     - if %flagValue% == 0 {
-      - announce to_console "<&b>SQLAPI<&co><&c> Can not divide by 0! Not dividing %flagName% for %owner%!"
-      - if <player.is[!=].to[null]||false> {
-        - narrate "<&b>SQLAPI<&co><&c> Can not divide by 0! Not dividing %flagName% for %owner%!"
-        }
+      - run s@SQLAPI_Msg delay:1t 'def:<&c>Can not divide by 0! Not dividing %flagName% for %owner%!'
       - queue clear
       }
     - define yamlName 'SQLAPI'
@@ -1143,7 +1263,7 @@ SQLAPI:
     - define tableName '<yaml[SQLAPI_config].read[config.MySQL.tables.%type%SQLFLags]||dsqlapi_%type%sqlflags>'
     - define record '<proc[SQLAPI_GetFlagRecord].context[%owner%|%flagName%]||null>'
     - if '<def[record].equals_case_sensitive[SQLAPI OFFLINE]>' {
-      - announce to_console "<&b>SQLAPI<&co><&c> System Offline! Can not divide %flagName% for %owner% by %flagValue% in %tableName%!"
+      - run s@SQLAPI_Msg delay:1t 'def:<&c>System Offline! Can not divide %flagName% for %owner% by %flagValue% in %tableName%!'
       - queue clear
       }
     - if %record% != null {
@@ -1164,10 +1284,7 @@ SQLAPI:
     - if %flagExists% {
       - define flagVal '<def[record].get[2].unescaped||null>'
       - if %flagVal% !matches decimal {
-        - announce to_console "<&b>SQLAPI<&co> <&c>Not dividing %flagName% for %owner%! Current value %flagVal% is not numeric!"
-        - if <player.is[!=].to[null]||false> {
-          - narrate "<&b>SQLAPI<&co> <&c>Not dividing %flagName% for %owner%! Current value %flagVal% is not numeric!"
-          }
+        - run s@SQLAPI_Msg delay:1t 'def:<&c>Not dividing %flagName% for %owner%! Current value %flagVal% is not numeric!'
         - queue clear
         }
       }
@@ -1204,42 +1321,42 @@ SQLAPI:
 #########################
 # Command messages
   msg_set:
-    - narrate "<&b>SQLAPI<&co><&7> Set <def[flagName].unescaped> to <def[flagValue].unescaped> for %owner%<tern[<def[expiration].is[==].to[0]>]:<&dot>||<&dot> Expires in <def[duration].split[<&co>].get[2].as_duration.formatted><&dot>>"
+    - run s@SQLAPI_Msg delay:1t 'def:<&7>Set <def[flagName].unescaped> to <def[flagValue].replace[|].with[`]> for %owner%<tern[<def[expiration].is[==].to[0]>]:<&dot>||<&dot> Expires in <def[duration].split[<&co>].get[2].as_duration.formatted><&dot>>'
 
   msg_clear:
-    - narrate "<&b>SQLAPI<&co><&7> Cleared <def[flagName].unescaped> for %owner%"
+    - run s@SQLAPI_Msg delay:1t 'def:<&7>Cleared <def[flagName].unescaped> for %owner%'
 
   msg_set_list:
-    - narrate "<&b>SQLAPI<&co><&7> Set list flag <def[flagName].unescaped.after[<&pipe>]> to <def[flagValue].unescaped.after[<&pipe>]> for %owner%<tern[<def[expiration].is[==].to[0]>]:<&dot>||<&dot> Expires in <def[duration].split[<&co>].get[2].as_duration.formatted><&dot>>"
+    - run s@SQLAPI_Msg delay:1t 'def:<&7>Set list flag <def[flagName].unescaped> to <def[flagValue].replace[|].with[`].after[`]> for %owner%<tern[<def[expiration].is[==].to[0]>]:<&dot>||<&dot> Expires in <def[duration].split[<&co>].get[2].as_duration.formatted><&dot>>'
 
   msg_set_index:
-    - narrate "<&b>SQLAPI<&co><&7> Set <def[flagName].unescaped> list to <def[flagValue].unescaped.after[<&pipe>]> starting at index %index% for %owner%<tern[<def[expiration].is[==].to[0]>]:<&dot>||<&dot> Expires in <def[duration].split[<&co>].get[2].as_duration.formatted><&dot>>"
+    - run s@SQLAPI_Msg delay:1t 'def:<&7>Set <def[flagName].unescaped> list to <def[flagValue].replace[|].with[`].after[`]> starting at index %index% for %owner%<tern[<def[expiration].is[==].to[0]>]:<&dot>||<&dot> Expires in <def[duration].split[<&co>].get[2].as_duration.formatted><&dot>>'
 
   msg_include:
-    - narrate "<&b>SQLAPI<&co><&7> Included <def[flagValue].unescaped.after[<&pipe>]> in <def[flagName].unescaped> list for %owner%<tern[<def[expiration].is[==].to[0]>]:<&dot>||<&dot> Expires in <def[duration].split[<&co>].get[2].as_duration.formatted><&dot>>"
+    - run s@SQLAPI_Msg delay:1t 'def:<&7>Included <def[flagValue].replace[|].with[`].after[`]> in <def[flagName].unescaped> list for %owner%<tern[<def[expiration].is[==].to[0]>]:<&dot>||<&dot> Expires in <def[duration].split[<&co>].get[2].as_duration.formatted><&dot>>'
 
   msg_insert_index:
-    - narrate "<&b>SQLAPI<&co><&7> Included <def[flagValue].unescaped.after[<&pipe>]> in <def[flagName].unescaped> list starting at index %index% for %owner%<tern[<def[expiration].is[==].to[0]>]:<&dot>||<&dot> Expires in <def[duration].split[<&co>].get[2].as_duration.formatted><&dot>>"
+    - run s@SQLAPI_Msg delay:1t 'def:<&7>Included <def[flagValue].replace[|].with[`].after[`]> in <def[flagName].unescaped> list starting at index %index% for %owner%<tern[<def[expiration].is[==].to[0]>]:<&dot>||<&dot> Expires in <def[duration].split[<&co>].get[2].as_duration.formatted><&dot>>'
 
   msg_remove:
     - if <def[flagValue].is[==].to[<&pipe>]> {
-      - narrate "<&b>SQLAPI<&co><&7> Cleared <def[flagName].unescaped> for %owner%"
+      - run s@SQLAPI_Msg delay:1t 'def:<&7>Cleared <def[flagName].unescaped> for %owner%'
       }
       else {
-      - narrate "<&b>SQLAPI<&co><&7> Removed <def[flagValue].unescaped.after[<&pipe>]> from <def[flagName].unescaped> list for %owner%<tern[<def[expiration].is[==].to[0]>]:<&dot>||<&dot> Expires in <def[duration].split[<&co>].get[2].as_duration.formatted><&dot>>"
+      - run s@SQLAPI_Msg delay:1t 'def:<&7>Removed <def[flagValue].replace[|].with[`].after[`]> from <def[flagName].unescaped> list for %owner%<tern[<def[expiration].is[==].to[0]>]:<&dot>||<&dot> Expires in <def[duration].split[<&co>].get[2].as_duration.formatted><&dot>>'
       }
 
   msg_increment:
-    - narrate "<&b>SQLAPI<&co><&7> Increased <def[flagName].unescaped> for %owner% by <def[flagValue].unescaped><tern[<def[expiration].is[==].to[0]>]:<&dot>||<&dot> Expires in <def[duration].split[<&co>].get[2].as_duration.formatted><&dot>>"
+    - run s@SQLAPI_Msg delay:1t 'def:<&7>Increased <def[flagName].unescaped> for %owner% by <def[flagValue].unescaped><tern[<def[expiration].is[==].to[0]>]:<&dot>||<&dot> Expires in <def[duration].split[<&co>].get[2].as_duration.formatted><&dot>>'
 
   msg_decrement:
-    - narrate "<&b>SQLAPI<&co><&7> Decreased <def[flagName].unescaped> for %owner% by <def[flagValue].unescaped><tern[<def[expiration].is[==].to[0]>]:<&dot>||<&dot> Expires in <def[duration].split[<&co>].get[2].as_duration.formatted><&dot>>"
+    - run s@SQLAPI_Msg delay:1t 'def:<&7>Decreased <def[flagName].unescaped> for %owner% by <def[flagValue].unescaped><tern[<def[expiration].is[==].to[0]>]:<&dot>||<&dot> Expires in <def[duration].split[<&co>].get[2].as_duration.formatted><&dot>>'
 
   msg_multiply:
-    - narrate "<&b>SQLAPI<&co><&7> Multiplied <def[flagName].unescaped> for %owner% by <def[flagValue].unescaped><tern[<def[expiration].is[==].to[0]>]:<&dot>||<&dot> Expires in <def[duration].split[<&co>].get[2].as_duration.formatted><&dot>>"
+    - run s@SQLAPI_Msg delay:1t 'def:<&7>Multiplied <def[flagName].unescaped> for %owner% by <def[flagValue].unescaped><tern[<def[expiration].is[==].to[0]>]:<&dot>||<&dot> Expires in <def[duration].split[<&co>].get[2].as_duration.formatted><&dot>>'
 
   msg_divide:
-    - narrate "<&b>SQLAPI<&co><&7> Divided <def[flagName].unescaped> for %owner% by <def[flagValue].unescaped><tern[<def[expiration].is[==].to[0]>]:<&dot>||<&dot> Expires in <def[duration].split[<&co>].get[2].as_duration.formatted><&dot>>"
+    - run s@SQLAPI_Msg delay:1t 'def:<&7>Divided <def[flagName].unescaped> for %owner% by <def[flagValue].unescaped><tern[<def[expiration].is[==].to[0]>]:<&dot>||<&dot> Expires in <def[duration].split[<&co>].get[2].as_duration.formatted><&dot>>'
 
 
 
@@ -1494,6 +1611,74 @@ SQLAPI_GetCurrentFlagged:
       - determine '<entry[record].result.parse[before[/]].parse[as_%type%].filter[is_spawned]>'
       }
 
+
+SQLAPI_LineWrap:
+  # Turn a long string into a list of smaller strings
+  type: procedure
+  definitions: string|targetLen
+  speed: 0
+  debug: false
+
+  script:
+    - define stringLen '<def[string].length>'
+    - if <def[stringLen].is[MORE].than[%targetLen%]> {
+      - define lines 'li@'
+      - while <def[stringLen].is[MORE].than[0]> {
+        - define low '<def[increment].add[1].as_int||1>'
+        - define hi '<def[increment].add[<def[targetLen].add[1]>].as_int||%targetLen%>'
+        - define pass '<el@val[%string%].substring[%low%,%hi%]>'
+        - if <def[pass].length.is[==].to[%stringLen%]> {
+          - define lines '<def[lines].include[<el@val[%pass%]>]||<def[lines]>>'
+          - while stop
+          }
+          else {
+          - define brake '<def[pass].last_index_of[ ]>'
+          - define increment '<def[increment].add[%brake%]||%brake%>'
+          - define passtrim '<el@val[<def[pass].substring[1,<t[<def[brake].is[MORE].than[0]>]:%brake%||<def[pass].length>>]>]>'
+          - define lines '<def[lines].include[<el@val[%passtrim%]>]||<def[lines]>>'
+          - define stringLen '<def[stringLen].sub[%brake%]>'
+          }
+        - if <def[loop_index].is[MORE].than[10]> {
+          - while stop
+          }
+        }
+      - determine '<def[lines].as_list>'
+      }
+      else {
+      - determine '<def[string].as_list>'
+      }
+
+
+SQLAPI_Msg:
+  type: item
+  speed: 0
+  debug: false
+  material: i@human_skull
+  display name: "<&4>  [<&6>SQPAPI<&4>]"
+  lore:
+  - <&5>Click for Help
+  script:
+    - ^define text '<&4>[<&6>SQPAPI<&4>]'
+    - ^define hover '<&chr[007B]><i@SQLAPI_Msg.json><&chr[007D]>'
+    - ^define click '/SQPAPI help'
+    - ^define button "text:'%text%',clickEvent:<&chr[007B]>action:run_command,value:'%click%'<&chr[007D]>,hoverEvent:<&chr[007B]>action:show_item,value:'%hover%'<&chr[007d]>"
+    - ^define spacer "text:'  '"
+    - ^define color '<&f>'
+    - ^define colorCheck '<def[1].substring[1,2]>'
+    - ^if <def[colorCheck].starts_with[<&ss>]> {
+      - define colorCheck '<def[colorCheck].replace[<&ss>]>'
+      - if <def[colorCheck].matches[[0-9a-fA-Fk-oK-OrR]]> {
+        - define color '<&%colorCheck%>'
+        }
+      }
+    - ^if <player.is_player||false> {
+      - define lines '<proc[SQLAPI_LineWrap].context[%1%|45]>'
+      - foreach <def[lines]> {
+        - define msg "text:'%color%<def[value].replace[`].with[<&pipe>]>'"
+        - execute as_server "tellraw <player.name> <&chr[007B]>text:'',extra:[<&chr[007B]>%button%<&chr[007D]>,<&chr[007B]>%spacer%<&chr[007D]>,<&chr[007B]>%msg%<&chr[007D]>]<&chr[007D]>"
+        }
+      }
+    - ^announce to_console "<&4><&lb><&6>SQPAPI<&4><&rb> %1%"
 
 ################################################################################
 #                                                                              #
