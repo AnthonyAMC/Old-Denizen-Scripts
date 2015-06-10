@@ -4924,7 +4924,7 @@ dRegions_Flag_Chest-Access:
           }
         }
       - if %flagObj% == null {
-        - define flagObj 'allow/all'
+        - define flagObj 'deny/nonmembers'
         - define targetList 'li@null'
         }
       - inject s@dRegions_Flags_Processors p:state-withTarget-withGroup

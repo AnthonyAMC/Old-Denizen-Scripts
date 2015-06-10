@@ -52,6 +52,8 @@
 #  The permissions system isn't fully realized yet. Meanwhile, we have a list of
 # generic permissions to get you by.
 #
+#  Command                Permission                   Description
+#
 #  /drg help [arg/#]      dregions.help                Specify a page number or command arg
 #  /drg define            dregions.define              Define a region
 #  /drg redefine          dregions.redefine            Update region to new selection
@@ -847,6 +849,7 @@ dRegions:
     on player stands on:
     - if <player.permission[dRegions.admin]||false> || <player.is_op> queue clear
     - define target '<c.location.material.bukkit_enum>'
+    - if %target% == soil queue clear
     - define sameRegion 'true'
     - define rateLimit '<player.flag[dRegions.rateLimit.use-switches.%target%]||null>'
     - if %rateLimit% != null {
@@ -1090,7 +1093,7 @@ dRegions:
       - queue clear
       }
     - define player '<player>'
-    - define target '<c.location.material.bukkit_enum||air>'
+    - define target '<c.location.material.bukkit_enum.to_lowercase||air>'
     - define item '<c.item.material.bukkit_enum.to_lowercase||air>'
     - if %item% == air {
       - define FlagScript '<s@dRegions_Map_Interactions.yaml_key[block.%target%]||null>'
@@ -1122,7 +1125,7 @@ dRegions:
           - queue clear
           }
           else {
-          - run s@dRegions_Flag_%flag% p:msg delay:1t 'def:<def[item].replace[_].with[ ]>'
+          - run s@dRegions_Flag_%flag% p:msg delay:1t 'def:<def[target].replace[_].with[ ]>'
           - determine cancelled
           }
         }
@@ -4315,8 +4318,7 @@ dRegions_Commands:
         }
       - define cuboids '<def[playerWorldRegions].parse[replace[regex:^].with[cu@dregions_%world%_]].filter[as_cuboid.is[!=].to[null]||false]||li@>'
       - foreach %cuboids% {
-        - if <def[pos1].as_location.is_within[%value%]>
-          && <def[pos2].as_location.is_within[%value%]> {
+        - if <def[pos1].as_location.is_within[%value%]> && <def[pos2].as_location.is_within[%value%]> {
           - define isWithin ''
           - foreach stop
           }
