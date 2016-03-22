@@ -3170,14 +3170,16 @@ dRegions_Msg:
   lore:
   - <&5>Click for Help
   script:
-    - ^define text '<&4>[<&6>dRegions<&4>]'
-    - ^define hover '<&chr[007B]><i@dRegions_Msg.json><&chr[007D]>'
-    - ^define click '/dregions help'
-    - ^define button "text:'%text%',clickEvent:<&chr[007B]>action:run_command,value:'%click%'<&chr[007D]>,hoverEvent:<&chr[007B]>action:show_item,value:'%hover%'<&chr[007d]>"
-    - ^define spacer "text:'  '"
-    - ^define msg "text:'%1%'"
+# JSON is broken in denizen. Just narrate for now.
+#    - ^define text '<&4>[<&6>dRegions<&4>]'
+#    - ^define hover '<&chr[007B]><i@dRegions_Msg.json><&chr[007D]>'
+#    - ^define click '/dregions help'
+#    - ^define button "text:'%text%',clickEvent:<&chr[007B]>action:run_command,value:'%click%'<&chr[007D]>,hoverEvent:<&chr[007B]>action:show_item,value:'%hover%'<&chr[007d]>"
+#    - ^define spacer "text:'  '"
+#    - ^define msg "text:'%1%'"
     - ^if <player.is_player||false> {
-      - execute as_server "tellraw <player.name> <&chr[007B]>text:'',extra:[<&chr[007B]>%button%<&chr[007D]>,<&chr[007B]>%spacer%<&chr[007D]>,<&chr[007B]>%msg%<&chr[007D]>]<&chr[007D]>"
+#      - execute as_server "tellraw <player.name> <&chr[007B]>text:'',extra:[<&chr[007B]>%button%<&chr[007D]>,<&chr[007B]>%spacer%<&chr[007D]>,<&chr[007B]>%msg%<&chr[007D]>]<&chr[007D]>"
+      - narrate '<&4>[<&6>dRegions<&4>] %1%'
       }
       else {
       - announce to_console "%1%"
@@ -4166,7 +4168,7 @@ dRegions_Commands:
       }
     # Check for overlapping regions
     - if !<player.permission[dregions.admin]||<player.is_op||false>> {
-      - if <proc[dRegions_RegionOverlaps].context[<def[selectedCuboid].replace[cu@].replace[|].with[/]>|%world%|<player>]> {
+      - if <proc[dRegions_RegionOverlaps].context[<def[selectedCuboid].separated_by[/]>|%world%|<player>]> {
         - run s@dRegions_Msg 'def:<&c>Region selection contains unowned regions!'
         - queue clear
         }
@@ -4227,7 +4229,7 @@ dRegions_Commands:
       }
     # Check for overlapping regions
     - if !<player.permission[dregions.admin]||<player.is_op||false>> {
-      - if <proc[dRegions_RegionOverlaps].context[<def[selectedCuboid].replace[cu@].replace[|].with[/]>|%world%|<player>]> {
+      - if <proc[dRegions_RegionOverlaps].context[<def[selectedCuboid].separated_by[/]>|%world%|<player>]> {
         - run s@dRegions_Msg 'def:<&c>Region selection contains unowned regions!'
         - queue clear
         }
@@ -4353,7 +4355,7 @@ dRegions_Commands:
       }
     # Check for overlapping regions
     - if !<player.permission[dregions.admin]||<player.is_op||false>> {
-      - if <proc[dRegions_RegionOverlaps].context[<def[selectedCuboid].replace[cu@].replace[|].with[/]>|%world%|<player>]> {
+      - if <proc[dRegions_RegionOverlaps].context[<def[selectedCuboid].separated_by[/]>|%world%|<player>]> {
         - run s@dRegions_Msg 'def:<&c>Region selection contains unowned regions!'
         - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
           - queue clear
@@ -4411,6 +4413,7 @@ dRegions_Commands:
   info:
   # /drg info [ID] -w world
     - inject locally prerun instantly
+    - narrate "2"
     # Check if region exists
     - define exists '<proc[dRegions_RegionExists].context[%name%|%world%]>'
     - if <def[exists].is[==].to[orphan]> {
@@ -4845,7 +4848,7 @@ dRegions_Commands:
     # OK, we've validated all the user input, let's get the regions and apply filters
     - define regions li@
     - if <def[filterHere].exists> {
-      - define standingIn '<player.location.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[after[dregions_%world%_]].replace[li@].replace[|].with[,]>'
+      - define standingIn '<player.location.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[after[dregions_%world%_]].separated_by[,]>'
       - define worldRegions '<proc[dRegions_HighestPriority].context[%world%|%standingIn%]||li@>'
       - if <def[worldRegions].is_empty||true> {
         - define worldRegions 'li@__global__'
@@ -5243,8 +5246,10 @@ dRegions_Commands:
     - define name '<def[name]||<c.args.get[2].escaped.to_lowercase||null>>'
     - if '<def[name].is[==].to[null]||true>' {
       - if <li@info|select.contains[%command%]> {
-        - define dRegions '<player.location.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[after[dregions_%world%_]].replace[li@].replace[|].with[,]>'
+        - define dRegions '<player.location.cuboids.parse[notable_name].filter[split[_].get[1].is[==].to[dRegions]].parse[after[dregions_%world%_]].separated_by[,]>'
+        - narrate "%dRegions%"
         - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|%dRegions%]>'
+        - narrate "%orderedRegions%"
         - if <def[orderedRegions].is_empty||true> {
           - define name '__global__'
           }
@@ -5262,6 +5267,7 @@ dRegions_Commands:
         - queue stop
         }
       }
+    - narrate "%name%"
     - if '<def[name].matches[^[a-z0-9-_]+$].not>' {
       - run s@dRegions_Msg 'def:<&c>Region ID may only contain letters, numbers,'
       - run s@dRegions_Msg 'def:<&c>hyphen, and underscore!'
@@ -5347,6 +5353,8 @@ dRegions_Commands:
     - define spacer "text<&co>'  '"
     - define prefix "text<&co>'<&5>|  <&f>Authors<&co>  '"
     - if <player.is_player||false> {
+# JSON is broken in denizen. Just narrate for now.
+      - narrate "<&5>|  <&f>Authors<&co>  <&7>|Anthony|"
       - execute as_server "tellraw <player.name> <&chr[007B]>text<&co>'',extra<&co>[<&chr[007B]>%prefix%<&chr[007D]>,<&chr[007B]>%anthony%<&chr[007D]>]<&chr[007D]>"
       }
       else {
@@ -5723,7 +5731,7 @@ dRegions_HighestPriority:
 
 dRegions_RegionOverlaps:
   # A procedure script to check if a region overlaps other (un)owned regions
-  # <proc[dRegions_RegionOverlaps].context[<def[selectedCuboid].replace[cu@].replace[|].with[/]>|%name%|%world%|<player>]>
+  # <proc[dRegions_RegionOverlaps].context[<def[selectedCuboid].separated_by[/]>|%name%|%world%|<player>]>
   # NOTE: If for some reason the selected cuboid overlaps an unowned region that is a lower priority than
   # a region that the player does own and is completely within, it will not be considered as an overlap!
   #  - But why would there be a lower priority region inside a higher priority region... that's not
@@ -5738,12 +5746,12 @@ dRegions_RegionOverlaps:
     - define regions '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__]||li@>'
     - define notables '<def[regions].parse[replace[regex:^].with[cu@dregions_%world%_]].filter[as_cuboid.is[!=].to[null]]||li@>'
     - define overlaps '<def[notables].filter[intersects[<def[selectedCuboid]>]].parse[replace[cu@dregions_%world%_]]||li@>'
-    - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|<def[overlaps].replace[li@].replace[|].with[,]>]||li@>'
+    - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|<def[overlaps].separated_by[,]>]||li@>'
     - foreach <def[orderedRegions]> {
       - if <proc[dRegions_IsOwner].context[%value%|%world%|<player>].not> {
         - determine true
         }
-#      - if <proc[dRegions_CuboidIsWithinCuboid].context[<def[selectedCuboid].replace[cu@].replace[|].with[/]>|<def[value].replace[regex:^].with[cu@dregions_%world%_].as_cuboid.full.replace[cu@].replace[|].with[/]>]> {
+#      - if <proc[dRegions_CuboidIsWithinCuboid].context[<def[selectedCuboid].separated_by[/]>|<def[value].replace[regex:^].with[cu@dregions_%world%_].as_cuboid.full.separated_by[/]>]> {
       - if <def[selectedCuboid].is_within[<def[value].replace[regex:^].with[cu@dregions_%world%_].as_cuboid>]> {
         - determine false
         }
@@ -6112,12 +6120,12 @@ dRegions_WG_Importer:
   flag_allowed-cmds:
     - define commands '<yaml[dRegions_WGImport_%world%].read[regions.%region%.flags.allowed-cmds].as_list.parse[replace[/]]||li@>'
     - yaml set 'regions.%region%.flags.commands:allow' 'id:dRegions_%world%_import'
-    - yaml set 'regions.%region%.flags.commands-list:<def[commands].replace[li@].replace[|].with[ ; ]>' 'id:dRegions_%world%_import'
+    - yaml set 'regions.%region%.flags.commands-list:<def[commands].separated_by[ ; ]>' 'id:dRegions_%world%_import'
 
   flag_blocked-cmds:
     - define commands '<yaml[dRegions_WGImport_%world%].read[regions.%region%.flags.allowed-cmds].as_list.parse[replace[/]]||li@>'
     - yaml set 'regions.%region%.flags.commands:deny' 'id:dRegions_%world%_import'
-    - yaml set 'regions.%region%.flags.commands-list:<def[commands].replace[li@].replace[|].with[ ; ]>' 'id:dRegions_%world%_import'
+    - yaml set 'regions.%region%.flags.commands-list:<def[commands].separated_by[ ; ]>' 'id:dRegions_%world%_import'
 
   flag_entity-explode:
     - define currentState '<yaml[dRegions_%world%_import].read[regions.%region%.flags.entity-explode]||null>'
@@ -6495,7 +6503,7 @@ dRegions_Author_Anthony:
   - <&7>  Owner<&co> <&e>M<&6>ine<&e>C<&6>onomy <&e>N<&6>etwork
   - <&5>-------------------------
   - <&7>
-  - <&7>  I`ve been playing minecraft
+  - <&7>  I\<&sq>ve been playing minecraft
   - <&7> and running a server since
   - <&7> 2010. I have fun and share
   - <&7> what I do.
