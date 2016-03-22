@@ -518,8 +518,8 @@ dRegions_Flag_Gamemode:
     - if %flagObj% != null {
       - if <proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|%region%|%world%|<player>]> {
         - define gm '<def[flagObj].split[/].get[1]>'
+        - flag <player> 'dRegions_%world%_%region%_PreviousGamemode:<player.gamemode>'
         - if %gm% != <player.gamemode> {
-          - flag <player> 'dRegions_%world%_%region%_PreviousGamemode:<player.gamemode>'
           - adjust <player> 'gamemode:%gm%'
           - run s@dRegions_Msg delay:1t 'def:<&7><&o>Your gamemode has been updated.'
           }
