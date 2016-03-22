@@ -71,13 +71,14 @@ dWE_Msg:
   lore:
   - <&5>Click for Help
   script:
-    - ^define text '<&4>[<&6>dWE<&4>]'
-    - ^define hover '{<i@dWE_Msg.json>}'
-    - ^define click '/dwe help'
-    - ^define button "text:'%text%',clickEvent:{action:run_command,value:'%click%'},hoverEvent:{action:show_item,value:'%hover%'}"
-    - ^define spacer "text:'  '"
-    - ^define msg "text:'%1%'"
-    - ^execute as_server "tellraw <player.name> {text:'',extra:[{%button%},{%spacer%},{%msg%}]}"
+#    - ^define text '<&4>[<&6>dWE<&4>]'
+#    - ^define hover '{<i@dWE_Msg.json>}'
+#    - ^define click '/dwe help'
+#    - ^define button "text:'%text%',clickEvent:{action:run_command,value:'%click%'},hoverEvent:{action:show_item,value:'%hover%'}"
+#    - ^define spacer "text:'  '"
+#    - ^define msg "text:'%1%'"
+#    - ^execute as_server "tellraw <player.name> {text:'',extra:[{%button%},{%spacer%},{%msg%}]}"
+    - ^narrate "<&4>[<&6>dWE<&4>]  %1%"
 
   set_Pos:
     - inject s@dWE_Commands p:selection_Size instantly
@@ -564,7 +565,7 @@ dWE_Commands:
     - define undoMaterials <def[blocks].parse[material.full]>
 #    - ~modifyblock %blocks% %material% delayed
     - ~modifyblock cu@%pos1%|%pos2% %material% delayed
-    - flag player 'dWE_UndoHistory:->:set_blocks;<cu@%pos1%|%pos2%>;%undoMaterials%'
+    - flag player 'dWE_UndoHistory:->:set_blocks;cu@%pos1%|%pos2%;%undoMaterials%'
     - run s@dWE_Msg 'def:Set complete!'
 
   sphere:
@@ -691,12 +692,13 @@ dWE_Commands:
     - narrate "<&5>|<&f>"
 
   msgsFooter:
-    - define anthony "text:'<&7>|Anthony|',clickEvent:{action:open_url,value:'http://mineconomy.org'},hoverEvent:{action:show_item,value:'{<i@dwe_Author_Anthony.json>}'}"
-    - define morphan "text:'<&7>Morphan1',clickEvent:{action:open_url,value:'http://en.wikipedia.org/wiki/Candy'},hoverEvent:{action:show_item,value:'{<i@dwe_Author_Morphan1.json>}'}"
-    - define mcmonkey "text:'<&7>mcmonkey',clickEvent:{action:open_url,value:'http://mcmonkey.org'},hoverEvent:{action:show_item,value:'{<i@dwe_Author_mcmonkey.json>}'}"
-    - define spacer "text:'  '"
-    - define prefix "text:'<&5>|  <&f>Authors:  '"
-    - execute as_server "tellraw <player.name> {text:'',extra:[{%prefix%},{%anthony%},{%spacer%},{%morphan%},{%spacer%},{%mcmonkey%}]}"
+#    - define anthony "text:'<&7>|Anthony|',clickEvent:{action:open_url,value:'http://mineconomy.org'},hoverEvent:{action:show_item,value:'{<i@dwe_Author_Anthony.json>}'}"
+#    - define morphan "text:'<&7>Morphan1',clickEvent:{action:open_url,value:'http://en.wikipedia.org/wiki/Candy'},hoverEvent:{action:show_item,value:'{<i@dwe_Author_Morphan1.json>}'}"
+#    - define mcmonkey "text:'<&7>mcmonkey',clickEvent:{action:open_url,value:'http://mcmonkey.org'},hoverEvent:{action:show_item,value:'{<i@dwe_Author_mcmonkey.json>}'}"
+#    - define spacer "text:'  '"
+#    - define prefix "text:'<&5>|  <&f>Authors:  '"
+#    - execute as_server "tellraw <player.name> {text:'',extra:[{%prefix%},{%anthony%},{%spacer%},{%morphan%},{%spacer%},{%mcmonkey%}]}"
+    - narrate "<&5>|  <&f>Authors:  <&7>|Anthony|  <&7>Morphan1  <&7>mcmonkey"
     - narrate "<&d>|-----------S-c-r-o-l-l---U-p-------------|"
 
   msgsHelpAdmin:
