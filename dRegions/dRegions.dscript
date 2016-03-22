@@ -3381,7 +3381,7 @@ dRegions_Commands:
       - define result 'li@'
       }
       else {
-      - define result '<def[args].filter[starts_with[%arg%]]||li@> '
+      - define result '<def[args].filter[starts_with[%arg%]]||li@>'
       - if <def[result].is_empty||true> {
         - define result '%args%'
         }
