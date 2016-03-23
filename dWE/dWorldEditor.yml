@@ -71,14 +71,14 @@ dWE_Msg:
   lore:
   - <&5>Click for Help
   script:
-#    - ^define text '<&4>[<&6>dWE<&4>]'
-#    - ^define hover '{<i@dWE_Msg.json>}'
-#    - ^define click '/dwe help'
-#    - ^define button "text:'%text%',clickEvent:{action:run_command,value:'%click%'},hoverEvent:{action:show_item,value:'%hover%'}"
-#    - ^define spacer "text:'  '"
-#    - ^define msg "text:'%1%'"
-#    - ^execute as_server "tellraw <player.name> {text:'',extra:[{%button%},{%spacer%},{%msg%}]}"
-    - ^narrate "<&4>[<&6>dWE<&4>]  %1%"
+    - ^define text '<&4>[<&6>dWE<&4>]'
+    - ^define hover '{<i@dWE_Msg.json>}'
+    - ^define click '/dwe help'
+    - ^define button '"text":"%text%","clickEvent":{"action":"run_command","value":"%click%"},"hoverEvent":{"action":"show_item","value":"%hover%"}'
+    - ^define spacer '"text":"  "'
+    - ^define msg '"text":"%1%"'
+    - ^execute as_server 'tellraw <player.name> {"text":"","extra":[{%button%},{%spacer%},{%msg%}]}'
+#    - ^narrate "<&4>[<&6>dWE<&4>]  %1%"
 
   set_Pos:
     - inject s@dWE_Commands p:selection_Size instantly
@@ -115,6 +115,87 @@ dWE_Msg:
     - define outsetBy '<def[size].sub[%oldSize%].as_int>'
     - run s@dWE_Msg 'def:<&f>Outset<&f>  <&7>by <&o>%outsetBy% <&7>blocks (<&o>%size%<&7>)'
 
+
+
+
+#--------------------------------------
+#
+#  dWorldEditor Message Constructors
+#
+# Constructors for the box messages
+#
+  msgsHeader:
+    - narrate "<&5>|----------------------------------------|"
+    - narrate "<&5>|<&sp><&sp><&sp><&6>dWorldEditor   <&7><def[msgsHeaderTitle]||>"
+    - narrate "<&5>|<&f>"
+
+  msgsFooter:
+    - define anthony '"text":"<&7>|Anthony|","clickEvent":{"action":"open_url","value":"http://mineconomy.org"},"hoverEvent":{"action":"show_item","value":"{<i@dwe_Author_Anthony.json>}"}'
+    - define morphan '"text":"<&7>Morphan1","clickEvent":{"action":"open_url","value":"http://en.wikipedia.org/wiki/Candy"},"hoverEvent":{"action":"show_item","value":"{<i@dwe_Author_Morphan1.json>}"}'
+    - define mcmonkey '"text":"<&7>mcmonkey","clickEvent":{"action":"open_url","value":"http://mcmonkey.org"},"hoverEvent":{"action":"show_item","value":"{<i@dwe_Author_mcmonkey.json>}"}'
+    - define spacer '"text":"  "'
+    - define prefix '"text":"<&5>|  <&f>Authors<&co>  "'
+    - if <player.is_player||false> {
+      - execute as_server 'tellraw <player.name> {"text":"","extra":[{%prefix%},{%anthony%},{%spacer%},{%morphan%},{%spacer%},{%mcmonkey%}]}'
+      }
+      else {
+      - announce to_console "<&5>|  <&f>Authors:  <&7>|Anthony|  <&7>Morphan1  <&7>mcmonkey"
+      }
+    - narrate "<&5>|-----------<&d>S<&5>-<&d>c<&5>-<&d>r<&5>-<&d>o<&5>-<&d>l<&5>-<&d>l<&5>---<&d>U<&5>-<&d>p<&5>-------------|"
+
+  msgsHelp:
+    # Filter the list of commands this player can use
+    - define commands '<s@dWE_Commands.list_keys[commandArgs].alphanumeric.to_lowercase||li@>'
+    - foreach %commands% {
+      - if !<proc[dWE_HasPerm_Command].context[%value%|<player||server>]> {
+        - define commands '<def[commands].exclude[%value%]>'
+        }
+        else {
+        - foreach next
+        }
+      }
+
+    # Display the list
+    - define page '<def[arg].replace[-].escaped||1>'
+    - if <def[page].is[MATCHES].to[number].not> {
+      - define page '1'
+      }
+    - define pages '<def[commands].size.div[5].round_up||1>'
+    - if <def[page].is[MORE].than[%pages%]> {
+      - define page '%pages%'
+      }
+    - define highNumber '<def[page].mul[5].as_int>'
+    - define lowNumber '<def[highNumber].sub[4].as_int>'
+    - define msgsHeaderTitle '<&e>Admin Help   <el@val[<&7><&o>Page <&f><&o>%page% <&7><&o>of %pages%].pad_left[30]>'
+    - inject locally msgsHeader instantly
+    - foreach <def[commands].get[%lowNumber%].to[%highNumber%]||li@> {
+      - narrate "<&5>|<&sp><&sp><&f><def[value].to_titlecase><&co>"
+      - narrate "<&5>|<&sp><&sp><&sp><&sp><&7><parse:<s@dWE_Commands.yaml_key[commandArgs.%value%.usage]||No usage info available!>>"
+      }
+    - narrate "<&5>|"
+
+  msgsAbout:
+    - define msgsHeaderTitle 'User Help'
+    - inject locally msgsHeader instantly
+    - define par1 ""
+    - define par2 ""
+    - define par3 ""
+    - define strings "<el@val[%par1%|%par2%|%par3%].as_list>"
+    - foreach <def[strings]> {
+      - define string "<&f><&sp><def[value]>"
+      - define lines '<proc[dRegions_LineWrap].context[<def[string]>|44]>'
+      - foreach <def[lines]> {
+        - narrate "<&5>|<&f><&sp><&sp><def[value].unescaped>"
+        }
+      - narrate "<&5>|"
+      }
+#
+#  END dWorldEditor Messages
+#
+#--------------------------------------
+
+
+
 dWE_Wand:
   type: item
   debug: false
@@ -130,14 +211,24 @@ dWE_Wand:
       - run s@dWE_Msg 'def:<&4><&l>ERROR<&co> <&a>You should not have this!' instantly
       - queue clear
       }
-    - if <c.click_type.is[==].to[LEFT_CLICK_BLOCK]> define pos 1
-      else if <c.click_type.is[==].to[RIGHT_CLICK_BLOCK]> define pos 2
-      else queue clear
+    - if <c.click_type.is[==].to[LEFT_CLICK_BLOCK]> {
+      - define pos 1
+      }
+      else if <c.click_type.is[==].to[RIGHT_CLICK_BLOCK]> {
+      - define pos 2
+      }
+      else {
+      - queue clear
+      }
     - define pos1 '<player.flag[dWEWand].as_list.get[1]||null>'
     - define pos2 '<player.flag[dWEWand].as_list.get[2]||null>'
     - define type '<player.flag[dWEWand_Type]||cuboid>'
-    - if <li@cuboid|extender.contains[%type%]||false> inject locally %type%
-      else inject locally cuboid
+    - if <li@cuboid|extender.contains[%type%]||false> {
+      - inject locally %type%
+      }
+      else {
+      - inject locally cuboid
+      }
 
   cuboid:
     - if <context.location.simple.is[==].to[<def[pos%pos%]>]||false> {
@@ -196,15 +287,88 @@ dWE_Commands:
   aliases: ''
   allowed help:
   - determine <player.has_permission[dwe.basic]||<player.is_op>>
+
+  commandArgs:
+    help:
+      usage: '/dwe help <&lt>arg/<&ns><&gt>'
+      permissions: []
+    about:
+      usage: '/dwe about'
+      permissions: []
+    wand:
+      usage: '/dwe wand'
+      permissions:
+        - wand
+    expand:
+      usage: '/dwe expand'
+      permissions:
+        - expand
+    contract:
+      usage: '/dwe contract'
+      permissions:
+        - contract
+    inset:
+      usage: '/dwe inset'
+      permissions:
+        - inset
+    outset:
+      usage: '/dwe outset'
+      permissions:
+        - outset
+    shift:
+      usage: '/dwe shift'
+      permissions:
+        - shift
+    pos1:
+      usage: '/dwe pos1'
+      permissions:
+        - pos1
+    pos2:
+      usage: '/dwe pos2'
+      permissions:
+        - pos2
+    hpos1:
+      usage: '/dwe hpos1'
+      permissions:
+        - hpos1
+    hpos2:
+      usage: '/dwe hpos2'
+      permissions:
+        - hpos2
+    sphere:
+      usage: '/dwe sphere'
+      permissions:
+        - sphere
+    chunk:
+      usage: '/dwe chunk'
+      permissions:
+        - chunk
+    show:
+      usage: '/dwe show'
+      permissions:
+        - show
+    set:
+      usage: '/dwe set'
+      permissions:
+        - set
+    undo:
+      usage: '/dwe undo'
+      permissions:
+        - undo
+
   script:
-    - if !<player.has_permission[dwe.basic]||<player.is_op>> {
-      - narrate "<red>You do not have permission to use this command."
+    - define command '<c.args.get[1].escaped||help>'
+    - define args '<script.list_keys[commandArgs].alphanumeric.to_lowercase||li@>'
+    - if !<def[args].contains[%command%]> {
+      - inject locally help
       - queue clear
       }
-    - define arg1 '<c.args.get[1].escaped||help>'
-    - define args 'li@help|wand|expand|contract|inset|outset|shift|pos1|pos2|hpos1|hpos2|sphere|chunk|show|set|undo'
-    - if !<def[args].contains[%arg1%]> inject locally help instantly
-      else inject locally %arg1% instantly
+    - if <proc[dWE_HasPerm_Command].context[%command%|<player||server>]> {
+      - inject locally %command%
+      }
+      else {
+      - inject locally help
+      }
 
 #
 #  END dWE Command Script Basics
@@ -215,9 +379,18 @@ dWE_Commands:
 # Each of these subscripts is an argument for the root command.
 #
   help:
-    - if <player.has_permission[dwe.admin]||<player.is_op||<context.server>>> inject locally msgsHelpAdmin instantly
-      else inject locally msgsHelpUser instantly
-    - inject locally msgsFooter instantly
+    - define arg '<c.args.get[2].escaped||null>'
+    - if <def[args].contains[%arg%]||false> {
+      - run s@dWE_Msg 'def:<parse:<script.yaml_key[commandArgs.%arg%.usage]||No help for you!>>'
+      - queue clear
+      }
+    - inject s@dWE_Msg p:msgsHelp
+    - inject s@dWE_Msg p:msgsFooter
+    - queue clear
+
+  about:
+    - inject s@dWE_Msg p:msgsAbout
+    - inject s@dWE_Msg p:msgsFooter
     - queue clear
 
   wand:
@@ -255,15 +428,16 @@ dWE_Commands:
 #  Selection Commands
 #
   show:
-    - if !<player.has_permission[dwe.show]||<player.is_op||false>> {
-      - inject locally help
-      - queue clear
-      }
-    - define pos1 '<player.flag[dWEWand].get[1].as_location||null>'
-    - define pos2 '<player.flag[dWEWand].get[2].as_location||null>'
-    - if <def[pos1].is[==].to[null]> run s@dWE_Msg 'def:<&c>Must select corner 1 with left-click.'
-      else if <def[pos2].is[==].to[null]> run s@dWE_Msg 'def:<red>Must select corner 2 with right-click.'
-      else showfake m@blue_stained_glass <cu@%pos1%|%pos2%.get_outline> to:<player> d:10s
+    - inject s@dWE_Commands_Show
+#    - if !<player.has_permission[dwe.show]||<player.is_op||false>> {
+#      - inject locally help
+#      - queue clear
+#      }
+#    - define pos1 '<player.flag[dWEWand].get[1].as_location||null>'
+#    - define pos2 '<player.flag[dWEWand].get[2].as_location||null>'
+#    - if <def[pos1].is[==].to[null]> run s@dWE_Msg 'def:<&c>Must select corner 1 with left-click.'
+#      else if <def[pos2].is[==].to[null]> run s@dWE_Msg 'def:<red>Must select corner 2 with right-click.'
+#      else showfake m@blue_stained_glass <cu@%pos1%|%pos2%.outline> to:<player> d:10s
 
   pos1:
     - if !<player.has_permission[dwe.pos]||<player.is_op||false>> {
@@ -366,44 +540,70 @@ dWE_Commands:
       - run s@dWE_Msg 'def:<&c>SYNTAX<&co> <&e>/dwe expand <&6><&lb><&7>amount/v<&6><&rb> <&6>(<&7>direction<&6>)'
       - queue clear
       }
-    - if <el@[li@n|e|s|w|u|d].contains[%d%].not||true> define d '<proc[getFacing].context[<player.location.pitch.as_money>|<player.location.yaw.as_money>]>'
+    - if <el@[li@n|e|s|w|u|d].contains[%d%].not||true> {
+      - define d '<proc[getFacing].context[<player.location.pitch.as_money>|<player.location.yaw.as_money>]>'
+      }
     - if <el@[li@n|e|s|w|u|d].contains[%d%].not||true> {
       - run s@dWE_Msg 'def:<&4><&l>ERROR<&co> <&c>Unknown direction!'
       - queue clear
       }
     - if <def[d].is[==].to[n]||false> {
-      - if <def[pos1].z.is[OR_LESS].than[<def[pos2].z>]> define pos1 '<def[pos1].sub[0,0,%n%]>'
-        else define pos2 '<def[pos2].sub[0,0,%n%]>'
+      - if <def[pos1].z.is[OR_LESS].than[<def[pos2].z>]> {
+        - define pos1 '<def[pos1].sub[0,0,%n%]>'
+        }
+        else {
+        - define pos2 '<def[pos2].sub[0,0,%n%]>'
+        }
       - define direction 'North'
       - inject s@dWE_Msg p:expand
       }
       else if <def[d].is[==].to[e]||false> {
-      - if <def[pos1].x.is[OR_MORE].than[<def[pos2].x>]> define pos1 '<def[pos1].add[%n%,0,0]>'
-        else define pos2 '<def[pos2].add[%n%,0,0]>'
+      - if <def[pos1].x.is[OR_MORE].than[<def[pos2].x>]> {
+        - define pos1 '<def[pos1].add[%n%,0,0]>'
+        }
+        else {
+        - define pos2 '<def[pos2].add[%n%,0,0]>'
+        }
       - define direction 'East'
       - inject s@dWE_Msg p:expand
       }
       else if <def[d].is[==].to[s]||false> {
-      - if <def[pos1].z.is[OR_MORE].than[<def[pos2].z>]> define pos1 '<def[pos1].add[0,0,%n%]>'
-        else define pos2 '<def[pos2].add[0,0,%n%]>'
+      - if <def[pos1].z.is[OR_MORE].than[<def[pos2].z>]> {
+        - define pos1 '<def[pos1].add[0,0,%n%]>'
+        }
+        else {
+        - define pos2 '<def[pos2].add[0,0,%n%]>'
+        }
       - define direction 'South'
       - inject s@dWE_Msg p:expand
       }
       else if <def[d].is[==].to[w]||false> {
-      - if <def[pos1].x.is[OR_LESS].than[<def[pos2].x>]> define pos1 '<def[pos1].sub[%n%,0,0]>'
-        else define pos2 '<def[pos2].sub[%n%,0,0]>'
+      - if <def[pos1].x.is[OR_LESS].than[<def[pos2].x>]> {
+        - define pos1 '<def[pos1].sub[%n%,0,0]>'
+        }
+        else {
+        - define pos2 '<def[pos2].sub[%n%,0,0]>'
+        }
       - define direction 'West'
       - inject s@dWE_Msg p:expand
       }
       else if <def[d].is[==].to[u]||false> {
-      - if <def[pos1].y.is[OR_MORE].than[<def[pos2].y>]> define pos1 '<def[pos1].add[0,%n%,0]>'
-        else define pos2 '<def[pos2].add[0,%n%,0]>'
+      - if <def[pos1].y.is[OR_MORE].than[<def[pos2].y>]> {
+        - define pos1 '<def[pos1].add[0,%n%,0]>'
+        }
+        else {
+        - define pos2 '<def[pos2].add[0,%n%,0]>'
+        }
       - define direction 'Up'
       - inject s@dWE_Msg p:expand
       }
       else if <def[d].is[==].to[d]||false> {
-      - if <def[pos1].y.is[OR_LESS].than[<def[pos2].y>]> define pos1 '<def[pos1].sub[0,%n%,0]>'
-        else define pos2 '<def[pos2].sub[0,%n%,0]>'
+      - if <def[pos1].y.is[OR_LESS].than[<def[pos2].y>]> {
+        - define pos1 '<def[pos1].sub[0,%n%,0]>'
+        }
+        else {
+        - define pos2 '<def[pos2].sub[0,%n%,0]>'
+        }
       - define direction 'Down'
       - inject s@dWE_Msg p:expand
       }
@@ -692,16 +892,18 @@ dWE_Commands:
     - narrate "<&5>|<&f>"
 
   msgsFooter:
-#    - define anthony "text:'<&7>|Anthony|',clickEvent:{action:open_url,value:'http://mineconomy.org'},hoverEvent:{action:show_item,value:'{<i@dwe_Author_Anthony.json>}'}"
-#    - define morphan "text:'<&7>Morphan1',clickEvent:{action:open_url,value:'http://en.wikipedia.org/wiki/Candy'},hoverEvent:{action:show_item,value:'{<i@dwe_Author_Morphan1.json>}'}"
-#    - define mcmonkey "text:'<&7>mcmonkey',clickEvent:{action:open_url,value:'http://mcmonkey.org'},hoverEvent:{action:show_item,value:'{<i@dwe_Author_mcmonkey.json>}'}"
-#    - define spacer "text:'  '"
-#    - define prefix "text:'<&5>|  <&f>Authors:  '"
-#    - execute as_server "tellraw <player.name> {text:'',extra:[{%prefix%},{%anthony%},{%spacer%},{%morphan%},{%spacer%},{%mcmonkey%}]}"
-    - narrate "<&5>|  <&f>Authors:  <&7>|Anthony|  <&7>Morphan1  <&7>mcmonkey"
+    - define anthony '<&dq>text<&dq>:<&dq><&7>|Anthony|<&dq>,<&dq>clickEvent<&dq>:{<&dq>action<&dq>:<&dq>open_url<&dq>,<&dq>value<&dq>:<&dq>http://mineconomy.org<&dq>},<&dq>hoverEvent<&dq>:{<&dq>action<&dq>:<&dq>show_item<&dq>,<&dq>value<&dq>:<&dq>{<i@dwe_Author_Anthony.json>}<&dq>}'
+    - define morphan '<&dq>text<&dq>:<&dq><&7>Morphan1<&dq>,<&dq>clickEvent<&dq>:{<&dq>action<&dq>:<&dq>open_url<&dq>,<&dq>value<&dq>:<&dq>http://en.wikipedia.org/wiki/Candy<&dq>},<&dq>hoverEvent<&dq>:{<&dq>action<&dq>:<&dq>show_item<&dq>,<&dq>value<&dq>:<&dq>{<i@dwe_Author_Morphan1.json>}<&dq>}'
+    - define mcmonkey '<&dq>text<&dq>:<&dq><&7>mcmonkey<&dq>,<&dq>clickEvent<&dq>:{<&dq>action<&dq>:<&dq>open_url<&dq>,<&dq>value<&dq>:<&dq>http://mcmonkey.org<&dq>},<&dq>hoverEvent<&dq>:{<&dq>action<&dq>:<&dq>show_item<&dq>,<&dq>value<&dq>:<&dq>{<i@dwe_Author_mcmonkey.json>}<&dq>}'
+    - define spacer '<&dq>text<&dq>:<&dq>  <&dq>'
+    - define prefix '<&dq>text<&dq>:<&dq><&5>|  <&f>Authors:  <&dq>'
+    - execute as_server 'tellraw <player.name> {"text":"","extra":[{%prefix%},{%anthony%},{%spacer%},{%morphan%},{%spacer%},{%mcmonkey%}]}'
+#    - execute as_server 'tellraw <player.name> {"text":"","extra":[{"text":"This is the item in your hand ","color":"white"},{"text":"Item","color":"white","hoverEvent":{"action":"show_item","value":"{<player.item_in_hand.json>}"}}]}'
+
+#    - narrate "<&5>|  <&f>Authors:  <&7>|Anthony|  <&7>Morphan1  <&7>mcmonkey"
     - narrate "<&d>|-----------S-c-r-o-l-l---U-p-------------|"
 
-  msgsHelpAdmin:
+  msgsHelp:
     - define msgsHeaderTitle 'Admin Help'
     - inject locally msgsHeader instantly
     - narrate "<&5>|<&sp><&sp><&sp><&f>"
@@ -712,7 +914,7 @@ dWE_Commands:
     - narrate "<&5>|<&sp><&sp><&f>"
     - narrate "<&5>|<&sp><&f>"
 
-  msgsHelpUser:
+  msgsAbout:
     - define msgsHeaderTitle 'User Help'
     - inject locally msgsHeader instantly
     - narrate "<&5>|<&sp><&sp><&sp><&sp><&f>"
@@ -720,19 +922,98 @@ dWE_Commands:
     - narrate "<&5>|<&sp><&sp><&f>"
     - narrate "<&5>|<&sp><&f>"
 
+
+
+dWE_Commands_Show:
+  type: command
+  debug: false
+  speed: 0
+  name: .show
+  description: Show your current dWE selection
+#  permission: my.permission.node
+#  permission message:
+  usage: /.show
+  aliases: ''
+  allowed help:
+  - determine <player.has_permission[dwe.basic]||<player.is_op>>
+
+  script:
+    - if <c.server||false> {
+      - run s@dWE_Msg 'def:<&c>This command must be run as a player.'
+      - queue clear
+      }
+    - if <c.alias> == '.show' {
+      - if !<proc[dWE_HasPerm_Command].context[show|<player>]> {
+        - inject s@dWE_Msg p:msgsHelp
+        - inject s@dWE_Msg p:msgsFooter
+        - queue clear
+        }
+      }
+    - define pos1 '<player.flag[dWEWand].get[1].as_location||null>'
+    - define pos2 '<player.flag[dWEWand].get[2].as_location||null>'
+    - if <def[pos1].is[==].to[null]> {
+      - run s@dWE_Msg 'def:<&c>Must select corner 1 with left-click.'
+      }
+      else if <def[pos2].is[==].to[null]> {
+      - run s@dWE_Msg 'def:<red>Must select corner 2 with right-click.'
+      }
+      else {
+      - showfake <player.flag[dWE.show].split[/].get[1]||m@blue_stained_glass> <cu@%pos1%|%pos2%.outline> to:<player> d:<player.flag[dWE.show].split[/].get[2]||10>s
+      }
+
+  help:
+    - if <player.has_permission[dwe.admin]||<player.is_op||<context.server>>> inject locally msgsHelp instantly
+      else inject locally msgsAbout instantly
+    - inject locally msgsFooter instantly
+    - queue clear
+
 #
 #  END dWE Command Messages
 #--------------------------------------
 #
-#  other utilities
+################################################################################
 #
-# These are not complete! They are mostly just stubs till the rest is fleshed out!
+#  dWorldEditor Other Utilities
 #
-
-
-# Usage: <proc[getFacing].context[%pitch%|%yaw%]>
-getFacing:
+# Other Utility functions used throughout dWorldEditor
+#
+#--------------------------------------
+#
+#  Command Permission Check Procedure script
+#  - Used to check if a player has permission to use a command.
+#
+dWE_HasPerm_Command:
+# Usage: <proc[dWE_HasPerm_Command].context[command|player]>
   type: procedure
+  speed: 0
+  debug: false
+  definitions: command|player
+
+  script:
+    - if %player% == 'server' || <def[player].is_op> || <def[player].permission[dwe.admin]> {
+      - determine true
+      }
+    - define perms "<s@dWE_Commands.yaml_key[commandArgs.%command%.permissions]||li@>"
+    - if <def[perms].is_empty> {
+      - determine true
+      }
+    - foreach %perms% {
+      - define perm '<parse:%value%>'
+      - if <def[player].permission[dwe.%perm%]> {
+        - determine true
+        }
+      }
+    - determine false
+#
+#--------------------------------------
+#
+#  getFacing Procedure script
+#  - Returns the cardinal direction the player is facing
+#
+getFacing:
+# Usage: <proc[getFacing].context[%pitch%|%yaw%]>
+  type: procedure
+  debug: false
   definitions: pitch|yaw
   script:
     - if <def[pitch].is[OR_MORE].than[45]||false> determine d
@@ -757,6 +1038,7 @@ getFacing:
 #
 dwe_Author_mcmonkey:
   type: item
+  debug: false
   material: creeper_skull
   display name: <&2><&l>MCMONKEY
   lore:
@@ -764,6 +1046,7 @@ dwe_Author_mcmonkey:
 
 dwe_Author_Morphan1:
   type: item
+  debug: false
   material: creeper_skull
   display name: <&2><&l>Morphan1
   lore:
@@ -771,13 +1054,14 @@ dwe_Author_Morphan1:
 
 dwe_Author_Anthony:
   type: item
+  debug: false
   material: i@human_skull
   display name: "<&f>             |Anthony|"
   lore:
   - <&7>  Owner<&co> <&e>M<&6>ine<&e>C<&6>onomy <&e>N<&6>etwork
   - <&5>-------------------------
   - <&7>
-  - <&7>  I`ve been playing minecraft
+  - <&7>  Ive been playing minecraft
   - <&7> and running a server since
   - <&7> 2010. I have fun and share
   - <&7> what I do.
