@@ -1,0 +1,275 @@
+################################################################################
+#                                                                              #
+#                    M e s s a g e   C o n s t r u c t o r                     #
+#                              L I B R A R Y                                   #
+#                                                                              #
+#                                                                              #
+#   Authors: |Anthony|                                                         #
+#   Version: 0.1                                                               #
+#   dScript Version: 0.9.8-DEV_b535                                            #
+#                                                                              #
+#  A set of utilities to make displaying text pretty, uniform, and easy.       #
+#                                                                              #
+#  This library will be a dependency for nearly all of my scripts. Mainly so   #
+#  I don't have to duplicate the code so much, but also because it makes       #
+#  development and maintenance easier.                                         #
+#                                                                              #
+#  Other scripters are free to implement this library in their own scripts.    #
+#  Just make sure you credit the author. If you are releasing a script that    #
+#  uses this library, be sure to tell your users to install it from here.      #
+#  Do not include this library, or parts of it, directly in your public        #
+#  scripts.                                                                    #
+#                                                                              #
+#                                                                              #
+################################################################################
+#
+#
+#--------------------------------------
+#  Message Prefixer
+#
+# - Pop-Up on hover shows your script title and 'Click for Help'
+# - Clicking the prefix runs /%title% help
+# - Long messages are automatically linewrapped
+#
+#  Usage:
+#    - run s@msgPrefixed 'def:%yourScriptTitle%|<&c>%yourMessageHere%'
+#
+msgPrefixed:
+  type: item
+  debug: false
+  speed: 0
+  definitions: title|msg
+  material: i@human_skull
+  display name: "<&4>     [<&6>---<&4>]"
+  lore:
+  - <&5>Click for Help
+  script:
+    - ^define text '<&4>[<&6>%title%<&4>]'
+    - ^if !<player.is_player||false> {
+      - announce to_console "%text%  %msg%"
+      - queue clear
+      }
+
+    - ^define icon 'i@human_skull[display_name=<proc[msgCentered].context[19|%title%]>]'
+    - ^adjust %icon% 'lore:<&sp>|<&5> Click for Help' save:item
+    - ^define hover '{<entry[item].result.json>}'
+    - ^define click '/%title% help'
+    - ^define button '"text":"%text%","clickEvent":{"action":"run_command","value":"%click%"},"hoverEvent":{"action":"show_item","value":"%hover%"}'
+    - ^define spacer '"text":"  "'
+    - ^foreach '<proc[lineWrap].context[<def[msg]>|70]>' {
+      - ^execute as_server 'tellraw <player.name> {"text":"","extra":[{%button%},{%spacer%},{"text":"%value%"}]}'
+      }
+#
+#  END msgPrefixed
+#--------------------------------------
+#  Boxed Message
+#
+# - Encapsulate your messages in a neat and tidy box format
+#   Messages sent through will be linewrapped and given a header and footer
+# - Header displays specified script title, page title, and page number(s)
+# - Footer can display clickable buttons for your script authors
+#   - You must have a valid author item script named %scriptname%_Author_%authorname%
+#
+#  Usage:
+#    - run s@msgBoxed 'def:%script%|%title%|%subTitle%|%page%|%pageWidth%|%pageHeight%|%paragraphs%'
+#
+msgBoxed:
+  type: task
+  debug: false
+  speed: 0
+  definitions: script|title|subTitle|page|pageWidth|pageHeight
+  script:
+    - ^define paragraphs 'li@'
+    - ^foreach '<queue.definitions.exclude[script|title|subTitle|page|pageWidth|pageHeight|paragraphs].alphanumeric>' {
+      - define paragraphs '<def[paragraphs].include[<def[%value%]>]>'
+      }
+    - ^define pageInfo '<proc[pagination].context[<def[page]||1>|<def[pageHeight]||10>|<def[paragraphs].separated_by[|]>]>'
+    - ^define lines '<def[pageInfo].get[3].to[<def[pageInfo].size>]>'
+    - ^define pagesInfo '<&7><&o>Page <&f><&o><def[pageInfo].get[1]> <&7><&o>of <def[pageInfo].get[2]>'
+
+    - ^inject locally msgsHeader
+    - ^inject locally msgsBody
+    - ^inject locally msgsFooter
+
+  msgsHeader:
+    - ^define heading '<def[title].pad_right[<def[pageWidth].mul[0.15].round>].with[ ]>  <def[subTitle]>'
+    - ^define pad '<def[pageWidth].sub[<def[heading].strip_color.length>].sub[<def[pagesInfo].strip_color.length>].mul[1.6].round>'
+    - ^narrate "<&5>|<&pipe.pad_left[<def[pageWidth]>].with[-]>"
+    - ^narrate "<&5>|<&sp><&sp><&sp><&6><def[heading]> <&7.pad_right[%pad%].with[ ]><def[pagesInfo]>"
+    - ^narrate "<&5>|<&f>"
+
+  msgsBody:
+    - ^foreach <def[lines]> {
+      - narrate "<&5>|<&f><&sp><&sp><def[value].unescaped>"
+      }
+    - ^narrate "<&5>|"
+
+  msgsFooter:
+    - ^define authors '<server.list_scripts.filter[starts_with[s@%script%_Author_]]||li@>'
+    - ^if <def[authors].is_empty> {
+      - goto 'end'
+      }
+    - ^define list 'li@'
+    - ^define spacer '"text":"  "'
+    - ^define prefix '"text":"<&5>|  <&f>Authors<&co>  "'
+    - ^foreach %authors% {
+      - define text '<def[value].yaml_key[text_name].escaped>'
+      - define url '<def[value].yaml_key[url].escaped>'
+      - define entry '"text":"<&7>%text%","clickEvent":{"action":"open_url","value":"%url%"},"hoverEvent":{"action":"show_item","value":"{<def[value].name.as_item.json>}"}'
+      - if %loop_index% == <def[authors].size> {
+        - define list '<def[list].include[<&lc><def[entry]><&rc>]>'
+        }
+        else {
+        - define list '<def[list].include[<&lc><def[entry]><&rc>|<&lc><def[spacer]><&rc>]>'
+        }
+      }
+    - ^if <player.is_player||false> {
+      - execute as_server 'tellraw <player.name> {"text":"","extra":[{%prefix%},<def[list].separated_by[,].unescaped>]}'
+      }
+      else {
+      - announce to_console "<&5>|  <&f>Authors:  <&7><def[authors].parse[.yaml_key[text_name]].split_by[<&sp><&sp><&7>]>"
+      }
+    - ^mark 'end'
+    - ^define scroll '<&d>S<&5>-<&d>c<&5>-<&d>r<&5>-<&d>o<&5>-<&d>l<&5>-<&d>l<&5>---<&d>U<&5>-<&d>p<&5>'
+    - ^define pad '<def[pageWidth].sub[<def[scroll].strip_color.length>].div[2].round_up>'
+    - ^narrate "<&5><&pipe.pad_right[%pad%].with[-]>-%scroll%<&pipe.pad_left[%pad%].with[-]>"
+#
+#  END msgBoxed
+#--------------------------------------
+#  Line Wrapping utility
+#
+# - Turn a long string into a list of smaller strings
+#   Treats the <&nl> symbol as intended
+#
+#  Usage: <proc[lineWrap].context[string|targetLen]>
+#
+lineWrap:
+  type: procedure
+  definitions: string|targetLen
+  speed: 0
+  debug: false
+
+  script:
+    - define stringLen '<def[string].length>'
+    - if <def[stringLen].is[MORE].than[%targetLen%]> {
+      - define lines 'li@'
+      - while <def[stringLen].is[MORE].than[0]> {
+        - define low '<def[increment].add[1].as_int||1>'
+        - define hi '<def[increment].add[<def[targetLen].add[1]>].as_int||%targetLen%>'
+        - define pass '<def[string].substring[%low%,%hi%]>'
+        - if <def[pass].length.is[==].to[%stringLen%]> {
+          - define lines '<def[lines].include[%pass%]||<def[lines]>>'
+          - while stop
+          }
+          else {
+          - define brake '<t[<def[pass].contains[<&nl>]>]:<def[pass].index_of[<&nl>]>||<def[pass].last_index_of[<&sp>]>>'
+          - define increment '<def[increment].add[%brake%]||%brake%>'
+          - define passtrim '<def[pass].substring[1,<t[<def[brake].is[MORE].than[0]>]:%brake%||<def[pass].length>>]>'
+          - define lines '<def[lines].include[%passtrim%]||<def[lines]>>'
+          - define stringLen '<def[stringLen].sub[%brake%]>'
+          }
+        - if <def[loop_index].is[MORE].than[10]> {
+          - while stop
+          }
+        }
+      - determine '<def[lines].as_list>'
+      }
+      else {
+      - determine '<def[string].as_list>'
+      }
+#
+#  END lineWrap
+#--------------------------------------
+#
+#  Pagination utility
+#
+#  - Retrun a list of entries for display on a specific page
+#    Pagination simply takes a list of entries, the desired page number, and the
+#    desired page size and returns only those entries.
+#
+#  Usage: <proc[pagination].context[page|pageSize|list|...]>
+#
+pagination:
+  type: procedure
+  definitions: page|pageSize
+  speed: 0
+  debug: false
+
+  script:
+    - define entries 'li@'
+    - foreach '<queue.definitions.exclude[entries|page|pageSize].alphanumeric>' {
+      - define entries '<def[entries].include[<def[%value%]>]>'
+      }
+    - if <def[page].is[MATCHES].to[number].not> {
+      - define page '1'
+      }
+      else {
+      - define page '<def[page].abs.round>'
+      }
+    - define pages '<def[entries].size.div[<def[pageSize]||5>].round_up||1>'
+    - if <def[page].is[MORE].than[%pages%]> {
+      - define page '%pages%'
+      }
+    - define highNumber '<def[page].mul[<def[pageSize]||5>].as_int>'
+    - define lowNumber '<def[highNumber].sub[<def[pageSize].sub[1]||4>].as_int>'
+    - determine 'li@%page%|%pages%|<def[entries].get[%lowNumber%].to[%highNumber%].separated_by[|]||li@>'
+#
+#  END pagination
+#--------------------------------------
+#
+#  Paragraph utility
+#
+#  Turns a list of entries into a list of lines limited in length.
+#  - Useful if you want to limit total page size not just entries per page.
+#
+#  Usage: <proc[paragraph].context[lineLen|list|...]>
+#
+paragraph:
+  type: procedure
+  definitions: lineLen
+  speed: 0
+  debug: false
+
+  script:
+    - define paragraphs 'li@'
+    - foreach '<queue.definitions.exclude[paragraphs|lineLen].alphanumeric>' {
+      - define paragraphs '<def[paragraphs].include[<def[%value%]>]>'
+      }
+    - define lineLen '<t[<def[lineLen].is[matches].to[number].and[<def[lineLen].is[MORE].than[0]>]>]:%lineLen%||44>'
+    - define result 'li@'
+    - foreach '<def[paragraphs]>' {
+      - define lines '<proc[lineWrap].context[<def[value]>|<def[lineLen]||44>]>'
+      - foreach '<def[lines]>' {
+        - define result '<def[result].include[<&f><def[value]>]>'
+        }
+      }
+    - determine '<def[result]>'
+#
+# Put this inside the second foreach just before it closes to automatically
+# insert a newline at the end of paragraphs.
+#      - define result '<def[result].include[<&sp>]>'
+#
+#  END paragraph
+#--------------------------------------
+#
+#  Center Justified Utility
+#
+#  Returns your text center justified based on target line length
+#
+#  Usage: <proc[msgCentered].context[lineLen|string]>
+#
+msgCentered:
+  type: procedure
+  definitions: lineLen|string
+  speed: 0
+  debug: false
+
+  script:
+    - define pad '<el@val[%lineLen%].sub[<def[string].length>].div[2].as_int>'
+    - determine '<&6.pad_right[%pad%].with[<&sp>]><def[string]><&6.pad_right[%pad%].with[<&sp>]>'
+#
+#  END msgCentered
+#--------------------------------------
+#
+#
+################################################################################
