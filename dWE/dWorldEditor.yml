@@ -4,52 +4,147 @@
 #
 #
 #   Authors: |Anthony|, mcmonkey
-#   Version: 0.22
-#   dScript Version: 0.9.8-DEV-b535
+#   Version: 0.23
+#   dScript Version: 0.9.8-DEV-b548
 #
 #
+#
+#--------------------------------------
 #
 #--- About this script
 #
-#  This is a basic recreation of WorldEdit in denizen. The wand and selection
-#  tools are very useable. The command system is fairly robust, lacking only
-#  TAB Completion. Permission system is in place. Editing tools are severly
-#  lacking still.
+#   dWorldEditor is a world editing system written with the Denizen Scripting
+#  Engine. Currently, it offers a robust set of area selection tools, a rich
+#  command interface, and TAB completion for all commands. The in game help
+#  system is complete with explanations, usage, and examples.
 #
-#--- Permission nodes
-#  dwe.admin:  All commands. Same as OP
-#  dwe.chunk:  Set the chunk you are standing in as your selection
-#  dwe.contract:  Contract your region selection
-#  dwe.expand:  Expand your region selection
-#  dwe.inset:  Inset your region selection
-#  dwe.outset:  Outset your region selection
-#  dwe.pos:  Use commands to set selection positions
-#  dwe.set:  Set the blocks in a selection
-#  dwe.shift:  Shift your selection
-#  dwe.show:  Show your current region selection
-#  dwe.wand:  Get the region selection wand
-#  dwe.undo:  Undo previous edits
+#   The dWE Wand item provides an easy "click click" method for selecting a
+#  cuboid. It has two modes currently, cuboid and extender. The selection wand
+#  and other tools are very solid.
 #
+#   Other scripts can easily use the wand by simply getting the region selection
+#  from the flag <player.flag[dWEWand]> like so:
+#    - define pos1 '<player.flag[dWEWand].as_list.get[1]||null>'
+#    - define pos2 '<player.flag[dWEWand].as_list.get[2]||null>'
+#    - define cuboid 'cu@%pos1%|%pos2%'
+#
+#  * This is a BETA release of dWE and should only be used for the selection
+#    wand which is required by dRegions.
+#
+#
+#--------------------------------------
+#
+#  dWorldEditor Permissions and Commands
+#
+#    Every command in dWorldEditor has its own dwe.<command> permission. There
+#  are also some permission nodes that apply to a group of related commands such
+#  as dwe.select to grant permission for all selection related commands.
+#
+#    Commands in dWorldEditor can be run as an argument of the /dwe command OR
+#  can be run by their shorthand slash dot version like so: /.help
+#
+#  Command                                    Permission            Description
+#
+#  /dwe help (<arg> <#>)                      -none-                  The root command will show a list
+#                                                                   of all dWE commands you have permission
+#                                                                   to use. You can specify a command to
+#                                                                   get help for and a page number.
+#
+#  /dwe about (<#>)                           -none-                  Learn about the project.
+#
+#  /dwe wand (-type [cuboid/extender])        dwe.admin               Give yourself the selection wand.
+#                                             dwe.select            You can also specify the wand type.
+#                                             dwe.wand
+#
+#  /dwe show                                  dwe.admin               Shows an outline of your selection.
+#                                             dwe.select            Currently shows blue stained glass for
+#                                             dwe.show              10 seconds but that will change later.
+#
+#  /dwe chunk                                 dwe.admin               Marks the chunk you are standing in
+#                                             dwe.select            as your selection.
+#                                             dwe.chunk
+#
+#  /dwe contract [<#>] (<direction>)          dwe.admin               Contracts your selection by the given
+#                                             dwe.select            amount in the specified direction. If no
+#                                             dwe.contract          direction is given, it contracts in the
+#                                                                   direction you are looking.
+#
+#  /dwe expand [<#>] (-v) (<direction>)       dwe.admin               Expands your selection by the given
+#                                             dwe.select            amount in the specified direction. If
+#                                             dwe.expand            no direction is given, it expands in
+#                                                                   the direction you are looking. Optionally
+#                                                                   specify -v for vertical only expansion.
+#
+#  /dwe inset [<#>] (-h)                      dwe.admin               Insets your selection by the given
+#                                             dwe.select            amount in all directions. Optionally
+#                                             dwe.inset             specify -h for horizontal only inset.
+#
+#  /dwe outset [<#>] (-h)                     dwe.admin               Outsets your selection by the given
+#                                             dwe.select            amount in all directions. Optionally -h
+#                                             dwe.outset            for horizontal only inset.
+#
+#  /dwe pos1                                  dwe.admin               Sets the location you are standing on
+#                                             dwe.select            as position 1.
+#                                             dwe.pos
+#
+#  /dwe pos2                                  dwe.admin               Sets the location you are standing on
+#                                             dwe.select            as position 2.
+#                                             dwe.pos
+#
+#  /dwe hpos1                                 dwe.admin               Sets the location you are looking at
+#                                             dwe.select            as position 1.
+#                                             dwe.pos
+#
+#  /dwe hpos2                                 dwe.admin               Sets the location you are looking as
+#                                             dwe.select            as position 2.
+#                                             dwe.pos
+#
+#  /dwe shift [<#>] (<direction>)             dwe.admin               Shifts your selection by the given
+#                                             dwe.select            amount in the specified direction. If
+#                                             dwe.shift             no direction is given, it shifts in
+#                                                                   the direction you are looking.
+#
+#  /dwe copy                                  dwe.admin               Copys your current selection to your
+#                                             dwe.edit              clipboard. The clipboad can hold more
+#                                             dwe.copy              than one item and will survive restarts.
+#
+#  /dwe paste (<#>)                           dwe.admin               Pastes your current clipboard item. You
+#                                             dwe.edit              can optionally specify a clipboard entry.
+#                                             dwe.paste
+#
+#  /dwe set [<material>]                      dwe.admin               Sets your current selection to the
+#                                             dwe.edit              material specified. TAB completion works
+#                                             dwe.set               for material names.
+#
+#  /dwe sphere ([<x>],(<y>,<z>)) [<material>] dwe.admin               Create an ellipsoid of the specified
+#                                             dwe.edit              material. If no size values are given, it
+#                                             dwe.sphere            uses the values from the wand.
+#
+#  /dwe undo                                  dwe.admin               Undo your last edit.
+#                                             dwe.edit              material. If no size values are given, it
+#                                             dwe.undo            uses the values from the wand.
+#
+#
+#--------------------------------------
 #
 # TODO:
-#  - TAB Completion
-#  - Command Meta
-#    - Description
-#    - Usage
-#    - Examples
 #  - Editing & Clipboard
-#    - Copy
-#    - Paste
+#    - Copy (Functional)
+#    - Paste (Semi-functional)
 #    - Stack
 #    - Rotate
-#  - Permissions
-#    - Permissions for each individual command
-#    - Parent permissions for categories (selection,tool,navigation)
+#    - Undo
+#    - Schematics
+#      - Save Load all that jazz
 #  - Config File
 #    - Maxblocks to change per operation
 #    - Undo history size
 #    - async-blockedit
 #    - hpos max distance
+#  - Drag command
+#    - Turning on drag displays a selection outline and updates (on player move
+#      or every second). Selection area stays in the same relative location to
+#      the player as it was when enabled regardless of the players new location.
 #
 #
 ################################################################################
@@ -62,19 +157,9 @@ dWE_Version:
   type: version
   author: Anthony
   name: dWorldEditor
-  version: 0.22
+  version: 0.23
   description: Denizen World Editor
   id: 22
-
-TabTesting:
-  type: command
-  name: tabtest
-  script:
-    - narrate "nonsense"
-
-  tab complete:
-    - narrate "test <c.args||null>"
-    - determine 'li@a|b'
 #
 #  END dWorldEditor Version
 #--------------------------------------
@@ -104,7 +189,6 @@ dWE_Events:
       - inject locally load
 
   load:
-    - announce 'loading <server.list_scripts.filter[starts_with[s@dWE_Commands_]].parse[name].parse[after[dWE_Commands_]].alphanumeric.to_lowercase||li@>'
     - flag server 'dWE.Command_List:!'
     - flag server 'dWE.Command_List:|:<server.list_scripts.filter[starts_with[s@dWE_Commands_]].parse[name].parse[after[dWE_Commands_]].alphanumeric.to_lowercase||li@>'
 #
@@ -807,6 +891,7 @@ dWE_Commands_Chunk:
     examples: []
     permissions:
       - admin
+      - select
       - chunk
 
   tab complete:
@@ -847,6 +932,7 @@ dWE_Commands_Expand:
       - '  <&e>/dwe expand 5'
     permissions:
       - admin
+      - select
       - expand
 
   tab complete:
@@ -1000,6 +1086,7 @@ dWE_Commands_Contract:
       - '  <&e>/dwe contract 1'
     permissions:
       - admin
+      - select
       - contract
 
   tab complete:
@@ -1141,6 +1228,7 @@ dWE_Commands_Inset:
       - '  <&e>/dwe inset 6 -h'
     permissions:
       - admin
+      - select
       - inset
 
   tab complete:
@@ -1221,6 +1309,7 @@ dWE_Commands_Outset:
       - '  <&e>/dwe outset 2 -h'
     permissions:
       - admin
+      - select
       - outset
 
   tab complete:
@@ -1301,6 +1390,7 @@ dWE_Commands_Shift:
       - '  <&e>/dwe shift 2'
     permissions:
       - admin
+      - select
       - shift
 
   math:
@@ -1404,6 +1494,7 @@ dWE_Commands_Set:
       - '  <&e>/dwe set white_clay'
     permissions:
       - admin
+      - edit
       - set
 
   tab complete:
@@ -1464,6 +1555,7 @@ dWE_Commands_Sphere:
     examples: []
     permissions:
       - admin
+      - edit
       - sphere
 
   tab complete:
@@ -1526,6 +1618,7 @@ dWE_Commands_Copy:
     examples: []
     permissions:
       - admin
+      - edit
       - copy
 
   tab complete:
@@ -1537,10 +1630,43 @@ dWE_Commands_Copy:
       - define command 'copy'
       }
     - inject s@dWE_Commands p:prerunB
+    - define cuboid '<cu@%pos1%|%pos2%>'
+    # Will be a config file option
+    - define clipboardLimit '3'
 
-    - define blocks '<cu@%pos1%|%pos2%.blocks>'
-    - flag player dWE.Clipboard:!
-    - flag player 'dWE.Clipboard:|:<def[blocks].parse[material]>'
+    # Method since list_files is broken
+    - define playerSaves '<player.flag[dWE.clipboard].as_int||0>'
+    - define newSave '<def[playerSaves].add[1].as_int>'
+    - schematic create 'name:dWE_clipboard_<player.uuid>_%newSave%' <player.location.simple> '%cuboid%'
+    - schematic save 'name:dWE_clipboard_<player.uuid>_%newSave%'
+    - if %newSave% > %clipboardLimit% {
+      - define oldClip 'dWE_clipboard_<player.uuid>_<def[newsave].sub[%clipboardLimit%]>'
+      - run s@msgPrefixed 'def:dWE|<&c>Deleting<&co> Clipboard entry <def[newsave].sub[%clipboardLimit%]>'
+      - if <schematic.list.contains[%oldClip%]> {
+        - schematic unload 'name:%oldClip%'
+        }
+      - if <server.has_file[schematics/%oldClip%.schematic]> {
+        - adjust server 'delete_file:schematics/%oldClip%.schematic'
+        }
+      }
+    - flag player 'dWE.Clipboard:%newSave%'
+
+#    - define playerSaves '<server.list_files[schematics/dWE/clipboard/<player.uuid>].parse[before[.schematic]].numerical.get_last||0>'
+#    - define newSave '<def[playerSaves].add[1].as_int>'
+#    - schematic create 'name:schematics/dWE/clipboard/<player.uuid>/%newSave%' <player.location.simple> '%cuboid%'
+#    - schematic save 'name:schematics/dWE/clipboard/<player.uuid>/%newSave%'
+#    - if %newSave% > %clipboardLimit% {
+#      - define oldClip 'schematics/dWE/clipboard/<player.uuid>/<def[newsave].sub[%clipboardLimit%]>'
+#      - run s@msgPrefixed 'def:dWE|<&c>Deleting<&co> Clipboard entry <def[newsave].sub[%clipboardLimit%]>'
+#      - if <schematic.list.contains[%oldClip%]> {
+#        - schematic unload 'name:%oldClip%'
+#        }
+#      - if <server.has_file[%oldClip%.schematic]> {
+#        - adjust server 'delete_file:%oldClip%.schematic'
+#        }
+#      }
+#    - schematic create 'name:%nextSave%' <player.location> '%cuboid%'
+
     - run s@msgPrefixed 'def:dWE|<&7><&o>Selection saved to clipboard'
 
 dWE_Commands_Paste:
@@ -1554,22 +1680,60 @@ dWE_Commands_Paste:
 
   data:
     description: 'This isn<&sq>t documented because you should <&c>NOT<&f> use it!'
-    usage: '/dwe paste'
-    examples: []
+    usage: '/dwe paste [<&ns>]'
+    examples:
+      - '<&f>To paste the most recent entry in your clipboard'
+      - '  <&e>/dwe paste'
+      - '  <&e>/dwe paste 1'
+      - ' '
+      - '<&f>To paste the fifth oldest entry in your clipboard'
+      - '  <&e>/dwe paste 5'
     permissions:
       - admin
+      - edit
       - paste
 
   tab complete:
     - determine 'li@'
 
   script:
-  # /dwe paste <number> -h
+  # /dwe paste <number>
     - if !<def[command].exists> {
       - define command 'paste'
       }
     - inject s@dWE_Commands p:prerunB
-    - run s@msgPrefixed 'def:dWE|<&c>This command doesn<&sq>t do anything yet!'
+
+    # Will be a config file option
+    - define clipboardLimit '3'
+    - define n '<def[args].filter[is[matches].to[number]].get[1]||1>'
+    - if <def[n].is[LESS].than[1]||true> {
+      - run s@msgPrefixed 'def:dWE|<&c>SYNTAX<&co> <&e>/dwe paste <&6><&lb><&7>clipboard entry<&6><&rb>'
+      - queue clear
+      }
+    - if %n% > %clipboardLimit% {
+      - run s@msgPrefixed 'def:dWE|<&c>Clipboard only has <&6>%clipboardLimit% <&c>entries!'
+      - queue clear
+      }
+    - define entry '<player.flag[dWE.clipboard].add[1].sub[%n%].as_int||1>'
+    - define clipboard 'dWE_clipboard_<player.uuid>_%entry%'
+
+    - define existingArea '<schematic[%clipboard%].cuboid[<player.location>]>'
+    # If using dRegions, check for overlapping regions before editing.
+    - if !<server.list_scripts.filter[starts_with[s@dRegions]].is_empty> {
+      - if <proc[dRegions_RegionOverlaps].context[<def[existingArea].replace[cu@].as_list.separated_by[/]>|<def[existingArea].center.world.name>|<player>]> {
+        - run s@msgPrefixed 'def:dWE|<&c>Region selection contains unowned dRegions!'
+        - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
+          - queue clear
+          }
+        - run s@msgPrefixed 'def:dWE|<&c>But you are an admin so it is ok!'
+        }
+      }
+    - if !<schematic.list.contains[%clipboard%]> {
+      - schematic load 'name:%clipboard%'
+      }
+    - schematic paste 'name:%clipboard%' <player.location.simple> '%existingArea%'
+    - run s@msgPrefixed 'def:dWE|<&7><&o>Clipboard entry %entry% pasted!'
+
 
 dWE_Commands_Rotate:
   type: command
@@ -1586,6 +1750,7 @@ dWE_Commands_Rotate:
     examples: []
     permissions:
       - admin
+      - edit
       - rotate
 
   tab complete:
@@ -1614,6 +1779,7 @@ dWE_Commands_Undo:
     examples: []
     permissions:
       - admin
+      - edit
       - undo
 
   tab complete:
