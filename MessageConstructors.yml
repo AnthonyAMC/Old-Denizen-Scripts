@@ -47,7 +47,7 @@ msgPrefixed:
     - ^define text '<&4>[<&6>%title%<&4>]'
     - ^if !<player.is_player||false> {
       - announce to_console "%text%  %msg%"
-      - queue clear
+      - goto 'end'
       }
 
     - ^define icon 'i@human_skull[display_name=<proc[msgCentered].context[19|%title%]>]'
@@ -59,6 +59,7 @@ msgPrefixed:
     - ^foreach '<proc[lineWrap].context[<def[msg]>|70]>' {
       - ^execute as_server 'tellraw <player.name> {"text":"","extra":[{%button%},{%spacer%},{"text":"%value%"}]}'
       }
+    - mark 'end'
 #
 #  END msgPrefixed
 #--------------------------------------
