@@ -152,6 +152,7 @@ lineWrap:
 
   script:
     - define stringLen '<def[string].length>'
+    - define c '<def[string].last_color||<&f>>'
     - if <def[stringLen].is[MORE].than[%targetLen%]> {
       - define lines 'li@'
       - while <def[stringLen].is[MORE].than[0]> {
@@ -159,14 +160,14 @@ lineWrap:
         - define hi '<def[increment].add[<def[targetLen].add[1]>].as_int||%targetLen%>'
         - define pass '<def[string].substring[%low%,%hi%]>'
         - if <def[pass].length.is[==].to[%stringLen%]> {
-          - define lines '<def[lines].include[%pass%]||<def[lines]>>'
+          - define lines '<def[lines].include[%c%%pass%]||<def[lines]>>'
           - while stop
           }
           else {
           - define brake '<t[<def[pass].contains[<&nl>]>]:<def[pass].index_of[<&nl>]>||<def[pass].last_index_of[<&sp>]>>'
           - define increment '<def[increment].add[%brake%]||%brake%>'
           - define passtrim '<def[pass].substring[1,<t[<def[brake].is[MORE].than[0]>]:%brake%||<def[pass].length>>]>'
-          - define lines '<def[lines].include[%passtrim%]||<def[lines]>>'
+          - define lines '<def[lines].include[%c%%passtrim%]||<def[lines]>>'
           - define stringLen '<def[stringLen].sub[%brake%]>'
           }
         - if <def[loop_index].is[MORE].than[10]> {
@@ -241,7 +242,7 @@ paragraph:
     - foreach '<def[paragraphs]>' {
       - define lines '<proc[lineWrap].context[<def[value]>|<def[lineLen]||44>]>'
       - foreach '<def[lines]>' {
-        - define result '<def[result].include[<&f><def[value]>]>'
+        - define result '<def[result].include[<def[value]>]>'
         }
       }
     - determine '<def[result]>'
