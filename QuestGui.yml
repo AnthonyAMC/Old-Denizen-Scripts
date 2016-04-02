@@ -1,0 +1,1454 @@
+################################################################################
+#
+#                             Q u e s t   G U I
+#                        GUI Interface for Quest Data
+#
+#
+#   Authors: |Anthony|
+#   Version: 0.1
+#   dScript Version: 0.9.8-DEV_b548
+#
+#
+#
+#_______________________________________________________________________________
+#
+#--- About QuestGUI
+#
+#    QuestGUI was written upon request
+#
+#--- Installation & Setup
+#
+#
+#
+#--- Permissions & Commands
+#
+#
+#
+#--- Basic Usage Tutorial
+#
+#
+#
+#--- TODO
+#
+#
+################################################################################
+#
+#  QuestGUI Configurations
+#
+QuestGUI_Config:
+  type: yaml data
+
+  command: ''
+
+  quests:
+  - 'MyQuestGUIQuest_1'
+  trophies:
+  - 'QuestTrophies_MyQuestGUIQuest_1_Flowers'
+#
+# END QuestGUI Configurationst
+#--------------------------------------
+#
+################################################################################
+#
+#  QuestGUI Command Script
+#
+QuestGUI_Command:
+  type: command
+  debug: false
+  name: questgui
+  description: Check your quest data
+  usage: /questgui
+  aliases:
+  - qg
+  helpData:
+    help:
+      desc: Learn how to use QuestGUI
+      long:
+        - 'A lot of help will go here'
+        - 'And some more here too.'
+    about:
+      desc: Learn about the project
+      long:
+        - 'A lot of help will go here'
+        - 'And some more here too.'
+  tab complete:
+    - if <context.server> {
+      - queue clear
+      }
+    - if <player.has_permission[questgui.admin]||false> || <player.is_op> {
+      - define player '<c.args.last.escaped||null>'
+      - define result '<server.list_players.filter[name.starts_with[%player%]].parse[name].alphanumeric||li@>'
+      - if <def[result].is_empty> {
+        - define result '<server.list_players.parse[name].alphanumeric||li@>'
+        }
+      - determine %result%
+      }
+
+  script:
+    - if <context.server> {
+      - queue clear
+      }
+
+    - if <c.args.size> != 0 {
+      - define arg '<c.args.get[1]>'
+      - if <def[arg].as_player.is[MATCHES].to[PLAYER]||false> {
+        - if <player.has_permission[questgui.admin]||false> || <player.is_op> {
+          - flag <player> 'QuestGUI_AdminMenu_Editing:<def[arg].as_player>'
+          - run instantly s@QuestGUI_World display_AdminMainMenu 'def:<def[arg].as_player>' delay:1t
+          - queue clear
+          }
+        }
+      - if '%arg%' == 'about' {
+        - inject locally about
+        - queue clear
+        }
+      - inject locally help
+      - queue clear
+      }
+
+    - run instantly s@QuestGUI_World display_MainMenu delay:1t
+
+
+  about:
+    - define page '<tern[<c.args.get[2].is[matches].to[number]||false>]:<def[args].get[1].abs.round>||1>'
+    - define msg1 ' QuestGUI is system for players to track, and admins to administrate, quests written with the Denizen Scripting Engine.'
+    - define msg2 ' QuestGUI provides a graphical user interface to all player quest data. Users can see their available, active, and completed quests. Detailed stats, and available and completed objectives are provided for every quest. There<&sq>s even a trophy room!'
+    - define msg3 ' Administrators are able to manage all of the player data through the GUI.'
+    - run s@msgBoxed 'def:QuestGUI|QuestGUI|About|%page%|52|12|<proc[paragraph].context[52|<&7>%msg1%| |<&7>%msg2%| |<&7>%msg3%]>'
+
+  help:
+    - define page '<c.args.filter[is[matches].to[number]].get[1]||1>'
+    - define topic '<c.args.exclude[%page%|%arg%].get[1]||null>'
+    - define topics '<script.list_keys[helpData]>'
+    - if '%topics%' contains '%topic%' {
+      - define title 'Help - %topic%'
+      - define desc '<script.yaml_key[helpData.%topic%.desc]>'
+      - define long '<script.yaml_key[helpData.%topic%.long].separated_by[|]>'
+      - define msgs '<&7>%desc%|<&sp>|<&f>%long%]>'
+      }
+      else {
+      - define title 'Help List'
+      - define msgs 'li@'
+      - foreach %topics% {
+        - define topic '%value%'
+        - define desc '<script.yaml_key[helpData.%topic%.desc]>'
+        - define msgs '<def[msgs].include[<&f>%loop_index%<&dot> <&e>%topic%|<&sp><&sp><&sp><&b>%desc%]>'
+        }
+      }
+    - run s@msgBoxed 'def:QuestGUI|QuestGUI|%title%|%page%|52|12|<proc[paragraph].context[52|%msgs%]>'
+#
+# END QuestGUI Command Script
+#--------------------------------------
+#
+################################################################################
+#
+#  QuestGUI World Events Script
+#
+#  This should cover all QuestGUI related world events.
+#
+#
+QuestGUI_World:
+  type: world
+  debug: false
+
+#
+#--------------------------------------
+#
+#  QuestGUI Event Handlers
+#
+  events:
+    on player chats:
+      - if !<player.has_flag[questGUI_SettingStats]||false> {
+        - queue clear
+        }
+      - determine passively cancelled
+      - define array '<player.flag[questGUI_SettingStats].as_list>'
+      - queue <def[array].get[6].as_queue> clear
+      - define player '<def[array].get[3]>'
+      - flag %player% '<def[array].get[5]>:<c.message.escaped>'
+      - flag <player> questGUI_SettingStats:!
+      - run locally instantly display_AdminSetStats 'def:<def[array].get[1]>|<def[array].get[2]>|%player%|<def[array].get[4]>'
+
+    on player closes inventory:
+      - if '<c.inventory.notable_name.split[_].get[1]||null>' == 'QuestGUI' {
+        - if <c.inventory.notable_name.split[_].get[2].starts_with[Admin]||false> {
+          - flag <player> QuestGUI_AdminMenu_Editing:!
+          }
+        - note remove 'as:<context.inventory.notable_name>'
+        }
+
+    on player right clicks with QuestGUI_Journal:
+      - run instantly locally display_MainMenu delay:1t
+
+    on player clicks in inventory:
+      - if '<c.inventory.notable_name.split[_].get[1]||null>' != 'QuestGUI' {
+        - queue clear
+        }
+      - if '<c.slot_type>' == 'OUTSIDE' || '<c.item>' == 'i@air' {
+        - queue clear
+        }
+      - determine passively cancelled
+      - inject locally 'p:inventoryClick_<c.inventory.notable_name.split[_].get[2]>'
+
+  resetAllQuests:
+    - define player '%1%'
+    - define quests '<s@QuestGUI_Config.yaml_key[quests].as_list>'
+    - foreach '%quests%' {
+      - define iconScript '<el@val[%value%_Icon].as_script||null>'
+      - inject '%iconScript%' p:reset
+      }
+#
+# END QuestGUI Event Handlers
+#--------------------------------------
+#
+#  Inventory Display Generators
+#
+#--------------------
+#  User Displays
+#
+  display_MainMenu:
+    - define GUI 'QuestGUI_MainMenu_<player.name>'
+    - note 'in@generic[title=<&1>QuestGUI Menu;size=18]' 'as:%GUI%'
+    - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_QuestJournal' 'slot:1'
+    - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_QuestTrophies' 'slot:2'
+    - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_QuestsCompleted' 'slot:3'
+    - if !<s@QuestGUI_Config.yaml_key[command].as_list.is_empty> {
+      - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_ServerMenu' 'slot:17'
+      }
+    - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_Close' 'slot:18'
+    - inventory open 'd:in@%GUI%'
+
+  display_Overview:
+    - define GUI 'QuestGUI_Overview_<player.name>'
+    - note 'in@generic[title=<&1>QuestGUI Overview;size=36]' 'as:%GUI%'
+    - define hr '<&5>--------------------'
+
+    - define quests '<s@QuestGUI_Config.yaml_key[quests].exclude[<player.flag[QuestsCompleted]||li@>].include[<player.flag[Active_Quests]||li@>].deduplicate>'
+    - foreach '%quests%' {
+      - define questID '%value%'
+      - define iconScript '<el@val[%questID%_Icon].as_script||null>'
+      - define unlockFlag '<def[iconScript].yaml_key[quest_unlocked_flag]||li@>'
+      - define isHidden '<def[iconScript].yaml_key[hide_ifLocked]||false>'
+      - if '<player.flag[<def[iconScript].yaml_key[quest_progress_flag]||null>].strip_color||null>' == 'complete' {
+        - define isComplete 'true'
+        }
+        else {
+        - define isComplete 'false'
+        }
+      - if ( %isHidden% && !<def[unlockFlag].is_empty||false> && !<player.has_flag[%unlockFlag%]> ) {
+        - define quests '<def[quests].exclude[%questID%]>'
+        }
+      }
+
+    - define page '<def[1].as_int||1>'
+    - define pages '<def[quests].size.div[27].round_up>'
+    - if %page% > %pages% {
+      - define page '%pages%'
+      }
+    - define highNumber '<def[page].mul[27].as_int>'
+    - define lowNumber '<def[highNumber].sub[26].as_int>'
+
+    - foreach <def[quests].get[%lowNumber%].to[%highNumber%]||li@> {
+      - define slot '%loop_index%'
+      - define questID '%value%'
+      - define iconScript '<el@val[%value%_Icon].as_script||null>'
+      - define unlockFlag '<def[iconScript].yaml_key[quest_unlocked_flag]||li@>'
+      - if !<def[unlockFlag].is_empty||false> && !<player.has_flag[%unlockFlag%]> {
+        - adjust <i@%value%_Icon.simple||i@book> 'display_name:<&c>LOCKED' save:lockItem
+        - adjust <entry[lockItem].result> 'flags:HIDE_ATTRIBUTES|HIDE_DESTROYS|HIDE_ENCHANTS|HIDE_PLACED_ON|HIDE_POTION_EFFECTS|HIDE_UNBREAKABLE' save:lockItemClean
+        - inventory add 'd:in@%GUI%' 'o:<entry[lockItemClean].result>' 'slot:%slot%'
+        - foreach next
+        }
+
+      - define titleString '<def[iconScript].yaml_key[quest_title]||li@>'
+      - define titleLines '<proc[lineWrap].context[%titleString%|20]>'
+      - define title '<&6><def[titleLines].get[1]||null>'
+      - define titleLong 'li@'
+      - foreach <def[titleLines].remove[1]> {
+        - define titleLong "<def[titleLong].include[<&6>%value%]>"
+        }
+
+      - define descString '<def[iconScript].yaml_key[quest_desc]||li@>'
+      - define descLines '<proc[lineWrap].context[%descString%|20]>'
+      - define desc 'li@'
+      - foreach %descLines% {
+        - define desc "<def[desc].include[<&7><&sp.pad_left[2]>%value%]>"
+        }
+
+      - define progressFlag '<def[iconScript].yaml_key[quest_progress_flag]||null>'
+      - define progress '<player.flag[%progressFlag%]||null>'
+      - if %progress% != null {
+        - define objString '<def[iconScript].yaml_key[objectives.%progress%.name]||li@>'
+        - define objLines '<proc[lineWrap].context[%objString%|20]>'
+        - define obj 'li@'
+        - foreach %objLines% {
+          - define obj "<def[obj].include[<&7><&sp.pad_left[2]>%value%]>"
+          }
+        - define lore '<def[titleLong].separated_by[|]>|%hr%|<&f>|<&f>Description<&co>|<def[desc].separated_by[|]>|<&f>|<&f>Objective %progress%<&co>|<def[obj].separated_by[|]>'
+        }
+        else {
+        - define lore '<def[titleLong].separated_by[|]>|%hr%|<&f>|<&f>Description<&co>|<def[desc].separated_by[|]>|<&f>|<&a><&l.pad_left[10]>Available'
+        }
+      - inventory add 'd:in@%GUI%' 'o:i@%questID%_Icon[display_name=%title%;lore=%lore%;flags=HIDE_ATTRIBUTES|HIDE_DESTROYS|HIDE_ENCHANTS|HIDE_PLACED_ON|HIDE_POTION_EFFECTS|HIDE_UNBREAKABLE]' 'slot:%slot%'
+      }
+    - if %pages% > 1 {
+      - if %page% != 1 {
+        - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_PreviousPage[nbt=page/<def[page].sub[1].as_int>]' 'slot:34'
+        }
+      - if %page% < %pages% {
+        - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_NextPage[nbt=page/<def[page].add[1].as_int>]' 'slot:35'
+        }
+      }
+    - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_QuestMenu' 'slot:35'
+    - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_Close' 'slot:36'
+    - inventory open 'd:in@%GUI%'
+
+  display_Objectives:
+    - define questID '%1%'
+    - define GUI 'QuestGUI_Objectives_<player.name>'
+    - note 'in@generic[title=<&1>QuestGUI Objectives;size=36]' 'as:%GUI%'
+    - define hr '<&5>--------------------'
+
+    - define iconScript '<el@val[%questID%_Icon].as_script||null>'
+    - define progressFlag '<def[iconScript].yaml_key[quest_progress_flag]||null>'
+    - define progress '<player.flag[%progressFlag%]||0>'
+    - define objectives '<def[iconScript].list_keys[objectives]||li@>'
+    - if '%progress%' == 'Completed' {
+      - define progress '<def[objectives].size>'
+      }
+    - foreach <def[objectives]> {
+      - define obj '%value%'
+      - define isHidden '<def[iconScript].yaml_key[objectives.%obj%.hide]||false>'
+      - if %isHidden% && <def[progress].is[MATCHES].to[NUMBER]> {
+        - if %obj% > %progress% {
+          - define objectives '<def[objectives].exclude[%obj%]>'
+          }
+        }
+      }
+
+    - define page '<def[1].as_int||1>'
+    - define pages '<def[objectives].size.div[27].round_up>'
+    - if %page% > %pages% {
+      - define page '%pages%'
+      }
+    - define highNumber '<def[page].mul[27].as_int>'
+    - define lowNumber '<def[highNumber].sub[26].as_int>'
+
+    - foreach <def[objectives].alphanumeric.get[%lowNumber%].to[%highNumber%]||li@> {
+      - define slot '%loop_index%'
+      - define obj '%value%'
+      - define isLocked '<def[iconScript].yaml_key[objectives.%obj%.lockDisplay]||false>'
+      - define icon '<def[iconScript].yaml_key[objectives.%obj%.icon]||i@paper>'
+      - if %isLocked% && %progress% < %obj% {
+        - inventory add 'd:in@%GUI%' 'o:%icon%[display_name=<&c>LOCKED;flags=HIDE_ATTRIBUTES|HIDE_DESTROYS|HIDE_ENCHANTS|HIDE_PLACED_ON|HIDE_POTION_EFFECTS|HIDE_UNBREAKABLE]' 'slot:%slot%'
+        - foreach next
+        }
+      - define nameString '<def[iconScript].yaml_key[objectives.%obj%.name]||li@>'
+      - define nameLines '<proc[lineWrap].context[%nameString%|20]>'
+      - define name '<&6><def[nameLines].get[1]>'
+      - define nameLong 'li@'
+      - foreach <def[nameLines].remove[1]> {
+        - define nameLong "<def[nameLong].include[<&6>%value%]>"
+        }
+
+      - define descString '<def[iconScript].yaml_key[objectives.%obj%.description]||li@>'
+      - define descLines '<proc[lineWrap].context[%descString%|20]>'
+      - define desc 'li@'
+      - foreach %descLines% {
+        - define desc "<def[desc].include[<&7><&sp.pad_left[2]>%value%]>"
+        }
+
+      - define oProgressFlags '<def[iconScript].yaml_key[objectives.%obj%.progress_flags]||li@>'
+      - if !<def[oProgressFlags].is_empty> {
+        - define pLore 'li@'
+        - foreach %oProgressFlags% {
+          - define pNameString '<def[value].split[/].get[1]>'
+          - define pStatusString '<player.flag[<def[value].split[/].get[2]>]||Pending>'
+
+          - define pNameLines '<proc[lineWrap].context[%pNameString%|20]>'
+          - define pName 'li@'
+          - foreach %pNameLines% {
+            - define pName "<def[pName].include[<&3>%value%]>"
+            }
+
+          - define pStatusLines '<proc[lineWrap].context[%pStatusString%|20]>'
+          - define pStatus 'li@'
+          - foreach %pStatusLines% {
+            - define pStatus "<def[pStatus].include[<&b><&sp.pad_left[2]>%value%]>"
+            }
+          - define pLore '<def[pLore].include[<def[pName].separated_by[|]>|<def[pStatus].separated_by[|]>|<&f>]>'
+          }
+        - define lore '<def[nameLong].separated_by[|]>|%hr%|<&f>|<&f>Description<&co>|<def[desc].separated_by[|]>|<&f>|<&9><&n.pad_left[13]>Stats|<&f>|<def[pLore].separated_by[|]>'
+        }
+        else {
+        - define lore '<def[nameLong].separated_by[|]>|%hr%|<&f>|<&f>Description<&co>|<def[desc].separated_by[|]>'
+        }
+      - inventory add 'd:in@%GUI%' 'o:%icon%[display_name=%name%;lore=%lore%;flags=HIDE_ATTRIBUTES|HIDE_DESTROYS|HIDE_ENCHANTS|HIDE_PLACED_ON|HIDE_POTION_EFFECTS|HIDE_UNBREAKABLE]' 'slot:%slot%'
+      }
+    - if %pages% > 1 {
+      - if %page% != 1 {
+        - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_PreviousPage[nbt=page/<def[page].sub[1].as_int>]' 'slot:32'
+        }
+      - if %page% < %pages% {
+        - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_NextPage[nbt=page/<def[page].add[1].as_int>]' 'slot:33'
+        }
+      }
+    - if '<def[2]||null>' == 'Complete' {
+      - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_QuestsCompleted[lore=]' 'slot:34'
+      }
+      else {
+      - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_QuestJournal[lore=]' 'slot:34'
+      }
+    - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_QuestMenu' 'slot:35'
+    - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_Close' 'slot:36'
+    - inventory open 'd:in@%GUI%'
+
+  display_Trophies:
+    - define questID '%1%'
+    - define GUI 'QuestGUI_Trophies_<player.name>'
+    - note 'in@generic[title=<&1>QuestGUI Trophies;size=36]' 'as:%GUI%'
+    - define hr '<&5>--------------------'
+
+    - define trophies '<player.flag[QuestTrophies].as_list||li@>'
+
+    - define page '<def[1].as_int||1>'
+    - define pages '<def[trophies].size.div[27].round_up>'
+    - if %page% > %pages% {
+      - define page '%pages%'
+      }
+    - define highNumber '<def[page].mul[27].as_int>'
+    - define lowNumber '<def[highNumber].sub[26].as_int>'
+
+    - foreach <def[trophies].get[%lowNumber%].to[%highNumber%]||li@> {
+      - define slot '%loop_index%'
+      - define trophy '<def[value].as_item.simple>'
+      - define trophyScript '<def[value].as_script>'
+
+      - define nameString '<def[trophy].display||li@>'
+      - define nameLines '<proc[lineWrap].context[%nameString%|20].as_list>'
+      - define name '<&2><def[nameLines].get[1]>'
+      - define nameLong 'li@'
+      - foreach <def[nameLines].remove[1]> {
+        - define nameLong "<def[nameLong].include[<&2>%value%]>"
+        }
+
+      - define descString '<def[trophyScript].yaml_key[description]||li@>'
+      - define descLines '<proc[lineWrap].context[%descString%|20]>'
+      - define desc 'li@'
+      - foreach %descLines% {
+        - define desc "<def[desc].include[<&7><&sp.pad_left[2]>%value%]>"
+        }
+
+      - define quest '<def[trophyScript].yaml_key[quest]||li@>'
+      - define questString '<s@%quest%_Icon.yaml_key[quest_title]>'
+      - define questLines '<proc[lineWrap].context[%questString%|20]>'
+      - define quest 'li@'
+      - foreach %questLines% {
+        - define quest "<def[quest].include[<&7><&sp.pad_left[2]>%value%]>"
+        }
+
+      - define lore '<def[nameLong].separated_by[|]>|%hr%|<&f>|<&f>About<&co>|<def[desc].separated_by[|]>|<&f>|<&b>Quest<&co>|<def[quest].separated_by[|]>'
+      - inventory add 'd:in@%GUI%' 'o:%trophy%[display_name=%name%;lore=%lore%;flags=HIDE_ATTRIBUTES|HIDE_DESTROYS|HIDE_ENCHANTS|HIDE_PLACED_ON|HIDE_POTION_EFFECTS|HIDE_UNBREAKABLE]' 'slot:%slot%'
+      }
+
+    - if %pages% > 1 {
+      - if %page% != 1 {
+        - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_PreviousPage[nbt=page/<def[page].sub[1].as_int>]' 'slot:33'
+        }
+      - if %page% < %pages% {
+        - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_NextPage[nbt=page/<def[page].sub[1].as_int>]' 'slot:34'
+        }
+      }
+    - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_QuestMenu' 'slot:35'
+    - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_Close' 'slot:36'
+    - inventory open 'd:in@%GUI%'
+
+  display_Complete:
+    - define GUI 'QuestGUI_Complete_<player.name>'
+    - note 'in@generic[title=<&1>QuestGUI Complete;size=36]' 'as:%GUI%'
+    - define hr '<&5>--------------------'
+
+    - define quests '<player.flag[QuestsCompleted].as_list||li@>'
+
+    - define page '<def[1].as_int||1>'
+    - define pages '<def[quests].size.div[27].round_up>'
+    - if %page% > %pages% {
+      - define page '%pages%'
+      }
+    - define highNumber '<def[page].mul[27].as_int>'
+    - define lowNumber '<def[highNumber].sub[26].as_int>'
+
+    - foreach <def[quests].get[%lowNumber%].to[%highNumber%]||li@> {
+      - define slot '%loop_index%'
+      - define questID '%value%'
+      - define iconScript '<el@val[%value%_Icon].as_script||null>'
+
+      - define titleString '<def[iconScript].yaml_key[quest_title]||li@>'
+      - define titleLines '<proc[lineWrap].context[%titleString%|20]>'
+      - define title '<&6><def[titleLines].get[1]>'
+      - define titleLong 'li@'
+      - foreach <def[titleLines].remove[1]> {
+        - define titleLong "<def[titleLong].include[<&6>%value%]>"
+        }
+
+      - define descString '<def[iconScript].yaml_key[quest_desc]||li@>'
+      - define descLines '<proc[lineWrap].context[%descString%|20]>'
+      - define desc 'li@'
+      - foreach %descLines% {
+        - define desc "<def[desc].include[<&7><&sp.pad_left[2]>%value%]>"
+        }
+
+      - define timesCompleted '<def[iconScript].yaml_key[times_completed_flag]||li@>'
+      - if <def[timesCompleted].as_list.is_empty||true> {
+        - define lore '<def[titleLong].separated_by[|]>|%hr%|<&f>|<&f>Description<&co>|<def[desc].separated_by[|]>'
+        }
+        else {
+        - define lore '<def[titleLong].separated_by[|]>|%hr%|<&f>|<&f>Description<&co>|<def[desc].separated_by[|]>|<&f>|<&a>Times Completed<&co> <&f><player.flag[%timesCompleted%].as_int||0>'
+        }
+      - inventory add 'd:in@%GUI%' 'o:i@%questID%_Icon[display_name=%title%;lore=%lore%;flags=HIDE_ATTRIBUTES|HIDE_DESTROYS|HIDE_ENCHANTS|HIDE_PLACED_ON|HIDE_POTION_EFFECTS|HIDE_UNBREAKABLE]' 'slot:%slot%'
+      }
+    - if %pages% > 1 {
+      - if %page% != 1 {
+        - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_PreviousPage[nbt=page/<def[page].sub[1].as_int>]' 'slot:34'
+        }
+      - if %page% < %pages% {
+        - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_NextPage[nbt=page/<def[page].add[1].as_int>]' 'slot:35'
+        }
+      }
+    - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_QuestMenu' 'slot:35'
+    - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_Close' 'slot:36'
+    - inventory open 'd:in@%GUI%'
+#
+#--------------------
+#  Admin Displays
+#
+  display_AdminMainMenu:
+    - define GUI 'QuestGUI_AdminMainMenu_<player.name>'
+    - note 'in@generic[title=<&1>QuestGUI Admin Menu;size=18]' 'as:%GUI%'
+    - define player '<def[1]>'
+    - narrate "<def[player].name>"
+    - define hr '<&5>----------------'
+    - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_AdminOverview[nbt=dPlayer/%player%;lore=<&sp>|%hr%|<&7>Show all Quest|<&7>details]' 'slot:1'
+    - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_AdminTrophies[nbt=dPlayer/%player%;lore=<&sp>|%hr%|<&7>Show all Trophy|<&7>details]' 'slot:2'
+    - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_AdminResetAll[nbt=dPlayer/%player%;lore=<&sp>|%hr%|<&7>Reset all Quests|<&7>for this player]' 'slot:3'
+    - if !<s@QuestGUI_Config.yaml_key[command].as_list.is_empty> {
+      - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_ServerMenu[nbt=dPlayer/%player%;lore=<&sp>]' 'slot:17'
+      }
+    - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_Close[nbt=dPlayer/%player%;lore=<&sp>]' 'slot:18'
+    - inventory open 'd:in@%GUI%'
+
+  display_AdminOverview:
+    - define GUI 'QuestGUI_AdminOverview_<player.name>'
+    - note 'in@generic[title=<&1>QuestGUI Admin Overview;size=36]' 'as:%GUI%'
+    - define hr '<&5>--------------------'
+    - define player '%2%'
+    - narrate "display overview <def[player]>"
+    - define completed '<def[player].flag[QuestsCompleted].as_list||li@>'
+    - define active '<def[player].flag[Active_Quests].as_list||li@>'
+    - define quests '<s@QuestGUI_Config.yaml_key[quests].as_list>'
+    - define msg0 '<&e>       <&n>Click Actions'
+    - define page '<def[1].as_int||1>'
+    - define pages '<def[quests].size.div[27].round_up>'
+    - if %page% > %pages% {
+      - define page '%pages%'
+      }
+    - define highNumber '<def[page].mul[27].as_int>'
+    - define lowNumber '<def[highNumber].sub[26].as_int>'
+
+    - foreach <def[quests].get[%lowNumber%].to[%highNumber%]||li@> {
+      - define slot '%loop_index%'
+      - define questID '%value%'
+      - define item 'i@%questID%_Icon[flags=HIDE_ATTRIBUTES|HIDE_DESTROYS|HIDE_ENCHANTS|HIDE_PLACED_ON|HIDE_POTION_EFFECTS|HIDE_UNBREAKABLE]'
+      - define iconScript '<el@val[%questID%_Icon].as_script||null>'
+      - define unlockFlag '<def[iconScript].yaml_key[quest_unlocked_flag]||li@>'
+      - define progressFlag '<def[iconScript].yaml_key[quest_progress_flag]||null>'
+      - define repeatableFlag '<def[iconScript].yaml_key[times_completed_flag]||li@>'
+      - define isHidden '<def[iconScript].yaml_key[hide_ifLocked]||false>'
+      - define isActive '<def[active].contains[%questID%]||false>'
+      - define isCompleted '<def[completed].contains[%questID%]||false>'
+      - define isLockable '<def[unlockFlag].as_list.is_empty.not>'
+      - define isLocked '<def[unlockFlag].as_list.is_empty.not.and[<def[player].has_flag[%unlockFlag%].not>]||false>'
+      - define isRepeatable '<def[repeatableFlag].as_list.is_empty.not||false>'
+      - define progress '<def[player].flag[%progressFlag%]||none>'
+
+      - define msg1 '<&3>Edit Progress<&f><&co> <&7>Left'
+      - define msg2 '<&b><tern[%isRepeatable%]:Set Complete<&co> <&f><&o>Shift<&f> Left||<tern[%isCompleted%]:<&m>Set Complete<&f><&co> <&f><&o><&m>Shift<&f><&m> Left||Set Complete<&co> <&f><&o>Shift<&f> Left>>'
+      - if %isLockable% {
+        - define msg3 '<&3><tern[%isLocked%]:Unlock||Lock><&f><&co> <&7>Right'
+        }
+        else {
+        - define msg3 '<&3><&m>Lock<&f><&m><&co> <&7><&m>Right'
+        }
+      - define msg4 '<&b><tern[%isActive%]:Deactivate||Activate><&f><&co> <&f><&o>Shift<&f> Right'
+      - define msg5 '<&3>Reset<&f><&co> <&7>Middle'
+
+      - if %isLocked% {
+        - define color '<&c>'
+        }
+        else {
+        - if %isActive% {
+          - define color '<&2>'
+          }
+          else if %isCompleted% {
+          - define color '<&d>'
+          }
+          else {
+          - define color '<&a>'
+          }
+        }
+      - if %isRepeatable% {
+        - define color '%color%<&o>'
+        }
+
+      - define titleString '<def[iconScript].yaml_key[quest_title]||li@>'
+      - define titleLines '<proc[lineWrap].context[%titleString%|20]>'
+      - define title '%color%<def[titleLines].get[1]>'
+      - define titleLong 'li@'
+      - foreach <def[titleLines].remove[1]> {
+        - define titleLong "<def[titleLong].include[%color%%value%]>"
+        }
+
+      - define lore '<def[titleLong].separated_by[|]>|%hr%|<&f>|%msg0%|<&f>|%msg1%|%msg2%|%msg3%|%msg4%|%msg5%|<&sp>'
+      - adjust '%item%' 'display_name:%title%' save:ficon
+      - adjust '<entry[ficon].result>' 'lore:%lore%' save:uicon
+      - nbt '<entry[uicon].result>' 'page:%page%' save:cicon
+      - nbt '<entry[cicon].new_item>' 'dPlayer:%player%' save:kicon
+      - inventory add 'd:in@%GUI%' 'o:<entry[kicon].new_item>' 'slot:%slot%'
+      }
+    - if %pages% > 1 {
+      - if %page% != 1 {
+        - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_AdminPreviousPage[nbt=page/%page%;nbt=dPlayer/%player%]' 'slot:33'
+        }
+      - if %page% < %pages% {
+        - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_AdminNextPage[nbt=page/%page%;nbt=dPlayer/%player%]' 'slot:34'
+        }
+      }
+    - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_AdminQuestMenu[lore=<&sp>;nbt=dPlayer/%player%]' 'slot:35'
+    - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_Close[lore=<&sp>;nbt=dPlayer/%player%]' 'slot:36'
+    - inventory open 'd:in@%GUI%'
+
+  display_AdminObjectives:
+    - define GUI 'QuestGUI_AdminObjectives_<player.name>'
+    - note 'in@generic[title=<&1>QuestGUI Admin Objectives;size=36]' 'as:%GUI%'
+    - define hr '<&5>--------------------'
+    - define questID '%2%'
+    - define player '%3%'
+    - define iconScript '<el@val[%questID%_Icon].as_script||null>'
+    - define progressFlag '<def[iconScript].yaml_key[quest_progress_flag]||null>'
+    - define progress '<def[player].flag[%progressFlag%]||0>'
+    - define objectives '<def[iconScript].list_keys[objectives]||li@>'
+    - define msg0 '<&e>       <&n>Click Actions'
+    - define page '<def[1].as_int||1>'
+    - define pages '<def[objectives].size.div[27].round_up>'
+    - if %page% > %pages% {
+      - define page '%pages%'
+      }
+    - define highNumber '<def[page].mul[27].as_int>'
+    - define lowNumber '<def[highNumber].sub[26].as_int>'
+
+    - foreach <def[objectives].alphanumeric.get[%lowNumber%].to[%highNumber%]||li@> {
+      - define slot '%loop_index%'
+      - define obj '%value%'
+      - define isLocked '<def[iconScript].yaml_key[objectives.%obj%.lockDisplay]||false>'
+      - define icon '<def[iconScript].yaml_key[objectives.%obj%.icon]||i@paper>'
+      - define msg1 '<&3>Set Objective<&f><&co> <&7>Left'
+      - if %progress% == Complete {
+        - define color '<&a>'
+        }
+        else if %isLocked% && %progress% < %obj% {
+        - define color '<&7>'
+        }
+        else {
+        - define color '<&a>'
+        }
+      - define nameString '<def[iconScript].yaml_key[objectives.%obj%.name]||li@>'
+      - define nameLines '<proc[lineWrap].context[%nameString%|20]>'
+      - define name '%color%<def[nameLines].get[1]>'
+      - define nameLong 'li@'
+      - foreach <def[nameLines].remove[1]> {
+        - define nameLong "<def[nameLong].include[%color%%value%]>"
+        }
+
+      - define oProgressFlags '<def[iconScript].yaml_key[objectives.%obj%.progress_flags].as_list||li@>'
+      - if !<def[oProgressFlags].is_empty> {
+        - define pLore 'li@'
+        - foreach %oProgressFlags% {
+          - define pNameString '<def[value].split[/].get[1]>'
+          - define pStatusString '<def[player].flag[<def[value].split[/].get[2]>]||Pending>'
+
+          - define pNameLines '<proc[lineWrap].context[%pNameString%|20]>'
+          - define pName 'li@'
+          - foreach %pNameLines% {
+            - define pName "<def[pName].include[<&3>%value%]>"
+            }
+
+          - define pStatusLines '<proc[lineWrap].context[%pStatusString%|20]>'
+          - define pStatus 'li@'
+          - foreach %pStatusLines% {
+            - define pStatus "<def[pStatus].include[<&b><&sp.pad_left[2]>%value%]>"
+            }
+          - define pLore '<def[pLore].include[<def[pName].separated_by[|]>|<def[pStatus].separated_by[|]>|<&f>]>'
+          }
+        - define msg2 '<&a>Edit Stats<&f><&co> <&7>Right'
+        - define lore '<def[nameLong].separated_by[|]>|%hr%|<&f>|%msg0%|<&f>|%msg1%|%msg2%|%hr%|<&f>|<&9><&n.pad_left[13]>Stats|<&f>|<def[pLore].separated_by[|]>|<&sp>'
+        }
+        else {
+        - define lore '<def[nameLong].separated_by[|]>|%hr%|<&f>|%msg0%|<&f>|%msg1%|<&sp>'
+        }
+      - inventory add 'd:in@%GUI%' 'o:%icon%[display_name=%name%;lore=%lore%;nbt=dPlayer/%player%;nbt=questID/%questID%;nbt=page/%page%;flags=HIDE_ATTRIBUTES|HIDE_DESTROYS|HIDE_ENCHANTS|HIDE_PLACED_ON|HIDE_POTION_EFFECTS|HIDE_UNBREAKABLE]' 'slot:%slot%'
+      }
+    - if %pages% > 1 {
+      - if %page% != 1 {
+        - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_AdminPreviousPage[lore=<&sp>;nbt=dPlayer/%player%;nbt=page/%page%]' 'slot:32'
+        }
+      - if %page% < %pages% {
+        - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_AdminNextPage[lore=<&sp>;nbt=dPlayer/%player%;nbt=page/%page%]' 'slot:33'
+        }
+      }
+    - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_AdminOverview[lore=<&sp>;nbt=dPlayer/%player%]' 'slot:34'
+    - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_AdminQuestMenu[lore=<&sp>;nbt=dPlayer/%player%]' 'slot:35'
+    - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_Close[lore=<&sp>;nbt=dPlayer/%player%]' 'slot:36'
+    - inventory open 'd:in@%GUI%'
+
+  display_AdminSetStats:
+    - define GUI 'QuestGUI_AdminSetStats_<player.name>'
+    - note 'in@generic[title=<&1>QuestGUI Admin Stats;size=36]' 'as:%GUI%'
+    - define hr '<&5>--------------------'
+    - define questID '%2%'
+    - define player '%3%'
+    - define objective '%4%'
+    - define iconScript '<el@val[%questID%_Icon].as_script||null>'
+    - define stats '<def[iconScript].yaml_key[objectives.%objective%.progress_flags].as_list||li@>'
+    - define msg0 '<&e>       <&n>Click Actions'
+    - define msg1 '<&3>Edit Stat<&f><&co> <&7>Left'
+    - define msg2 '<&c>Clear Stat<&f><&co> <&7>Right<&7>'
+
+    - define page '<def[1].as_int||1>'
+    - define pages '<def[stats].size.div[27].round_up>'
+    - if %page% > %pages% {
+      - define page '%pages%'
+      }
+
+    - define highNumber '<def[page].mul[27].as_int>'
+    - define lowNumber '<def[highNumber].sub[26].as_int>'
+    - foreach <def[stats].get[%lowNumber%].to[%highNumber%]||li@> {
+      - define slot '%loop_index%'
+      - define statNameString '<def[value].split[/].get[1]>'
+      - define statFlag '<def[value].split[/].get[2]>'
+      - define statValueString '<def[player].flag[%statFlag%]||Pending>'
+      - define statNameStringLines '<proc[lineWrap].context[%statNameString%|20]>'
+      - define statName '<&3><def[statNameStringLines].get[1]>'
+      - define statNameLong 'li@'
+      - foreach <def[statNameStringLines].remove[1]> {
+        - define statNameLong "<def[statNameLong].include[<&3>%value%]>"
+        }
+      - define statValueStringLines '<proc[lineWrap].context[%statValueString%|20]>'
+      - define statValueLong 'li@'
+      - foreach %statValueStringLines% {
+        - define statValueLong "<def[statValueLong].include[<&b>%value%]>"
+        }
+      - define lore '<def[statNameLong].separated_by[|]>|<&f>|<def[statValueLong].separated_by[|]>|%hr%|%msg0%|<&f>|%msg1%|%msg2%|<&sp>'
+      - inventory add 'd:in@%GUI%' 'o:i@paper[display_name=%statName%;lore=%lore%;nbt=dPlayer/%player%;nbt=page/%page%;nbt=questID/%questID%;nbt=objective/%objective%;nbt=statFlag/%statFlag%;flags=HIDE_ATTRIBUTES|HIDE_DESTROYS|HIDE_ENCHANTS|HIDE_PLACED_ON|HIDE_POTION_EFFECTS|HIDE_UNBREAKABLE]' 'slot:%slot%'
+      }
+
+    - if %pages% > 1 {
+      - if %page% != 1 {
+        - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_AdminPreviousPage[lore=<&sp>;nbt=dPlayer/%player%;nbt=page/%page%;nbt=questID/%questID%]' 'slot:32'
+        }
+      - if %page% < %pages% {
+        - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_AdminNextPage[lore=<&sp>;nbt=dPlayer/%player%;nbt=page/%page%;nbt=questID/%questID%]' 'slot:33'
+        }
+      }
+    - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_AdminObjectives[lore=<&sp>;nbt=dPlayer/%player%;nbt=questID/%questID%]' 'slot:34'
+    - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_AdminQuestMenu[lore=<&sp>;nbt=dPlayer/%player%]' 'slot:35'
+    - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_Close[lore=<&sp>;nbt=dPlayer/%player%]' 'slot:36'
+    - inventory open 'd:in@%GUI%'
+
+  display_AdminTrophies:
+    - define GUI 'QuestGUI_AdminTrophies_<player.name>'
+    - note 'in@generic[title=<&1>QuestGUI Admin Trophies;size=36]' 'as:%GUI%'
+    - define hr '<&5>--------------------'
+    - define player '%2%'
+    - define trophies '<s@QuestGUI_Config.yaml_key[trophies].as_list>'
+    - define msg0 '<&e>       <&n>Click Actions'
+
+    - define page '<def[1].as_int||1>'
+    - define pages '<def[trophies].size.div[27].round_up>'
+    - if %page% > %pages% {
+      - define page '%pages%'
+      }
+
+    - define highNumber '<def[page].mul[27].as_int>'
+    - define lowNumber '<def[highNumber].sub[26].as_int>'
+    - foreach <def[trophies].get[%lowNumber%].to[%highNumber%]||li@> {
+      - define slot '%loop_index%'
+      - define trophy '<def[value].as_item.simple>'
+      - define trophyName '%value%'
+      - define trophyScript '<def[value].as_script>'
+      - define hasTrophy '<def[player].flag[QuestTrophies].as_list.contains[%value%]||false>'
+      - define color '<tern[%hasTrophy%]:<&2>||<&7>>'
+      - define action '<tern[%hasTrophy%]:Take||Give>'
+      - define msg1 '<&3>%action% Trophy<&f><&co> <&7>Left'
+      - define nameString '<def[trophy].display||li@>'
+      - define nameLines '<proc[lineWrap].context[%nameString%|20].as_list>'
+      - define name '%color%<def[nameLines].get[1]>'
+      - define nameLong 'li@'
+      - foreach <def[nameLines].remove[1]> {
+        - define nameLong "<def[nameLong].include[%color%%value%]>"
+        }
+      - define quest '<def[trophyScript].yaml_key[quest]||li@>'
+      - define questString '<s@%quest%_Icon.yaml_key[quest_title]>'
+      - define questLines '<proc[lineWrap].context[%questString%|20]>'
+      - define quest 'li@'
+      - foreach %questLines% {
+        - define quest "<def[quest].include[<&7><&sp.pad_left[2]>%value%]>"
+        }
+      - define lore '<def[nameLong].separated_by[|]>|%hr%|<&f>|<&b>Quest<&co>|<def[quest].separated_by[|]>|<&f>|%hr%|<&f>|%msg0%|<&f>|%msg1%|<&sp>'
+      - inventory add 'd:in@%GUI%' 'o:%trophy%[display_name=%name%;lore=%lore%;nbt=dPlayer/%player%;nbt=page/%page%;nbt=trophy/%trophyName%;nbt=action/%action%;flags=HIDE_ATTRIBUTES|HIDE_DESTROYS|HIDE_ENCHANTS|HIDE_PLACED_ON|HIDE_POTION_EFFECTS|HIDE_UNBREAKABLE]' 'slot:%slot%'
+      }
+
+    - if %pages% > 1 {
+      - if %page% != 1 {
+        - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_AdminPreviousPage[lore=<&sp>;nbt=dPlayer/%player%;nbt=page/%page%]' 'slot:33'
+        }
+      - if %page% < %pages% {
+        - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_AdminNextPage[lore=<&sp>;nbt=dPlayer/%player%;nbt=page/%page%]' 'slot:34'
+        }
+      }
+    - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_AdminQuestMenu[lore=<&sp>;nbt=dPlayer/%player%]' 'slot:35'
+    - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_Close[lore=<&sp>;nbt=dPlayer/%player%]' 'slot:36'
+    - inventory open 'd:in@%GUI%'
+
+  display_AdminResetAll:
+    - define GUI 'QuestGUI_AdminResetAll_<player.name>'
+    - note 'in@generic[title=<&1>QuestGUI Admin Reset All;size=18]' 'as:%GUI%'
+    - define hr '<&5>--------------------'
+    - define player '%1%'
+    - define trophies '<s@QuestGUI_Config.yaml_key[trophies].as_list>'
+    - define msg0 '<&c>          <&n>WARNING'
+    - define msg1 '<&c>This can not be undone!'
+    - define msg2 '<&f>Click to proceed'
+    - define lore '%hr%|<&f>|%msg0%|<&f>|%msg1%|<&f>|<&f>|%msg2%|<&sp>'
+
+    - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_AdminConfirmResetAll[lore=%lore%;nbt=dPlayer/%player%]' 'slot:5'
+    - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_AdminQuestMenu[lore=<&sp>;nbt=dPlayer/%player%]' 'slot:17'
+    - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_Close[lore=<&sp>;nbt=dPlayer/%player%]' 'slot:18'
+    - inventory open 'd:in@%GUI%'
+#
+# END QuestGUI Display Generators
+#--------------------------------------
+#
+#  Inventory Click Handlers: Users
+#
+  inventoryClick_MainMenu:
+    - if <c.raw_slot> > 36 {
+      - queue clear
+      }
+    - if <c.item.scriptname.split[_].get[2]||null> == button {
+      - define GUI 'QuestGUI_MainMenu_<player.name>'
+      - inject <context.item.scriptname.as_script>
+      }
+
+  inventoryClick_Overview:
+    - if <c.raw_slot> > 36 {
+      - queue clear
+      }
+    - if <c.item.scriptname.split[_].last||null> == icon {
+      - if <c.item.display.strip_color> == LOCKED {
+        - queue clear
+        }
+      - run locally instantly display_Objectives 'def:<c.item.scriptname.before[_icon]||null>'
+      - queue clear
+      }
+    - if <c.item.scriptname.split[_].get[2]||null> == button {
+      - define GUI 'QuestGUI_Overview_<player.name>'
+      - define menuType 'Overview'
+      - inject <context.item.scriptname.as_script>
+      }
+
+  inventoryClick_Objectives:
+    - if <c.raw_slot> > 36 {
+      - queue clear
+      }
+    - if <c.item.scriptname.split[_].get[2]||null> == button {
+      - define GUI 'QuestGUI_Objectives_<player.name>'
+      - define menuType 'Objectives'
+      - inject <context.item.scriptname.as_script>
+      }
+
+  inventoryClick_Trophies:
+    - if <c.raw_slot> > 36 {
+      - queue clear
+      }
+    - if <c.item.scriptname.split[_].get[2]||null> == button {
+      - define GUI 'QuestGUI_Objectives_<player.name>'
+      - define menuType 'Objectives'
+      - inject <context.item.scriptname.as_script>
+      }
+
+  inventoryClick_Complete:
+    - if <c.raw_slot> > 36 {
+      - queue clear
+      }
+    - if <c.item.scriptname.split[_].last||null> == icon {
+      - if <c.item.display.strip_color> == LOCKED {
+      - queue clear
+      }
+      - run locally instantly display_Objectives 'def:<c.item.scriptname.before[_icon]||null>|Complete'
+      - queue clear
+      }
+    - if <c.item.scriptname.split[_].get[2]||null> == button {
+      - define GUI 'QuestGUI_Complete_<player.name>'
+      - define menuType 'Complete'
+      - inject <context.item.scriptname.as_script>
+      }
+#
+#--------------------------------------
+#
+#  Inventory Click Handlers: Admins
+#
+  inventoryClick_AdminMainMenu:
+    - if <c.raw_slot> > 18 {
+      - queue clear
+      }
+    - if <c.item.scriptname.split[_].get[2]||null> == button {
+      - define GUI 'QuestGUI_AdminMainMenu_<player.name>'
+      - define player '<c.item.nbt[dPlayer].as_player||null>'
+      - inject <context.item.scriptname.as_script>
+      }
+
+  inventoryClick_AdminOverview:
+    - if <c.raw_slot> > 36 {
+      - queue clear
+      }
+    - define player '<c.item.nbt[dPlayer].as_player||null>'
+    - narrate "overview <def[player].name>"
+    - define page '<c.item.nbt[page]||null>'
+    - if <c.item.scriptname.split[_].get[2]||null> == button {
+      - define GUI 'QuestGUI_AdminOverview_<player.name>'
+      - define menuType 'AdminOverview'
+      - inject <context.item.scriptname.as_script>
+      }
+    - if <c.item.scriptname.split[_].last||null> == icon {
+      - define questID '<c.item.scriptname.before[_icon]||null>'
+      - define iconScript '<el@val[%questID%_Icon].as_script||null>'
+      - if <context.click> == LEFT {
+        - inventory close
+        - note remove 'as:QuestGUI_AdminOverview_<player.name>'
+        - run locally instantly display_AdminObjectives 'def:1|%questID%|%player%'
+        - queue clear
+        }
+      - if <context.click> == RIGHT {
+        - define unlockFlag '<def[iconScript].yaml_key[quest_unlocked_flag]||li@>'
+        - define isLockable '<def[unlockFlag].as_list.is_empty.not>'
+        - if !%isLockable% {
+          - queue clear
+          }
+        - define isLocked '<def[unlockFlag].as_list.is_empty.not.and[<def[player].has_flag[%unlockFlag%].not>]||false>'
+        - if %isLocked% {
+          - flag %player% %unlockFlag%
+          }
+          else {
+          - flag %player% %unlockFlag%:!
+          }
+        - inventory close
+        - note remove 'as:QuestGUI_AdminOverview_<player.name>'
+        - run instantly s@QuestGUI_World p:display_AdminOverview 'def:%page%|%player%' delay:1t
+        - queue clear
+        }
+      - if <context.click> == MIDDLE {
+        - inject %iconScript% p:reset
+        - inventory close
+        - note remove 'as:QuestGUI_AdminOverview_<player.name>'
+        - run instantly s@QuestGUI_World p:display_AdminOverview 'def:%page%|%player%' delay:1t
+        - queue clear
+        }
+      - if <context.click> == SHIFT_LEFT {
+        - inject %iconScript% p:complete
+        - inventory close
+        - note remove 'as:QuestGUI_AdminOverview_<player.name>'
+        - run instantly s@QuestGUI_World p:display_AdminOverview 'def:%page%|%player%' delay:1t
+        - queue clear
+        }
+      - if <context.click> == SHIFT_RIGHT {
+        - if <c.item.lore> contains '<&b>Activate<&f><&co> <&f><&o>Shift<&f> Right' {
+          - define action 'activate'
+          }
+          else {
+          - define action 'deactivate'
+          }
+        - inject %iconScript% p:%action%
+        - inventory close
+        - note remove 'as:QuestGUI_AdminOverview_<player.name>'
+        - run instantly s@QuestGUI_World p:display_AdminOverview 'def:%page%|%player%' delay:1t
+        - queue clear
+        }
+      - queue clear
+      }
+
+  inventoryClick_AdminObjectives:
+    - if <c.raw_slot> > 36 {
+      - queue clear
+      }
+    - define GUI 'QuestGUI_AdminObjectives_<player.name>'
+    - define player '<c.item.nbt[dPlayer].as_player||null>'
+    - define page '<c.item.nbt[page]||1>'
+    - if <c.item.scriptname.split[_].get[2]||null> == button {
+      - define menuType 'AdminObjectives'
+      - inject <context.item.scriptname.as_script>
+      - queue clear
+      }
+    - if <def[player].is_player||false> {
+      - define questID '<c.item.nbt[questID]||null>'
+      - define iconScript '<el@val[%questID%_Icon].as_script||null>'
+      - if <context.click> == LEFT {
+        - define progressFlag '<def[iconScript].yaml_key[quest_progress_flag]||null>'
+        - define progress '<def[player].flag[%progressFlag%]||0>'
+        - flag %player% '%progressFlag%:<c.raw_slot>'
+        - inventory close
+        - note remove 'as:%GUI%'
+        - run locally instantly display_AdminObjectives 'def:%page%|%questID%|%player%'
+        - queue clear
+        }
+      - if <context.click> == RIGHT {
+        - if <c.item.lore> !contains '<&a>Edit Stats<&f><&co> <&7>Right' {
+          - queue clear
+          }
+        - define objective '<c.raw_slot>'
+        - define progressFlag '<def[iconScript].yaml_key[quest_progress_flag]||null>'
+        - define progress '<def[player].flag[%progressFlag%]||0>'
+        - flag %player% '%progressFlag%:%objective%'
+        - inventory close
+        - note remove 'as:%GUI%'
+        - run locally instantly display_AdminSetStats 'def:1|%questID%|%player%|%objective%'
+        - queue clear
+        }
+      - queue clear
+      }
+
+  inventoryClick_AdminSetStats:
+    - if <c.raw_slot> > 36 {
+      - queue clear
+      }
+    - define GUI 'QuestGUI_AdminSetStats_<player.name>'
+    - define player '<c.item.nbt[dPlayer].as_player||null>'
+    - define page '<c.item.nbt[page]||1>'
+    - if <c.item.scriptname.split[_].get[2]||null> == button {
+      - define questID '<c.item.nbt[questID]||null>'
+      - define menuType 'AdminSetStats'
+      - inject <context.item.scriptname.as_script>
+      - queue clear
+      }
+    - if <def[player].is_player||false> {
+      - define questID '<c.item.nbt[questID]||null>'
+      - define statFlag '<c.item.nbt[statFlag]||null>'
+      - define objective '<c.item.nbt[objective]||null>'
+      - define iconScript '<el@val[%questID%_Icon].as_script||null>'
+      - inventory close
+      - note remove 'as:%GUI%'
+      - if <context.click> == LEFT {
+        - narrate "<&3><&lb><&b>QuestGUI<&3><&rb> <&f>Type the new value for %statFlag%"
+        - flag <player> 'questGUI_SettingStats:|:%page%|%questID%|%player%|%objective%|%statFlag%|<queue.id>'
+        - wait 10s
+        - flag <player> questGUI_SettingStats:!
+        - narrate "<&3><&lb><&b>QuestGUI<&3><&rb> <&c>You took too long setting a value!"
+        - run locally instantly display_AdminSetStats 'def:%page%|%questID%|%player%|%objective%'
+        }
+      - if <context.click> == RIGHT {
+        - define progress '<def[player].flag[%statFlag%]||0>'
+        - flag %player% '%statFlag%:!'
+        - run locally instantly display_AdminSetStats 'def:%page%|%questID%|%player%|%objective%'
+        }
+      - queue clear
+      }
+
+  inventoryClick_AdminTrophies:
+    - if <c.raw_slot> > 36 {
+      - queue clear
+      }
+    - define GUI 'QuestGUI_AdminTrophies_<player.name>'
+    - define player '<c.item.nbt[dPlayer].as_player||null>'
+    - define page '<c.item.nbt[page]||1>'
+    - if <c.item.scriptname.split[_].get[2]||null> == button {
+      - define menuType 'AdminTrophies'
+      - inject <context.item.scriptname.as_script>
+      - queue clear
+      }
+    - define trophy '<c.item.nbt[trophy]||null>'
+    - define action '<c.item.nbt[action]||null>'
+    - if <def[player].is_player||false> {
+      - if <context.click> == LEFT {
+        - if %action% == Take {
+          - flag %player% 'QuestTrophies:<-:%trophy%'
+          }
+          else {
+          - flag %player% 'QuestTrophies:->:%trophy%'
+          }
+        - inventory close
+        - note remove 'as:%GUI%'
+        - run instantly s@QuestGUI_World p:display_AdminTrophies 'def:%page%|%player%' delay:1t
+        }
+      }
+
+  inventoryClick_AdminResetAll:
+    - if <c.raw_slot> > 18 {
+      - queue clear
+      }
+    - define GUI 'QuestGUI_AdminResetAll_<player.name>'
+    - define player '<c.item.nbt[dPlayer].as_player||null>'
+    - define page '<c.item.nbt[page]||1>'
+    - if <c.item.scriptname.split[_].get[2]||null> == button {
+      - define menuType 'AdminTrophies'
+      - inject <context.item.scriptname.as_script>
+      - queue clear
+      }
+#
+# END Inventory Click Handlers
+#--------------------------------------
+#
+#  QuestGUI Buttons and Items: Users
+#
+QuestGUI_Journal:
+  type: item
+  material: i@book_and_quill
+  debug: false
+  display name: Quest Journal
+  lore:
+    - "<&b>Hold in your hand and"
+    - "<&b>Right Click to open"
+
+QuestGUI_Button_QuestJournal:
+  type: item
+  material: i@book_and_quill
+  debug: false
+  display name: <&f>Quest Journal
+  lore:
+    - '<&5>----------------'
+    - '<&f>'
+    - '<&7>Check objectives'
+    - '<&7>for active quests'
+  script:
+    - inventory close
+    - note remove 'as:%GUI%'
+    - run instantly s@QuestGUI_World p:display_Overview 'def:1' delay:1t
+
+QuestGUI_Button_QuestTrophies:
+  type: item
+  material: i@chest
+  debug: false
+  display name: <&f>Quest Trophies
+  lore:
+    - '<&5>----------------'
+    - '<&f>'
+    - '<&7>See all of your'
+    - '<&7>shiny Trophies'
+  script:
+    - inventory close
+    - note remove 'as:%GUI%'
+    - run instantly s@QuestGUI_World p:display_Trophies 'def:1' delay:1t
+
+QuestGUI_Button_QuestsCompleted:
+  type: item
+  material: i@bookshelf
+  debug: false
+  display name: <&f>Completed
+  lore:
+    - '<&5>----------------'
+    - '<&f>'
+    - '<&7>Check stats for'
+    - '<&7>completed quests'
+  script:
+    - inventory close
+    - note remove 'as:%GUI%'
+    - run instantly s@QuestGUI_World p:display_Complete 'def:1' delay:1t
+
+QuestGUI_Button_QuestMenu:
+  type: item
+  material: i@book
+  debug: false
+  display name: <&f>Quest Menu
+  script:
+    - inventory close
+    - note remove 'as:%GUI%'
+    - run instantly s@QuestGUI_World p:display_MainMenu 'def:1' delay:1t
+
+QuestGUI_Button_ServerMenu:
+  type: item
+  material: i@bed
+  debug: false
+  display name: <&f>Server Menu
+  script:
+    - inventory close
+    - note remove 'as:%GUI%'
+    - execute as_player '<parse:<s@>'
+
+QuestGUI_Button_Close:
+  type: item
+  material: i@barrier
+  debug: false
+  display name: <&f>Close QuestGUI
+  script:
+    - inventory close
+    - note remove 'as:%GUI%'
+
+QuestGUI_Button_NextPage:
+  type: item
+  material: i@golden_carrot
+  debug: false
+  display name: <&f>Next Page
+  script:
+    - inventory close
+    - note remove 'as:%GUI%'
+    - run instantly s@QuestGUI_World p:display_%menuType% 'def:<c.item.nbt[page].as_int>' delay:1t
+
+QuestGUI_Button_PreviousPage:
+  type: item
+  material: i@carrot
+  debug: false
+  display name: <&f>Previous Page
+  script:
+    - inventory close
+    - note remove 'as:%GUI%'
+    - run instantly s@QuestGUI_World p:display_%menuType% 'def:<c.item.nbt[page].as_int>' delay:1t
+#
+# END QuestGUI Buttons and Items: Users
+#--------------------------------------
+#
+#  QuestGUI Buttons and Items: Admins
+#
+QuestGUI_Button_AdminQuestMenu:
+  type: item
+  material: i@book
+  debug: false
+  display name: <&f>Quest Menu
+  script:
+    - inventory close
+    - note remove 'as:%GUI%'
+    - run instantly s@QuestGUI_World p:display_AdminMainMenu 'def:%player%' delay:1t
+
+QuestGUI_Button_AdminOverview:
+  type: item
+  material: i@book_and_quill
+  debug: false
+  display name: <&f>Quest Journal
+  lore:
+    - '<&5>----------------'
+    - '<&f>'
+    - '<&7>Show all Quest'
+    - '<&7>details'
+  script:
+    - inventory close
+    - note remove 'as:%GUI%'
+    - run instantly s@QuestGUI_World p:display_AdminOverview 'def:1|%player%' delay:1t
+
+QuestGUI_Button_AdminTrophies:
+  type: item
+  material: i@ender_chest
+  debug: false
+  display name: <&f>Quest Trophies
+  lore:
+    - '<&5>----------------'
+    - '<&f>'
+    - '<&7>Show all Quest'
+    - '<&7>Trophies'
+  script:
+    - inventory close
+    - note remove 'as:%GUI%'
+    - run instantly s@QuestGUI_World p:display_AdminTrophies 'def:1|%player%' delay:1t
+
+QuestGUI_Button_AdminObjectives:
+  type: item
+  material: i@paper
+  debug: false
+  display name: <&f>Quest Obejectives
+  lore:
+    - '<&5>----------------'
+    - '<&f>'
+    - '<&7>Back to Quest'
+    - '<&7>Objectives'
+  script:
+    - inventory close
+    - note remove 'as:%GUI%'
+    - run instantly s@QuestGUI_World p:display_AdminObjectives 'def:%page%|%questID%|%player%' delay:1t
+
+QuestGUI_Button_AdminResetAll:
+  type: item
+  material: i@tnt
+  debug: false
+  display name: <&f>Reset Quests
+  lore:
+    - '<&5>----------------'
+    - '<&f>'
+    - '<&7>Rest all quests'
+    - '<&7>for this player'
+  script:
+    - inventory close
+    - note remove 'as:%GUI%'
+    - run instantly s@QuestGUI_World p:display_AdminResetAll 'def:%player%' delay:1t
+
+QuestGUI_Button_AdminConfirmResetAll:
+  type: item
+  material: i@tnt
+  debug: false
+  display name: <&6>Confirm Reset
+  script:
+    - inventory close
+    - note remove 'as:%GUI%'
+    - run instantly s@QuestGUI_World p:resetAllQuests 'def:%player%' delay:1t
+    - run instantly s@QuestGUI_World p:display_AdminMainMenu 'def:%player%' delay:1t
+
+QuestGUI_Button_AdminNextPage:
+  type: item
+  material: i@golden_carrot
+  debug: false
+  display name: <&f>Next Page
+  script:
+    - inventory close
+    - note remove 'as:%GUI%'
+    - run instantly s@QuestGUI_World p:display_%menuType% 'def:<def[page].add[1].as_int>|%player%' delay:1t
+
+QuestGUI_Button_AdminPreviousPage:
+  type: item
+  material: i@carrot_item
+  debug: false
+  display name: <&f>Previous Page
+  script:
+    - inventory close
+    - note remove 'as:%GUI%'
+    - run instantly s@QuestGUI_World p:display_%menuType% 'def:<def[page].sub[1].as_int>|%player%' delay:1t
+#
+# END QuestGUI Buttons and Items: Admins
+#--------------------------------------
+#
+#  QuestGUI Author Banner Items
+#
+# Banner items representing the authors
+#
+QuestGUI_Author_Anthony:
+  type: item
+  debug: false
+  material: i@human_skull
+  display name: "<&f>             <&pipe>Anthony<&pipe>"
+  text_name: '|Anthony|'
+  url: 'http://mineconomy.org'
+  lore:
+  - <&7>  Owner<&co> <&e>M<&6>ine<&e>C<&6>onomy <&e>N<&6>etwork
+  - <&5>-------------------------
+  - <&7>
+  - <&7>  I<&sq>ve been playing minecraft
+  - <&7> and running a server since
+  - <&7> 2010. I have fun and share
+  - <&7> what I do.
+  - <&7>
+  - <&9>           Click To Visit
+#
+#  END QuestGUI Author Banner Items
+#--------------------------------------
+#
+#  QuestGUI Example Quest Entry
+#
+# Quests need to have a yaml data container to register with QuestGUI
+#
+MyQuestGUIQuest_1_Icon:
+  type: yaml data
+  debug: false
+  # Unused in the gui
+  display name: Quest Journal
+  # The material used as the gui icon for this quest
+  material: i@iron_chestplate
+  # A flag required to mark the quest as Available or LOCKED
+  quest_unlocked_flag: MyQuestGUIQuest_1_Unlocked
+  # Set to true to not display this quest if the player does not have the specified unlock flag.
+  # Set to false to show the quest as LOCKED if the player does not have the specified unlock flag.
+  hide_ifLocked: true
+  # A flag for repeatable quests. Flag must store the number of times the quest has been completed.
+  # Once completed, repeatable quests will only show up in the quest journal if they are in the Active_Quests player flag.
+  # but will always display in the completed gui after the first completion.
+  # There's potential for stale data to display in the Objectives view, so we might need to address that in the future.
+  times_completed_flag: MyQuestGUIQuest_1_Completed
+  # What to display the quest title as
+  quest_title: An example quest
+  # What to display for the description of this quest
+  quest_desc: Learn how to integrate your existing quests with QuestGUI.
+  # A flag to store the number value for the players current objective
+  quest_progress_flag: MyQuestGUIQuest_1_Stage
+  # Define your quest objectives here. Must use a numbered node structure.
+  # Number corresponds to quest_progress_flag
+  objectives:
+    1:
+      # The text to display as the name of this objective
+      name: Accept the Quest
+      # A long description of this objective
+      description: Read the description and accept the quest.
+      # Set to true to remove this objective from the list until the player is at this objective
+      # Set to false to allow this objective to be displayed before they reach this objective
+      hide: false
+      # Set to true to show this objective as LOCKED hiding all info about it until the player reaches this objective
+      # Set to false to show all info about this objective even if the player hasn't reached it yet
+      lockDisplay: true
+      # Set the icon to display for this objective
+      icon: i@paper
+      # A list of flags that hold stats for this objective.
+      # Value must be set as a split list in the format statname/flagname
+      # statname is the phrase displayed as the title of this stat
+      # flagname is the flag that holds the value to display
+      progress_flags:
+      - 'Stone Collected/MyQuestGUIQuest_1_stones'
+    2:
+      name: A second Objective
+      description: Do that thing
+      hide: false
+      lockDisplay: true
+      icon: i@iron_sword
+      progress_flags: []
+    3:
+      name: Complete
+      description: You did it!
+      hide: true
+      lockDisplay: true
+      icon: i@paper
+      progress_flags: []
+
+  reset:
+  # Script run when an admin resets this quest for a player
+    - flag %player% MyQuestGUIQuest_1_stones:!
+    - flag %player% QuestTrophies:<-:QuestTrophies_MyQuestGUIQuest_1_Flowers
+    - flag %player% QuestsCompleted:<-:MyQuestGUIQuest_1
+
+  complete:
+  # Script run when an admin completes this quest for a player
+    - flag %player% QuestTrophies:->:QuestTrophies_MyQuestGUIQuest_1_Flowers
+    - if <def[player].flag[QuestsCompleted].as_list> !contains MyQuestGUIQuest_1 {
+      - flag %player% QuestsCompleted:->:MyQuestGUIQuest_1
+      }
+    - flag %player% MyQuestGUIQuest_1_Completed:++
+    - flag %player% Active_Quests:<-:MyQuestGUIQuest_1
+
+  activate:
+  # Script run when an admin activates this quest for a player
+    - run player:%player% MyQuestGUIQuest_1_Dialogue_2
+
+  deactivate:
+  # Script run when an admin deactivates this quest for a player
+    - narrate "stub"
+
+#
+# END Example Quest Entry
+#--------------------------------------
+#
+#  Quest Trophies
+#   - Item script containers for all obtainable quest trophies
+#   - Should live in the script file for their respective quests
+#
+QuestTrophies_MyQuestGUIQuest_1_Flowers:
+  type: item
+  material: i@book
+  debug: false
+  display name: Pretty Flowers
+  description: Just a sign of my appreciation
+  quest: MyQuestGUIQuest_1
+#
+# END Quest Trophies
+#--------------------------------------
+#
+################################################################################
