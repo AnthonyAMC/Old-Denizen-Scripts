@@ -1367,6 +1367,24 @@ QuestGUI_Author_Anthony:
   - <&7> what I do.
   - <&7>
   - <&9>           Click To Visit
+
+QuestGUI_Author_adw123:
+  type: item
+  debug: false
+  material: i@human_skull
+  display name: "<&f>             adw123"
+  text_name: 'adw123'
+  url: 'http://theoneserver.net/'
+  lore:
+  - <&7>  Admin<&co> <&6>The One Server
+  - <&5>-------------------------
+  - <&7>
+  - <&7>  I hired <&pipe>Anthony<&pipe> to create
+  - <&7> QuestGUI and have decided
+  - <&7> to allow it to be shared
+  - <&7> publicly.
+  - <&7>
+  - <&9>           Click To Visit
 #
 #  END QuestGUI Author Banner Items
 #--------------------------------------
