@@ -5,7 +5,7 @@
 #
 #
 #   Authors: |Anthony|
-#   Version: 0.1
+#   Version: 0.3
 #   dScript Version: 0.9.8-DEV_b548
 #
 #
@@ -14,7 +14,12 @@
 #
 #--- About QuestGUI
 #
-#    QuestGUI was written upon request
+#    *QuestGUI was written upon request for adw123 who generously agreed to
+#     allow public release.
+#
+#  QuestGUI is an advanced GUI to display thorough details about quests written
+#  with the Denizen Scripting Engine.
+#
 #
 #--- Installation & Setup
 #
@@ -30,6 +35,8 @@
 #
 #--- TODO
 #
+#    - Better Documentation
+#
 #
 ################################################################################
 #
@@ -38,15 +45,43 @@
 QuestGUI_Config:
   type: yaml data
 
+# You can add a command here if you have a fancy server GUI and want QuestGUI
+# to show a button to open that menu from QuestGUI main menu
   command: ''
 
+# A list of all of the names of quests you want to display in QuestGUI.
+#  *Your quests MUST have a valid Icon script too! The name of which
+#   must be in the format: questname_Icon
   quests:
-  - 'MyQuestGUIQuest_1'
+  - 'QuestGUI_ExampleQuest_1'
+
+# A list of all trophies provided by your quests. This must be the exact
+# scriptname for the trophy item
   trophies:
-  - 'QuestTrophies_MyQuestGUIQuest_1_Flowers'
+  - 'QuestGUI-ExampleTrophy_1_Cake'
+  - 'QuestGUI-ExampleTrophy_1_Cookie'
+  - 'QuestGUI-ExampleTrophy_1_Flowers'
 #
-# END QuestGUI Configurationst
+# END QuestGUI Configurations
 #--------------------------------------
+#
+################################################################################
+#
+#  QuestGUI Version
+#
+#  Handles QuestGUI Versioning Checks
+#
+QuestGUI_Version:
+  type: version
+  author: Anthony
+  name: QuestGUI
+  version: 0.3
+  description: QuestGUI - An advanced menu for displaying and managing player quest data
+  id: 91
+#
+#  END QuestGUI Version
+#--------------------------------------
+#
 #
 ################################################################################
 #
@@ -93,7 +128,7 @@ QuestGUI_Command:
       - define arg '<c.args.get[1]>'
       - if <def[arg].as_player.is[MATCHES].to[PLAYER]||false> {
         - if <player.has_permission[questgui.admin]||false> || <player.is_op> {
-          - flag <player> 'QuestGUI_AdminMenu_Editing:<def[arg].as_player>'
+          - flag <player> 'QuestGUI.AdminMenu.Editing:<def[arg].as_player>'
           - run instantly s@QuestGUI_World display_AdminMainMenu 'def:<def[arg].as_player>' delay:1t
           - queue clear
           }
@@ -137,7 +172,7 @@ QuestGUI_Command:
       }
     - run s@msgBoxed 'def:QuestGUI|QuestGUI|%title%|%page%|52|12|<proc[paragraph].context[52|%msgs%]>'
 #
-# END QuestGUI Command Script
+#  END QuestGUI Command Script
 #--------------------------------------
 #
 ################################################################################
@@ -150,29 +185,23 @@ QuestGUI_Command:
 QuestGUI_World:
   type: world
   debug: false
-
-#
-#--------------------------------------
-#
-#  QuestGUI Event Handlers
-#
   events:
     on player chats:
-      - if !<player.has_flag[questGUI_SettingStats]||false> {
+      - if !<player.has_flag[QuestGUI.SettingStats]||false> {
         - queue clear
         }
       - determine passively cancelled
-      - define array '<player.flag[questGUI_SettingStats].as_list>'
+      - define array '<player.flag[QuestGUI.SettingStats].as_list>'
       - queue <def[array].get[6].as_queue> clear
       - define player '<def[array].get[3]>'
       - flag %player% '<def[array].get[5]>:<c.message.escaped>'
-      - flag <player> questGUI_SettingStats:!
+      - flag <player> QuestGUI.SettingStats:!
       - run locally instantly display_AdminSetStats 'def:<def[array].get[1]>|<def[array].get[2]>|%player%|<def[array].get[4]>'
 
     on player closes inventory:
       - if '<c.inventory.notable_name.split[_].get[1]||null>' == 'QuestGUI' {
         - if <c.inventory.notable_name.split[_].get[2].starts_with[Admin]||false> {
-          - flag <player> QuestGUI_AdminMenu_Editing:!
+          - flag <player> QuestGUI.AdminMenu.Editing:!
           }
         - note remove 'as:<context.inventory.notable_name>'
         }
@@ -198,7 +227,7 @@ QuestGUI_World:
       - inject '%iconScript%' p:reset
       }
 #
-# END QuestGUI Event Handlers
+#  END QuestGUI Event Handlers
 #--------------------------------------
 #
 #  Inventory Display Generators
@@ -223,11 +252,11 @@ QuestGUI_World:
     - note 'in@generic[title=<&1>QuestGUI Overview;size=36]' 'as:%GUI%'
     - define hr '<&5>--------------------'
 
-    - define quests '<s@QuestGUI_Config.yaml_key[quests].exclude[<player.flag[QuestsCompleted]||li@>].include[<player.flag[Active_Quests]||li@>].deduplicate>'
+    - define quests '<s@QuestGUI_Config.yaml_key[quests].exclude[<player.flag[QuestGUI.QuestsCompleted]||li@>].include[<player.flag[QuestGUI.Active_Quests]||li@>].deduplicate>'
     - foreach '%quests%' {
       - define questID '%value%'
       - define iconScript '<el@val[%questID%_Icon].as_script||null>'
-      - define unlockFlag '<def[iconScript].yaml_key[quest_unlocked_flag]||li@>'
+      - define unlockFlag '<def[iconScript].yaml_key[quest_unlocked_flag]||>'
       - define isHidden '<def[iconScript].yaml_key[hide_ifLocked]||false>'
       - if '<player.flag[<def[iconScript].yaml_key[quest_progress_flag]||null>].strip_color||null>' == 'complete' {
         - define isComplete 'true'
@@ -235,7 +264,7 @@ QuestGUI_World:
         else {
         - define isComplete 'false'
         }
-      - if ( %isHidden% && !<def[unlockFlag].is_empty||false> && !<player.has_flag[%unlockFlag%]> ) {
+      - if ( %isHidden% && !<def[unlockFlag].is[==].to[]||false> && !<player.has_flag[%unlockFlag%]> ) {
         - define quests '<def[quests].exclude[%questID%]>'
         }
       }
@@ -253,7 +282,7 @@ QuestGUI_World:
       - define questID '%value%'
       - define iconScript '<el@val[%value%_Icon].as_script||null>'
       - define unlockFlag '<def[iconScript].yaml_key[quest_unlocked_flag]||li@>'
-      - if !<def[unlockFlag].is_empty||false> && !<player.has_flag[%unlockFlag%]> {
+      - if !<def[unlockFlag].is[==].to[]||false> && !<player.has_flag[%unlockFlag%]> {
         - adjust <i@%value%_Icon.simple||i@book> 'display_name:<&c>LOCKED' save:lockItem
         - adjust <entry[lockItem].result> 'flags:HIDE_ATTRIBUTES|HIDE_DESTROYS|HIDE_ENCHANTS|HIDE_PLACED_ON|HIDE_POTION_EFFECTS|HIDE_UNBREAKABLE' save:lockItemClean
         - inventory add 'd:in@%GUI%' 'o:<entry[lockItemClean].result>' 'slot:%slot%'
@@ -313,7 +342,7 @@ QuestGUI_World:
     - define progressFlag '<def[iconScript].yaml_key[quest_progress_flag]||null>'
     - define progress '<player.flag[%progressFlag%]||0>'
     - define objectives '<def[iconScript].list_keys[objectives]||li@>'
-    - if '%progress%' == 'Completed' {
+    - if '%progress%' == 'Complete' {
       - define progress '<def[objectives].size>'
       }
     - foreach <def[objectives]> {
@@ -409,7 +438,7 @@ QuestGUI_World:
     - note 'in@generic[title=<&1>QuestGUI Trophies;size=36]' 'as:%GUI%'
     - define hr '<&5>--------------------'
 
-    - define trophies '<player.flag[QuestTrophies].as_list||li@>'
+    - define trophies '<player.flag[QuestGUI.Trophies].as_list||li@>'
 
     - define page '<def[1].as_int||1>'
     - define pages '<def[trophies].size.div[27].round_up>'
@@ -468,7 +497,7 @@ QuestGUI_World:
     - note 'in@generic[title=<&1>QuestGUI Complete;size=36]' 'as:%GUI%'
     - define hr '<&5>--------------------'
 
-    - define quests '<player.flag[QuestsCompleted].as_list||li@>'
+    - define quests '<player.flag[QuestGUI.QuestsCompleted].as_list||li@>'
 
     - define page '<def[1].as_int||1>'
     - define pages '<def[quests].size.div[27].round_up>'
@@ -526,7 +555,6 @@ QuestGUI_World:
     - define GUI 'QuestGUI_AdminMainMenu_<player.name>'
     - note 'in@generic[title=<&1>QuestGUI Admin Menu;size=18]' 'as:%GUI%'
     - define player '<def[1]>'
-    - narrate "<def[player].name>"
     - define hr '<&5>----------------'
     - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_AdminOverview[nbt=dPlayer/%player%;lore=<&sp>|%hr%|<&7>Show all Quest|<&7>details]' 'slot:1'
     - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_AdminTrophies[nbt=dPlayer/%player%;lore=<&sp>|%hr%|<&7>Show all Trophy|<&7>details]' 'slot:2'
@@ -542,9 +570,8 @@ QuestGUI_World:
     - note 'in@generic[title=<&1>QuestGUI Admin Overview;size=36]' 'as:%GUI%'
     - define hr '<&5>--------------------'
     - define player '%2%'
-    - narrate "display overview <def[player]>"
-    - define completed '<def[player].flag[QuestsCompleted].as_list||li@>'
-    - define active '<def[player].flag[Active_Quests].as_list||li@>'
+    - define completed '<def[player].flag[QuestGUI.QuestsCompleted].as_list||li@>'
+    - define active '<def[player].flag[QuestGUI.Active_Quests].as_list||li@>'
     - define quests '<s@QuestGUI_Config.yaml_key[quests].as_list>'
     - define msg0 '<&e>       <&n>Click Actions'
     - define page '<def[1].as_int||1>'
@@ -572,7 +599,7 @@ QuestGUI_World:
       - define progress '<def[player].flag[%progressFlag%]||none>'
 
       - define msg1 '<&3>Edit Progress<&f><&co> <&7>Left'
-      - define msg2 '<&b><tern[%isRepeatable%]:Set Complete<&co> <&f><&o>Shift<&f> Left||<tern[%isCompleted%]:<&m>Set Complete<&f><&co> <&f><&o><&m>Shift<&f><&m> Left||Set Complete<&co> <&f><&o>Shift<&f> Left>>'
+      - define msg2 '<&b><tern[%isRepeatable%]:Set Complete<&f><&co> <&o>Shift<&f> Left||<tern[%isCompleted%]:<&m>Set Complete<&f><&co> <&f><&o><&m>Shift<&f><&m> Left||Set Complete<&f><&co> <&o>Shift<&f> Left>>'
       - if %isLockable% {
         - define msg3 '<&3><tern[%isLocked%]:Unlock||Lock><&f><&co> <&7>Right'
         }
@@ -785,7 +812,7 @@ QuestGUI_World:
       - define trophy '<def[value].as_item.simple>'
       - define trophyName '%value%'
       - define trophyScript '<def[value].as_script>'
-      - define hasTrophy '<def[player].flag[QuestTrophies].as_list.contains[%value%]||false>'
+      - define hasTrophy '<def[player].flag[QuestGUI.Trophies].as_list.contains[%value%]||false>'
       - define color '<tern[%hasTrophy%]:<&2>||<&7>>'
       - define action '<tern[%hasTrophy%]:Take||Give>'
       - define msg1 '<&3>%action% Trophy<&f><&co> <&7>Left'
@@ -835,7 +862,7 @@ QuestGUI_World:
     - inventory add 'd:in@%GUI%' 'o:i@QuestGUI_Button_Close[lore=<&sp>;nbt=dPlayer/%player%]' 'slot:18'
     - inventory open 'd:in@%GUI%'
 #
-# END QuestGUI Display Generators
+#  END QuestGUI Display Generators
 #--------------------------------------
 #
 #  Inventory Click Handlers: Users
@@ -922,7 +949,6 @@ QuestGUI_World:
       - queue clear
       }
     - define player '<c.item.nbt[dPlayer].as_player||null>'
-    - narrate "overview <def[player].name>"
     - define page '<c.item.nbt[page]||null>'
     - if <c.item.scriptname.split[_].get[2]||null> == button {
       - define GUI 'QuestGUI_AdminOverview_<player.name>'
@@ -1048,9 +1074,9 @@ QuestGUI_World:
       - note remove 'as:%GUI%'
       - if <context.click> == LEFT {
         - narrate "<&3><&lb><&b>QuestGUI<&3><&rb> <&f>Type the new value for %statFlag%"
-        - flag <player> 'questGUI_SettingStats:|:%page%|%questID%|%player%|%objective%|%statFlag%|<queue.id>'
+        - flag <player> 'QuestGUI.SettingStats:|:%page%|%questID%|%player%|%objective%|%statFlag%|<queue.id>'
         - wait 10s
-        - flag <player> questGUI_SettingStats:!
+        - flag <player> QuestGUI.SettingStats:!
         - narrate "<&3><&lb><&b>QuestGUI<&3><&rb> <&c>You took too long setting a value!"
         - run locally instantly display_AdminSetStats 'def:%page%|%questID%|%player%|%objective%'
         }
@@ -1079,10 +1105,10 @@ QuestGUI_World:
     - if <def[player].is_player||false> {
       - if <context.click> == LEFT {
         - if %action% == Take {
-          - flag %player% 'QuestTrophies:<-:%trophy%'
+          - flag %player% 'QuestGUI.Trophies:<-:%trophy%'
           }
           else {
-          - flag %player% 'QuestTrophies:->:%trophy%'
+          - flag %player% 'QuestGUI.Trophies:->:%trophy%'
           }
         - inventory close
         - note remove 'as:%GUI%'
@@ -1103,7 +1129,7 @@ QuestGUI_World:
       - queue clear
       }
 #
-# END Inventory Click Handlers
+#  END Inventory Click Handlers
 #--------------------------------------
 #
 #  QuestGUI Buttons and Items: Users
@@ -1211,7 +1237,7 @@ QuestGUI_Button_PreviousPage:
     - note remove 'as:%GUI%'
     - run instantly s@QuestGUI_World p:display_%menuType% 'def:<c.item.nbt[page].as_int>' delay:1t
 #
-# END QuestGUI Buttons and Items: Users
+#  END QuestGUI Buttons and Items: Users
 #--------------------------------------
 #
 #  QuestGUI Buttons and Items: Admins
@@ -1309,7 +1335,7 @@ QuestGUI_Button_AdminNextPage:
 
 QuestGUI_Button_AdminPreviousPage:
   type: item
-  material: i@carrot_item
+  material: i@human_skull[skull_skin:3cd9b7a3-c8bc-4a05-8cb9-0b6d4673bca9|eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMzFjMGVkZWRkNzExNWZjMWIyM2Q1MWNlOTY2MzU4YjI3MTk1ZGFmMjZlYmI2ZTQ1YTY2YzM0YzY5YzM0MDkxIn19fQ==]
   debug: false
   display name: <&f>Previous Page
   script:
@@ -1317,7 +1343,7 @@ QuestGUI_Button_AdminPreviousPage:
     - note remove 'as:%GUI%'
     - run instantly s@QuestGUI_World p:display_%menuType% 'def:<def[page].sub[1].as_int>|%player%' delay:1t
 #
-# END QuestGUI Buttons and Items: Admins
+#  END QuestGUI Buttons and Items: Admins
 #--------------------------------------
 #
 #  QuestGUI Author Banner Items
@@ -1345,110 +1371,8 @@ QuestGUI_Author_Anthony:
 #  END QuestGUI Author Banner Items
 #--------------------------------------
 #
-#  QuestGUI Example Quest Entry
 #
-# Quests need to have a yaml data container to register with QuestGUI
-#
-MyQuestGUIQuest_1_Icon:
-  type: yaml data
-  debug: false
-  # Unused in the gui
-  display name: Quest Journal
-  # The material used as the gui icon for this quest
-  material: i@iron_chestplate
-  # A flag required to mark the quest as Available or LOCKED
-  quest_unlocked_flag: MyQuestGUIQuest_1_Unlocked
-  # Set to true to not display this quest if the player does not have the specified unlock flag.
-  # Set to false to show the quest as LOCKED if the player does not have the specified unlock flag.
-  hide_ifLocked: true
-  # A flag for repeatable quests. Flag must store the number of times the quest has been completed.
-  # Once completed, repeatable quests will only show up in the quest journal if they are in the Active_Quests player flag.
-  # but will always display in the completed gui after the first completion.
-  # There's potential for stale data to display in the Objectives view, so we might need to address that in the future.
-  times_completed_flag: MyQuestGUIQuest_1_Completed
-  # What to display the quest title as
-  quest_title: An example quest
-  # What to display for the description of this quest
-  quest_desc: Learn how to integrate your existing quests with QuestGUI.
-  # A flag to store the number value for the players current objective
-  quest_progress_flag: MyQuestGUIQuest_1_Stage
-  # Define your quest objectives here. Must use a numbered node structure.
-  # Number corresponds to quest_progress_flag
-  objectives:
-    1:
-      # The text to display as the name of this objective
-      name: Accept the Quest
-      # A long description of this objective
-      description: Read the description and accept the quest.
-      # Set to true to remove this objective from the list until the player is at this objective
-      # Set to false to allow this objective to be displayed before they reach this objective
-      hide: false
-      # Set to true to show this objective as LOCKED hiding all info about it until the player reaches this objective
-      # Set to false to show all info about this objective even if the player hasn't reached it yet
-      lockDisplay: true
-      # Set the icon to display for this objective
-      icon: i@paper
-      # A list of flags that hold stats for this objective.
-      # Value must be set as a split list in the format statname/flagname
-      # statname is the phrase displayed as the title of this stat
-      # flagname is the flag that holds the value to display
-      progress_flags:
-      - 'Stone Collected/MyQuestGUIQuest_1_stones'
-    2:
-      name: A second Objective
-      description: Do that thing
-      hide: false
-      lockDisplay: true
-      icon: i@iron_sword
-      progress_flags: []
-    3:
-      name: Complete
-      description: You did it!
-      hide: true
-      lockDisplay: true
-      icon: i@paper
-      progress_flags: []
-
-  reset:
-  # Script run when an admin resets this quest for a player
-    - flag %player% MyQuestGUIQuest_1_stones:!
-    - flag %player% QuestTrophies:<-:QuestTrophies_MyQuestGUIQuest_1_Flowers
-    - flag %player% QuestsCompleted:<-:MyQuestGUIQuest_1
-
-  complete:
-  # Script run when an admin completes this quest for a player
-    - flag %player% QuestTrophies:->:QuestTrophies_MyQuestGUIQuest_1_Flowers
-    - if <def[player].flag[QuestsCompleted].as_list> !contains MyQuestGUIQuest_1 {
-      - flag %player% QuestsCompleted:->:MyQuestGUIQuest_1
-      }
-    - flag %player% MyQuestGUIQuest_1_Completed:++
-    - flag %player% Active_Quests:<-:MyQuestGUIQuest_1
-
-  activate:
-  # Script run when an admin activates this quest for a player
-    - run player:%player% MyQuestGUIQuest_1_Dialogue_2
-
-  deactivate:
-  # Script run when an admin deactivates this quest for a player
-    - narrate "stub"
-
-#
-# END Example Quest Entry
-#--------------------------------------
-#
-#  Quest Trophies
-#   - Item script containers for all obtainable quest trophies
-#   - Should live in the script file for their respective quests
-#
-QuestTrophies_MyQuestGUIQuest_1_Flowers:
-  type: item
-  material: i@book
-  debug: false
-  display name: Pretty Flowers
-  description: Just a sign of my appreciation
-  quest: MyQuestGUIQuest_1
-#
-# END Quest Trophies
+# END QuestGUI
 #--------------------------------------
 #
 ################################################################################

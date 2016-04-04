@@ -1,0 +1,358 @@
+################################################################################
+#
+#                          Q u e s t   E x a m p l e
+#                        An Example Quest for QuestGUI
+#
+#
+#   Authors: |Anthony|
+#   Version: 0.1
+#   dScript Version: 0.9.8-DEV_b548
+#_______________________________________________________________________________
+#
+# This is an example quest for use with QuestGUI. It is a simple quest that will
+# show you just a little bit about QuestGUI. It is not a tutorial on how to use
+# it, but rather just makes a quest about navigating through the GUI. It is
+# really intended to serve as an example to scripters of how to integrate
+# their existing quests with QuestGUI.
+#
+# Assing the Example Quest to an npc
+#  /npc assignment --set QuestGUI_ExampleQuest_1
+#
+# The rest should be automagical ;)
+#
+################################################################################
+#
+# Example Icon script
+#  - Quests must have a valid _Icon script. Think of this as a config file for
+#    your quest. QuestGUI will reference this script container to generate
+#    the displays.
+#
+QuestGUI_ExampleQuest_1_Icon:
+  type: item
+  debug: false
+# Unused in the gui
+  display name: Quest Journal
+
+# The material used as the gui icon for this quest
+  material: i@iron_chestplate
+
+# A flag required to mark the quest as Available or LOCKED.
+# Leave this empty '' if you do not want your quest to be repeatable.
+  quest_unlocked_flag: ''
+
+# Set to true to not display this quest if the player does not have the specified unlock flag.
+# Set to false to show the quest as LOCKED if the player does not have the specified unlock flag.
+  hide_ifLocked: false
+
+# A flag for repeatable quests. Flag must store the number of times the quest has been completed.
+# Once completed, repeatable quests will only show up in the quest journal if they are in the
+# Active_Quests player flag, but will always display in the completed gui after the first completion.
+# There's potential for stale data to display in the Objectives view, so we might need to address that in the future.
+  times_completed_flag: QuestGUI.ExampleQuest.1.Completed
+
+# What to display the quest title as
+  quest_title: An example quest
+
+# What to display for the description of this quest
+  quest_desc: Learn how to integrate your existing quests with QuestGUI.
+
+# A flag to store the number value for the players current objective
+# If the player is currently doing objective 3 than the value of this flag should be 3
+  quest_progress_flag: QuestGUI.ExampleQuest.1.Objective
+
+# Define your quest objectives here. Must use a numbered node structure.
+# Number corresponds to quest_progress_flag
+  objectives:
+    1:
+    # The text to display as the name of this objective
+      name: Accept the Quest
+
+    # A long description of this objective
+      description: Talk to Nilsentience and accept the quest.
+
+    # Set to true to remove this objective from the list until the player is at this objective
+    # Set to false to allow this objective to be displayed before they reach this objective
+      hide: false
+
+    # Set to true to show this objective as LOCKED hiding all info about it until the player reaches this objective
+    # Set to false to show all info about this objective even if the player hasn't reached it yet
+      lockDisplay: false
+
+    # Set the icon to display for this objective
+      icon: i@paper
+
+    # A list of flags that hold stats for this objective.
+    # Value must be set as a split list in the format statname/flagname
+    # statname is the phrase displayed as the title of this stat
+    # flagname is the flag that holds the value to display
+      progress_flags:
+      - 'Accept Quest/QuestGUI.ExampleQuest.1.Objectives.1'
+
+    2:
+      name: Open QuestGUI
+      description: Use the command /qg to open QuestGUI
+      hide: false
+      lockDisplay: true
+      icon: i@iron_sword
+      progress_flags:
+      - 'Open QuestGUI/QuestGUI.ExampleQuest.1.Objectives.2'
+    3:
+      name: Active Quests
+      description: Cick on the icon to see your Active Quests
+      hide: false
+      lockDisplay: true
+      icon: i@paper
+      progress_flags:
+      - 'View Active/QuestGUI.ExampleQuest.1.Objectives.3'
+    4:
+      name: View Objectives
+      description: Cick on the quest icon to see your Objectives
+      hide: false
+      lockDisplay: true
+      icon: i@paper
+      progress_flags:
+      - 'View Objectives/QuestGUI.ExampleQuest.1.Objectives.4'
+    5:
+      name: Trophies
+      description: Cick on the icon to see your Trophies
+      hide: false
+      lockDisplay: true
+      icon: i@paper
+      progress_flags:
+      - 'View Trophies/QuestGUI.ExampleQuest.1.Objectives.5'
+    6:
+      name: Completed Quests
+      description: Cick on the icon to see your Completed Quests
+      hide: false
+      lockDisplay: true
+      icon: i@paper
+      progress_flags:
+      - 'View Completed/QuestGUI.ExampleQuest.1.Objectives.6'
+
+# Script run when an admin resets this quest for a player
+  reset:
+    - flag %player% QuestGUI.ExampleQuest.1:!
+    - flag %player% QuestGUI.Trophies:<-:QuestGUI_ExampleTrophy_1_Flowers
+    - flag %player% QuestGUI.Trophies:<-:QuestGUI_ExampleTrophy_1_Cake
+    - flag %player% QuestGUI.Trophies:<-:QuestGUI_ExampleTrophy_1_Cookie
+    - flag %player% QuestGUI.QuestsCompleted:<-:QuestGUI_ExampleQuest_1
+    - flag %player% QuestGUI.Active_Quests:<-:QuestGUI_ExampleQuest_1
+
+# Script run when an admin completes this quest for a player
+  complete:
+    - flag %player% QuestGUI.Trophies:->:QuestGUI_ExampleTrophy_1_Flowers
+    - flag %player% QuestGUI.Trophies:->:QuestGUI_ExampleTrophy_1_Cake
+    - flag %player% QuestGUI.Trophies:->:QuestGUI_ExampleTrophy_1_Cookie
+    - if <def[player].flag[QuestGUI.QuestsCompleted].as_list> !contains QuestGUI_ExampleQuest_1 {
+      - flag %player% QuestGUI.QuestsCompleted:->:QuestGUI_ExampleQuest_1
+      }
+    - flag %player% QuestGUI.ExampleQuest.1.Completed:++
+    - flag %player% QuestGUI.Active_Quests:<-:QuestGUI_ExampleQuest_1
+
+# Script run when an admin activates this quest for a player
+  activate:
+    - run player:%player% MyQuestGUIQuest_1_Dialogue_2
+
+# Script run when an admin deactivates this quest for a player
+  deactivate:
+    - narrate "stub"
+#
+#
+# END Example Icon script
+#--------------------------------------
+#
+#  Quest Trophies
+#   - Item script containers for all obtainable quest trophies
+#   - Must have the quest: node with the scriptname of the quest it belongs to
+#
+QuestGUI_ExampleTrophy_1_Flowers:
+  type: item
+  material: i@blue_orchid
+  debug: false
+  display name: Pretty Flowers
+  description: Just a sign of my appreciation
+  quest: QuestGUI_ExampleQuest_1
+
+QuestGUI_ExampleTrophy_1_Cake:
+  type: item
+  material: i@cake
+  debug: false
+  display name: Newb Cakes
+  description: You have started learning how to use QuestGUI!
+  quest: QuestGUI_ExampleQuest_1
+
+QuestGUI_ExampleTrophy_1_Cookie:
+  type: item
+  material: i@cookie
+  debug: false
+  display name: You are Special
+  description: You have learned how to use QuestGUI! You deserve a cookie!
+  quest: QuestGUI_ExampleQuest_1
+#
+#  END Quest Trophies
+#--------------------------------------
+#
+#  END Requisite Data for QuestGUI
+#  - The actual quest is upto you!
+#
+################################################################################
+#
+# QuestGUI Example Quest
+# - Assign this to an NPC and click on him. He'll walk you through the rest.
+#
+QuestGUI_ExampleQuest_1:
+  type: assignment
+  debug: false
+  actions:
+    on spawn:
+      - inject locally init instantly
+    on assignment:
+      - inject locally init instantly
+    on click:
+      - inject locally click instantly
+    on damage:
+      - inject locally click instantly
+    on enter proximity:
+      - if <util.random.int[1].to[10]> > 5 {
+        - if <player.has_flag[QuestGUI.ExampleQuest.1.Completed]> {
+          - random {
+            - narrate "<&b><npc.name><&f><&co> Oh, hello again."
+            - narrate "<&b><npc.name><&f><&co> Haven<&sq>t we met before?"
+            - narrate "<&b><npc.name><&f><&co> It<&sq>s <player.name>!"
+            - narrate "<&b><npc.name><&f><&co> That QuestGUI is pretty neat, isn<&sq>t it?"
+            - narrate "<&b><npc.name><&f><&co> Gotta check those quests!"
+            }
+          }
+          else if <player.flag[QuestGUI.Active_Quests].as_list.contains[]||false> {
+          - random {
+            - narrate "<&b><npc.name><&f><&co> Why have<&sq>t you finished the quest yet?"
+            - narrate "<&b><npc.name><&f><&co> You still have to finish the QuestGUI Quest!"
+            - narrate "<&b><npc.name><&f><&co> Come on <player.name>! It is taking you longer to do the quest than it took me to make it!"
+            - narrate "<&b><npc.name><&f><&co> What is taking so long?"
+            - narrate "<&b><npc.name><&f><&co> It really isn<&sq>t that difficult!"
+            }
+          }
+          else {
+          - random {
+            - narrate "<&b><npc.name><&f><&co> Hey have you seen the QuestGUI?"
+            - narrate "<&b><npc.name><&f><&co> Did you see the QuestGUI yet?"
+            - narrate "<&b><npc.name><&f><&co> I have a task for you <player.name>!"
+            - narrate "<&b><npc.name><&f><&co> <player.name> let<&sq>s talk for a minute."
+            - narrate "<&b><npc.name><&f><&co> Come here <player.name>! I have something to tell you."
+            }
+          }
+        }
+
+  init:
+    - trigger name:chat state:false
+    - trigger name:click state:true cooldown:1 radius:8
+    - trigger name:proximity state:true cooldown:5 radius:7
+    - trigger name:damage state:true cooldown:3
+    - lookclose true range:5 realistic
+    - vulnerable state:false
+    - if <npc.name> != 'Nilsentience' {
+      - adjust <npc> 'name:Nilsentience'
+      }
+
+  click:
+    - if <player.flag[QuestGUI.Active_Quests].as_list||li@> contains 'QuestGUI_ExampleQuest_1' {
+      - narrate "<&b><npc.name><&f><&co> Yeah... you are already doing this quest. Try finishing it before you restart it."
+      - queue clear
+      }
+    - if !<player.has_flag[QuestGUI.ExampleQuest.1.NPCclick]> {
+      - flag <player> QuestGUI.ExampleQuest.1.NPCclick duration:5s
+      - narrate "<&b><npc.name><&f><&co> Click me again if you would like to learn about QuestGUI."
+      - queue clear
+      }
+    - flag <player> QuestGUI.Active_Quests:->:QuestGUI_ExampleQuest_1
+    - flag <player> QuestGUI.ExampleQuest.1.Objective:1
+    - flag <player> QuestGUI.ExampleQuest.1.Objectives.1:Complete
+    - if <player.has_flag[QuestGUI.ExampleQuest.1.Completed]> {
+      - narrate "<&b><npc.name><&f><&co> I know this quest was super fun, but I really didn<&sq>t expect so much love and attention!"
+      - wait 10t
+      }
+    - narrate "<&b><npc.name><&f><&co> Ok, let<&sq>s get started!"
+    - wait 10t
+    - narrate "<&b><npc.name><&f><&co> Start by opening the QuestGUI."
+    - wait 10t
+    - narrate "<&b><npc.name><&f><&co> You can type the command <&e>/questgui<&f> or <&e>/qg<&f> for short."
+    - wait 10t
+    - narrate "<&b><npc.name><&f><&co> OR..."
+    - wait 10t
+    - narrate "<&b><npc.name><&f><&co> You can just use the Quest Journal."
+    - wait 10t
+    - if !<player.inventory.contains[i@QuestGUI_Journal]> {
+      - give i@QuestGUI_Journal
+      - narrate "<&b><npc.name><&f><&co> Hold it in your hand and right click to open it up."
+      }
+      else {
+      - narrate "<&b><npc.name><&f><&co> You already have the Quest Journal"
+      }
+    - flag <player> QuestGUI.ExampleQuest.1.Objective:2
+    - flag <player> QuestGUI.ExampleQuest.1.Timer:<server.current_time_millis>
+
+QuestGUI_ExampleQuest_1_World:
+  type: world
+  debug: false
+  events:
+
+    on player opens inventory:
+      - if '<c.inventory.notable_name.split[_].get[1]||null>' != 'QuestGUI' {
+        - queue clear
+        }
+      - define objective '<player.flag[QuestGUI.ExampleQuest.1.Objective]||null>'
+      - choose '<c.inventory.notable_name.split[_].get[2]>':
+        - case 'MainMenu':
+          - if %objective% != 2 {
+            - queue clear
+            }
+          - title 'title:QuestGUI' 'subtitle:Objective Complete<&co> Main Menu'
+          - flag <player> QuestGUI.ExampleQuest.1.Objective:3
+          - flag <player> QuestGUI.Trophies:->:QuestGUI_ExampleTrophy_1_Cake
+          - flag <player> QuestGUI.ExampleQuest.1.Objectives.2:<server.current_time_millis.sub_int[<player.flag[QuestGUI.ExampleQuest.1.Timer]>].div[1000].as_duration.formatted>
+          - flag <player> QuestGUI.ExampleQuest.1.Timer:<server.current_time_millis>
+        - case 'Overview':
+          - if %objective% != 3 {
+            - queue clear
+            }
+          - title 'title:QuestGUI' 'subtitle:Objective Complete<&co> Quest Overview'
+          - flag <player> QuestGUI.ExampleQuest.1.Objective:4
+          - flag <player> QuestGUI.ExampleQuest.1.Objectives.3:<server.current_time_millis.sub_int[<player.flag[QuestGUI.ExampleQuest.1.Timer]>].div[1000].as_duration.formatted>
+          - flag <player> QuestGUI.ExampleQuest.1.Timer:<server.current_time_millis>
+        - case 'Objectives':
+          - if %objective% != 4 {
+            - queue clear
+            }
+          - title 'title:QuestGUI' 'subtitle:Objective Complete<&co> View Objectives'
+          - flag <player> QuestGUI.ExampleQuest.1.Objective:5
+          - flag <player> QuestGUI.Trophies:->:QuestGUI_ExampleTrophy_1_Cookie
+          - flag <player> QuestGUI.ExampleQuest.1.Objectives.4:<server.current_time_millis.sub_int[<player.flag[QuestGUI.ExampleQuest.1.Timer]>].div[1000].as_duration.formatted>
+          - flag <player> QuestGUI.ExampleQuest.1.Timer:<server.current_time_millis>
+        - case 'Trophies':
+          - if %objective% != 5 {
+            - queue clear
+            }
+          - title 'title:QuestGUI' 'subtitle:Objective Complete<&co> Trophy Room'
+          - flag <player> QuestGUI.ExampleQuest.1.Objective:6
+          - flag <player> QuestGUI.ExampleQuest.1.Objectives.5:<server.current_time_millis.sub_int[<player.flag[QuestGUI.ExampleQuest.1.Timer]>].div[1000].as_duration.formatted>
+          - flag <player> QuestGUI.ExampleQuest.1.Timer:<server.current_time_millis>
+        - case 'Complete':
+          - if %objective% != 6 {
+            - queue clear
+            }
+          - title 'title:QuestGUI' 'subtitle:Objective Complete<&co> Completed Quests'
+          - flag <player> QuestGUI.ExampleQuest.1.Objective:Complete
+          - if <player.flag[QuestGUI.QuestsCompleted].as_list||li@> !contains QuestGUI_ExampleQuest_1 {
+            - flag <player> QuestGUI.QuestsCompleted:->:QuestGUI_ExampleQuest_1
+            }
+          - flag <player> QuestGUI.ExampleQuest.1.Completed:++
+          - flag <player> QuestGUI.Active_Quests:<-:QuestGUI_ExampleQuest_1
+          - flag <player> QuestGUI.Trophies:->:QuestGUI_ExampleTrophy_1_Flowers
+          - flag <player> QuestGUI.ExampleQuest.1.Objectives.6:<server.current_time_millis.sub_int[<player.flag[QuestGUI.ExampleQuest.1.Timer]>].div[1000].as_duration.formatted>
+          - flag <player> QuestGUI.ExampleQuest.1.Timer:!
+        - default:
+          - queue clear
+#
+#  END QuestGUI Example Quest
+#
+################################################################################
