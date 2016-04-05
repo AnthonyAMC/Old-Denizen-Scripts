@@ -1,0 +1,194 @@
+################################################################################
+#
+#                            d W o r l d M a n a g e r
+#
+#
+#   Authors: |Anthony|
+#   Version: 0.1
+#   dScript Version: 0.9.8-DEV-b554
+#
+#
+#
+#--- About this script
+#
+#  dWorldManager is a world management system written with the Denizen
+#  Scripting Engine. It is meant to take the place of existing world management
+#  plugins such as MultiVerse for those of us who want a pure Denizen Server.
+#
+#  This is a very early ALPHA version of dWorldManager. Currently it will track
+#  new worlds as they are created and automatically make sure that they are
+#  loaded when the server starts. It provides no commands and no configurations
+#  at this time, though features will be added in the future.
+#
+#
+#_______________________________________________________________________________
+#
+#   Dependencies:
+#
+#    - ConfigFileGenerator
+#      - Used to build default config files and data storage.
+#      - https://github.com/AnthonyAMC/Public-Denizen-Scripts/blob/master/ConfigFileGenerator.yml
+#
+#    - MessageConstructorLibrary
+#      - Used for all message output
+#      - https://github.com/AnthonyAMC/Public-Denizen-Scripts/blob/master/MessageConstructors.yml
+#
+#
+#_______________________________________________________________________________
+#
+#  Command                Permission            Description
+#
+#  /dwm help [arg/#]      dwm.help              Get help.
+#
+#
+# TODO:
+#
+#
+################################################################################
+#
+#  dWorldManager Version
+#
+#  Handles dWM Versioning Checks
+#
+dWM_Version:
+  type: version
+  author: Anthony
+  name: dWorldManager
+  version: 0.1
+  description: Denizen World Manager
+  id: 100
+#
+#  END dWorldManager Version
+#--------------------------------------
+#
+#
+################################################################################
+#
+#  dWorldManager Events
+#
+#  This should cover all dWM related world events.
+#
+dWM_Events:
+  type: world
+  debug: false
+  events:
+
+    on server prestart:
+      - inject locally loadYaml
+      - foreach <server.list_worlds.parse[name]> {
+        - if !<yaml[dWM_Config].list_keys[worlds].contains[%value%]||false> {
+          - run s@msgPrefixed 'def:dWM|<&3>Adding %value% to the config file...'
+          - yaml set 'worlds.%value%.loaded:true' 'id:dWM_Config'
+          - yaml 'savefile:dWorldManager/config.yml' 'id:dWM_Config'
+          }
+        }
+      - foreach '<yaml[dWM_Config].list_keys[worlds]||li@>' {
+        - if <yaml[dWM_Config].read[worlds.%value%.loaded]||true> {
+          - createworld '%value%'
+          }
+        }
+
+    on server shutdown:
+      - yaml 'savefile:dWorldManager/config.yml' 'id:dWM_Config'
+
+    on world loads:
+      - if !<yaml[dWM_Config].list_keys[worlds].contains[<context.world.name>]||false> {
+        - run s@msgPrefixed 'def:dWM|<&3>Adding <context.world.name> to the config file...'
+        - yaml set 'worlds.<context.world.name>.loaded:true' 'id:dWM_Config'
+        - yaml 'savefile:dWorldManager/config.yml' 'id:dWM_Config'
+        }
+
+    on world initializes:
+      - if !<yaml[dWM_Config].list_keys[worlds].contains[<context.world.name>]||false> {
+        - run s@msgPrefixed 'def:dWM|<&3>Adding <context.world.name> to the config file...'
+        - yaml set 'worlds.<context.world.name>.loaded:true' 'id:dWM_Config'
+        - yaml 'savefile:dWorldManager/config.yml' 'id:dWM_Config'
+        }
+
+  loadYaml:
+  # Reloads the yaml files and generates default files if they don't exist.
+  # Rewrites config files that do not match internal version number!
+    - run s@msgPrefixed 'def:dWM|<&3>Loading system config files...'
+    - if !<server.has_file[dWorldManager/config.yml]> {
+      - inject locally createConfigFile
+      - run s@msgPrefixed 'def:dWM|<&7><&o>Created config file!'
+      }
+    - if <yaml.list.contains[dWM_Config]> {
+      - yaml unload 'id:dWM_Config'
+      }
+    - yaml 'load:dWorldManager/config.yml' 'id:dWM_Config'
+
+    - if <yaml[dWM_Config].read[config.version].is[!=].to[<s@dWM_Configurations.yaml_key[config.version]>]||false> {
+      - define isUpdate ''
+      - inject locally createConfigFile
+      - define isUpdate:!
+      - run s@msgPrefixed 'def:dWM|<&7><&o>Updated config file!'
+      }
+    - run s@msgPrefixed 'def:dWM|<&a>System config files Loaded!'
+
+
+  reloadYaml:
+  # A simpler reload
+    - run s@msgPrefixed 'def:dWM|<&7><&o>Reloading system config files...'
+    - if <yaml.list.contains[dWM_Config]> {
+      - yaml unload 'id:dWM_Config'
+      }
+    - yaml 'load:dWorldManager/config.yml' 'id:dWM_Config'
+    - run s@msgPrefixed 'def:dWM|<&7><&o>System config files Loaded!'
+
+
+  createConfigFile:
+    - define readID 'dWM_Configurations'
+    - define writeID 'dWM_Config'
+    - if !<yaml.list.contains[%readID%]> {
+      - yaml fix_formatting 'load:<script.relative_filename>' 'id:%readID%'
+      }
+    - if !<yaml.list.contains[%readID%]> {
+      - run s@msgPrefixed 'def:dWM|<&7><&o>Loaded <script.relative_filename>'
+      }
+    - yaml create 'id:%writeID%'
+    - define readPath '%readID%.config'
+    - define writePath 'config'
+    - if <def[isUpdate].exists||false> {
+      - run s@ConfigFileGenerator 'def:%readID%|%writeID%|%readPath%|%writePath%|false|false|true' instantly
+      }
+      else {
+      - run s@ConfigFileGenerator 'def:%readID%|%writeID%|%readPath%|%writePath%|false|false|false' instantly
+      }
+    - yaml unload 'id:%readID%'
+    - yaml 'savefile:dWorldManager/config.yml' 'id:%writeID%'
+#
+#  END dWorldManager Events
+#--------------------------------------
+#
+#
+################################################################################
+
+
+################################################################################
+#                                                                              #
+# Configuration Files                                                          #
+#                                                                              #
+#   These are the default config files. They will be used to build the default #
+# configuration and data storage files.                                        #
+#                                                                              #
+#______________________________________________________________________________#
+#                                                                              #
+#______________________________DO_NOT_EDIT_THIS_DATA___________________________#
+#______________________________________________________________________________#
+
+
+dWM_Configurations:
+  type: yaml data
+
+  config:
+    version: 0.1
+    worlds: {}
+
+
+#
+#  END dWorldManager Events
+#--------------------------------------
+#
+#
+################################################################################
