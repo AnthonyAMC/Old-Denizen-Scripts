@@ -5,8 +5,8 @@
 #                                                                              #
 #                                                                              #
 #   Authors: |Anthony|                                                         #
-#   Version: 0.1                                                               #
-#   dScript Version: 0.9.8-DEV_b535                                            #
+#   Version: 0.2                                                               #
+#   dScript Version: 0.9.8-DEV_b548                                            #
 #                                                                              #
 #  A set of utilities to make displaying text pretty, uniform, and easy.       #
 #                                                                              #
@@ -21,6 +21,24 @@
 #  scripts.                                                                    #
 #                                                                              #
 #                                                                              #
+################################################################################
+#
+#  Message Constructor Library Version
+#
+#  Handles Versioning Checks
+#
+MSG_Version:
+  type: version
+  author: Anthony
+  name: MessageConstructorLibrary
+  version: 0.2
+  description: A Library for Message Construction
+  id: 90
+#
+#  END dWorldEditor Version
+#--------------------------------------
+#
+#
 ################################################################################
 #
 #
