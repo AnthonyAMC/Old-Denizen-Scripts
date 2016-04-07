@@ -1529,15 +1529,21 @@ dWE_Commands_Set:
     - inject s@dWE_Commands p:prerunB
 
     - define material <def[args].get[1]||null>
+    - define d '<t[<def[args].filter[starts_with[-d]].is_empty.not||true>]:delayed||>'
     - if %material% !matches material {
       - run s@msgPrefixed 'def:dWE|<&c>Must specify a valid material.'
       - queue clear
       }
-    - define blocks <cu@%pos1%|%pos2%.blocks>
-    - define undoMaterials '<def[blocks].parse[material.full]>'
-    - flag player 'dWE.UndoHistory:->:set_blocks;cu@%pos1%|%pos2%;%undoMaterials%'
-    - ~modifyblock %blocks% %material% delayed
-#    - ~modifyblock cu@%pos1%|%pos2% '%material%' delayed
+    - define cuboid <cu@%pos1%|%pos2%>
+
+    # Save the existing area for undo history
+    - define l '<def[cuboid].min.simple>'
+    - define next '<player.flag[dWE.Undo].as_list.last.split[/].get[1].add[1].as_int||1>'
+    - flag player 'dWE.Undo:->:%next%/%l%'
+    - schematic create 'name:dWE_Undo_<player.uuid>_%next%' '%l%' '%existingArea%'
+    - schematic save 'name:dWE_Undo_<player.uuid>_%next%'
+
+    - ~modifyblock <def[cuboid].blocks> %material% %d%
     - run s@msgPrefixed 'def:dWE|Set complete!'
 
 dWE_Commands_Sphere:
@@ -1567,6 +1573,8 @@ dWE_Commands_Sphere:
       - define command 'sphere'
       }
     - inject s@dWE_Commands p:prerunB
+    - define d '<t[<def[args].filter[starts_with[-d]].is_empty.not||true>]:delayed||>'
+    - define args '<def[args].remove[-d]||%args%>'
 
     - if <def[args].size> == 0 || ( <def[args].size> == 1 && <def[args].get[1]> !matches material ) {
       - run s@msgPrefixed 'def:dWE|<&c>/dwe sphere <&lt>x<&gt>,[<&lt>y<&gt>,<&lt>z<&gt>] <&lt>material<&gt>'
@@ -1599,8 +1607,15 @@ dWE_Commands_Sphere:
     - define blocks '<def[ellipsoid].blocks>'
     - define undoMaterials '<def[blocks].parse[material.full]>'
     - flag player 'dWE.UndoHistory:->:set_blocks;<def[ellipsoid]>;%undoMaterials%'
+
+    # Save the existing area for undo history
+    - define l '<def[cuboid].min.simple>'
+    - define next '<player.flag[dWE.Undo].as_list.last.split[/].get[1].add[1].as_int||1>'
+    - flag player 'dWE.Undo:->:%next%/%l%'
+    - schematic create 'name:dWE_Undo_<player.uuid>_%next%' '%l%' '%existingArea%'
+    - schematic save 'name:dWE_Undo_<player.uuid>_%next%'
+
     - ~modifyblock %blocks% %material% delayed
-#    - ~modifyblock %ellipsoid% %material% delayed
     - run s@msgPrefixed 'def:dWE|Set complete!'
 
 dWE_Commands_Copy:
@@ -1630,6 +1645,7 @@ dWE_Commands_Copy:
       - define command 'copy'
       }
     - inject s@dWE_Commands p:prerunB
+
     - define cuboid '<cu@%pos1%|%pos2%>'
     # Will be a config file option
     - define clipboardLimit '3'
@@ -1737,11 +1753,16 @@ dWE_Commands_Paste:
     - define entry '<player.flag[dWE.clipboard].add[1].sub[%n%].as_int||1>'
     - define clipboard 'dWE_clipboard_<player.uuid>_%entry%'
     - if !<schematic.list.contains[%clipboard%]> {
-      - schematic load 'name:%clipboard%'
+      - if <server.has_file[schematics/%clipboard%.schematic]> {
+        - schematic load 'name:%clipboard%'
+        }
+        else {
+        - run s@msgPrefixed 'def:dWE|<&c>Entry <&o>%entry%<&c> does not exist!'
+        - queue clear
+        }
       }
 
     - define existingArea '<schematic[%clipboard%].cuboid[%l%]>'
-    - narrate '%existingArea%'
     - if %p% {
       - run s@msgPrefixed 'def:dWE|<&c><&o>Preview paste'
       - showfake '<player.flag[dWE.show].split[/].get[1]||m@blue_stained_glass>' '<def[existingArea].outline>' to:<player> 'd:<player.flag[dWE.show].split[/].get[2]||10>s'
@@ -1757,7 +1778,14 @@ dWE_Commands_Paste:
         - run s@msgPrefixed 'def:dWE|<&c>But you are an admin so it is ok!'
         }
       }
-    - schematic paste 'name:%clipboard%' '%l%' '%existingArea%' %d% %a%
+    # Save the existing area for undo history
+    - define next '<player.flag[dWE.Undo].as_list.last.split[/].get[1].add[1].as_int||1>'
+    - flag player 'dWE.Undo:->:%next%/%l%'
+    - schematic create 'name:dWE_Undo_<player.uuid>_%next%' '%l%' '%existingArea%'
+    - schematic save 'name:dWE_Undo_<player.uuid>_%next%'
+
+    # I know i should do logic here, but damnit... empty args shouldn't be a problem if they are optional!
+    - ~schematic paste 'name:%clipboard%' '%l%' '%existingArea%' %d% %a%
     - run s@msgPrefixed 'def:dWE|<&7><&o>Clipboard entry %entry% pasted!'
 
 
@@ -1818,21 +1846,49 @@ dWE_Commands_Undo:
       }
     - inject s@dWE_Commands p:prerunA
 
-    - define last_action '<player.flag[dWE.UndoHistory].as_list.last||null>'
-    - if <def[last_action]> == 'null' {
-      - run s@msgPrefixed 'def:dWE|<&6>Nothing to undo!'
+    - define n '<def[args].filter[is[matches].to[number]].get[1]||1>'
+    - define a '<t[<def[args].filter[starts_with[-a]].is_empty.not||true>]:noair||>'
+    - define d '<t[<def[args].filter[starts_with[-d]].is_empty.not||true>]:delayed||>'
+    - if <def[n].is[LESS].than[1]||true> {
+      - run s@msgPrefixed 'def:dWE|<&c>SYNTAX<&co> <&e>/dwe paste <&6><&lb><&7>clipboard entry<&6><&rb>'
       - queue clear
       }
-    - choose '<def[last_action].split[;].get[1]>':
-      - case 'set_blocks':
-        - define selection '<def[last_action].split[;].get[2]||null>'
-        - define materials '<def[last_action].split[;].get[3]||li@>'
-        - ~modifyblock %selection% %materials% delayed
-        - run s@msgPrefixed 'def:dWE|<&a>Undo complete!'
-      - 'default':
-        - run s@msgPrefixed 'def:dWE|<&4>ERROR <&c><def[last_action].split[;].get[1]> is an unknown type!'
+
+    - define number '<player.flag[dWE.Undo].as_list.last.split[/].get[1].add[1].sub[%n%].as_int||null>'
+    - define l '<player.flag[dWE.Undo].as_list.map_get[%number%]||null>'
+    - if 'li@%number%|%l%' contains 'null' {
+      - run s@msgPrefixed 'def:dWE|<&c>Entry <&o>%number%<&c> does not exist!'
+      - queue clear
+      }
+
+    - define undo 'dWE_Undo_<player.uuid>_%number%'
+    - if !<schematic.list.contains[%undo%]> {
+      - if <server.has_file[schematics/%undo%.schematic]> {
+        - schematic load 'name:%undo%'
+        }
+        else {
+        - run s@msgPrefixed 'def:dWE|<&c>Entry <&o>%number%<&c> does not exist!'
         - queue clear
-    - flag player 'dWE.UndoHistory:<-:%last_action%'
+        }
+      }
+
+    # Save the existing area for redo history
+    - define existingArea '<schematic[%undo%].cuboid[%l%]>'
+    - define next '<player.flag[dWE.Redo].as_list.last.split[/].get[1].add[1].as_int||1>'
+    - flag player 'dWE.Redo:->:%next%/%l%'
+    - schematic create 'name:dWE_Redo_<player.uuid>_%next%' '%l%' '%existingArea%'
+    - schematic save 'name:dWE_Redo_<player.uuid>_%next%'
+
+    # I know i should do logic here, but damnit... empty args shouldn't be a problem if they are optional!
+    - ~schematic paste 'name:%undo%' '%l%' '%existingArea%' %d% %a%
+
+    # Remove the undone schematic
+    - flag player 'dWE.Undo:<-:%number%/%l%'
+    - schematic unload 'name:%undo%'
+    - adjust server 'delete_file:schematics/%undo%.schematic'
+    - run s@msgPrefixed 'def:dWE|<&7><&o>Undo entry %number% complete!'
+
+
 #
 #  END dWE Command Scripts
 #--------------------------------------
