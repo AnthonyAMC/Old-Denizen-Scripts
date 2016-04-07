@@ -1637,7 +1637,7 @@ dWE_Commands_Copy:
     # Method since list_files is broken
     - define playerSaves '<player.flag[dWE.clipboard].as_int||0>'
     - define newSave '<def[playerSaves].add[1].as_int>'
-    - schematic create 'name:dWE_clipboard_<player.uuid>_%newSave%' <player.location.simple> '%cuboid%'
+    - schematic create 'name:dWE_clipboard_<player.uuid>_%newSave%' <def[cuboid].min.simple> '%cuboid%'
     - schematic save 'name:dWE_clipboard_<player.uuid>_%newSave%'
     - if %newSave% > %clipboardLimit% {
       - define oldClip 'dWE_clipboard_<player.uuid>_<def[newsave].sub[%clipboardLimit%]>'
@@ -1680,7 +1680,7 @@ dWE_Commands_Paste:
 
   data:
     description: 'This isn<&sq>t documented because you should <&c>NOT<&f> use it!'
-    usage: '/dwe paste [<&ns>]'
+    usage: '/dwe paste [<&ns>] (-a)'
     examples:
       - '<&f>To paste the most recent entry in your clipboard'
       - '  <&e>/dwe paste'
@@ -1688,6 +1688,21 @@ dWE_Commands_Paste:
       - ' '
       - '<&f>To paste the fifth oldest entry in your clipboard'
       - '  <&e>/dwe paste 5'
+      - ' '
+      - '<&f>To paste the second entry in your clipboard ignoring air blocks'
+      - '  <&e>/dwe paste 2 -a'
+      - ' '
+      - '<&f>To paste your clipboard at position 1 of your wand'
+      - '  <&e>/dwe paste -w'
+      - ' '
+      - '<&f>To paste your clipboard to the location you are looking at'
+      - '  <&e>/dwe paste -l'
+      - ' '
+      - '<&f>To preview your paste showing an outline of the space it will occupy'
+      - '  <&e>/dwe paste -p'
+      - ' '
+      - '<&f>To paste your clipboard slowly'
+      - '  <&e>/dwe paste -d'
     permissions:
       - admin
       - edit
@@ -1705,7 +1720,12 @@ dWE_Commands_Paste:
 
     # Will be a config file option
     - define clipboardLimit '3'
+    - define pRange '50'
     - define n '<def[args].filter[is[matches].to[number]].get[1]||1>'
+    - define a '<t[<def[args].filter[starts_with[-a]].is_empty.not||true>]:noair||>'
+    - define d '<t[<def[args].filter[starts_with[-d]].is_empty.not||true>]:delayed||>'
+    - define p '<def[args].filter[starts_with[-p]].is_empty.not||false>'
+    - define l '<t[<def[args].filter[starts_with[-w]].is_empty.not||true>]:%pos1%||<t[<def[args].filter[starts_with[-l]].is_empty.not||true>]:<player.location.cursor_on[%pRange%].simple>||<player.location.simple>>>'
     - if <def[n].is[LESS].than[1]||true> {
       - run s@msgPrefixed 'def:dWE|<&c>SYNTAX<&co> <&e>/dwe paste <&6><&lb><&7>clipboard entry<&6><&rb>'
       - queue clear
@@ -1716,8 +1736,17 @@ dWE_Commands_Paste:
       }
     - define entry '<player.flag[dWE.clipboard].add[1].sub[%n%].as_int||1>'
     - define clipboard 'dWE_clipboard_<player.uuid>_%entry%'
+    - if !<schematic.list.contains[%clipboard%]> {
+      - schematic load 'name:%clipboard%'
+      }
 
-    - define existingArea '<schematic[%clipboard%].cuboid[<player.location>]>'
+    - define existingArea '<schematic[%clipboard%].cuboid[%l%]>'
+    - narrate '%existingArea%'
+    - if %p% {
+      - run s@msgPrefixed 'def:dWE|<&c><&o>Preview paste'
+      - showfake '<player.flag[dWE.show].split[/].get[1]||m@blue_stained_glass>' '<def[existingArea].outline>' to:<player> 'd:<player.flag[dWE.show].split[/].get[2]||10>s'
+      - queue clear
+      }
     # If using dRegions, check for overlapping regions before editing.
     - if !<server.list_scripts.filter[starts_with[s@dRegions]].is_empty> {
       - if <proc[dRegions_RegionOverlaps].context[<def[existingArea].replace[cu@].as_list.separated_by[/]>|<def[existingArea].center.world.name>|<player>]> {
@@ -1728,10 +1757,7 @@ dWE_Commands_Paste:
         - run s@msgPrefixed 'def:dWE|<&c>But you are an admin so it is ok!'
         }
       }
-    - if !<schematic.list.contains[%clipboard%]> {
-      - schematic load 'name:%clipboard%'
-      }
-    - schematic paste 'name:%clipboard%' <player.location.simple> '%existingArea%'
+    - schematic paste 'name:%clipboard%' '%l%' '%existingArea%' %d% %a%
     - run s@msgPrefixed 'def:dWE|<&7><&o>Clipboard entry %entry% pasted!'
 
 
