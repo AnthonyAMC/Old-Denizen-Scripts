@@ -1685,6 +1685,48 @@ dWE_Commands_Copy:
 
     - run s@msgPrefixed 'def:dWE|<&7><&o>Selection saved to clipboard'
 
+dWE_Commands_Cut:
+  type: command
+  debug: false
+  speed: 0
+  name: .cut
+  description: Cut your selection
+  usage: /.cut
+  aliases: ''
+
+  data:
+    description: 'This isn<&sq>t documented because you should <&c>NOT<&f> use it!'
+    usage: '/dwe cut'
+    examples: []
+    permissions:
+      - admin
+      - edit
+      - cut
+
+  tab complete:
+    - determine 'li@'
+
+  script:
+  # /dwe copy
+    - if !<def[command].exists> {
+      - define command 'cut'
+      }
+    - inject s@dWE_Commands_Copy
+
+    # Save the existing area for undo history
+    - define l '<def[cuboid].min.simple>'
+    - define next '<player.flag[dWE.Undo].as_list.last.split[/].get[1].add[1].as_int||1>'
+    - flag player 'dWE.Undo:->:%next%/%l%'
+    - schematic create 'name:dWE_Undo_<player.uuid>_%next%' '%l%' '%cuboid%'
+    - schematic save 'name:dWE_Undo_<player.uuid>_%next%'
+
+    - if <def[args].filter[starts_with[-d]].is_empty.not||true> {
+      - ~modifyblock <def[cuboid].blocks> m@air delayed
+      }
+      else {
+      - ~modifyblock <def[cuboid].blocks> m@air
+      }
+
 dWE_Commands_Paste:
   type: command
   debug: false
