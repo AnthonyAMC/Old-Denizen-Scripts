@@ -4,7 +4,7 @@
 #
 #
 #   Authors: |Anthony|, mcmonkey
-#   Version: 0.23
+#   Version: 0.24
 #   dScript Version: 0.9.8-DEV-b548
 #
 #
@@ -105,24 +105,28 @@
 #                                                                   the direction you are looking.
 #
 #  /dwe copy                                  dwe.admin               Copys your current selection to your
-#                                             dwe.edit              clipboard. The clipboad can hold more
+#                                             dwe.edit              clipboard. The clipboard can hold more
 #                                             dwe.copy              than one item and will survive restarts.
 #
-#  /dwe paste (<#>)                           dwe.admin               Pastes your current clipboard item. You
+#  /dwe cut                                   dwe.admin               Just like Copy except your selection
+#                                             dwe.edit              is also removed.
+#                                             dwe.cut
+#
+#  /dwe paste [#] (-a, -w, -l, -p, -d)        dwe.admin               Pastes your current clipboard item. You
 #                                             dwe.edit              can optionally specify a clipboard entry.
 #                                             dwe.paste
 #
-#  /dwe set [<material>]                      dwe.admin               Sets your current selection to the
-#                                             dwe.edit              material specified. TAB completion works
-#                                             dwe.set               for material names.
+#  /dwe set [<material>(%#)]                  dwe.admin               Sets your current selection to the
+#           ([<x>],(<y>,<z>))                 dwe.edit              material specified. TAB completion works
+#           (-d, -g, -n, -l, -w, -p)          dwe.set               for material names.
 #
-#  /dwe sphere ([<x>],(<y>,<z>)) [<material>] dwe.admin               Create an ellipsoid of the specified
-#                                             dwe.edit              material. If no size values are given, it
-#                                             dwe.sphere            uses the values from the wand.
+#  /dwe sphere [<material>(%#)]               dwe.admin               Create an ellipsoid of the specified
+#              ([<x>],(<y>,<z>))              dwe.edit              material. If no size values are given, it
+#              (-d, -g, -n, -l, -w, -p)       dwe.sphere            uses the values from the wand.
 #
-#  /dwe undo                                  dwe.admin               Undo your last edit.
+#  /dwe undo [#] (-n, -a, -d)                 dwe.admin               Undo previous edits.
 #                                             dwe.edit              material. If no size values are given, it
-#                                             dwe.undo            uses the values from the wand.
+#                                             dwe.undo              uses the values from the wand.
 #
 #
 #--------------------------------------
@@ -157,7 +161,7 @@ dWE_Version:
   type: version
   author: Anthony
   name: dWorldEditor
-  version: 0.23
+  version: 0.24
   description: Denizen World Editor
   id: 22
 #
@@ -185,8 +189,8 @@ dWE_Events:
     on server start:
       - inject locally load
 
-    on scripts reloaded:
-      - inject locally load
+    on reload scripts:
+      - run locally load delay:1t
 
   load:
     - flag server 'dWE.Command_List:!'
@@ -384,7 +388,7 @@ dWE_Commands:
 
 
 # Preprocessors. Does some pre-processing and passes back to the calling command
-  prerunA:
+  prerun:
     - if <c.server||false> {
       - run s@msgPrefixed 'def:dWE|<&c>This command must be run as a player.'
       - queue clear
@@ -397,19 +401,8 @@ dWE_Commands:
       - define commands '<server.flag[dWE.Command_List].as_list||li@>'
       - define args "<c.args>"
       }
-
-  prerunB:
-    - if <c.server||false> {
-      - run s@msgPrefixed 'def:dWE|<&c>This command must be run as a player.'
-      - queue clear
-      }
-    - if <c.alias> == '.%command%' {
-      - if !<proc[dWE_HasPerm_Command].context[%command%|<player>]> {
-        - inject s@dWE_Commands_Help p:helpList
-        - queue clear
-        }
-      - define commands '<server.flag[dWE.Command_List].as_list||li@>'
-      - define args "<c.args>"
+    - if %preRun% == 'a' {
+      - goto 'END'
       }
 
     - define pos1 '<player.flag[dWEWand].get[1].as_location||null>'
@@ -420,7 +413,88 @@ dWE_Commands:
       - queue clear
       }
     - define oldSize '<proc[selectionSize].context[%pos1%|%pos2%]>'
+    - define cuboid 'cu@%pos1%|%pos2%'
+    - define center '<def[cuboid].center>'
+    - if %preRun% == 'b' {
+      - goto 'END'
+      }
 
+    - define pRange '50'
+    - define d '<t[<def[args].filter[starts_with[-d]].is_empty.not||true>]:delayed||>'
+    - define g '<t[<def[args].filter[starts_with[-g]].is_empty.not||true>]:no_physics||>'
+    - define n '<t[<def[args].filter[starts_with[-n]].is_empty.not||true>]:naturally||>'
+    - define s '<def[args].filter[matches[^[0-9,.]+$]].get[1]||0>'
+    - define p '<def[args].filter[starts_with[-p]].is_empty.not||false>'
+    - define o '<t[<def[args].filter[starts_with[-w]].is_empty.not||true>]:%pos1%||<t[<def[args].filter[starts_with[-l]].is_empty.not||true>]:<player.location.cursor_on[%pRange%].add[0,1,0].simple>||0>>'
+    - define args '<def[args].exclude[-d|-g|-n|-p|-w|-l|%s%]||%args%>'
+    - define matlist '<def[args].get[1].split_by[/]||li@>'
+    - define mats 'li@'
+    - define pcts 'li@'
+    - foreach '%matlist%' {
+      - define mat '<def[value].split_by[<&pc>].get[1]||null>'
+      - if '%mat%' !matches material {
+        - run s@msgPrefixed 'def:dWE|<&c><&o>%mat% <&c>is not a valid material.'
+        - queue clear
+        }
+      - define mats '<def[mats].include[%mat%]>'
+      - define pct '<def[value].split_by[<&pc>].get[2]||<el@val[100].div[<def[matlist].size>].round_up||100>>'
+      - if '%pct%' matches number {
+        - define pcts '<def[pcts].include[<def[pct].abs.as_int>]>'
+        }
+      }
+
+    - if <def[mats].is_empty> {
+      - run s@msgPrefixed 'def:dWE|<parse:<s@dWE_Commands_%command%.yaml_key[data.usage]||No usage info available!>>'
+      - queue clear
+      }
+    - if '%s%' == '0' {
+    # Only specify material. Sizes are determined by wand selection.
+      - define s '<def[cuboid].size.div[2].split_by[,].get[1].to[3].separated_by[,].replace[l@]>'
+      }
+      else {
+      - define s '<def[s].split_by[,].get[1].to[3]>'
+      - if <def[s].size> == 2 {
+        - run s@msgPrefixed 'def:dWE|<parse:<s@dWE_Commands_%command%.yaml_key[data.usage]||No usage info available!>'
+        - queue clear
+        }
+      - define x '<def[s].get[1].abs>'
+      - define y '<def[s].get[2].abs||%x%>'
+      - define z '<def[s].get[3].abs||%x%>'
+      - define s "%x%,%y%,%z%"
+      }
+    - mark 'END'
+
+
+  prerunB:
+    - if %p% {
+      - run s@msgPrefixed 'def:dWE|<&c><&o>Preview paste'
+      - showfake '<player.flag[dWE.show].split[/].get[1]||m@blue_stained_glass>' '<def[selection].outline>' to:<player> 'd:<player.flag[dWE.show].split[/].get[2]||10>s'
+      - queue clear
+      }
+    # If using dRegions, check for overlapping regions before editing.
+    - if !<server.list_scripts.filter[starts_with[s@dRegions]].is_empty> {
+      - if <proc[dRegions_RegionOverlaps].context[<def[selection].replace[cu@].as_list.separated_by[/]>|<def[selection].center.world.name>|<player>]> {
+        - run s@msgPrefixed 'def:dWE|<&c>Region selection contains unowned dRegions!'
+        - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
+          - queue clear
+          }
+        - run s@msgPrefixed 'def:dWE|<&c>But you are an admin so it is ok!'
+        }
+      }
+
+    # Save the existing area for undo history
+    - define next '<player.flag[dWE.Undo].as_list.last.split[/].get[1].add[1].as_int||1>'
+    - flag player 'dWE.Undo:->:%next%/%o%'
+    - schematic create 'name:dWE_Undo_<player.uuid>_%next%' '%o%' '%selection%'
+    - schematic save 'name:dWE_Undo_<player.uuid>_%next%'
+
+    - if '%command%' == 'cyl' {
+      - define s '<def[s].split_by[,]>'
+      - ~modifyblock <def[location]> <def[mats]> 'radius:<def[s].get[1]>' 'height:<def[s].get[2]>' 'depth:<def[s].get[3]>' <def[pcts]> %d% %g% %n%
+      }
+      else {
+      - ~modifyblock <def[blocks]> <def[mats]> <def[pcts]> %d% %g% %n%
+      }
 #
 #  END dWE Command Registrar
 #--------------------------------------
@@ -490,7 +564,8 @@ dWE_Commands_Help:
     - if !<def[command].exists> {
       - define command 'help'
       }
-    - inject s@dWE_Commands p:prerunA
+    - define prerun 'a'
+    - inject s@dWE_Commands p:prerun
 
     - define arg '<def[args].get[1].escaped||1>'
     - if <def[arg].is[matches].to[number]> {
@@ -570,7 +645,8 @@ dWE_Commands_About:
     - if !<def[command].exists> {
       - define command 'about'
       }
-    - inject s@dWE_Commands p:prerunA
+    - define prerun 'a'
+    - inject s@dWE_Commands p:prerun
     - run s@msgBoxed 'def:dwe|dWorldEditor|About|<tern[<def[args].get[1].is[matches].to[number]||false>]:<def[args].get[1].abs.round>||1>|52|12|<proc[paragraph].context[52|<&7><parse:<s@dWE_Commands_%command%.yaml_key[description]>>| |<parse:<s@dWE_Commands_%command%.yaml_key[data.description]>>]>'
 
 
@@ -599,7 +675,8 @@ dWE_Commands_Show:
     - if !<def[command].exists> {
       - define command 'show'
       }
-    - inject s@dWE_Commands p:prerunB
+    - define prerun 'b'
+    - inject s@dWE_Commands p:prerun
     - showfake <player.flag[dWE.show].split[/].get[1]||m@blue_stained_glass> <cu@%pos1%|%pos2%.outline> to:<player> d:<player.flag[dWE.show].split[/].get[2]||10>s
 
 dWE_Commands_Wand:
@@ -666,7 +743,8 @@ dWE_Commands_Wand:
     - if !<def[command].exists> {
       - define command 'wand'
       }
-    - inject s@dWE_Commands p:prerunA
+    - define prerun 'a'
+    - inject s@dWE_Commands p:prerun
 
     - if <def[args].find[-type].is[OR_MORE].than[0]||false> {
       - define type <def[args].get[<def[args].find[-type].add[1].as_int>]||null>
@@ -724,7 +802,8 @@ dWE_Commands_Pos1:
     - if !<def[command].exists> {
       - define command 'pos1'
       }
-    - inject s@dWE_Commands p:prerunA
+    - define prerun 'a'
+    - inject s@dWE_Commands p:prerun
 
     - define pos1 '<player.flag[dWEWand].as_list.get[1]||null>'
     - if <player.location.simple.is[==].to[%pos1%]> {
@@ -782,7 +861,8 @@ dWE_Commands_Pos2:
     - if !<def[command].exists> {
       - define command 'pos2'
       }
-    - inject s@dWE_Commands p:prerunA
+    - define prerun 'a'
+    - inject s@dWE_Commands p:prerun
 
     - define pos2 '<player.flag[dWEWand].as_list.get[2]||null>'
     - if <player.location.simple.is[==].to[%pos2%]> {
@@ -821,7 +901,8 @@ dWE_Commands_Hpos1:
     - if !<def[command].exists> {
       - define command 'hpos1'
       }
-    - inject s@dWE_Commands p:prerunA
+    - define prerun 'a'
+    - inject s@dWE_Commands p:prerun
 
     - define pos1 '<player.flag[dWEWand].as_list.get[1]||null>'
     - if <player.location.cursor_on[160].simple.is[==].to[%pos1%]> {
@@ -862,7 +943,8 @@ dWE_Commands_Hpos2:
     - if !<def[command].exists> {
       - define command 'hpos2'
       }
-    - inject s@dWE_Commands p:prerunA
+    - define prerun 'a'
+    - inject s@dWE_Commands p:prerun
 
     - define pos2 '<player.flag[dWEWand].as_list.get[2]||null>'
     - if <player.location.cursor_on[160].simple.is[==].to[%pos2%]> {
@@ -901,7 +983,8 @@ dWE_Commands_Chunk:
     - if !<def[command].exists> {
       - define command 'chunk'
       }
-    - inject s@dWE_Commands p:prerunA
+    - define prerun 'a'
+    - inject s@dWE_Commands p:prerun
 
     - define pos1 '<player.location.get_chunk.cuboid.min>'
     - define pos2 '<player.location.get_chunk.cuboid.max>'
@@ -979,7 +1062,8 @@ dWE_Commands_Expand:
       - run s@msgPrefixed 'def:dWE|<&c>This command must be run as a player.'
       - queue clear
       }
-    - inject s@dWE_Commands p:prerunB
+    - define prerun 'b'
+    - inject s@dWE_Commands p:prerun
 
     - if <def[args].get[1].escaped.is[==].to[v]||false> {
       - define pos1 '<def[pos1].sub[0,<def[pos1].y>,0].replace[l@]>'
@@ -1129,7 +1213,8 @@ dWE_Commands_Contract:
     - if !<def[command].exists> {
       - define command 'contract'
       }
-    - inject s@dWE_Commands p:prerunB
+    - define prerun 'b'
+    - inject s@dWE_Commands p:prerun
 
     - define n '<def[args].get[1].escaped.round_up||0>'
     - define d '<def[args].get[2].escaped||0>'
@@ -1271,7 +1356,8 @@ dWE_Commands_Inset:
     - if !<def[command].exists> {
       - define command 'inset'
       }
-    - inject s@dWE_Commands p:prerunB
+    - define prerun 'b'
+    - inject s@dWE_Commands p:prerun
 
     - define n '<def[args].filter[is[matches].to[number]].get[1]||0>'
     - if <def[n].is[OR_LESS].than[0]||true> {
@@ -1352,7 +1438,8 @@ dWE_Commands_Outset:
     - if !<def[command].exists> {
       - define command 'outset'
       }
-    - inject s@dWE_Commands p:prerunB
+    - define prerun 'b'
+    - inject s@dWE_Commands p:prerun
 
     - define n '<def[args].filter[is[matches].to[number]].get[1]||0>'
     - if <def[n].is[OR_LESS].than[0]||true> {
@@ -1448,7 +1535,8 @@ dWE_Commands_Shift:
     - if !<def[command].exists> {
       - define command 'shift'
       }
-    - inject s@dWE_Commands p:prerunB
+    - define prerun 'b'
+    - inject s@dWE_Commands p:prerun
 
     - define n '<def[args].get[1].escaped.round_up||0>'
     - define d '<def[args].get[2].escaped||0>'
@@ -1481,17 +1569,41 @@ dWE_Commands_Set:
   aliases: ''
 
   data:
-    description: 'Set your selection area to a specific material. You can use either the specific material name or the minecraft material name. TAB completion is available for the minecraft material names.'
-    usage: '/dwe set <&lt>material<&gt>'
-    examples:
-      - '<&f>To set your selection to air'
-      - '  <&e>/dwe set air'
+    description:
+      - 'Set the materials in an area. You can use either the specific material name or the minecraft material name. TAB completion is available for the minecraft material names.'
       - ' '
-      - '<&f>To set your selection to white stained clay using minecraft material name and data value'
+      - 'Arguments and -switches to the set command can be compounded and supplied in any order you like.'
+    usage: '/dwe set [<&lt>material<&gt>(<&pc><&ns>)/...] (<&lt>x<&gt>(,<&lt>y<&gt>,<&lt>z<&gt>)) (-d, -g, -n, -l, -w, -p)'
+    examples:
+      - '<&f>To set your selection to white stained clay using minecraft material name and data value.'
       - '  <&e>/dwe set stained_clay,0'
       - ' '
-      - '<&f>To set your selection to white stained clay using specific material name'
+      - '<&f>To set your selection to white stained clay using specific material name.'
       - '  <&e>/dwe set white_clay'
+      - ' '
+      - '<&f>To set your selection to 25<&pc> white stained clay and 75<&pc> dirt.'
+      - '  <&e>/dwe set white_clay<&pc>25/dirt<&pc>75'
+      - ' '
+      - '<&f>To set a 4x5x10 area to stone using the center of your selection.'
+      - '  <&e>/dwe set stone 4,5,10'
+      - ' '
+      - '<&f>To set an area the size of your selection to stone. Uses the block you are looking at as the min corner.'
+      - '  <&e>/dwe set stone -l'
+      - ' '
+      - '<&f>To set a 4x5x10 area to stone using the wand position 1 as the min corner. Really only useful when manually setting a size.'
+      - '  <&e>/dwe set stone 4,5,10'
+      - ' '
+      - '<&f>To perform any operation slowly to prevent server lag use the -d switch.'
+      - '  <&e>/dwe set dirt -d'
+      - ' '
+      - '<&f>To place blocks without physics use the -g switch. Physics will still apply if a block update effects the block.'
+      - '  <&e>/dwe set sand -g'
+      - ' '
+      - '<&f>To break blocks <&dq>naturally<&dq> allowing item drops to spawn use the -n switch.'
+      - '  <&e>/dwe set air -n'
+      - ' '
+      - '<&f>To see an outline of the area any command will effect use the -p switch.'
+      - '  <&e>/dwe set stone -p'
     permissions:
       - admin
       - edit
@@ -1526,24 +1638,18 @@ dWE_Commands_Set:
     - if !<def[command].exists> {
       - define command 'set'
       }
-    - inject s@dWE_Commands p:prerunB
-
-    - define material <def[args].get[1]||null>
-    - define d '<t[<def[args].filter[starts_with[-d]].is_empty.not||true>]:delayed||>'
-    - if %material% !matches material {
-      - run s@msgPrefixed 'def:dWE|<&c>Must specify a valid material.'
-      - queue clear
+    - define prerun 'c'
+    - inject s@dWE_Commands p:prerun
+    - define selection 'cu@<def[center].as_location.sub[%s%].add[1,1,1]>|<def[center].as_location.add[%s%]>'
+    - if '%o%' == '0' {
+      - define o '<def[selection].min>'
       }
-    - define cuboid <cu@%pos1%|%pos2%>
-
-    # Save the existing area for undo history
-    - define l '<def[cuboid].min.simple>'
-    - define next '<player.flag[dWE.Undo].as_list.last.split[/].get[1].add[1].as_int||1>'
-    - flag player 'dWE.Undo:->:%next%/%l%'
-    - schematic create 'name:dWE_Undo_<player.uuid>_%next%' '%l%' '%existingArea%'
-    - schematic save 'name:dWE_Undo_<player.uuid>_%next%'
-
-    - ~modifyblock <def[cuboid].blocks> %material% %d%
+      else {
+      - define selection 'cu@%o%|<def[o].as_location.add[<def[selection].size.div[2].sub[1,1,1]>].as_location>'
+      }
+    - define blocks '<def[selection].blocks>'
+    - inject s@dWE_Commands p:prerunB
+    - ~modifyblock <def[blocks]> <def[mats]> <def[pcts]> %d% %g% %n%
     - run s@msgPrefixed 'def:dWE|Set complete!'
 
 dWE_Commands_Sphere:
@@ -1556,9 +1662,41 @@ dWE_Commands_Sphere:
   aliases: ''
 
   data:
-    description: 'This isn<&sq>t documented because you should <&c>NOT<&f> use it!'
-    usage: '/dwe sphere <&lt>x<&gt>,<&lb><&lt>y<&gt>,<&lt>z<&gt><&rb> <&lt>material<&gt>'
-    examples: []
+    description:
+      - 'Create an ellipsoid from your selection. You can use either the specific material name or the minecraft material name. TAB completion is available for the minecraft material names.'
+      - ' '
+      - 'Arguments and -switches to the sphere command can be compounded and supplied in any order you like.'
+    usage: '/dwe sphere [<&lt>material<&gt>(<&pc><&ns>)/...] (<&lt>x<&gt>(,<&lt>y<&gt>,<&lt>z<&gt>)) (-d, -g, -n, -l, -w, -p)'
+    examples:
+      - '<&f>Creata a white wool ellipsoid from you selection using minecraft material name and data value.'
+      - '  <&e>/dwe sphere wool,0'
+      - ' '
+      - '<&f>Creata a white wool ellipsoid from you selection using specific material name.'
+      - '  <&e>/dwe sphere white_wool'
+      - ' '
+      - '<&f>Create an ellipsoid that is 50<&pc> stone and 50<&pc> dirt from your selection.'
+      - '  <&e>/dwe sphere white_clay<&pc>50/dirt<&pc>50'
+      - ' '
+      - '<&f>Create a stone ellipsoid with radii 6x2x6 using the center of your selection.'
+      - '  <&e>/dwe sphere stone 6,2,6'
+      - ' '
+      - '<&f>Create a dirt ellipsoid the size of your selection. Uses the block you are looking at as the min corner.'
+      - '  <&e>/dwe sphere dirt -l'
+      - ' '
+      - '<&f>Create a stone ellipsoid with radii 4x5x10 using the wand position 1 as the min corner. Really only useful when manually setting a size.'
+      - '  <&e>/dwe sphere stone 4,5,10'
+      - ' '
+      - '<&f>To perform any operation slowly to prevent server lag use the -d switch'
+      - '  <&e>/dwe sphere dirt -d'
+      - ' '
+      - '<&f>Create an ellipsoid without physics use the -g switch. Physics will still apply if a block update effects the block.'
+      - '  <&e>/dwe sphere sand -g'
+      - ' '
+      - '<&f>To break blocks <&dq>naturally<&dq> allowing item drops to spawn use the -n switch'
+      - '  <&e>/dwe sphere air -n'
+      - ' '
+      - '<&f>To see an outline of the area any command will effect use the -p switch'
+      - '  <&e>/dwe sphere stone -p'
     permissions:
       - admin
       - edit
@@ -1568,55 +1706,67 @@ dWE_Commands_Sphere:
     - determine 'li@'
 
   script:
-  # /dwe sphere <x>,[<y>,<z>] <material>
     - if !<def[command].exists> {
       - define command 'sphere'
       }
-    - inject s@dWE_Commands p:prerunB
-    - define d '<t[<def[args].filter[starts_with[-d]].is_empty.not||true>]:delayed||>'
-    - define args '<def[args].remove[-d]||%args%>'
-
-    - if <def[args].size> == 0 || ( <def[args].size> == 1 && <def[args].get[1]> !matches material ) {
-      - run s@msgPrefixed 'def:dWE|<&c>/dwe sphere <&lt>x<&gt>,[<&lt>y<&gt>,<&lt>z<&gt>] <&lt>material<&gt>'
-      - queue clear
-      }
-
-    - define cuboid 'cu@%pos1%|%pos2%'
-    - define center '<def[cuboid].center.simple>'
-    - if <def[args].size> == 1 {
-    # Only specify material. Sizes are determined by wand selection.
-      - define material '<def[args].get[1]>'
-      - define cSize '<def[cuboid].size.add[1,1,1].div[2].simple.split_by[,]>'
-      - define rads "<def[cSize].get[1]>,<def[cSize].get[2]>,<def[cSize].get[3]>"
-      - narrate "%rads%"
+    - define prerun 'c'
+    - inject s@dWE_Commands p:prerun
+    - define ellipsoid 'ellipsoid@<def[center].replace[l@]>,<def[s].replace[l@]>'
+    - define selection 'cu@<def[center].as_location.sub[%s%].add[1,1,1]>|<def[center].as_location.add[%s%]>'
+    - if '%o%' == '0' {
+      - define o '<def[selection].min.simple>'
       }
       else {
-      - define rads '<def[args].get[1].split_by[,]>'
-      - if <def[rads].size> == 2 || <def[rads].filter[is[matches].to[number]].is[!=].to[%rads%]> {
-        - run s@msgPrefixed 'def:dWE|<&c>/dwe sphere <&lt>x<&gt>,[<&lt>y<&gt>,<&lt>z<&gt>] <&lt>material<&gt>'
-        - queue clear
-        }
-      - define x '<def[rads].get[1].abs>'
-      - define y '<def[rads].get[2].abs||%x%>'
-      - define z '<def[rads].get[3].abs||%x%>'
-      - define rads "%x%,%y%,%z%"
-      - define material '<def[args].get[2]>'
+      - define selection 'cu@%o%|<def[o].as_location.add[<def[selection].size.div[2].sub[1,1,1]>].as_location>'
+      - define center '<def[selection].center>'
+      - define ellipsoid 'ellipsoid@<def[center].replace[l@]>,<def[selection].size.div[2].replace[l@].split_by[,].get[1].to[3].separated_by[,]>'
       }
-
-    - define ellipsoid 'ellipsoid@%center%,%rads%'
     - define blocks '<def[ellipsoid].blocks>'
-    - define undoMaterials '<def[blocks].parse[material.full]>'
-    - flag player 'dWE.UndoHistory:->:set_blocks;<def[ellipsoid]>;%undoMaterials%'
-
-    # Save the existing area for undo history
-    - define l '<def[cuboid].min.simple>'
-    - define next '<player.flag[dWE.Undo].as_list.last.split[/].get[1].add[1].as_int||1>'
-    - flag player 'dWE.Undo:->:%next%/%l%'
-    - schematic create 'name:dWE_Undo_<player.uuid>_%next%' '%l%' '%existingArea%'
-    - schematic save 'name:dWE_Undo_<player.uuid>_%next%'
-
-    - ~modifyblock %blocks% %material% delayed
+    - inject s@dWE_Commands p:prerunB
+    - ~modifyblock <def[blocks]> <def[mats]> <def[pcts]> %d% %g% %n%
     - run s@msgPrefixed 'def:dWE|Set complete!'
+
+#dWE_Commands_Cyl:
+## This does no work as expected
+#  type: command
+#  debug: false
+#  speed: 0
+#  name: .cyl
+#  description: Creates a cylinder
+#  usage: /.cyl
+#  aliases: ''
+
+#  data:
+#    description: 'Create an cylinder centered from your selection.'
+#    usage: '/dwe sphere [<&lt>material<&gt>(<&pc><&ns>)/...] (<&lt>x<&gt>(,<&lt>y<&gt>,<&lt>z<&gt>)) (-d, -g, -n, -l, -w)'
+#    examples: []
+#    permissions:
+#      - admin
+#      - edit
+#      - sphere
+
+#  tab complete:
+#    - determine 'li@'
+
+#  script:
+#  # /dwe cylinder <x>,[<y>,<z>] <material>
+#    - if !<def[command].exists> {
+#      - define command 'cyl'
+#      }
+#    - define prerun 'c'
+#    - inject s@dWE_Commands p:prerun
+#    - define selection 'cu@<def[center].as_location.sub[%s%].add[1,1,1]>|<def[center].as_location.add[%s%]>'
+#    - if '%o%' == '0' {
+#      - define o '<def[selection].min>'
+#      }
+#      else {
+#      - define selection 'cu@%o%|<def[o].as_location.add[<def[selection].size.div[2].sub[1,1,1]>].as_location>'
+#      }
+#    - define location '<def[selection].center>'
+#    - narrate "%location%"
+#    - inject s@dWE_Commands p:prerunB
+#    - ~modifyblock <def[location]> <def[mats]> 'radius:<def[s].get[1]>' 'height:<def[s].get[2]>' 'depth:<def[s].get[3]>' <def[pcts]> %d% %g% %n%
+#    - run s@msgPrefixed 'def:dWE|Set complete!'
 
 dWE_Commands_Copy:
   type: command
@@ -1628,9 +1778,11 @@ dWE_Commands_Copy:
   aliases: ''
 
   data:
-    description: 'This isn<&sq>t documented because you should <&c>NOT<&f> use it!'
+    description: 'Copy your current selection to your clipboard for pasting.'
     usage: '/dwe copy'
-    examples: []
+    examples:
+      - 'You don<&sq>t actually need an example...'
+      - 'Do you?'
     permissions:
       - admin
       - edit
@@ -1644,7 +1796,8 @@ dWE_Commands_Copy:
     - if !<def[command].exists> {
       - define command 'copy'
       }
-    - inject s@dWE_Commands p:prerunB
+    - define prerun 'b'
+    - inject s@dWE_Commands p:prerun
 
     - define cuboid '<cu@%pos1%|%pos2%>'
     # Will be a config file option
@@ -1695,9 +1848,11 @@ dWE_Commands_Cut:
   aliases: ''
 
   data:
-    description: 'This isn<&sq>t documented because you should <&c>NOT<&f> use it!'
+    description: 'Cut is just like copy except that your selection is also removed.'
     usage: '/dwe cut'
-    examples: []
+    examples:
+      - 'You don<&sq>t actually need an example...'
+      - 'Do you?'
     permissions:
       - admin
       - edit
@@ -1737,8 +1892,8 @@ dWE_Commands_Paste:
   aliases: ''
 
   data:
-    description: 'This isn<&sq>t documented because you should <&c>NOT<&f> use it!'
-    usage: '/dwe paste [<&ns>] (-a)'
+    description: 'Paste items from your clipboard to a location.'
+    usage: '/dwe paste [<&ns>] (-a, -w, -l, -p, -d)'
     examples:
       - '<&f>To paste the most recent entry in your clipboard'
       - '  <&e>/dwe paste'
@@ -1774,7 +1929,8 @@ dWE_Commands_Paste:
     - if !<def[command].exists> {
       - define command 'paste'
       }
-    - inject s@dWE_Commands p:prerunB
+    - define prerun 'b'
+    - inject s@dWE_Commands p:prerun
 
     # Will be a config file option
     - define clipboardLimit '3'
@@ -1857,7 +2013,8 @@ dWE_Commands_Rotate:
     - if !<def[command].exists> {
       - define command 'rotate'
       }
-    - inject s@dWE_Commands p:prerunB
+    - define prerun 'b'
+    - inject s@dWE_Commands p:prerun
     - run s@msgPrefixed 'def:dWE|<&c>This command doesn<&sq>t do anything yet!'
 
 dWE_Commands_Undo:
@@ -1870,9 +2027,21 @@ dWE_Commands_Undo:
   aliases: ''
 
   data:
-    description: 'This isn<&sq>t documented because you should <&c>NOT<&f> use it!'
-    usage: '/dwe undo'
-    examples: []
+    description: 'For those <&dq>Oh Fudge!<&dq> moments. Simply undo.'
+    usage: '/dwe undo (<&ns>) (-a, -d)'
+    examples:
+      - 'Undo your last edit.'
+      - '  <&e>/dwe undo'
+      - ' '
+      - 'Undo your fourth most recent edit.'
+      - '  <&e>/dwe undo 4'
+      - ' '
+      - 'Undo your last edit slowly to prevent server lag.'
+      - '  <&e>/dwe undo -d'
+      - ' '
+      - 'Undo your last edit ignoring air blocks.'
+      - '  <&e>/dwe undo -a'
+      - ' '
     permissions:
       - admin
       - edit
@@ -1886,7 +2055,8 @@ dWE_Commands_Undo:
     - if !<def[command].exists> {
       - define command 'undo'
       }
-    - inject s@dWE_Commands p:prerunA
+    - define prerun 'a'
+    - inject s@dWE_Commands p:prerun
 
     - define n '<def[args].filter[is[matches].to[number]].get[1]||1>'
     - define a '<t[<def[args].filter[starts_with[-a]].is_empty.not||true>]:noair||>'
@@ -1900,6 +2070,7 @@ dWE_Commands_Undo:
     - define l '<player.flag[dWE.Undo].as_list.map_get[%number%]||null>'
     - if 'li@%number%|%l%' contains 'null' {
       - run s@msgPrefixed 'def:dWE|<&c>Entry <&o>%number%<&c> does not exist!'
+      - flag player 'dWE.Undo:<-:%number%/%l%'
       - queue clear
       }
 
@@ -1910,6 +2081,7 @@ dWE_Commands_Undo:
         }
         else {
         - run s@msgPrefixed 'def:dWE|<&c>Entry <&o>%number%<&c> does not exist!'
+        - flag player 'dWE.Undo:<-:%number%/%l%'
         - queue clear
         }
       }
