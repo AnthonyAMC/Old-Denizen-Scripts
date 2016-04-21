@@ -4,8 +4,8 @@
 #
 #
 #   Authors: |Anthony|, mcmonkey
-#   Version: 0.24
-#   dScript Version: 0.9.8-DEV-b548
+#   Version: 0.25
+#   dScript Version: 0.9.8-DEV-b571
 #
 #
 #
@@ -120,13 +120,21 @@
 #           ([<x>],(<y>,<z>))                 dwe.edit              material specified. TAB completion works
 #           (-d, -g, -n, -l, -w, -p)          dwe.set               for material names.
 #
+#  /dwe replace [<newMat>(%#)]                dwe.admin               Replace materials in an area with other
+#           [<newMat>(%#)] ([<x>],(<y>,<z>))  dwe.edit              materials. TAB completion works for
+#           (-d, -g, -n, -l, -w, -p)          dwe.set               material names.
+#
 #  /dwe sphere [<material>(%#)]               dwe.admin               Create an ellipsoid of the specified
 #              ([<x>],(<y>,<z>))              dwe.edit              material. If no size values are given, it
 #              (-d, -g, -n, -l, -w, -p)       dwe.sphere            uses the values from the wand.
 #
-#  /dwe undo [#] (-n, -a, -d)                 dwe.admin               Undo previous edits.
-#                                             dwe.edit              material. If no size values are given, it
-#                                             dwe.undo              uses the values from the wand.
+#  /dwe undo [#] (-n, -a, -d)                 dwe.admin               Undo previous edits. You can specify
+#                                             dwe.edit              which edit to undo.
+#                                             dwe.undo
+#
+#  /dwe redo [#] (-n, -a, -d)                 dwe.admin               Redo previous edits. You can specify
+#                                             dwe.edit              which undo to redo.
+#                                             dwe.undo
 #
 #
 #--------------------------------------
@@ -134,10 +142,12 @@
 # TODO:
 #  - Editing & Clipboard
 #    - Copy (Functional)
-#    - Paste (Semi-functional)
+#    - Paste (Functional)
+#    - Replace (Functional)
 #    - Stack
 #    - Rotate
-#    - Undo
+#    - Undo (Functional)
+#    - Redo (Functional)
 #    - Schematics
 #      - Save Load all that jazz
 #  - Config File
@@ -161,7 +171,7 @@ dWE_Version:
   type: version
   author: Anthony
   name: dWorldEditor
-  version: 0.24
+  version: 0.25
   description: Denizen World Editor
   id: 22
 #
@@ -433,7 +443,8 @@ dWE_Commands:
     - foreach '%matlist%' {
       - define mat '<def[value].split_by[<&pc>].get[1]||null>'
       - if '%mat%' !matches material {
-        - run s@msgPrefixed 'def:dWE|<&c><&o>%mat% <&c>is not a valid material.'
+        - run s@msgPrefixed 'def:dWE|<&c>SYNTAX ERROR<&co> <&6> Invalid Material <&c><&o>%mat%'
+        - run s@msgPrefixed 'def: |<&6><parse:<s@dWE_Commands_%command%.yaml_key[data.usage]||No usage info available!>>'
         - queue clear
         }
       - define mats '<def[mats].include[%mat%]>'
@@ -444,7 +455,8 @@ dWE_Commands:
       }
 
     - if <def[mats].is_empty> {
-      - run s@msgPrefixed 'def:dWE|<parse:<s@dWE_Commands_%command%.yaml_key[data.usage]||No usage info available!>>'
+      - run s@msgPrefixed 'def:dWE|<&c>SYNTAX ERROR<&co> <&6> Missing Material'
+      - run s@msgPrefixed 'def: |<&6><parse:<s@dWE_Commands_%command%.yaml_key[data.usage]||No usage info available!>>'
       - queue clear
       }
     - if '%s%' == '0' {
@@ -454,7 +466,8 @@ dWE_Commands:
       else {
       - define s '<def[s].split_by[,].get[1].to[3]>'
       - if <def[s].size> == 2 {
-        - run s@msgPrefixed 'def:dWE|<parse:<s@dWE_Commands_%command%.yaml_key[data.usage]||No usage info available!>'
+        - run s@msgPrefixed 'def:dWE|<&c>SYNTAX ERROR<&co> <&6> Invalid Size'
+        - run s@msgPrefixed 'def: |<&6><parse:<s@dWE_Commands_%command%.yaml_key[data.usage]||No usage info available!>>'
         - queue clear
         }
       - define x '<def[s].get[1].abs>'
@@ -467,7 +480,7 @@ dWE_Commands:
 
   prerunB:
     - if %p% {
-      - run s@msgPrefixed 'def:dWE|<&c><&o>Preview paste'
+      - run s@msgPrefixed 'def:dWE|<&c><&o>Showing outline of effected area'
       - showfake '<player.flag[dWE.show].split[/].get[1]||m@blue_stained_glass>' '<def[selection].outline>' to:<player> 'd:<player.flag[dWE.show].split[/].get[2]||10>s'
       - queue clear
       }
@@ -487,14 +500,7 @@ dWE_Commands:
     - flag player 'dWE.Undo:->:%next%/%o%'
     - schematic create 'name:dWE_Undo_<player.uuid>_%next%' '%o%' '%selection%'
     - schematic save 'name:dWE_Undo_<player.uuid>_%next%'
-
-    - if '%command%' == 'cyl' {
-      - define s '<def[s].split_by[,]>'
-      - ~modifyblock <def[location]> <def[mats]> 'radius:<def[s].get[1]>' 'height:<def[s].get[2]>' 'depth:<def[s].get[3]>' <def[pcts]> %d% %g% %n%
-      }
-      else {
-      - ~modifyblock <def[blocks]> <def[mats]> <def[pcts]> %d% %g% %n%
-      }
+    - schematic unload 'name:dWE_Undo_<player.uuid>_%next%'
 #
 #  END dWE Command Registrar
 #--------------------------------------
@@ -600,6 +606,7 @@ dWE_Commands_Help:
     - define subTitle '<&e>Help Files'
     - define pageHeight '10'
     - define pageWidth '52'
+    - define page '<def[page]||1>'
     - define paragraphs '<proc[paragraph].context[%pageWidth%|%helpDoc%]>'
     - run s@msgBoxed instantly 'def:%script%|%title%|%subTitle%|%page%|%pageWidth%|%pageHeight%|%paragraphs%'
 
@@ -615,6 +622,7 @@ dWE_Commands_Help:
     - define subTitle '<&e>Help - <def[arg].to_titlecase>'
     - define pageHeight '10'
     - define pageWidth '52'
+    - define page '<def[page]||1>'
     - define paragraphs '<proc[paragraph].context[%pageWidth%|<&7>%short%| |%desc%| |<&b><&n>Usage<&co>| |<&e.pad_left[3].with[ ]>%usage%| |<&3><&n>Examples<&co>| |%examples%]>'
     - run s@msgBoxed 'def:%script%|%title%|%subTitle%|%page%|%pageWidth%|%pageHeight%|%paragraphs%'
 
@@ -811,25 +819,6 @@ dWE_Commands_Pos1:
       - queue clear
       }
     - define pos1 '<player.location.simple>'
-    - if !<def[command].exists> {
-      - if !<proc[dWE_HasPerm_Command].context[shift|<player||server>]> {
-        - determine 'li@'
-        }
-      - define args "<c.args>"
-      - define spaces '<c.raw_args.to_list.count[ ].add[1].as_int||0>'
-      }
-
-    - choose '%spaces%':
-      - case '0':
-        - determine 'shift [<&ns>] '
-      - case '1':
-        - define arg1 '<def[args].get[1]||>'
-        - if '%arg1%' matches 'number' || '%arg1%' == 'v' {
-          - determine '%arg1% '
-          }
-          else {
-          - determine '[<&ns>] '
-          }
     - define pos2 '<player.flag[dWEWand].as_list.get[2]||null>'
     - flag player dWEWand:!
     - flag player dWEWand:|:%pos1%|%pos2%
@@ -1591,7 +1580,7 @@ dWE_Commands_Set:
       - '  <&e>/dwe set stone -l'
       - ' '
       - '<&f>To set a 4x5x10 area to stone using the wand position 1 as the min corner. Really only useful when manually setting a size.'
-      - '  <&e>/dwe set stone 4,5,10'
+      - '  <&e>/dwe set stone 4,5,10 -w'
       - ' '
       - '<&f>To perform any operation slowly to prevent server lag use the -d switch.'
       - '  <&e>/dwe set dirt -d'
@@ -1651,6 +1640,135 @@ dWE_Commands_Set:
     - inject s@dWE_Commands p:prerunB
     - ~modifyblock <def[blocks]> <def[mats]> <def[pcts]> %d% %g% %n%
     - run s@msgPrefixed 'def:dWE|Set complete!'
+
+dWE_Commands_Replace:
+  type: command
+  debug: false
+  speed: 0
+  name: .replace
+  description: Replace materials in an area
+  usage: /.replace
+  aliases: ''
+
+  data:
+    description:
+      - 'Replace materials in an area. You can use either the specific material name or the minecraft material name. TAB completion is available for the minecraft material names.'
+      - ' '
+      - 'Arguments and -switches to the replace command can be compounded and supplied in any order you like.'
+    usage: '/dwe replace [<&lt>newMat<&gt>(<&pc><&ns>)/...] [<&lt>oldMat<&gt>/...] (<&lt>x<&gt>(,<&lt>y<&gt>,<&lt>z<&gt>)) (-d, -g, -n, -l, -w, -p)'
+    examples:
+      - '<&f>To replace stone blocks in your selection with dirt.'
+      - '  <&e>/.replace dirt stone'
+      - ' '
+      - '<&f>To replace stone and dirt with sand.'
+      - '  <&e>/.replace sand stone/dirt'
+      - ' '
+      - '<&f>To replace air with 25<&pc> sand and 25<&pc> gravel.'
+      - '  <&e>/.replace sand<&pc>25/gravel<&pc>25 air'
+      - ' '
+      - '<&f>To replace stone in a 4x2x2 area with dirt using the center of your selection.'
+      - '  <&e>/.replace dirt stone 4,2,2'
+      - ' '
+      - '<&f>To replace stone in an area the size of your selection with dirt using the block you are looking at as the min corner.'
+      - '  <&e>/.replace dirt stone -l'
+      - ' '
+      - '<&f>To replace stone in a 4x5x10 area with dirt using the wand position 1 as the min corner. Really only useful when manually setting a size.'
+      - '  <&e>/.replace dirt stone 4,5,10 -w'
+      - ' '
+      - '<&f>To perform any operation slowly to prevent server lag use the -d switch.'
+      - '  <&e>/.replace dirt stone -d'
+      - ' '
+      - '<&f>To replace blocks without physics use the -g switch. Physics will still apply if a block update effects the block.'
+      - '  <&e>/.replace sand air -g'
+      - ' '
+      - '<&f>To replace blocks with air <&dq>naturally<&dq> allowing item drops to spawn use the -n switch.'
+      - '  <&e>/.replace air tall_grass/crops -n'
+      - ' '
+      - '<&f>To see a preview of the locations any command will effect use the -p switch.'
+      - '<&4>WARNING<&co><&c>This has the potential to crash servers! Use with -d if in doubt!'
+      - '  <&e>/.replace air tall_grass/crops -p'
+    permissions:
+      - admin
+      - edit
+      - replace
+
+  tab complete:
+    - if !<def[command].exists> {
+      - if !<proc[dWE_HasPerm_Command].context[set|<player||server>]> {
+        - determine 'li@'
+        }
+      - define args "<c.args>"
+      - define spaces '<c.raw_args.to_list.count[ ].add[1].as_int||0>'
+      }
+
+    - choose '%spaces%':
+      - case '0':
+        - determine 'set <&lt>material<&gt>'
+      - case '1':
+        - define arg1 '<def[args].get[1]||>'
+        - if '%arg1%' matches 'material' {
+          - determine '%arg1%'
+          }
+          else {
+          - define blocks '<server.list_materials.parse[as_material].filter[is_block].parse[bukkit_enum]>'
+          - determine '<def[blocks].filter[starts_with[%arg1%]]||%blocks%>'
+          }
+      - default:
+        - determine 'li@'
+
+  script:
+  # /dwe replace <nawMaterials> <oldMaterial>
+    - if !<def[command].exists> {
+      - define command 'replace'
+      }
+    - define prerun 'c'
+    - inject s@dWE_Commands p:prerun
+    - define oldMats '<def[args].get[2].split_by[/]||null>'
+    - foreach %oldMats% {
+      - if '%value%' !matches material {
+        - run s@msgPrefixed 'def:dWE|<&c>SYNTAX ERROR<&co> <&6> Invalid Material <&c><&o>%value%'
+        - narrate '<&6><parse:<s@dWE_Commands_%command%.yaml_key[data.usage]||No usage info available!>>'
+        - queue clear
+        }
+      }
+    - define selection 'cu@<def[center].as_location.sub[%s%].add[1,1,1]>|<def[center].as_location.add[%s%]>'
+    - if '%o%' == '0' {
+      - define o '<def[selection].min>'
+      }
+      else {
+      - define selection 'cu@%o%|<def[o].as_location.add[<def[selection].size.div[2].sub[1,1,1]>].as_location>'
+      }
+    - define blocks '<def[selection].blocks[%oldMats%]>'
+    - if <def[blocks].size> == '0' {
+      - run s@msgPrefixed 'def:dWE|<&c><&o><def[oldMats].formatted> <t[<def[oldMats].size.is[more].than[1]>]:are||is> not within your selection.'
+      - queue clear
+      }
+
+    - if %p% {
+      - run s@msgPrefixed 'def:dWE|<&7><&o>Showing blocks that will be effected'
+      - showfake '<player.flag[dWE.show].split[/].get[1]||m@blue_stained_glass>' '%blocks%' to:<player> 'd:<player.flag[dWE.show].split[/].get[2]||10>s'
+      - queue clear
+      }
+    # If using dRegions, check for overlapping regions before editing.
+    - if !<server.list_scripts.filter[starts_with[s@dRegions]].is_empty> {
+      - if <proc[dRegions_RegionOverlaps].context[<def[selection].replace[cu@].as_list.separated_by[/]>|<def[selection].center.world.name>|<player>]> {
+        - run s@msgPrefixed 'def:dWE|<&c>Region selection contains unowned dRegions!'
+        - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
+          - queue clear
+          }
+        - run s@msgPrefixed 'def:dWE|<&c>But you are an admin so it is ok!'
+        }
+      }
+
+    # Save the existing area for undo history
+    - define next '<player.flag[dWE.Undo].as_list.last.split[/].get[1].add[1].as_int||1>'
+    - flag player 'dWE.Undo:->:%next%/%o%'
+    - schematic create 'name:dWE_Undo_<player.uuid>_%next%' '%o%' '%selection%'
+    - schematic save 'name:dWE_Undo_<player.uuid>_%next%'
+    - schematic unload 'name:dWE_Undo_<player.uuid>_%next%'
+
+    - ~modifyblock <def[blocks]> <def[mats]> <def[pcts]> %d% %g% %n%
+    - run s@msgPrefixed 'def:dWE|Replace complete!'
 
 dWE_Commands_Sphere:
   type: command
@@ -1808,6 +1926,7 @@ dWE_Commands_Copy:
     - define newSave '<def[playerSaves].add[1].as_int>'
     - schematic create 'name:dWE_clipboard_<player.uuid>_%newSave%' <def[cuboid].min.simple> '%cuboid%'
     - schematic save 'name:dWE_clipboard_<player.uuid>_%newSave%'
+    - schematic unload 'name:dWE_clipboard_<player.uuid>_%newSave%'
     - if %newSave% > %clipboardLimit% {
       - define oldClip 'dWE_clipboard_<player.uuid>_<def[newsave].sub[%clipboardLimit%]>'
       - run s@msgPrefixed 'def:dWE|<&c>Deleting<&co> Clipboard entry <def[newsave].sub[%clipboardLimit%]>'
@@ -1874,6 +1993,7 @@ dWE_Commands_Cut:
     - flag player 'dWE.Undo:->:%next%/%l%'
     - schematic create 'name:dWE_Undo_<player.uuid>_%next%' '%l%' '%cuboid%'
     - schematic save 'name:dWE_Undo_<player.uuid>_%next%'
+    - schematic unload 'name:dWE_Undo_<player.uuid>_%next%'
 
     - if <def[args].filter[starts_with[-d]].is_empty.not||true> {
       - ~modifyblock <def[cuboid].blocks> m@air delayed
@@ -1935,15 +2055,11 @@ dWE_Commands_Paste:
     # Will be a config file option
     - define clipboardLimit '3'
     - define pRange '50'
-    - define n '<def[args].filter[is[matches].to[number]].get[1]||1>'
+    - define n '<def[args].filter[is[matches].to[number]].filter[mod[1]is[==].to[0]].get[1].abs||1>'
     - define a '<t[<def[args].filter[starts_with[-a]].is_empty.not||true>]:noair||>'
     - define d '<t[<def[args].filter[starts_with[-d]].is_empty.not||true>]:delayed||>'
     - define p '<def[args].filter[starts_with[-p]].is_empty.not||false>'
-    - define l '<t[<def[args].filter[starts_with[-w]].is_empty.not||true>]:%pos1%||<t[<def[args].filter[starts_with[-l]].is_empty.not||true>]:<player.location.cursor_on[%pRange%].simple>||<player.location.simple>>>'
-    - if <def[n].is[LESS].than[1]||true> {
-      - run s@msgPrefixed 'def:dWE|<&c>SYNTAX<&co> <&e>/dwe paste <&6><&lb><&7>clipboard entry<&6><&rb>'
-      - queue clear
-      }
+    - define o '<t[<def[args].filter[starts_with[-w]].is_empty.not||true>]:%pos1%||<t[<def[args].filter[starts_with[-l]].is_empty.not||true>]:<player.location.cursor_on[%pRange%].simple>||<player.location.simple>>>'
     - if %n% > %clipboardLimit% {
       - run s@msgPrefixed 'def:dWE|<&c>Clipboard only has <&6>%clipboardLimit% <&c>entries!'
       - queue clear
@@ -1960,30 +2076,12 @@ dWE_Commands_Paste:
         }
       }
 
-    - define existingArea '<schematic[%clipboard%].cuboid[%l%]>'
-    - if %p% {
-      - run s@msgPrefixed 'def:dWE|<&c><&o>Preview paste'
-      - showfake '<player.flag[dWE.show].split[/].get[1]||m@blue_stained_glass>' '<def[existingArea].outline>' to:<player> 'd:<player.flag[dWE.show].split[/].get[2]||10>s'
-      - queue clear
-      }
-    # If using dRegions, check for overlapping regions before editing.
-    - if !<server.list_scripts.filter[starts_with[s@dRegions]].is_empty> {
-      - if <proc[dRegions_RegionOverlaps].context[<def[existingArea].replace[cu@].as_list.separated_by[/]>|<def[existingArea].center.world.name>|<player>]> {
-        - run s@msgPrefixed 'def:dWE|<&c>Region selection contains unowned dRegions!'
-        - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
-          - queue clear
-          }
-        - run s@msgPrefixed 'def:dWE|<&c>But you are an admin so it is ok!'
-        }
-      }
-    # Save the existing area for undo history
-    - define next '<player.flag[dWE.Undo].as_list.last.split[/].get[1].add[1].as_int||1>'
-    - flag player 'dWE.Undo:->:%next%/%l%'
-    - schematic create 'name:dWE_Undo_<player.uuid>_%next%' '%l%' '%existingArea%'
-    - schematic save 'name:dWE_Undo_<player.uuid>_%next%'
+    - define selection '<schematic[%clipboard%].cuboid[%o%]>'
+    - inject s@dWE_Commands p:prerunB
 
     # I know i should do logic here, but damnit... empty args shouldn't be a problem if they are optional!
-    - ~schematic paste 'name:%clipboard%' '%l%' '%existingArea%' %d% %a%
+    - ~schematic paste 'name:%clipboard%' '%o%' '%selection%' %d% %a%
+    - schematic unload 'name:%clipboard%'
     - run s@msgPrefixed 'def:dWE|<&7><&o>Clipboard entry %entry% pasted!'
 
 
@@ -2092,6 +2190,7 @@ dWE_Commands_Undo:
     - flag player 'dWE.Redo:->:%next%/%l%'
     - schematic create 'name:dWE_Redo_<player.uuid>_%next%' '%l%' '%existingArea%'
     - schematic save 'name:dWE_Redo_<player.uuid>_%next%'
+    - schematic unload 'name:dWE_Redo_<player.uuid>_%next%'
 
     # I know i should do logic here, but damnit... empty args shouldn't be a problem if they are optional!
     - ~schematic paste 'name:%undo%' '%l%' '%existingArea%' %d% %a%
@@ -2101,6 +2200,92 @@ dWE_Commands_Undo:
     - schematic unload 'name:%undo%'
     - adjust server 'delete_file:schematics/%undo%.schematic'
     - run s@msgPrefixed 'def:dWE|<&7><&o>Undo entry %number% complete!'
+
+dWE_Commands_Redo:
+  type: command
+  debug: false
+  speed: 0
+  name: .redo
+  description: Redo edits
+  usage: /.redo
+  aliases: ''
+
+  data:
+    description: 'For when you should have done that thing you thought you shouldn<&sq>t have. Redo.'
+    usage: '/dwe redo (<&ns>) (-a, -d)'
+    examples:
+      - 'Redo your last undo.'
+      - '  <&e>/dwe redo'
+      - ' '
+      - 'Redo your third most recent undo.'
+      - '  <&e>/dwe redo 3'
+      - ' '
+      - 'Redo your last undo slowly to prevent server lag.'
+      - '  <&e>/dwe redo -d'
+      - ' '
+      - 'Redo your last undo ignoring air blocks.'
+      - '  <&e>/dwe redo -a'
+      - ' '
+    permissions:
+      - admin
+      - edit
+      - undo
+
+  tab complete:
+    - determine 'li@'
+
+  script:
+  # /dwe redo
+    - if !<def[command].exists> {
+      - define command 'redo'
+      }
+    - define prerun 'a'
+    - inject s@dWE_Commands p:prerun
+
+    - define n '<def[args].filter[is[matches].to[number]].get[1]||1>'
+    - define a '<t[<def[args].filter[starts_with[-a]].is_empty.not||true>]:noair||>'
+    - define d '<t[<def[args].filter[starts_with[-d]].is_empty.not||true>]:delayed||>'
+    - if <def[n].is[LESS].than[1]||true> {
+      - run s@msgPrefixed 'def:dWE|<&c>SYNTAX<&co> <&e>/dwe redo <&6><&lb><&7>clipboard entry<&6><&rb>'
+      - queue clear
+      }
+
+    - define number '<player.flag[dWE.Redo].as_list.last.split[/].get[1].add[1].sub[%n%].as_int||null>'
+    - define l '<player.flag[dWE.Redo].as_list.map_get[%number%]||null>'
+    - if 'li@%number%|%l%' contains 'null' {
+      - run s@msgPrefixed 'def:dWE|<&c>Entry <&o>%number%<&c> does not exist!'
+      - flag player 'dWE.Redo:<-:%number%/%l%'
+      - queue clear
+      }
+
+    - define redo 'dWE_Redo_<player.uuid>_%number%'
+    - if !<schematic.list.contains[%redo%]> {
+      - if <server.has_file[schematics/%redo%.schematic]> {
+        - schematic load 'name:%redo%'
+        }
+        else {
+        - run s@msgPrefixed 'def:dWE|<&c>Entry <&o>%number%<&c> does not exist!'
+        - flag player 'dWE.Redo:<-:%number%/%l%'
+        - queue clear
+        }
+      }
+
+    # Save the existing area for undo history
+    - define existingArea '<schematic[%redo%].cuboid[%l%]>'
+    - define next '<player.flag[dWE.Undo].as_list.last.split[/].get[1].add[1].as_int||1>'
+    - flag player 'dWE.Undo:->:%next%/%l%'
+    - schematic create 'name:dWE_Undo_<player.uuid>_%next%' '%l%' '%existingArea%'
+    - schematic save 'name:dWE_Undo_<player.uuid>_%next%'
+    - schematic unload 'name:dWE_Undo_<player.uuid>_%next%'
+
+    # I know i should do logic here, but damnit... empty args shouldn't be a problem if they are optional!
+    - ~schematic paste 'name:%redo%' '%l%' '%existingArea%' %d% %a%
+
+    # Remove the redone schematic
+    - flag player 'dWE.Redo:<-:%number%/%l%'
+    - schematic unload 'name:%redo%'
+    - adjust server 'delete_file:schematics/%redo%.schematic'
+    - run s@msgPrefixed 'def:dWE|<&7><&o>Redo entry %number% complete!'
 
 
 #
