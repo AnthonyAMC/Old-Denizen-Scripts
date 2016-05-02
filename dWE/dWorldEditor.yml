@@ -4,8 +4,8 @@
 #
 #
 #   Authors: |Anthony|, mcmonkey
-#   Version: 0.25
-#   dScript Version: 0.9.8-DEV-b571
+#   Version: 0.26
+#   dScript Version: 0.9.8-DEV-b575
 #
 #
 #
@@ -171,7 +171,7 @@ dWE_Version:
   type: version
   author: Anthony
   name: dWorldEditor
-  version: 0.25
+  version: 0.26
   description: Denizen World Editor
   id: 22
 #
@@ -424,7 +424,7 @@ dWE_Commands:
       }
     - define oldSize '<proc[selectionSize].context[%pos1%|%pos2%]>'
     - define cuboid 'cu@%pos1%|%pos2%'
-    - define center '<def[cuboid].center>'
+    - define center '<def[cuboid].center.simple.as_location>'
     - if %preRun% == 'b' {
       - goto 'END'
       }
@@ -435,7 +435,7 @@ dWE_Commands:
     - define n '<t[<def[args].filter[starts_with[-n]].is_empty.not||true>]:naturally||>'
     - define s '<def[args].filter[matches[^[0-9,.]+$]].get[1]||0>'
     - define p '<def[args].filter[starts_with[-p]].is_empty.not||false>'
-    - define o '<t[<def[args].filter[starts_with[-w]].is_empty.not||true>]:%pos1%||<t[<def[args].filter[starts_with[-l]].is_empty.not||true>]:<player.location.cursor_on[%pRange%].add[0,1,0].simple>||0>>'
+    - define o '<t[<def[args].filter[starts_with[-w]].is_empty.not||true>]:%pos1%||<t[<def[args].filter[starts_with[-l]].is_empty.not||true>]:<player.location.cursor_on[%pRange%].simple>||0>>'
     - define args '<def[args].exclude[-d|-g|-n|-p|-w|-l|%s%]||%args%>'
     - define matlist '<def[args].get[1].split_by[/]||li@>'
     - define mats 'li@'
@@ -461,7 +461,7 @@ dWE_Commands:
       }
     - if '%s%' == '0' {
     # Only specify material. Sizes are determined by wand selection.
-      - define s '<def[cuboid].size.div[2].split_by[,].get[1].to[3].separated_by[,].replace[l@]>'
+      - define s '<def[cuboid].size.sub[1,1,1].div[2].split_by[,].get[1].to[3].separated_by[,].replace[l@]>'
       }
       else {
       - define s '<def[s].split_by[,].get[1].to[3]>'
@@ -1629,7 +1629,7 @@ dWE_Commands_Set:
       }
     - define prerun 'c'
     - inject s@dWE_Commands p:prerun
-    - define selection 'cu@<def[center].as_location.sub[%s%].add[1,1,1]>|<def[center].as_location.add[%s%]>'
+    - define selection 'cu@<def[center].as_location.sub[%s%]>|<def[center].as_location.add[%s%]>'
     - if '%o%' == '0' {
       - define o '<def[selection].min>'
       }
@@ -1694,7 +1694,7 @@ dWE_Commands_Replace:
 
   tab complete:
     - if !<def[command].exists> {
-      - if !<proc[dWE_HasPerm_Command].context[set|<player||server>]> {
+      - if !<proc[dWE_HasPerm_Command].context[replace|<player||server>]> {
         - determine 'li@'
         }
       - define args "<c.args>"
@@ -1731,7 +1731,7 @@ dWE_Commands_Replace:
         - queue clear
         }
       }
-    - define selection 'cu@<def[center].as_location.sub[%s%].add[1,1,1]>|<def[center].as_location.add[%s%]>'
+    - define selection 'cu@<def[center].as_location.sub[%s%]>|<def[center].as_location.add[%s%]>'
     - if '%o%' == '0' {
       - define o '<def[selection].min>'
       }
@@ -1829,14 +1829,15 @@ dWE_Commands_Sphere:
       }
     - define prerun 'c'
     - inject s@dWE_Commands p:prerun
+    - define s '<def[s].as_location.add[0.5,0.5,0.5]>'
     - define ellipsoid 'ellipsoid@<def[center].replace[l@]>,<def[s].replace[l@]>'
-    - define selection 'cu@<def[center].as_location.sub[%s%].add[1,1,1]>|<def[center].as_location.add[%s%]>'
+    - define selection 'cu@<def[center].as_location.sub[%s%]>|<def[center].as_location.add[%s%]>'
     - if '%o%' == '0' {
       - define o '<def[selection].min.simple>'
       }
       else {
       - define selection 'cu@%o%|<def[o].as_location.add[<def[selection].size.div[2].sub[1,1,1]>].as_location>'
-      - define center '<def[selection].center>'
+      - define center '<def[selection].center.simple.as_location>'
       - define ellipsoid 'ellipsoid@<def[center].replace[l@]>,<def[selection].size.div[2].replace[l@].split_by[,].get[1].to[3].separated_by[,]>'
       }
     - define blocks '<def[ellipsoid].blocks>'
