@@ -1,0 +1,3010 @@
+################################################################################
+#
+# Region flag pre-processors
+#
+#   * NOTES *
+#    - Need to experiment with caching methods more. Currently flags are
+#      responsible for setting cache and only do so when an explicit allow/deny
+#      value is returned.
+#    - Entity flags exist in denizen now and can be used as rate limiters
+#    - NIGHTMARE flag - enter bed transport to nightmare. Creates a pseudorandom instance. Hunt for a bed to get out.
+#
+dRegions_Flags_Processors:
+  type: task
+  debug: false
+
+  state-withTarget-withGroup:
+    # This is a rate limiter implemented BEFORE caching. The idea here is that if the player and event are in
+    # the same region (even Global) we can safely expect that the values will be consistent (because we clear
+    # rateLimit values on region enter/exit). Normal processing will follow if the rateLimit value is stale.
+    # rateLimit value is stored as a boolean.
+    # Rate limiter
+    - define sameRegion '<def[eLoc].cuboids.equals_case_sensitive[<def[player].location.cuboids>]>'
+    - if %sameRegion% {
+      - if <def[player].has_flag[dRegions.rateLimit.%flag%.%target%]> {
+        - define a '<def[player].flag[dRegions.rateLimit.%flag%.%target%]>'
+        - goto 'b'
+        }
+      }
+    # Cache values can be none, true, or false. If the cache is set that means we have already done a flag
+    # lookup once before and can skip the lookup. Cache values are cleared when regions are modified, and
+    # optionally on server restart.
+    # A cache value of none is treated as true, but will allow the lookup process to continue. A cache value
+    # of true or false stops the lookup process and goes to the determination.
+    # Return format for %flagObj% is action/group  actions: allow deny none  group: all members nonmembers owners nonowners
+    # The /all is added on to the end of the flag object just in case someone doesn't specify the group. It is safely ignored if it is set.
+    # The uuid and prefix are used to help create a yaml friendly node structure for the cache
+    - define uuid '<def[player].uuid>'
+    - define prefix '<def[uuid].substring[1,2]>'
+    - define listflag '<s@dRegions_Flag_%flag%.yaml_key[flag_targetList]||null>'
+    # First we check the flag if it only wants the highest priority region.
+    - if '<s@dRegions_Flag_%flag%.yaml_key[region_highestOnly]||false>' {
+      - define thisRegion '<def[orderedRegions].get[1]>'
+      - if <yaml[dRegions_%world%_cache].contains[cache.state-withTarget-WithGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]> {
+        - define a '<yaml[dRegions_%world%_cache].read[cache.state-withTarget-WithGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]>'
+        - goto 'a'
+        }
+      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>/all'
+      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%listflag%].split_by[, ]>'
+      - define c '<def[targetList].contains_any[none|all|%target%].and[<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].after[/].before[/]>|%thisRegion%|%world%|%player%]>]>'
+      - define a '<t[<def[flagObj].starts_with[deny]>]:<def[c].not>||%c%>'
+      - yaml set 'cache.state-withTarget-WithGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%:%a%' 'id:dRegions_%world%_cache'
+      - goto 'a'
+      }
+    # Parse %orderedRegions% until the %flagObj% has a value. Not sure if %targetList% should be filled independently, only in
+    # relation to %thisRegion%, or as it is now where it settles on the first none empty value.
+    - define targetlist 'li@none'
+    - foreach '%orderedRegions%':
+      - define thisRegion '%value%'
+      - if <yaml[dRegions_%world%_cache].contains[cache.state-withTarget-WithGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]> {
+        - define a '<yaml[dRegions_%world%_cache].read[cache.state-withTarget-WithGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]>'
+        - if <def[a].equals_case_sensitive[none]> {
+          - define a 'true'
+          - foreach next
+          }
+        - goto 'a'
+        }
+      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>/all'
+      - define targetList '<t[<def[targetList].is[==].to[li@none]>]:<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%listflag%].split_by[, ]>||%targetList%>'
+      - if <def[flagObj].equals_case_sensitive[none]> {
+        - define a 'true'
+        - yaml set 'cache.state-withTarget-WithGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%:none' 'id:dRegions_%world%_cache'
+        - foreach next
+        }
+      - define c '<def[targetList].contains_any[none|all|%target%].and[<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].after[/].before[/]>|%thisRegion%|%world%|%player%]>]>'
+      - define a '<t[<def[flagObj].starts_with[deny]>]:<def[c].not>||%c%>'
+      - yaml set 'cache.state-withTarget-WithGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%:%a%' 'id:dRegions_%world%_cache'
+      - foreach stop
+    # Set the rateLimit if applicable
+    - mark 'a'
+    - if %sameRegion% {
+      - flag %player% 'dRegions.rateLimit.%flag%.%target%:%a%' d:5s
+      }
+    # Process determinations
+    - mark 'b'
+    - if '%a%' {
+      - if <s@dRegions_Flag_%flag%.list_keys.contains[event-allowed]> {
+        - inject 's@dRegions_Flag_%flag%' 'p:event-allowed'
+        }
+      - foreach next
+      - queue clear
+      }
+    - if <s@dRegions_Flag_%flag%.list_keys.contains[event-cancelled]> {
+      - inject 's@dRegions_Flag_%flag%' 'p:event-cancelled'
+      }
+    - if <def[noCancel].exists> {
+      - foreach next
+      - queue clear
+      }
+    - determine cancelled
+#
+# END state-withTarget-withGroup
+#---------------------------------------
+#
+  state-withTarget:
+    - define listflag '<s@dRegions_Flag_%flag%.yaml_key[flag_targetList]||null>'
+    - if '<s@dRegions_Flag_%flag%.yaml_key[region_highestOnly]||false>' {
+      - define thisRegion '<def[orderedRegions].get[1]>'
+      - if <yaml[dRegions_%world%_cache].contains[cache.state-withTarget.%thisRegion%.%flag%.%target%]> {
+        - define a '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%thisRegion%.%flag%.%target%]>'
+        - goto 'a'
+        }
+      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>'
+      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%listflag%].split_by[, ]>'
+      - define c '<def[targetList].contains_any[none|all|%target%]>'
+      - define a '<t[<def[flagObj].equals_case_sensitive[deny]>]:<def[c].not>||%c%>'
+      - yaml set 'cache.state-withTarget.%thisRegion%.%flag%.%target%:%a%' 'id:dRegions_%world%_cache'
+      - goto 'a'
+      }
+    - define targetlist 'li@none'
+    - foreach '%orderedRegions%':
+      - define thisRegion '%value%'
+      - if <yaml[dRegions_%world%_cache].contains[cache.state-withTarget.%thisRegion%.%flag%.%target%]> {
+        - define a '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%thisRegion%.%flag%.%target%]>'
+        - if <def[a].equals_case_sensitive[none]> {
+          - define a 'true'
+          - foreach next
+          }
+        - goto 'a'
+        }
+      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>'
+      - define targetList '<t[<def[targetList].is[==].to[li@none]>]:<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%listflag%].split_by[, ]>||%targetList%>'
+      - if <def[flagObj].equals_case_sensitive[none]> {
+        - define a 'true'
+        - yaml set 'cache.state-withTarget.%thisRegion%.%flag%.%target%:none' 'id:dRegions_%world%_cache'
+        - foreach next
+        }
+      - define c '<def[targetList].contains_any[none|all|%target%]>'
+      - define a '<t[<def[flagObj].equals_case_sensitive[deny]>]:<def[c].not>||%c%>'
+      - yaml set 'cache.state-withTarget.%thisRegion%.%flag%.%target%:%a%' 'id:dRegions_%world%_cache'
+      - foreach stop
+
+    - mark 'a'
+    - if '%a%' {
+      - if <s@dRegions_Flag_%flag%.list_keys.contains[event-allowed]> {
+        - inject 's@dRegions_Flag_%flag%' 'p:event-allowed'
+        }
+      - foreach next
+      - queue clear
+      }
+    - if <s@dRegions_Flag_%flag%.list_keys.contains[event-cancelled]> {
+      - inject 's@dRegions_Flag_%flag%' 'p:event-cancelled'
+      }
+    - if <def[noCancel].exists> {
+      - foreach next
+      - queue clear
+      }
+    - determine cancelled
+#
+# END state-withTarget
+#---------------------------------------
+#
+  state-withGroup:
+    - define sameRegion '<def[eLoc].cuboids.equals_case_sensitive[<def[player].location.cuboids>]>'
+    - if %sameRegion% {
+      - if <def[player].has_flag[dRegions.rateLimit.%flag%]> {
+        - define a '<def[player].flag[dRegions.rateLimit.%flag%]>'
+        - goto 'b'
+        }
+      }
+    - define uuid '<def[player].uuid>'
+    - define prefix '<def[uuid].substring[1,2]>'
+    - if '<s@dRegions_Flag_%flag%.yaml_key[region_highestOnly]||false>' {
+      - define thisRegion '<def[orderedRegions].get[1]>'
+      - if <yaml[dRegions_%world%_cache].contains[cache.state-withGroup.%thisRegion%.%flag%.%prefix%.%uuid%]> {
+        - define a '<yaml[dRegions_%world%_cache].read[cache.state-withGroup.%thisRegion%.%flag%.%prefix%.%uuid%]>'
+        - goto 'a'
+        }
+      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>/all'
+      - define c '<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].after[/].before[/]>|%thisRegion%|%world%|%player%]>'
+      - define a '<t[<def[flagObj].starts_with[deny]>]:<def[c].not>||%c%>'
+      - yaml set 'cache.state-withGroup.%thisRegion%.%flag%.%prefix%.%uuid%:%a%' 'id:dRegions_%world%_cache'
+      - goto 'a'
+      }
+    - foreach '%orderedRegions%':
+      - define thisRegion '%value%'
+      - if <yaml[dRegions_%world%_cache].contains[cache.state-withGroup.%thisRegion%.%flag%.%prefix%.%uuid%]> {
+        - define a '<yaml[dRegions_%world%_cache].read[cache.state-withGroup.%thisRegion%.%flag%.%prefix%.%uuid%]>'
+        - if <def[a].starts_with[none]> {
+          - define a 'true'
+          - foreach next
+          }
+        - goto 'a'
+        }
+      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>/all'
+      - if <def[flagObj].starts_with[none]> {
+        - define a 'true'
+        - yaml set 'cache.state-withGroup.%thisRegion%.%flag%.%prefix%.%uuid%:none' 'id:dRegions_%world%_cache'
+        - foreach next
+        }
+      - define c '<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].after[/].before[/]>|%thisRegion%|%world%|%player%]>'
+      - define a '<t[<def[flagObj].starts_with[deny]>]:<def[c].not>||%c%>'
+      - yaml set 'cache.state-withGroup.%thisRegion%.%flag%.%prefix%.%uuid%:%a%' 'id:dRegions_%world%_cache'
+      - foreach stop
+
+    - mark 'a'
+    - if %sameRegion% {
+      - flag %player% 'dRegions.rateLimit.%flag%:%a%' d:5s
+      }
+    - mark 'b'
+    - if '%a%' {
+      - if <s@dRegions_Flag_%flag%.list_keys.contains[event-allowed]> {
+        - inject 's@dRegions_Flag_%flag%' 'p:event-allowed'
+        }
+      - foreach next
+      - queue clear
+      }
+    - if <s@dRegions_Flag_%flag%.list_keys.contains[event-cancelled]> {
+      - inject 's@dRegions_Flag_%flag%' 'p:event-cancelled'
+      }
+    - if <def[noCancel].exists> {
+      - foreach next
+      - queue clear
+      }
+    - determine cancelled
+#
+# END state-withGroup
+#---------------------------------------
+#
+  state-withTargetString-withGroup:
+    - define sameRegion '<def[eLoc].cuboids.equals_case_sensitive[<def[player].location.cuboids>]>'
+    - if %sameRegion% {
+      - if <def[player].has_flag[dRegions.rateLimit.%flag%.%target%]> {
+        - define a '<def[player].flag[dRegions.rateLimit.%flag%.%target%]>'
+        - goto 'b'
+        }
+      }
+    - define uuid '<def[player].uuid>'
+    - define prefix '<def[uuid].substring[1,2]>'
+    - define listflag '<s@dRegions_Flag_%flag%.yaml_key[flag_targetList]||null>'
+    - if '<s@dRegions_Flag_%flag%.yaml_key[region_highestOnly]||false>' {
+      - define thisRegion '<def[orderedRegions].get[1]>'
+      - if <yaml[dRegions_%world%_cache].contains[cache.state-withTargetString-WithGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]> {
+        - define a '<yaml[dRegions_%world%_cache].read[cache.state-withTargetString-WithGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]>'
+        - goto 'a'
+        }
+      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>/all'
+      - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%listflag%].split_by[<def[delimiter]||, >]>'
+      - define c '<def[targetList].contains_any[none|all|%target%].and[<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].after[/].before[/]>|%thisRegion%|%world%|%player%]>]>'
+      - define a '<t[<def[flagObj].starts_with[deny]>]:<def[c].not>||%c%>'
+      - yaml set 'cache.state-withTargetString-WithGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%:%a%' 'id:dRegions_%world%_cache'
+      - goto 'a'
+      }
+    - define targetlist 'li@none'
+    - foreach '%orderedRegions%':
+      - define thisRegion '%value%'
+      - if <yaml[dRegions_%world%_cache].contains[cache.state-withTargetString-WithGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]> {
+        - define a '<yaml[dRegions_%world%_cache].read[cache.state-withTargetString-WithGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]>'
+        - if <def[a].equals_case_sensitive[none]> {
+          - define a 'true'
+          - foreach next
+          }
+        - goto 'a'
+        }
+      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>/all'
+      - define targetList '<t[<def[targetList].is[==].to[li@none]>]:<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%listflag%].split_by[<def[delimiter]||, >]>||%targetList%>'
+      - if <def[flagObj].equals_case_sensitive[none]> {
+        - define a 'true'
+        - yaml set 'cache.state-withTargetString-WithGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%:none' 'id:dRegions_%world%_cache'
+        - foreach next
+        }
+      - define c '<def[targetList].contains_any[none|all|%target%].and[<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].after[/].before[/]>|%thisRegion%|%world%|%player%]>]>'
+      - define a '<t[<def[flagObj].starts_with[deny]>]:<def[c].not>||%c%>'
+      - yaml set 'cache.state-withTargetString-WithGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%:%a%' 'id:dRegions_%world%_cache'
+      - foreach stop
+    - mark 'a'
+    - if %sameRegion% {
+      - flag %player% 'dRegions.rateLimit.%flag%.%target%:%a%' d:5s
+      }
+    - mark 'b'
+    - if '%a%' {
+      - if <s@dRegions_Flag_%flag%.list_keys.contains[event-allowed]> {
+        - inject 's@dRegions_Flag_%flag%' 'p:event-allowed'
+        }
+      - foreach next
+      - queue clear
+      }
+    - if <s@dRegions_Flag_%flag%.list_keys.contains[event-cancelled]> {
+      - inject 's@dRegions_Flag_%flag%' 'p:event-cancelled'
+      }
+    - if <def[noCancel].exists> {
+      - foreach next
+      - queue clear
+      }
+    - determine cancelled
+#
+# END state-withTargetString-withGroup
+#---------------------------------------
+#
+  boolean:
+    - if '<s@dRegions_Flag_%flag%.yaml_key[region_highestOnly]||false>' {
+      - define thisRegion '<def[orderedRegions].get[1]>'
+      - if <yaml[dRegions_%world%_cache].contains[cache.boolean.%thisRegion%.%flag%]> {
+        - define a '<yaml[dRegions_%world%_cache].read[cache.boolean.%thisRegion%.%flag%]>'
+        - goto 'a'
+        }
+      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>'
+      - define a '<t[<def[flagObj].equals_case_sensitive[none]>]:true||%flagObj%>'
+      - yaml set 'cache.boolean.%thisRegion%.%flag%:%a%' 'id:dRegions_%world%_cache'
+      - goto 'a'
+      }
+    - foreach '%orderedRegions%':
+      - define thisRegion '%value%'
+      - if <yaml[dRegions_%world%_cache].contains[cache.boolean.%thisRegion%.%flag%]> {
+        - define a '<yaml[dRegions_%world%_cache].read[cache.boolean.%thisRegion%.%flag%]>'
+        - if <def[a].equals_case_sensitive[none]> {
+          - define a 'true'
+          - foreach next
+          }
+        - goto 'a'
+        }
+      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>'
+      - if <def[flagObj].equals_case_sensitive[none]> {
+        - define a 'true'
+        - yaml set 'cache.boolean.%thisRegion%.%flag%:none' 'id:dRegions_%world%_cache'
+        - foreach next
+        }
+      - define a '<t[<def[flagObj].equals_case_sensitive[none]>]:true||%flagObj%>'
+      - yaml set 'cache.boolean.%thisRegion%.%flag%:%a%' 'id:dRegions_%world%_cache'
+      - foreach stop
+
+    - mark 'a'
+    - if '%a%' {
+      - if <s@dRegions_Flag_%flag%.list_keys.contains[event-allowed]> {
+        - inject 's@dRegions_Flag_%flag%' 'p:event-allowed'
+        }
+      - foreach next
+      - queue clear
+      }
+    - if <s@dRegions_Flag_%flag%.list_keys.contains[event-cancelled]> {
+      - inject 's@dRegions_Flag_%flag%' 'p:event-cancelled'
+      }
+    - if <def[noCancel].exists> {
+      - foreach next
+      - queue clear
+      }
+    - determine cancelled
+#
+# END boolean
+#---------------------------------------
+#
+  string:
+  # It is possible to send messages for /any/ dRegions event. Just make a new string flag.
+    - if '<s@dRegions_Flag_%flag%.yaml_key[region_highestOnly]||false>' {
+      - define thisRegion '<def[orderedRegions].get[1]>'
+      - define val '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>'
+      - if '<def[val].equals_case_sensitive[none].not>' {
+        - goto 'DISPLAY'
+        }
+      - goto 'END'
+      }
+    - foreach '%orderedRegions%' {
+      - define thisRegion '%value%'
+      - define val '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|%flag%]>'
+      - if '<def[val].equals_case_sensitive[none].not>' {
+        - goto 'DISPLAY'
+        }
+      }
+    - if '<def[val].equals_case_sensitive[none]>' {
+      - goto 'END'
+      }
+    - mark 'DISPLAY'
+    - choose '<s@dRegions_Flag_%flag%.yaml_key[string-type]||narrate>':
+      - case 'narrate':
+        - run s@msgPrefixed 'def:dRegions|<parse:%val%>'
+      - case 'bossbar':
+        - adjust %player% 'action_bar:<parse:%val%>'
+      - case 'console':
+        - announce to_console '<&4>[<&6>dRegions<&4>]  <parse:%val%>'
+      - case 'title':
+        - define title '<def[val].before[/]>'
+        - define sub '<def[val].after[/]>'
+        - title 'title:<parse:%title%>' 'subtitle:<parse:%sub%>'
+    - mark 'END'
+
+#
+# END string
+#---------------------------------------
+#
+  custom:
+    - inject 's@dRegions_Flag_%flag%' 'p:event'
+#
+#
+# END custom
+#---------------------------------------
+#
+  number:
+    - inject 's@dRegions_Flag_%flag%' 'p:event'
+#
+#
+# END number
+#---------------------------------------
+#
+  location:
+    - inject 's@dRegions_Flag_%flag%' 'p:event'
+#
+#
+# END location
+#---------------------------------------
+#
+#
+#
+# END Region Flag Processors
+#---------------------------------------
+#
+################################################################################
+#
+# State-withTarget-withGroup Flag Scripts
+#
+dRegions_Flag_PVE:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>PVE<&4>]"
+  lore:
+  - <&5>Can players damage mobs
+  event_hooks: player_damage_entity
+  event_priority: 10
+  event_player: attacker
+  event_target: defender
+  region_highestOnly: true
+  flag_type: state-withTarget-withGroup
+  flag_name: PVE
+  flag_targetList: PVE-Moblist
+  flag_takeGroup: true
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: State flag controlling whether players will be able to damage mobs in this region. Defaults to allow all. Use pve-moblist flag to specify mob types. Takes the -g group switch.
+
+  event-cancelled:
+    - remove <c.projectile||li@>
+    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
+      - flag %player% dRegions.Message_Cooldown duration:3s
+      - run s@msgPrefixed delay:1t 'player:%player%' 'def:dRegions|<&c><&o>You can not attack <def[target].to_lowercase.replace[_].with[ ]>s here!'
+      }
+
+dRegions_Flag_Mob-Damage:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Mob-Damage<&4>]"
+  lore:
+  - <&5>Can mobs damage players
+  event_hooks: entity_damage_player
+  event_priority: 10
+  event_player: defender
+  event_target: attacker
+  region_highestOnly: true
+  flag_type: state-withTarget-withGroup
+  flag_name: Mob-Damage
+  flag_targetList: Mob-DamageList
+  flag_takeGroup: true
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: State flag controlling whether mobs will be able to damage players in this region. Defaults to allow all. Use mob-damagelist flag to specify mob types. Takes the -g group switch.
+
+  event-cancelled:
+    - remove <c.projectile||li@>
+    - attack %object% target:cancel
+    - if <yaml[dRegions_global_config].read[config.regions.invincibility-confuses-mobs]||false> && <yaml[dRegions_%world%_config].read[config.regions.invincibility-confuses-mobs]||false> {
+      - run delay:1t locally wander 'def:%object%|%world%'
+      }
+      else if <yaml[dRegions_global_config].read[config.regions.invincibility-removes-mobs]||false> && <yaml[dRegions_%world%_config].read[config.regions.invincibility-removes-mobs]||false> {
+      - remove %object%
+      }
+
+  wander:
+    - ^adjust %1% has_ai:false
+    - ^repeat 5 {
+      - ^if !<def[1].is_spawned||false> {
+        - queue clear
+        }
+      - ~walk %1% '<def[1].location.find.surface_blocks.within[10].filter[distance[<def[1].location>].horizontal.is[more].than[5]].random.add[0,1,0]>'
+      }
+    - ^if !<def[1].is_spawned||false> queue clear
+    - ^if <yaml[dRegions_global_config].read[config.regions.invincibility-removes-mobs]||false> && <yaml[dRegions_%2%_config].read[config.regions.invincibility-removes-mobs]||false> {
+      - remove %object%
+      }
+      else {
+      - adjust %1% has_ai:false
+      }
+
+dRegions_Flag_Mob-Target:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Mob-Target<&4>]"
+  lore:
+  - <&5>Can mobs target players
+  event_hooks: entity_target_player
+  event_priority: 0
+  event_target: attacker
+  event_player: defender
+  region_highestOnly: true
+  flag_type: state-withTarget-withGroup
+  flag_name: Mob-Target
+  flag_targetList: Mob-TargetList
+  flag_takeGroup: true
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: State flag controlling whether mobs will be able to target players in this region. Defaults to allow all. Use mob-target flag to specify mob types. Takes the -g group switch.
+
+  event-cancelled:
+    - attack %object% target:cancel
+    - if <yaml[dRegions_global_config].read[config.regions.invincibility-confuses-mobs]||false> && <yaml[dRegions_%world%_config].read[config.regions.invincibility-confuses-mobs]||false> {
+      - run delay:1t locally wander 'def:%object%|%world%'
+      }
+      else if <yaml[dRegions_global_config].read[config.regions.invincibility-removes-mobs]||false> && <yaml[dRegions_%world%_config].read[config.regions.invincibility-removes-mobs]||false> {
+      - remove %object%
+      }
+
+  wander:
+    - ^adjust %1% has_ai:false
+    - ^repeat 5 {
+      - ^if !<def[1].is_spawned||false> {
+        - queue clear
+        }
+      - ~walk %1% '<def[1].location.find.surface_blocks.within[10].filter[distance[<def[1].location>].horizontal.is[more].than[5]].random.add[0,1,0]>'
+      }
+    - ^if !<def[1].is_spawned||false> queue clear
+    - ^if <yaml[dRegions_global_config].read[config.regions.invincibility-removes-mobs]||false> && <yaml[dRegions_%2%_config].read[config.regions.invincibility-removes-mobs]||false> {
+      - remove %object%
+      }
+      else {
+      - adjust %1% has_ai:false
+      }
+
+dRegions_Flag_Entity-Interact:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Entity Interact<&4>]"
+  lore:
+  - <&5>Can players interact with entities
+  event_hooks: player_interact_entity
+  event_priority: 10
+  region_highestOnly: true
+  flag_type: state-withTarget-withGroup
+  flag_name: Entity-Interact
+  flag_targetList: Entity-Interactlist
+  flag_takeGroup: true
+  flag_regionDefault: deny/nonmembers
+  flag_globalDefault: none
+  flag_help: State flag controlling whether players will be able to interact with entities in this region. Defaults to allow all. Use entity-interactlist flag to specify entity types. Takes the -g group switch.
+
+  event-cancelled:
+    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
+      - flag %player% dRegions.Message_Cooldown duration:3s
+      - run s@msgPrefixed delay:1t 'player:%player%' 'def:dRegions|<&c><&o>You can not interact with <def[target].to_lowercase.replace[_].with[ ]>s here!'
+      }
+
+dRegions_Flag_Block-Place:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Block-Place<&4>]"
+  lore:
+  - <&5>Can players place blocks.
+  event_hooks: player_place_block
+  event_priority: 5
+  region_highestOnly: true
+  flag_type: state-withTarget-withGroup
+  flag_name: Block-Place
+  flag_targetList: Block-PlaceList
+  flag_takeGroup: true
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: State flag controlling whether players will be able to place blocks in this region. Defaults to allow all. Use block-placelist flag to specify block types. Takes the -g group switch.
+
+  event-cancelled:
+    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
+      - flag %player% dRegions.Message_Cooldown duration:3s
+      - run s@msgPrefixed delay:1t 'player:%player%' 'def:dRegions|<&c><&o>You can not place <def[target].to_lowercase.replace[_].with[ ]> in this region!'
+      }
+
+dRegions_Flag_Block-Break:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Block-Break<&4>]"
+  lore:
+  - <&5>Can players break blocks.
+  event_hooks: player_break_block
+  event_priority: 5
+  region_highestOnly: true
+  flag_type: state-withTarget-withGroup
+  flag_name: Block-Break
+  flag_targetList: Block-BreakList
+  flag_takeGroup: true
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: State flag controlling whether players will be able to break blocks in this region. Defaults to allow all. Use block-breaklist flag to specify block types. Takes the -g group switch.
+
+  event-cancelled:
+    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
+      - flag %player% dRegions.Message_Cooldown duration:3s
+      - run s@msgPrefixed delay:1t 'player:%player%' 'def:dRegions|<&c><&o>You can not break <def[target].to_lowercase.replace[_].with[ ]> in this region!'
+      }
+
+dRegions_Flag_Chest-Access:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Chest-Access<&4>]"
+  lore:
+  - <&5>Can players open containers.
+  event_hooks: player_interact_container
+  event_priority: 10
+  region_highestOnly: true
+  flag_type: state-withTarget-withGroup
+  flag_name: Chest-Access
+  flag_targetList: chest-access-blocks
+  flag_takeGroup: true
+  flag_regionDefault: deny/nonmembers
+  flag_globalDefault: none
+  flag_help: State flag controlling whether players will be able to open containers in this region. Defaults to deny nonmembers. Use chest-access-blocks flag to specify container blocks types. Takes the -g group switch.
+
+  event-cancelled:
+    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
+      - flag %player% dRegions.Message_Cooldown duration:3s
+      - run s@msgPrefixed delay:1t 'player:%player%' 'def:dRegions|<&c><&o>You can not open <def[target].to_lowercase.replace[_].with[ ]>s in this region!'
+      }
+
+dRegions_Flag_Door-Access:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Door-Access<&4>]"
+  lore:
+  - <&5>Can players open doors.
+  event_hooks: player_interact_door
+  event_priority: 10
+  region_highestOnly: true
+  flag_type: state-withTarget-withGroup
+  flag_name: Door-Access
+  flag_targetList: Door-Access-Doors
+  flag_takeGroup: true
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: State flag controlling whether players will be able to open doors in this region. Defaults to allow all. Use door-access-doors flag to specify door blocks types. Takes the -g group switch.
+
+  event-cancelled:
+    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
+      - flag %player% dRegions.Message_Cooldown duration:3s
+      - run s@msgPrefixed delay:1t 'player:%player%' 'def:dRegions|<&c><&o>You can not open <def[target].to_lowercase.replace[_].with[ ]>s in this region!'
+      }
+
+dRegions_Flag_Use-Switches:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Use-Switches<&4>]"
+  lore:
+  - <&5>Can players interact with switches.
+  event_hooks: player_interact_switches
+  event_priority: 10
+  region_highestOnly: true
+  flag_type: state-withTarget-withGroup
+  flag_name: Use-Switches
+  flag_targetList: Use-Switches-List
+  flag_takeGroup: true
+  flag_regionDefault: deny/nonmembers
+  flag_globalDefault: none
+  flag_help: State flag controlling whether players will be able to use switches in this region. Defaults to deny nonmembers. Use use-switches-list flag to specify switch block types. Takes the -g group switch.
+
+  event-cancelled:
+    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
+      - flag %player% dRegions.Message_Cooldown duration:3s
+      - run s@msgPrefixed delay:1t 'player:%player%' 'def:dRegions|<&c><&o>You can not use <def[target].to_lowercase.replace[_].with[ ]>s in this region!'
+      }
+
+dRegions_Flag_Use-Utilities:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Use-Utilities<&4>]"
+  lore:
+  - <&5>Can players use utility blocks.
+  event_hooks: player_interact_utilityBlocks
+  event_priority: 10
+  region_highestOnly: true
+  flag_type: state-withTarget-withGroup
+  flag_name: Use-Utilities
+  flag_targetList: Use-Utilities-Blocks
+  flag_takeGroup: true
+  flag_regionDefault: deny/nonmembers
+  flag_globalDefault: none
+  flag_help: State flag controlling whether players will be able to use utility blocks in this region. Defaults to deny nonmembers. Use use-utilities-blocks flag to specify utility blocks. Takes the -g group switch.
+
+  event-cancelled:
+    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
+      - flag %player% dRegions.Message_Cooldown duration:3s
+      - run s@msgPrefixed delay:1t 'player:%player%' 'def:dRegions|<&c><&o>You can not use <def[target].to_lowercase.replace[_].with[ ]>s in this region!'
+      }
+
+dRegions_Flag_Player-Damage:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Player-Damage<&4>]"
+  lore:
+  - <&5>Can players take damage.
+  event_hooks: player_damaged
+  event_priority: 10
+  region_highestOnly: false
+  flag_type: state-withTarget-withGroup
+  flag_name: Player-Damage
+  flag_targetList: Player-Damage-Types
+  flag_takeGroup: true
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: State flag controlling whether players will take damage in this region. Defaults to allow all. Use player-damage-types flag to specify damage types. Takes the -g group switch.
+
+  event-cancelled:
+    - adjust %player% 'fire_time:0'
+
+#
+# END State-withTarget-withGroup
+#---------------------------------------
+#
+################################################################################
+#
+# State-withTarget Flag Scripts
+#
+dRegions_Flag_Mob-Spawn:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Mob-Spawn<&4>]"
+  lore:
+  - <&5>Can mobs Spawn
+  event_hooks: entity_spawn
+  event_priority: 10
+  region_highestOnly: false
+  flag_type: state-withTarget
+  flag_name: Mob-Spawn
+  flag_targetList: Mob-SpawnList
+  flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: State flag controlling whether mobs will be able to spawn in this region. Defaults to allow all. Use mob-spawnlist flag to specify mob types.
+
+dRegions_Flag_EVE:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>EVE<&4>]"
+  lore:
+  - <&5>Can mobs be targeted
+  event_hooks: entity_target_entity|entity_damage_entity|entity_damage_armorstand
+  event_priority: 10
+  event_target: defender
+  region_highestOnly: false
+  flag_type: state-withTarget
+  flag_name: EVE
+  flag_targetList: EVE-Moblist
+  flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: State flag controlling whether mobs can be targeted for attack by other mobs in this region. Defaults to allow. Use eve-moblist flag to specify mob types.
+
+  event-cancelled:
+    - remove <c.projectile||li@>
+    - attack %attacker% target:cancel
+    - if <yaml[dRegions_global_config].read[config.regions.invincibility-confuses-mobs]||false> && <yaml[dRegions_%world%_config].read[config.regions.invincibility-confuses-mobs]||false> {
+      - run delay:1t locally wander 'def:%object%|%world%'
+      }
+      else if <yaml[dRegions_global_config].read[config.regions.invincibility-removes-mobs]||false> && <yaml[dRegions_%world%_config].read[config.regions.invincibility-removes-mobs]||false> {
+      - remove %object%
+      }
+
+  wander:
+    - ^adjust %1% has_ai:false
+    - ^repeat 5 {
+      - ^if !<def[1].is_spawned||false> {
+        - queue clear
+        }
+      - ~walk %1% '<def[1].location.find.surface_blocks.within[10].filter[distance[<def[1].location>].horizontal.is[more].than[5]].random.add[0,1,0]>'
+      }
+    - ^if !<def[1].is_spawned||false> queue clear
+    - ^if <yaml[dRegions_global_config].read[config.regions.invincibility-removes-mobs]||false> && <yaml[dRegions_%2%_config].read[config.regions.invincibility-removes-mobs]||false> {
+      - remove %object%
+      }
+      else {
+      - adjust %1% has_ai:false
+      }
+
+dRegions_Flag_Mob-Attack:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Mob-Attack<&4>]"
+  lore:
+  - <&5>Can mobs attack other mobs
+  event_hooks: entity_target_entity|entity_damage_entity|entity_damage_armorstand
+  event_priority: 20
+  event_target: attacker
+  region_highestOnly: false
+  flag_type: state-withTarget
+  flag_name: Mob-Attack
+  flag_targetList: Mob-Attack-Moblist
+  flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: State flag controlling whether mobs can attack other mobs in this region. Defaults to allow. Use mob-attack-moblist flag to specify mob types.
+
+  event-cancelled:
+    - remove <c.projectile||li@>
+    - attack %attacker% target:cancel
+    - if <yaml[dRegions_global_config].read[config.regions.invincibility-confuses-mobs]||false> && <yaml[dRegions_%world%_config].read[config.regions.invincibility-confuses-mobs]||false> {
+      - run delay:1t locally wander 'def:%object%|%world%'
+      }
+      else if <yaml[dRegions_global_config].read[config.regions.invincibility-removes-mobs]||false> && <yaml[dRegions_%world%_config].read[config.regions.invincibility-removes-mobs]||false> {
+      - remove %object%
+      }
+
+  wander:
+    - ^adjust %1% has_ai:false
+    - ^repeat 5 {
+      - ^if !<def[1].is_spawned||false> {
+        - queue clear
+        }
+      - ~walk %1% '<def[1].location.find.surface_blocks.within[10].filter[distance[<def[1].location>].horizontal.is[more].than[5]].random.add[0,1,0]>'
+      }
+    - ^if !<def[1].is_spawned||false> queue clear
+    - ^if <yaml[dRegions_global_config].read[config.regions.invincibility-removes-mobs]||false> && <yaml[dRegions_%2%_config].read[config.regions.invincibility-removes-mobs]||false> {
+      - remove %object%
+      }
+      else {
+      - adjust %1% has_ai:false
+      }
+
+dRegions_Flag_Entity-Explode:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Entity-Explode<&4>]"
+  lore:
+  - <&5>Can entities explode
+  event_hooks: entity_explode
+  event_priority: 10
+  region_highestOnly: false
+  flag_type: state-withTarget
+  flag_name: Entity-Explode
+  flag_targetList: Entity-ExplodeList
+  flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: State flag controlling whether entities will be able to explode in this region. Defaults to allow all. Use entity-explodelist flag to specify entities types.
+
+dRegions_Flag_Entity-Grief:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Entity-Grief<&4>]"
+  lore:
+  - <&5>Can entities alter blocks
+  event_hooks: entity_change_block|entity_form_block
+  event_priority: 10
+  region_highestOnly: false
+  flag_type: state-withTarget
+  flag_name: Entity-Grief
+  flag_targetList: Entity-GriefList
+  flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: State flag controlling whether entities will be able to alter blocks in this region. Defaults to allow all. Use entity-grieflist flag to specify entities types.
+
+dRegions_Flag_Entity-Drops-OnDeath:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Entity-Drops-OnDeath<&4>]"
+  lore:
+  - <&5>Can mobs drop items
+  event_hooks: entity_dies
+  event_priority: 10
+  region_highestOnly: false
+  flag_type: state-withTarget
+  flag_name: Entity-Drops-OnDeath
+  flag_targetList: Entity-Drops-OnDeathList
+  flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
+
+  event-cancelled:
+    - determine NO_DROPS
+
+dRegions_Flag_Fire-Spread:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Fire-Spread<&4>]"
+  lore:
+  - <&5>Can fire spread
+  event_hooks: firefrom_spread
+  event_priority: 10
+  region_highestOnly: false
+  flag_type: state-withTarget
+  flag_name: Fire-Spread
+  flag_targetList: Fire-SpreadBlocks
+  flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: State flag controlling whether fire will be able to spread in this region. Defaults to allow all. Use fire-spreadblocks flag to specify blocks to check when spreading.
+
+dRegions_Flag_Fire-Destroy:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Fire-Destroy<&4>]"
+  lore:
+  - <&5>Can fire destroy blocks
+  event_hooks: block_burns
+  event_priority: 10
+  region_highestOnly: false
+  flag_type: state-withTarget
+  flag_name: Fire-Destroy
+  flag_targetList: Fire-DestroyBlocks
+  flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: State flag controlling whether fire will be able to spread to and destroy blocks in this region. Defaults to allow all. Use fire-destroyblocks flag to specify blocks to check when spreading.
+
+dRegions_Flag_Lightning-Strikes:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Lightning-Strikes<&4>]"
+  lore:
+  - <&5>Can lightning strike
+  event_hooks: lightning_strikes
+  event_priority: 10
+  region_highestOnly: false
+  flag_type: state-withTarget
+  flag_name: Lightning-Strikes
+  flag_targetList: Lightning-StrikesBlocks
+  flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: State flag controlling whether lightning will be able to strike in this region. Defaults to allow all. Use lightning-strikeblocks flag to specify blocks to check when striking.
+
+dRegions_Flag_Water-Spread:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Water-Spread<&4>]"
+  lore:
+  - <&5>Can Water spread
+  event_hooks: water_spread
+  event_priority: 10
+  region_highestOnly: false
+  flag_type: state-withTarget
+  flag_name: Water-Spread
+  flag_targetList: Water-SpreadBlocks
+  flag_takeGroup: false
+  flag_regionDefault: true
+  flag_globalDefault: true
+  flag_help: State flag controlling whether water will be able to spread in this region. Defaults to allow all. Use water-spreadblocks flag to specify blocks to check when spreading.
+
+dRegions_Flag_Lava-Spread:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Lava-Spread<&4>]"
+  lore:
+  - <&5>Can Lava spread
+  event_hooks: lava_spread
+  event_priority: 10
+  region_highestOnly: false
+  flag_type: state-withTarget
+  flag_name: Lava-Spread
+  flag_targetList: Lava-SpreadBlocks
+  flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: State flag controlling whether lava will be able to spread in this region. Defaults to allow all. Use lava-spreadblocks flag to specify blocks to check when spreading.
+
+dRegions_Flag_Snow-Fall:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Snow-Fall<&4>]"
+  lore:
+  - <&5>Can Snow accumulate
+  event_hooks: blockform_snow
+  event_priority: 10
+  region_highestOnly: false
+  flag_type: state-withTarget
+  flag_name: Snow-Fall
+  flag_targetList: Snow-FallBlocks
+  flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: State flag controlling whether snow will be able to accumulate on the ground in this region. Defaults to allow all. Use snow-fallblocks flag to specify blocks below the snow to check when forming.
+
+#
+# END State-withTarget
+#---------------------------------------
+#
+################################################################################
+#
+# State-withGroup Flag Scripts
+#
+dRegions_Flag_Entry:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Entry<&4>]"
+  lore:
+  - <&5>Who can enter a region
+  event_hooks: player_enters_region
+  event_priority: 0
+  region_highestOnly: true
+  flag_type: state-withGroup
+  flag_name: Entry
+  flag_help: State flag controlling who can enter a region. Can be set to allow, deny, or none and accepts the -g group switch.
+  flag_takeGroup: true
+  flag_regionDefault: none
+  flag_globalDefault: none
+
+  event-allowed:
+    - flag %player% dRegions.rateLimit:!
+
+  event-cancelled:
+    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
+      - flag %player% dRegions.Message_Cooldown duration:3s
+      - run s@msgPrefixed delay:1t player:%player% 'def:dRegions|<&c><&o>You may not enter this area!'
+      }
+    - if <def[player].is_inside_vehicle> {
+      - run locally vehicle 'def:<def[player].get_vehicle>|<c.from>' delay:1t
+      }
+
+  vehicle:
+    - ^if <def[player].has_flag[dRegions.rateLimit.regionKick]> {
+      - queue clear
+      }
+    - ^flag %player% dRegions.rateLimit.regionKick d:5t
+    - ^mount cancel %player%|%1%
+    - ^teleport '%player%' '<def[2].above>'
+    - ^wait 20t
+    - ^adjust %1% 'velocity:l@0,0,0,<def[1].world>'
+    - ^teleport %1% '<t[<def[1].is_living>]:<def[player].location>||<def[2].above>>'
+
+dRegions_Flag_Exit:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Exit<&4>]"
+  lore:
+  - <&5>Who can exit a region
+  event_hooks: player_exits_region
+  event_priority: 0
+  region_highestOnly: true
+  flag_type: state-withGroup
+  flag_name: Exit
+  flag_help: State flag controlling who can exit a region. Can be set to allow, deny, or none and accepts the -g group switch.
+  flag_takeGroup: true
+  flag_regionDefault: none
+  flag_globalDefault: none
+
+  event-allowed:
+    - flag %player% dRegions.rateLimit:!
+
+  event-cancelled:
+    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
+      - flag %player% dRegions.Message_Cooldown duration:3s
+      - run s@msgPrefixed delay:1t player:%player% 'def:dRegions|<&c><&o>You may not exit this area!'
+      }
+    - if <def[player].is_inside_vehicle> {
+      - run locally vehicle 'def:<def[player].get_vehicle>|<c.from>' delay:1t
+      }
+
+  vehicle:
+    - ^if <def[player].has_flag[dRegions.rateLimit.regionKick]> {
+      - queue clear
+      }
+    - ^flag %player% dRegions.rateLimit.regionKick d:5t
+    - ^mount cancel %player%|%1%
+    - ^teleport '%player%' '<def[2].above>'
+    - ^wait 20t
+    - ^adjust %1% 'velocity:l@0,0,0,<def[1].world>'
+    - ^teleport %1% '<t[<def[1].is_living>]:<def[player].location>||<def[2].above>>'
+
+dRegions_Flag_Build:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Build<&4>]"
+  lore:
+  - <&5>Override default build perms
+  event_hooks: player_place_block|player_break_block|player_place_hanging|player_break_hanging|player_interact_blocks|player_interact_itemframe|player_damage_itemframe|player_use_spawnegg|player_place_armorstand|player_interact_armorstand|player_damage_armorstand|player_throw_hatchingegg|player_empty_bucket|player_fill_bucket|player_extinguish_blockfire|player_use_bonemeal
+  event_priority: 0
+  event_player: attacker
+  event_target: defender
+  region_highestOnly: true
+  flag_type: state-withGroup
+  flag_name: Build
+  flag_takeGroup: true
+  flag_regionDefault: deny/nonmembers
+  flag_globalDefault: none
+  flag_help: By default, all members and owners can build in their regions. Setting this flag can over ride that behavior. Can be set to allow, deny, or none and accepts the -g group switch.
+
+  event-cancelled:
+    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
+      - flag %player% dRegions.Message_Cooldown duration:3s
+      - run s@msgPrefixed delay:1t player:%player% 'def:dRegions|<&c><&o>You do not have permission to build in this region!'
+      }
+
+dRegions_Flag_Receive-Chat:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Receive-Chat<&4>]"
+  lore:
+  - <&5>Who can hear chat
+  event_hooks: player_entered_dregion|player_exited_dregion
+  event_priority: 0
+  region_highestOnly: true
+  flag_type: state-withGroup
+  flag_name: Receive-Chat
+  flag_takeGroup: true
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: Control who can hear chat in a region. Takes the -g group switch.
+
+  event-cancelled:
+    - if %isEnter% {
+      - if !<server.flag[dRegions.Chat.Deaf].as_list.contains[%player%]||false> {
+        - flag server 'dRegions.Chat.Deaf:->:%player%'
+        }
+      }
+      else {
+      - flag server 'dRegions.Chat.Deaf:<-:%player%'
+      }
+
+dRegions_Flag_Send-Chat:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Send-Chat<&4>]"
+  lore:
+  - <&5>Who can chat
+  event_hooks: player_chats
+  event_priority: 0
+  region_highestOnly: true
+  flag_type: state-withGroup
+  flag_name: Send-Chat
+  flag_takeGroup: true
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: Control who can send chat in a region. Takes the -g group switch.
+
+  event-allowed:
+    - determine 'recipients:<context.recipients.exclude[<server.flag[dRegions.Chat.Deaf].as_list||li@>]>'
+
+  event-cancelled:
+    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
+      - flag %player% dRegions.Message_Cooldown duration:3s
+      - run s@msgPrefixed delay:1t player:%player% 'def:dRegions|<&c><&o>You can not chat here.'
+      }
+
+dRegions_Flag_Hunger:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Hunger<&4>]"
+  lore:
+  - <&5>Who can get hungry
+  event_hooks: player_change_foodlevel
+  event_priority: 0
+  region_highestOnly: true
+  flag_type: state-withGroup
+  flag_name: Hunger
+  flag_takeGroup: true
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: Control whether players will loose hunger in this region. Takes the -g group switch.
+
+dRegions_Flag_Npc-Interact:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>NPC Interact<&4>]"
+  lore:
+  - <&5>Can players interact with NPCs
+  event_hooks: player_interact_npc
+  event_priority: 0
+  region_highestOnly: true
+  flag_type: state-withGroup
+  flag_name: Npc-Interact
+  flag_takeGroup: true
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: State flag controlling whether players will be able to interact with NPCs in this region. Defaults to allow. Takes the -g group switch.
+
+  event-cancelled:
+    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
+      - flag %player% dRegions.Message_Cooldown duration:3s
+      - run s@msgPrefixed delay:1t player:%player% 'def:dRegions|<&c><&o>You can not interact with NPCs here!'
+      }
+
+dRegions_Flag_Lighter:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Lighter<&4>]"
+  lore:
+  - <&5>Who can use the flint and steel in a region
+#  event_hooks: player_use_lighter
+  event_hooks: fireFrom_flint_and_steel
+  event_priority: 0
+  region_highestOnly: true
+  flag_type: state-withGroup
+  flag_name: Lighter
+  flag_takeGroup: true
+  flag_regionDefault: deny/nonmembers
+  flag_globalDefault: none
+  flag_help: State flag controlling whether players will be able to use lighters in this region. Defaults to allow. Takes the -g group switch.
+
+  event-cancelled:
+    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
+      - flag %player% dRegions.Message_Cooldown duration:3s
+      - run s@msgPrefixed delay:1t player:%player% 'def:dRegions|<&c><&o>You can not use a lighter in this region!'
+      }
+
+dRegions_Flag_Bucket-Fill:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Bucket-Fill<&4>]"
+  lore:
+  - <&5>Who can fill a bucket in a region
+  event_hooks: player_fill_bucket
+  event_priority: 0
+  region_highestOnly: true
+  flag_type: state-withGroup
+  flag_name: Bucket-Fill
+  flag_takeGroup: true
+  flag_regionDefault: deny/nonmembers
+  flag_globalDefault: none
+  flag_help: State flag controlling whether players will be able to fill buckets in this region. Defaults to allow. Takes the -g group switch.
+
+  event-cancelled:
+    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
+      - flag %player% dRegions.Message_Cooldown duration:3s
+      - run s@msgPrefixed delay:1t player:%player% 'def:dRegions|<&c><&o>You can not fill a bucket in this region!'
+      }
+
+dRegions_Flag_Bucket-Empty:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Bucket-Empty<&4>]"
+  lore:
+  - <&5>Who can empty a bucket in a region
+  event_hooks: player_empty_bucket
+  event_priority: 0
+  region_highestOnly: true
+  flag_type: state-withGroup
+  flag_name: Bucket-Empty
+  flag_takeGroup: true
+  flag_regionDefault: deny/nonmembers
+  flag_globalDefault: none
+  flag_help: State flag controlling whether players will be able to empty buckets in this region. Defaults to allow. Takes the -g group switch.
+
+  event-cancelled:
+    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
+      - flag %player% dRegions.Message_Cooldown duration:3s
+      - run s@msgPrefixed delay:1t player:%player% 'def:dRegions|<&c><&o>You can not empty a bucket in this region!'
+      }
+
+dRegions_Flag_Hanging-Place:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Hanging-Place<&4>]"
+  lore:
+  - <&5>Who can place item frames and paintings
+  event_hooks: player_place_hanging
+  event_priority: 0
+  region_highestOnly: true
+  flag_type: state-withGroup
+  flag_name: Hanging-Place
+  flag_takeGroup: true
+  flag_regionDefault: deny/nonmembers
+  flag_globalDefault: none
+  flag_help: State flag controlling whether players will be able to place item frames and paintings in this region. Defaults to allow. Takes the -g group switch.
+
+  event-cancelled:
+    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
+      - flag %player% dRegions.Message_Cooldown duration:3s
+      - run s@msgPrefixed delay:1t player:%player% 'def:dRegions|<&c><&o>You can not hang that in this region!'
+      }
+
+dRegions_Flag_Hanging-Break:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Hanging-Break<&4>]"
+  lore:
+  - <&5>Who can break item frames and paintings
+  event_hooks: player_break_hanging
+  event_priority: 0
+  region_highestOnly: true
+  flag_type: state-withGroup
+  flag_name: Hanging-Break
+  flag_takeGroup: true
+  flag_regionDefault: deny/nonmembers
+  flag_globalDefault: none
+  flag_help: State flag controlling whether players will be able to break item frames and paintings in this region. Defaults to allow. Takes the -g group switch.
+
+  event-cancelled:
+    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
+      - flag %player% dRegions.Message_Cooldown duration:3s
+      - run s@msgPrefixed delay:1t player:%player% 'def:dRegions|<&c><&o>You can not break that in this region!'
+      }
+
+dRegions_Flag_Sleep:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Sleep<&4>]"
+  lore:
+  - <&5>Who can Sleep
+  event_hooks: player_enters_bed
+  event_priority: 0
+  region_highestOnly: true
+  flag_type: state-withGroup
+  flag_name: Sleep
+  flag_takeGroup: true
+  flag_regionDefault: deny/nonmembers
+  flag_globalDefault: none
+  flag_help: State flag controlling whether players will be able to enter beds in this region. Defaults to allow. Takes the -g group switch.
+
+  event-cancelled:
+    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
+      - flag %player% dRegions.Message_Cooldown duration:3s
+      - run s@msgPrefixed delay:1t player:%player% 'def:dRegions|<&c><&o>You can not sleep here!'
+      }
+
+dRegions_Flag_Player-Drops:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Player-Drops<&4>]"
+  lore:
+  - <&5>Who can drop items
+  event_hooks: player_drops_item
+  event_priority: 0
+  region_highestOnly: true
+  flag_type: state-withGroup
+  flag_name: Player-Drops
+  flag_takeGroup: true
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: State flag controlling whether players will be able to drop items from their inventory in this region. Defaults to allow. Takes the -g group switch.
+
+  event-cancelled:
+    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
+      - flag %player% dRegions.Message_Cooldown duration:3s
+      - run s@msgPrefixed delay:1t player:%player% 'def:dRegions|<&c><&o>You can not drop items in this region!'
+      }
+
+dRegions_Flag_Player-Drops-OnDeath:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Player-Drops-OnDeath<&4>]"
+  lore:
+  - <&5>Who can drop items when they die
+  event_hooks: player_dies
+  event_priority: 10
+  region_highestOnly: true
+  flag_type: state-withGroup
+  flag_name: Player-Drops-OnDeath
+  flag_takeGroup: true
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: State flag controlling whether players will drop items when they die in this region. Defaults to allow. Takes the -g group switch.
+
+  event-cancelled:
+    - determine NO_DROPS
+
+dRegions_Flag_Player-KeepItems:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Player-KeepItems<&4>]"
+  lore:
+  - <&5>Can players keep items on death
+  event_hooks: player_dies
+  event_priority: 5
+  region_highestOnly: true
+  flag_type: state-withGroup
+  flag_name: Player-KeepItems
+  flag_takeGroup: true
+  flag_regionDefault: deny/all
+  flag_globalDefault: none
+  flag_help: State flag controlling whether players will keep their items when they die in a region. Default is to deny all. Takes the -g group switch.
+
+  event-allowed:
+    - run locally returnItems 'player:%player%' 'def:<def[player].inventory.list_contents.escaped>|<def[player].equipment.escaped>' delay:2t
+    - determine NO_DROPS_NO_XP
+
+  returnItems:
+    - inventory clear
+    - run s@msgPrefixed delay:1t 'def:dRegions|<&9>You died, but your inventory is safe!'
+    - inventory set 'd:<player.inventory>' 'o:<def[1].unescaped>'
+    - define equipment '<def[2].unescaped>'
+    - equip <player> 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>'
+
+dRegions_Flag_Player-Pickup:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Player-Pickup<&4>]"
+  lore:
+  - <&5>Who can pickup items
+  event_hooks: player_pickup_item
+  event_priority: 0
+  region_highestOnly: true
+  flag_type: state-withGroup
+  flag_name: Player-Pickup
+  flag_takeGroup: true
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: State flag controlling whether players will be able to pickup items in this region. Defaults to allow. Takes the -g group switch.
+
+  event-cancelled:
+    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
+      - flag %player% dRegions.Message_Cooldown duration:3s
+      - run s@msgPrefixed delay:1t player:%player% 'def:dRegions|<&c><&o>You can not pick up items here!'
+      }
+
+dRegions_Flag_Potion-Drink:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Potion-Drink<&4>]"
+  lore:
+  - <&5>Who can drink potions
+  event_hooks: player_drink_potion
+  event_priority: 0
+  region_highestOnly: true
+  flag_type: state-withGroup
+  flag_name: Potion-Drink
+  flag_takeGroup: true
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: State flag controlling whether players will be able to drink potions in this region. Defaults to allow. Takes the -g group switch.
+
+  event-cancelled:
+    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
+      - flag %player% dRegions.Message_Cooldown duration:3s
+      - run s@msgPrefixed delay:1t player:%player% 'def:dRegions|<&c><&o>You can not drink potions here!'
+      }
+
+dRegions_Flag_Enderpearl:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Enderpearl<&4>]"
+  lore:
+  - <&5>Who can use enderpearls
+  event_hooks: player_use_enderpearl
+  event_priority: 0
+  region_highestOnly: true
+  flag_type: state-withGroup
+  flag_name: Enderpearl
+  flag_takeGroup: true
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: State flag controlling whether players will be able to teleport with enderpearls in this region. Defaults to allow. Takes the -g group switch.
+
+  event-cancelled:
+    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
+      - flag %player% dRegions.Message_Cooldown duration:3s
+      - run s@msgPrefixed delay:1t player:%player% 'def:dRegions|<&c><&o>You can not use enderpearls here!'
+      }
+
+dRegions_Flag_Vehicle-Place:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Vehicle-Place<&4>]"
+  lore:
+  - <&5>Who can place vehicles
+  event_hooks: player_place_vehicle
+  event_priority: 0
+  region_highestOnly: true
+  flag_type: state-withGroup
+  flag_name: Vehicle-Place
+  flag_takeGroup: true
+  flag_regionDefault: deny/nonmembers
+  flag_globalDefault: none
+  flag_help: State flag controlling whether players will be able to place vehicles in this region. Defaults to allow. Takes the -g group switch.
+
+  event-cancelled:
+    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
+      - flag %player% dRegions.Message_Cooldown duration:3s
+      - run s@msgPrefixed delay:1t player:%player% 'def:dRegions|<&c><&o>You can not place vehicles here!'
+      }
+
+dRegions_Flag_Vehicle-Destroy:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Vehicle-Destroy<&4>]"
+  lore:
+  - <&5>Who can destroy vehicles
+  event_hooks: player_break_vehicle
+  event_priority: 0
+  region_highestOnly: true
+  flag_type: state-withGroup
+  flag_name: Vehicle-Destroy
+  flag_takeGroup: true
+  flag_regionDefault: deny/nonmembers
+  flag_globalDefault: none
+  flag_help: State flag controlling whether players will be able to break vehicles in this region. Defaults to allow. Takes the -g group switch.
+
+  event-cancelled:
+    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
+      - flag %player% dRegions.Message_Cooldown duration:3s
+      - run s@msgPrefixed delay:1t player:%player% 'def:dRegions|<&c><&o>You can not break vehicles here!'
+      }
+#
+# END State-withGroup
+#---------------------------------------
+#
+################################################################################
+#
+# State-withTargetString-withGroup Flag Scripts
+#
+dRegions_Flag_Commands:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Commands<&4>]"
+  lore:
+  - <&5>Can players use commands.
+  event_hooks: player_command
+  event_priority: 0
+  region_highestOnly: false
+  flag_type: state-withTargetString-withGroup
+  flag_name: Commands
+  flag_targetList: Commands-List
+  flag_takeGroup: true
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: State flag controlling whether players can use commands in this region. Defaults to allow all. Use commands-list flag to specify commands. Takes the -g group switch.
+
+  event-allowed:
+    - if <def[setCache].exists> {
+      - if %sameRegion% {
+        - flag %player% 'dRegions.rateLimit.%flag%.%target%:true' d:10s
+        }
+      - flag %player% 'dRegions.cache.%world%.%thisRegion%.%flag%.%target%:true'
+      }
+
+  event-cancelled:
+    - if <def[setCache].exists> {
+      - if %sameRegion% {
+        - flag %player% 'dRegions.rateLimit.%flag%.%target%:false' d:10s
+        }
+      - flag %player% 'dRegions.cache.%world%.%thisRegion%.%flag%.%target%:false'
+      }
+    - run locally msg delay:1t 'player:%player%' 'def:%target%'
+
+  msg:
+    - ^if <player.has_flag[dRegions.Message_Cooldown].not> {
+      - flag <player> dRegions.Message_Cooldown duration:3s
+      - run s@msgPrefixed 'def:dRegions|<&c><&o>You can not use the %1% <&c>command in this region!'
+      }
+# END State-withTargetString-withGroup
+#---------------------------------------
+#
+################################################################################
+#
+# Boolean Flag Scripts
+#
+dRegions_Flag_Notify-Enter:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Notify-Enter<&4>]"
+  lore:
+  - <&5>Send notification to marked players
+  event_hooks: player_entered_dregion
+  event_priority: 5
+  flag_type: boolean
+  flag_takeGroup: false
+  flag_defaultValue: false
+  flag_help: Boolean flag controlling whether notifications are sent for entering this region. Set to true or false. Defaults to false.
+
+  event-allowed:
+    - foreach <server.list_online_players.filter[permission[dregions.notify]].include[<server.list_online_ops>].deduplicate> {
+      - run s@msgPrefixed player:%value% 'def:dRegions|<&5><&o><def[player].name> entered %thisRegion% in %world%'
+      }
+
+dRegions_Flag_Notify-Exit:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Notify-Exit<&4>]"
+  lore:
+  - <&5>Send notification to marked players
+  event_hooks: player_exited_dregion
+  event_priority: 5
+  region_highestOnly: false
+  flag_type: boolean
+  flag_name: Notify-Exit
+  flag_takeGroup: false
+  flag_regionDefault: false
+  flag_globalDefault: none
+  flag_help: Boolean flag controlling whether notifications are sent for exiting this region. Set to true or false. Defaults to false.
+
+  event-allowed:
+    - foreach <server.list_online_players.filter[permission[dregions.notify]].include[<server.list_online_ops>].deduplicate> {
+      - run s@msgPrefixed player:%value% 'def:dRegions|<&5><&o><def[player].name> exited %thisRegion% in %world%'
+      }
+
+dRegions_Flag_Ice-Form:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Ice-Form<&4>]"
+  lore:
+  - <&5>Can water turn into ice
+  event_hooks: blockform_ice
+  event_priority: 5
+  region_highestOnly: false
+  flag_type: boolean
+  flag_name: Ice-Form
+  flag_takeGroup: false
+  flag_regionDefault: true
+  flag_globalDefault: true
+  flag_help: Boolean flag controlling whether ice can form in this region. Set to true or false. Defaults to true.
+
+dRegions_Flag_Lava-Fire:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Lava-Fire<&4>]"
+  lore:
+  - <&5>Can lava cause fires
+  event_hooks: lava_fire
+  event_priority: 5
+  region_highestOnly: false
+  flag_type: boolean
+  flag_name: Lava-Fire
+  flag_takeGroup: false
+  flag_regionDefault: true
+  flag_globalDefault: true
+  flag_help: Boolean flag controlling whether lava can cause fires in this region. Set to true or false. Defaults to true.
+
+dRegions_Flag_Ice-Melt:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Ice-Melt<&4>]"
+  lore:
+  - <&5>Can ice melt
+  event_hooks: blockfade_ice
+  event_priority: 5
+  region_highestOnly: false
+  flag_type: boolean
+  flag_name: Ice-Melt
+  flag_takeGroup: false
+  flag_regionDefault: true
+  flag_globalDefault: true
+  flag_help: Boolean flag controlling whether ice can melt in this region. Set to true or false. Defaults to true.
+
+dRegions_Flag_Snow-Melt:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Snow-Melt<&4>]"
+  lore:
+  - <&5>Can snow melt
+  event_hooks: blockfade_snow
+  event_priority: 5
+  region_highestOnly: false
+  flag_type: boolean
+  flag_name: Snow-Melt
+  flag_takeGroup: false
+  flag_regionDefault: true
+  flag_globalDefault: true
+  flag_help: Boolean flag controlling whether snow can melt in this region. Set to true or false. Defaults to true.
+
+dRegions_Flag_Soil-Dry:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Soil-Dry<&4>]"
+  lore:
+  - <&5>Can soil dry up
+  event_hooks: blockfade_soil
+  event_priority: 5
+  region_highestOnly: false
+  flag_type: boolean
+  flag_name: Soil-Dry
+  flag_takeGroup: false
+  flag_regionDefault: true
+  flag_globalDefault: true
+  flag_help: Boolean flag controlling whether soil can dry in this region. Set to true or false. Defaults to true.
+
+dRegions_Flag_Trample-Crops-Player:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Trample-Crops-Player<&4>]"
+  lore:
+  - <&5>Can players trample crops
+  event_hooks: player_trample_crops
+  event_priority: 5
+  region_highestOnly: false
+  flag_type: boolean
+  flag_name: Trample-Crops-Player
+  flag_takeGroup: false
+  flag_regionDefault: true
+  flag_globalDefault: true
+  flag_help: Boolean flag controlling whether players can trample crops in this region. Set to true or false. Defaults to true.
+
+dRegions_Flag_Trample-Crops-Entity:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Trample-Crops-Entity<&4>]"
+  lore:
+  - <&5>Can entities trample crops
+  event_hooks: entity_trample_crops
+  event_priority: 5
+  region_highestOnly: false
+  flag_type: boolean
+  flag_name: Trample-Crops-Entity
+  flag_takeGroup: false
+  flag_regionDefault: true
+  flag_globalDefault: true
+  flag_help: Boolean flag controlling whether entities can trample crops in this region. Set to true or false. Defaults to true.
+
+dRegions_Flag_Mushroom-Spread:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Mushroom-Spread<&4>]"
+  lore:
+  - <&5>Can Mushrooms spread
+  event_hooks: mushroom_spread
+  event_priority: 5
+  region_highestOnly: false
+  flag_type: boolean
+  flag_name: Mushroom-Spread
+  flag_takeGroup: false
+  flag_regionDefault: true
+  flag_globalDefault: true
+  flag_help: Boolean flag controlling whether mushrooms will be able to spread in this region. Set to true or false. Defaults to true.
+
+dRegions_Flag_Grass-Spread:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Grass-Spread<&4>]"
+  lore:
+  - <&5>Can Grass spread
+  event_hooks: grass_spread
+  event_priority: 5
+  region_highestOnly: false
+  flag_type: boolean
+  flag_name: Grass-Spread
+  flag_takeGroup: false
+  flag_regionDefault: true
+  flag_globalDefault: true
+  flag_help: Boolean flag controlling whether grass will be able to spread in this region. Set to true or false. Defaults to true.
+
+dRegions_Flag_Mycel-Spread:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Mycel-Spread<&4>]"
+  lore:
+  - <&5>Can Mycelium spread
+  event_hooks: mycel_spread
+  event_priority: 5
+  region_highestOnly: false
+  flag_type: boolean
+  flag_name: Mycel-Spread
+  flag_takeGroup: false
+  flag_regionDefault: true
+  flag_globalDefault: true
+  flag_help: Boolean flag controlling whether mycelium will be able to spread in this region. Set to true or false. Defaults to true.
+
+dRegions_Flag_Vines-Spread:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Vine-Growth<&4>]"
+  lore:
+  - <&5>Can Vines grow
+  event_hooks: vine_spread
+  event_priority: 5
+  region_highestOnly: false
+  flag_type: boolean
+  flag_name: Vine-Growth
+  flag_takeGroup: false
+  flag_regionDefault: true
+  flag_globalDefault: true
+  flag_help: Boolean flag controlling whether vines will be able to grow in this region. Set to true or false. Defaults to true.
+
+dRegions_Flag_Leaf-Decay:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Leaf-Decay<&4>]"
+  lore:
+  - <&5>Can leaves decay
+  event_hooks: blockfade_leaves
+  event_priority: 5
+  region_highestOnly: false
+  flag_type: boolean
+  flag_name: Leaf-Decay
+  flag_takeGroup: false
+  flag_regionDefault: true
+  flag_globalDefault: true
+  flag_help: Boolean flag controlling whether leaves will be able to decay in this region. Set to true or false. Defaults to true.
+
+dRegions_Flag_Falling-Sand:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Falling-Sand<&4>]"
+  lore:
+  - <&5>Can sand fall
+  event_hooks: falling_sand
+  event_priority: 5
+  region_highestOnly: false
+  flag_type: boolean
+  flag_name: Falling-Sand
+  flag_takeGroup: false
+  flag_regionDefault: true
+  flag_globalDefault: true
+  flag_help: Boolean flag controlling whether sand will be able to fall in this region. Set to true or false. Defaults to true.
+
+dRegions_Flag_Falling-Gravel:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Falling-Gravel<&4>]"
+  lore:
+  - <&5>Can gravel fall
+  event_hooks: falling_gravel
+  event_priority: 5
+  region_highestOnly: false
+  flag_type: boolean
+  flag_name: Falling-Gravel
+  flag_takeGroup: false
+  flag_regionDefault: true
+  flag_globalDefault: true
+  flag_help: Boolean flag controlling whether gravel will be able to fall in this region. Set to true or false. Defaults to true.
+
+dRegions_Flag_Pistons:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Pistons<&4>]"
+  lore:
+  - <&5>Can pistons be activated
+  event_hooks: piston_extend|piston_retract
+  event_priority: 5
+  region_highestOnly: false
+  flag_type: boolean
+  flag_name: Pistons
+  flag_takeGroup: false
+  flag_regionDefault: true
+  flag_globalDefault: true
+  flag_help: Boolean flag controlling whether pistons can be activated in this region. Set to true or false. Defaults to true.
+
+dRegions_Flag_Entity-Break-Painting:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Entity-Break-Painting<&4>]"
+  lore:
+  - <&5>Can Entities break paintings
+  event_hooks: entity_break_painting
+  event_priority: 5
+  region_highestOnly: false
+  flag_type: boolean
+  flag_name: Entity-Break-Painting
+  flag_takeGroup: false
+  flag_regionDefault: true
+  flag_globalDefault: true
+  flag_help: Boolean flag controlling whether mobs will be able to destroy paintings in this region. Set to true or false. Defaults to true.
+
+dRegions_Flag_Entity-Break-ItemFrame:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Entity-Break-ItemFrame<&4>]"
+  lore:
+  - <&5>Can Entities break item frames
+  event_hooks: entity_damage_itemframe
+  event_target: attacker
+  event_priority: 5
+  region_highestOnly: false
+  flag_type: boolean
+  flag_name: Entity-Break-ItemFrame
+  flag_takeGroup: false
+  flag_regionDefault: true
+  flag_globalDefault: true
+  flag_help: Boolean flag controlling whether mobs will be able to destroy item frames in this region. Set to true or false. Defaults to true.
+
+dRegions_Flag_PVP:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>PVP<&4>]"
+  lore:
+  - <&5>Can players damage each other
+  event_hooks: player_damage_player
+  event_priority: 5
+  event_player: attacker
+  event_target: defender
+  region_highestOnly: false
+  flag_type: boolean
+  flag_name: PVP
+  flag_takeGroup: false
+  flag_regionDefault: true
+  flag_globalDefault: true
+  flag_help: Boolean flag controlling whether players can attack eachother in this region. Set to true or false. Defaults to true.
+
+  event-cancelled:
+    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
+      - flag %player% dRegions.Message_Cooldown duration:3s
+      - run s@msgPrefixed delay:1t 'player:%player%' 'def:dRegions|<&c><&o>You are in a no PVP zone.'
+      }
+
+dRegions_Flag_Potion-Throw:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Potion-Throw<&4>]"
+  lore:
+  - <&5>Can potions be thrown in this region
+  event_hooks: potion_splash|player_throw_potion
+  event_priority: 5
+  region_highestOnly: false
+  flag_type: boolean
+  flag_name: Potion-Throw
+  flag_takeGroup: false
+  flag_regionDefault: true
+  flag_globalDefault: true
+  flag_help: Boolean flag controlling whether potions can be thrown and broken in this region. Set to true or false. Defaults to true.
+
+  event-cancelled:
+    - if <def[player].equals_case_sensitive[null].not||false> {
+      - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
+        - flag %player% dRegions.Message_Cooldown duration:3s
+        - run s@msgPrefixed delay:1t player:%player% 'def:dRegions|<&c><&o>You can not throw potions here!'
+        }
+      }
+#
+# END Boolean
+#---------------------------------------
+#
+################################################################################
+#
+# String Flag Scripts
+#
+dRegions_Flag_Greeting:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Greeting<&4>]"
+  lore:
+  - <&5>Message on enter region
+  event_hooks: player_entered_dregion
+  event_priority: 10
+  region_highestOnly: true
+  flag_type: string
+  string_type: narrate
+  flag_name: Greeting
+  flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: Set the greeting message for region entry.
+
+dRegions_Flag_Farewell:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Farewell<&4>]"
+  lore:
+  - <&5>Message on exit region
+  event_hooks: player_exited_dregion
+  event_priority: 10
+  region_highestOnly: true
+  flag_type: string
+  string_type: narrate
+  flag_name: Farewell
+  flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: Set the farewell message for region exit.
+
+#
+# END String
+#---------------------------------------
+#
+################################################################################
+#
+# Custom Flag Scripts
+#   - Custom flags get a mostly raw event to work with
+#
+dRegions_Flag_Inventory:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Inventory<&4>]"
+  lore:
+  - <&5>Save inventory before going into a region
+  event_hooks: player_entered_dregion|player_exited_dregion
+  event_priority: 20
+  region_highestOnly: true
+  flag_type: custom
+  flag_type_customVal: unique|kit
+  flag_name: Inventory
+  flag_takeGroup: true
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: Inventory flag can be set to unique or kit. Unique inventories start empty. Kit inventories use your current inventory.
+
+  command_handler:
+    - if <def[flagValue].is[==].to[kit]> {
+      - yaml set 'inventories.regions.%region%.entry.kit.equip:<def[player].equipment>' 'id:dRegions_%world%_inventories'
+      - yaml set 'inventories.regions.%region%.entry.kit.inv:<def[player].inventory.list_contents>' 'id:dRegions_%world%_inventories'
+      - yaml set 'inventories.regions.%region%.exit.players:|:' 'id:dRegions_%world%_inventories'
+      }
+    - if <def[flagValue].is[==].to[unique]> {
+      - yaml set 'inventories.regions.%region%.entry.players:|:' 'id:dRegions_%world%_inventories'
+      - yaml set 'inventories.regions.%region%.exit.players:|:' 'id:dRegions_%world%_inventories'
+      }
+    - if <def[flagValue].is[==].to[null]> {
+      - yaml set 'inventories.regions.%region%:!' 'id:dRegions_%world%_inventories'
+      }
+    - yaml 'savefile:dRegions/worlds/%world%/inventories.yml' 'id:dRegions_%world%_inventories'
+
+  event:
+    - if <def[player].gamemode.id> == '0' {
+      - goto 'end'
+      }
+    - define action '<t[%isEnter%]:enter||exit>'
+    - define region '<def[orderedRegions].get[1]>'
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|%flag%]>'
+    - if <def[flagObj].equals_case_sensitive[none].not> {
+      - if <proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|%region%|%world%|%player%]> {
+        - inject locally <def[flagObj].split[/].get[1]>-%action%
+        }
+      }
+    - mark 'end'
+
+  kit-enter:
+    - yaml set 'inventories.regions.%region%.exit.players.<def[player].uuid>.equip:<def[player].equipment>' 'id:dRegions_%world%_inventories'
+    - yaml set 'inventories.regions.%region%.exit.players.<def[player].uuid>.inv:<def[player].inventory.list_contents>' 'id:dRegions_%world%_inventories'
+    - yaml 'savefile:dRegions/worlds/%world%/inventories.yml' 'id:dRegions_%world%_inventories'
+    - inventory clear
+    - inventory set 'd:<def[player].inventory>' 'o:<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.entry.kit.inv]||li@>'
+    - define equipment '<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.entry.kit.equip]||li@>'
+    - equip %player% 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>'
+    - run s@msgPrefixed delay:1t 'def:dRegions|<&7><&o>Your inventory has been updated.'
+
+  kit-exit:
+    - define equipment '<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.exit.players.<def[player].uuid>.equip]||li@>'
+    - inventory clear
+    - inventory set 'd:<def[player].inventory>' 'o:<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.exit.players.<def[player].uuid>.inv]||li@>'
+    - equip %player% 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>'
+    - yaml set 'inventories.regions.%region%.exit.players.<def[player].uuid>:!' 'id:dRegions_%world%_inventories'
+    - yaml 'savefile:dRegions/worlds/%world%/inventories.yml' 'id:dRegions_%world%_inventories'
+    - run s@msgPrefixed delay:1t 'def:dRegions|<&7><&o>Your inventory has been updated.'
+
+  unique-enter:
+    - yaml set 'inventories.regions.%region%.exit.players.<def[player].uuid>.equip:<def[player].equipment>' 'id:dRegions_%world%_inventories'
+    - yaml set 'inventories.regions.%region%.exit.players.<def[player].uuid>.inv:<def[player].inventory.list_contents>' 'id:dRegions_%world%_inventories'
+    - yaml 'savefile:dRegions/worlds/%world%/inventories.yml' 'id:dRegions_%world%_inventories'
+    - inventory clear
+    - inventory set 'd:<def[player].inventory>' 'o:<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.entry.players.<def[player].uuid>.inv]||li@>'
+    - define equipment '<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.entry.players.<def[player].uuid>.equip]||li@>'
+    - equip %player% 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>'
+    - run s@msgPrefixed delay:1t 'def:dRegions|<&7><&o>Your inventory has been updated.'
+
+  unique-exit:
+    - yaml set 'inventories.regions.%region%.entry.players.<def[player].uuid>.equip:<def[player].equipment>' 'id:dRegions_%world%_inventories'
+    - yaml set 'inventories.regions.%region%.entry.players.<def[player].uuid>.inv:<def[player].inventory.list_contents>' 'id:dRegions_%world%_inventories'
+    - define equipment '<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.exit.players.<def[player].uuid>.equip]||li@>'
+    - inventory clear
+    - inventory set 'd:<def[player].inventory>' 'o:<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.exit.players.<def[player].uuid>.inv]||li@>'
+    - equip %player% 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>'
+    - yaml set 'inventories.regions.%region%.exit.players.<def[player].uuid>:!' 'id:dRegions_%world%_inventories'
+    - yaml 'savefile:dRegions/worlds/%world%/inventories.yml' 'id:dRegions_%world%_inventories'
+    - run s@msgPrefixed delay:1t 'def:dRegions|<&7><&o>Your inventory has been updated.'
+
+dRegions_Flag_Gamemode:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Gamemode<&4>]"
+  lore:
+  - <&5>Change gamemode inside a region
+  event_hooks: player_entered_dregion|player_exited_dregion
+  event_priority: 10
+  region_highestOnly: true
+  flag_type: custom
+  flag_type_customVal: creative|survival|adventure|spectator
+  flag_name: Gamemode
+  flag_takeGroup: true
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: Gamemode flag can be set to creative, survival, adventure, or spectator
+
+  event:
+    - define region '<def[orderedRegions].get[1]>'
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|%flag%]>'
+    - if <def[flagObj].starts_with[none].not> && <proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|%region%|%world%|%player%]> {
+      - if %isEnter% {
+        - define gm '<def[flagObj].split[/].get[1]>'
+        - flag %player% 'dRegions.%world%.%region%.PreviousGamemode:<def[player].gamemode>'
+        - if %gm% != <def[player].gamemode> {
+          - adjust %player% 'gamemode:%gm%'
+          - run s@msgPrefixed delay:1t 'def:dRegions|<&7><&o>Your gamemode has been updated.'
+          }
+        }
+        else {
+        - if <def[player].flag[dRegions.%world%.%region%.PreviousGamemode]||null> != <def[player].gamemode> {
+          - adjust %player% 'gamemode:<def[player].flag[dRegions.%world%.%region%.PreviousGamemode]||survival>'
+          - run s@msgPrefixed delay:1t 'def:dRegions|<&7><&o>Your gamemode has been updated.'
+          }
+        - flag %player% 'dRegions.%world%.%region%.PreviousGamemode:!'
+        }
+      }
+
+dRegions_Flag_Weather-Lock:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Weather-Lock<&4>]"
+  lore:
+  - <&5>Set the weather
+  event_hooks: player_entered_dregion|player_exited_dregion
+  event_priority: 30
+  region_highestOnly: true
+  flag_type: custom
+  flag_type_customVal: clear|downfall
+  flag_name: Weather-Lock
+  flag_takeGroup: true
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: Control what players see the weather as. Can be set to clear or downfall. Takes the -g group switch.
+
+  event:
+    - define region '<def[orderedRegions].get[1]>'
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|%flag%]>'
+    - if <def[flagObj].starts_with[none].not> && <proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|%region%|%world%|%player%]> {
+      - if '%isEnter%' {
+        - adjust %player% 'weather:<def[flagObj].split[/].get[1]>'
+        }
+        else {
+        - adjust %player% 'reset_weather'
+        }
+      }
+
+dRegions_Flag_Spawn:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Spawn<&4>]"
+  lore:
+  - <&5>Region spawn point.
+  event_hooks: player_dies
+  event_priority: 0
+  region_highestOnly: false
+  flag_type: location
+  flag_name: Spawn
+  flag_takeGroup: true
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: Set the location players will respawn at if they die in this region. Default is to have no effect so normal respawn mechanics will apply. Takes the -g group switch. Specify the value as `here` to use your current location, or specify a valid location in the `x,y,z,world` format.
+
+  command_handler:
+    - if !<player.permission[dregions.admin]||<player.is_op||false>> {
+      - if <proc[dRegions_RegionOverlaps].context[<def[flagValue]>/<def[flagValue]>|%world%|<player>]> {
+        - run s@dRegions_Msg delay:1t 'def:<&c>You can not use that location!'
+        - queue clear
+        }
+      }
+
+  event:
+    - ^foreach %orderedRegions% {
+      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|%flag%]>'
+      - if <def[flagObj].starts_with[none].not> && <proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|%value%|%world%|%player%]> {
+        - flag <player> 'dRegions.Respawn:<def[flagObj].split[/].get[1].as_location>'
+        - foreach stop
+        }
+      }
+
+
+
+#
+# END Custom
+#---------------------------------------
+#
+################################################################################
+#
+# Number Flag Scripts
+#
+
+dRegions_Flag_Time-Lock:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Time-Lock<&4>]"
+  lore:
+  - <&5>Set the Time
+  event_hooks: player_entered_dregion|player_exited_dregion
+  event_priority: 30
+  region_highestOnly: true
+  flag_type: number
+  flag_name: Time-Lock
+  flag_takeGroup: true
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: Control what players see the time as. Valid range is 0-23999. Use + or - to adjust the time relative to the current world time. Takes the -g group switch.
+
+  command_handler:
+    - if <def[flagValue].starts_with[+]> || <def[flagValue].starts_with[-]> {
+      - define d '<def[flagValue].replace[regex:[0-9]]>'
+      - define time '<def[flagValue].after[%d%]>'
+      }
+      else {
+      - define time '%flagValue%'
+      }
+    - if %time% !matches number || %time% < 0 || %time% > 23999 {
+      - run s@msgPrefixed 'def:dRegions|<&c>Valid time range is 0 - 23999!'
+      - queue clear
+      }
+
+  event:
+    - define region '<def[orderedRegions].get[1]>'
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|%flag%]>'
+    - if <def[flagObj].starts_with[none].not> && <proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|%region%|%world%|%player%]> {
+      - define flagValue '<def[flagObj].split[/].get[1]>'
+      - define d '<def[flagValue].replace[regex:[0-9]]>'
+      - define time '<def[flagValue].after[%d%]>'
+      - define time '<t[<def[d].is[==].to[].not>]:<def[player].world.time.add[<def[flagObj].split[/].get[1].replace[+]||0>]>||%time%>'
+      - adjust %player% '<t[%isEnter%]:freeze_time<&co>%time%||reset_time>'
+      }
+
+dRegions_Flag_Heal-Amount:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Heal-Amount<&4>]"
+  lore:
+  - <&5>The amount to heal or harm.
+  event_hooks: player_entered_dregion
+  event_priority: 30
+  region_highestOnly: true
+  flag_type: number
+  flag_name: Heal-Amount
+  flag_takeGroup: true
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: Set the amount to heal or hurt a player while inside a region. Defaults to no effect. Positive number will heal players, negative numbers will damage players.
+
+  event:
+    - define region '<def[orderedRegions].get[1]>'
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|heal-amount]>'
+    - if <def[flagObj].starts_with[none].not> && <proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|%region%|%world%|%player%]> {
+      - if <queue.exists[dRegions_Heal_<def[player].name>]> {
+        - queue 'q@dRegions_Heal_<def[player].name>' clear
+        }
+      - run locally healTask delay:1t 'player:%player%' 'def:%world%|%region%|<def[flagObj].split[/].get[1]>' id:dRegions_Heal_<def[player].name>
+      }
+
+  healTask:
+    - define player '<player>'
+    - define world '%1%'
+    - define region '%2%'
+    - define healAmount '%3%'
+    - define healDelay '<proc[dRegions_GetInheritedFlag].context[%1%|%2%|heal-delay]>'
+    - define healDelay '<el@1.max[<t[<def[healDelay].equals_case_sensitive[none]>]:5||%healDelay%>].as_int.as_duration>'
+    - define healMax '<proc[dRegions_GetInheritedFlag].context[%1%|%2%|heal-max]>'
+    - define healMax '<def[player].health.max.min[<t[<def[healMax].equals_case_sensitive[none]>]:20||%healMax%>]>'
+    - define healMin '<proc[dRegions_GetInheritedFlag].context[%1%|%2%|heal-min]>'
+    - define healMin '<t[<def[healMin].equals_case_sensitive[none]>]:0||%healMin%>'
+    - while '<def[player].is_online>':
+      - if <def[player].world.name.equals_case_sensitive[%1%].not> {
+        - while stop
+        }
+      - if <def[player].gamemode.id.equals_case_sensitive[1]> {
+        - wait 1s
+        - while next
+        }
+      - define regionPri 'li@'
+      - foreach <def[player].location.cuboids.filter[notable_name.starts_with[dRegions_]].parse[after[cu@dregions_%world%_]].include[__global__]> {
+        - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
+        }
+      - if <def[regionPri].alphanumeric.reverse.parse[after[/]].get[1].equals_case_sensitive[%2%].not> {
+        - while stop
+        }
+      # Instant heal/harm setting
+      - if %healDelay% == 0 {
+        - if %healAmount% MORE 0 {
+          - if <def[player].health> LESS %healMax% {
+            - define newHealth '<def[player].health.add[%healMax%]>'
+            - adjust %player% 'health:<tern[<def[newHealth].is[MORE].than[%healMax%]>]:%healMax%||%newHealth%>'
+            }
+          }
+          else {
+          - if <def[player].health> MORE %healMin% {
+            - animate %player% animation:hurt
+            - define newHealth '<def[player].health.add[%healAmount%]>'
+            - adjust %player% 'health:<tern[<def[newHealth].is[LESS].than[%healMin%]>]:%healMin%||%newHealth%>'
+            }
+          }
+        - wait 20t
+        - while next
+        }
+      # Normal delayed setting
+      - if %healAmount% MORE 0 {
+        - if <def[player].health> LESS %healMax% {
+          - define newHealth '<def[player].health.add[%healAmount%].min[<player.health.max>]>'
+          - adjust %player% 'health:<tern[<def[newHealth].is[MORE].than[%healMax%]>]:%healMax%||%newHealth%>'
+          }
+        }
+        else {
+        - if <def[player].health> MORE %healMin% {
+          - animate %player% animation:hurt
+          - define newHealth '<def[player].health.add[%healAmount%].min[0]>'
+          - adjust %player% 'health:<tern[<def[newHealth].is[LESS].than[%healMin%]>]:%healMin%||%newHealth%>'
+          }
+        }
+      - wait %healDelay%
+
+dRegions_Flag_Heal-Delay:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Heal-Delay<&4>]"
+  lore:
+  - <&5>The duration between heal intervals
+  event_hooks: none
+  event_priority: 0
+  region_highestOnly: true
+  flag_type: number
+  flag_name: Heal-Delay
+  flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: Set the time in seconds between heal intervals. Defaults to 5 seconds.
+
+  command_handler:
+    - if <def[flagValue].is[LESS].than[0]> {
+      - run s@msgPrefixed 'def:dRegions|<&c>Can not specify negative time!'
+      - queue clear
+      }
+
+dRegions_Flag_Heal-Max:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Heal-Max<&4>]"
+  lore:
+  - <&5>Max health for heal flag.
+  event_hooks: none
+  event_priority: 0
+  region_highestOnly: true
+  flag_type: number
+  flag_name: Heal-Max
+  flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: Set the max health that the heal flag will heal a player to. Defaults to 20.
+
+  command_handler:
+    - if !<def[flagValue].is[MORE].than[0]> {
+      - run s@msgPrefixed 'def:dRegions|<&c>Must be a value greater than 0!'
+      - queue clear
+      }
+
+dRegions_Flag_Heal-Min:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Heal-Min<&4>]"
+  lore:
+  - <&5>Minimum health for heal flag
+  event_hooks: none
+  event_priority: 0
+  region_highestOnly: true
+  flag_type: number
+  flag_name: Heal-Min
+  flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
+
+  flag_help: Set the min health that the heal flag will heal a player to. Defaults to 0.
+
+  command_handler:
+    - if <def[flagValue].is[LESS].than[0]> {
+      - run s@msgPrefixed 'def:dRegions|<&c>Can not set to a negative number!'
+      - queue clear
+      }
+
+dRegions_Flag_Feed-Amount:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Feed-Amount<&4>]"
+  lore:
+  - <&5>The amount to feed or starve.
+  event_hooks: player_entered_dregion
+  event_priority: 30
+  region_highestOnly: true
+  flag_type: number
+  flag_name: Feed-Amount
+  flag_takeGroup: true
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: Set the amount to feed or starve a player while inside a region. Defaults to no effect. Positive numbers will feed players, negative numbers will starve players.
+
+  event:
+    - define region '<def[orderedRegions].get[1]>'
+    - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%region%|feed-amount]>'
+    - if <def[flagObj].starts_with[none].not> && <proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].split[/].get[2]||all>|%region%|%world%|%player%]> {
+      - if <queue.exists[dRegions_Feed_<def[player].name>]> {
+        - queue 'q@dRegions_Feed_<def[player].name>' clear
+        }
+      - run locally feedTask delay:1t 'player:%player%' 'def:%world%|%region%|<def[flagObj].split[/].get[1]>' id:dRegions_Feed_<def[player].name>
+      }
+
+  feedTask:
+    - define player '<player>'
+    - define world '%1%'
+    - define region '%2%'
+    - define feedAmount '%3%'
+    - define feedDelay '<proc[dRegions_GetInheritedFlag].context[%1%|%2%|feed-delay]>'
+    - define feedDelay '<t[<def[feedDelay].equals_case_sensitive[none]>]:5||%feedDelay%>'
+    - define feedMax '<proc[dRegions_GetInheritedFlag].context[%1%|%2%|feed-max]>'
+    - define feedMax '<t[<def[feedMax].equals_case_sensitive[none]>]:20||%feedMax%>'
+    - define feedMin '<proc[dRegions_GetInheritedFlag].context[%1%|%2%|feed-min]>'
+    - define feedMin '<t[<def[feedMin].equals_case_sensitive[none]>]:0||%feedMin%>'
+    - while '<def[player].is_online>':
+      - if <def[player].world.name.equals_case_sensitive[%1%].not> {
+        - while stop
+        }
+      - if <def[player].gamemode.id.equals_case_sensitive[1]> {
+        - wait 1s
+        - while next
+        }
+      - define regionPri 'li@'
+      - foreach <def[player].location.cuboids.filter[notable_name.starts_with[dRegions_]].parse[after[cu@dregions_%world%_]].include[__global__]> {
+        - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
+        }
+      - if <def[regionPri].alphanumeric.reverse.parse[after[/]].get[1].equals_case_sensitive[%2%].not> {
+        - while stop
+        }
+      # Instant feed/starve setting
+      - if %feedDelay% == 0 {
+        - if %feedAmount% MORE 0 {
+          - if <def[player].food_level> LESS %feedMax% {
+            - define newFood '<def[player].food_level.add[%feedMax%]>'
+            - adjust %player% 'food_level:<tern[<def[newFood].is[MORE].than[%feedMax%]>]:%feedMax%||%newFood%>'
+            - adjust %player% 'saturation:<def[player].food_level>'
+            }
+          }
+          else {
+          - if <def[player].food_level> MORE %feedMin% {
+            - animate %player% animation:hurt
+            - define newFood '<def[player].food_level.add[%feedAmount%]>'
+            - adjust %player% 'food_level:<tern[<def[newFood].is[LESS].than[%feedMin%]>]:%feedMin%||%newFood%>'
+            - adjust %player% 'saturation:<def[player].food_level>'
+            }
+          }
+        - wait 20t
+        - while next
+        }
+      # Normal delayed setting
+      - if %feedAmount% MORE 0 {
+        - if <def[player].food_level> LESS %feedMax% {
+          - define newFood '<def[player].food_level.add[%feedAmount%]>'
+          - adjust %player% 'food_level:<tern[<def[newFood].is[MORE].than[%feedMax%]>]:%feedMax%||%newFood%>'
+          - adjust %player% 'saturation:<def[player].food_level>'
+          }
+        }
+        else {
+        - if <def[player].food_level> MORE %feedMin% {
+          - animate %player% animation:hurt
+          - define newFood '<def[player].food_level.add[%feedAmount%]>'
+          - adjust %player% 'food_level:<tern[<def[newFood].is[LESS].than[%feedMin%]>]:%feedMin%||%newFood%>'
+          - adjust %player% 'saturation:<def[player].food_level>'
+          }
+        }
+      - wait %feedDelay%
+
+dRegions_Flag_Feed-Delay:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Feed-Delay<&4>]"
+  lore:
+  - <&5>The duration between feed intervals
+  event_hooks: none
+  event_priority: 0
+  region_highestOnly: true
+  flag_type: number
+  flag_name: Feed-Delay
+  flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: Set the time in seconds between feed intervals. Defaults to 5 seconds.
+
+  command_handler:
+    - if <def[flagValue].is[LESS].than[0]> {
+      - run s@msgPrefixed 'def:dRegions|<&c>Can not specify negative time!'
+      - queue clear
+      }
+
+dRegions_Flag_Feed-Max:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Feed-Max<&4>]"
+  lore:
+  - <&5>Max food level
+  event_hooks: none
+  event_priority: 0
+  region_highestOnly: true
+  flag_type: number
+  flag_name: Feed-Max
+  flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: Set the max food level that the feed-amount flag will bring a player to. Defaults to 20.
+
+  command_handler:
+    - if !<def[flagValue].is[MORE].than[0]> {
+      - run s@msgPrefixed 'def:dRegions|<&c>Must be a value greater than 0!'
+      - queue clear
+      }
+
+dRegions_Flag_Feed-Min:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Feed-Min<&4>]"
+  lore:
+  - <&5>Minimum food level
+  event_hooks: none
+  event_priority: 0
+  region_highestOnly: true
+  flag_type: number
+  flag_name: Feed-Min
+  flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: Set the min food level that the feed-amount flag will bring a player to. Defaults to 0.
+
+  command_handler:
+    - if <def[flagValue].is[LESS].than[0]> {
+      - run s@msgPrefixed 'def:dRegions|<&c>Can not set to a negative number!'
+      - queue clear
+      }
+
+
+#
+# END Number
+#---------------------------------------
+#
+################################################################################
+#
+# List Flag Scripts
+#
+dRegions_Flag_Mob-TargetList:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Mob-Target<&4>]"
+  lore:
+  - <&5>List of mobs used by mob-targeting flag
+  command_entryType: mob
+  command_verifyEntry: <def[value].is[matches].to[entity].not>
+  flag_type: list
+  flag_parent: dRegions_Flag_Mob-Target
+  flag_takeGroup: false
+  flag_help: List flag used with mob-targeting flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of mobs.
+
+  command_handler:
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
+
+dRegions_Flag_Mob-Damagelist:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Mob-DamageList<&4>]"
+  lore:
+  - <&5>List of mobs used by mob-damage flag
+  command_entryType: mob
+  command_verifyEntry: <def[value].is[matches].to[entity].not>
+  flag_type: list
+  flag_parent: dRegions_Flag_Mob-Damage
+  flag_takeGroup: false
+  flag_help: List flag used with mob-damage flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of mobs.
+
+  command_handler:
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
+
+dRegions_Flag_Mob-SpawnList:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Mob-Spawnlist<&4>]"
+  lore:
+  - <&5>List of mobs used by mob-spawn flag
+  command_entryType: mob
+  command_verifyEntry: <def[value].is[matches].to[entity].not>
+  flag_type: list
+  flag_parent: dRegions_Flag_Mob-Spawn
+  flag_takeGroup: false
+  flag_help: List flag used with mob-spawn flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of mobs.
+
+  command_handler:
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
+
+dRegions_Flag_EVE-Moblist:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>EVE-Moblist<&4>]"
+  lore:
+  - <&5>List of mobs used by eve flag
+  command_entryType: mob
+  command_verifyEntry: <def[value].is[matches].to[entity].not>
+  flag_type: list
+  flag_parent: dRegions_Flag_EVE
+  flag_takeGroup: false
+  flag_help: List flag used with eve flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of mobs.
+
+  command_handler:
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
+
+dRegions_Flag_Mob-Attack-Moblist:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Mob-Attack-Moblist<&4>]"
+  lore:
+  - <&5>List of mobs used by mob-attack flag
+  command_entryType: mob
+  command_verifyEntry: <def[value].is[matches].to[entity].not>
+  flag_type: list
+  flag_parent: dRegions_Flag_Mob-Attack
+  flag_takeGroup: false
+  flag_help: List flag used with mob-attack flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of mobs.
+
+  command_handler:
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
+
+dRegions_Flag_PVE-Moblist:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>PVE-Moblist<&4>]"
+  lore:
+  - <&5>List of mobs used by pve flag
+  command_entryType: mob
+  command_verifyEntry: <def[value].is[matches].to[entity].not>
+  flag_type: list
+  flag_parent: dRegions_Flag_PVE
+  flag_takeGroup: false
+  flag_help: List flag used with pve flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of mobs.
+
+  command_handler:
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
+
+dRegions_Flag_Entity-Interactlist:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Entity Interact List<&4>]"
+  lore:
+  - <&5>List of entities used by entity-interact flag
+  command_entryType: mob
+  command_verifyEntry: <def[value].is[matches].to[entity].not>
+  flag_type: list
+  flag_parent: dRegions_Flag_Entity-Interact
+  flag_takeGroup: false
+  flag_help: List flag used with entity-interact flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of entities.
+
+  command_handler:
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
+
+dRegions_Flag_Entity-ExplodeList:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Entity-Explodelist<&4>]"
+  lore:
+  - <&5>List of mobs used by entity-explode flag
+  command_entryType: entity
+  command_verifyEntry: <el@val[creeper|ender_crystal|ender_dragon|primed_tnt|minecart_tnt|fireball|small_fireball|wither|wither_skull].as_list.contains[<def[value]>].not>
+  flag_type: list
+  flag_parent: dRegions_Flag_Entity-Explode
+  flag_takeGroup: false
+  flag_help: List flag used with entity-explode flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of entities. Valid entities<&co> creeper, ender_crystal, ender_dragon, primed_tnt, minecart_tnt, fireball, small_fireball, wither, wither_skull
+
+  command_handler:
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
+
+dRegions_Flag_Entity-GriefList:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Entity-Grieflist<&4>]"
+  lore:
+  - <&5>List of mobs used by entity-grief flag
+  command_entryType: entity
+  command_verifyEntry: <el@val[enderman|sheep|zombie|squid].as_list.contains[<def[value]>].not>
+  flag_type: list
+  flag_parent: dRegions_Flag_Entity-Grief
+  flag_takeGroup: false
+  flag_help: List flag used with entity-grief flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of entities. Valid entities<&co> sheep, enderman, zombie, squid
+
+  command_handler:
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
+
+dRegions_Flag_Entity-Drops-OnDeathList:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Entity-Drops-OnDeathlist<&4>]"
+  lore:
+  - <&5>List of mobs used by entity-drops-ondeath flag
+  command_entryType: entity
+  command_verifyEntry: <def[value].is[matches].to[entity].not>
+  flag_type: list
+  flag_parent: dRegions_Flag_Entity-Drops-OnDeath
+  flag_takeGroup: false
+  flag_help: List flag used with entity-drops-ondeath flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of entities.
+
+  command_handler:
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
+
+dRegions_Flag_Fire-SpreadBlocks:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Fire-Spread-BlockList<&4>]"
+  lore:
+  - <&5>List of blocks involved in fire spread
+  command_entryType: block
+  command_verifyEntry: <def[value].as_material.is_block.not||true>
+  flag_type: list
+  flag_parent: dRegions_Flag_Fire-Spread
+  flag_takeGroup: false
+  flag_help: List flag used with fire-spread flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks.
+
+  command_handler:
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
+
+dRegions_Flag_Fire-DestroyBlocks:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Fire-Destroy-BlockList<&4>]"
+  lore:
+  - <&5>List of blocks involved in fire-destroy
+  command_entryType: block
+  command_verifyEntry: <def[value].as_material.is_block.not||true>
+  flag_type: list
+  flag_parent: dRegions_Flag_Fire-Destroy
+  flag_takeGroup: false
+  flag_help: List flag used with fire-destroy flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks.
+
+  command_handler:
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
+
+dRegions_Flag_Lightning-StrikesBlocks:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Lightning-StrikesBlocks<&4>]"
+  lore:
+  - <&5>List of blocks involved in lightning strikes
+  command_entryType: block
+  command_verifyEntry: <def[value].as_material.is_block.not||true>
+  flag_type: list
+  flag_parent: dRegions_Flag_Lightning-Strikes
+  flag_takeGroup: false
+  flag_help: List flag used with lightning-strike flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks.
+
+  command_handler:
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
+
+dRegions_Flag_Water-SpreadBlocks:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Water-Spread-BlockList<&4>]"
+  lore:
+  - <&5>List of blocks involved in water spread
+  command_entryType: block
+  command_verifyEntry: <def[value].as_material.is_block.not||true>
+  flag_type: list
+  flag_parent: dRegions_Flag_Water-Spread
+  flag_takeGroup: false
+  flag_help: List flag used with water-spread flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks.
+
+  command_handler:
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
+
+dRegions_Flag_Lava-SpreadBlocks:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Lava-Spread-BlockList<&4>]"
+  lore:
+  - <&5>List of blocks involved in lava spread
+  command_entryType: block
+  command_verifyEntry: <def[value].as_material.is_block.not||true>
+  flag_type: list
+  flag_parent: dRegions_Flag_Lava-Spread
+  flag_takeGroup: false
+  flag_help: List flag used with lava-spread flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks.
+
+  command_handler:
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
+
+dRegions_Flag_Snow-FallBlocks:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Snow-Fall-BlockList<&4>]"
+  lore:
+  - <&5>List of blocks to check under snow
+  command_entryType: block
+  command_verifyEntry: <def[value].as_material.is_block.not||true>
+  flag_type: list
+  flag_parent: dRegions_Flag_Snow-Fall
+  flag_takeGroup: false
+  flag_help: List flag used with snow-fall flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks.
+
+  command_handler:
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
+
+dRegions_Flag_Block-PlaceList:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Block-PlaceList<&4>]"
+  lore:
+  - <&5>List of blocks used by block-place flag
+  command_entryType: block
+  command_verifyEntry: <def[value].as_material.is_block.not||true>
+  flag_type: list
+  flag_parent: dRegions_Flag_Block-Place
+  flag_takeGroup: false
+  flag_help: List flag used with block-place flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks.
+
+  command_handler:
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
+
+dRegions_Flag_Block-BreakList:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Block-BreakList<&4>]"
+  lore:
+  - <&5>List of blocks used by block-break flag
+  command_entryType: block
+  command_verifyEntry: <def[value].as_material.is_block.not||true>
+  flag_type: list
+  flag_parent: dRegions_Flag_Block-Break
+  flag_takeGroup: false
+  flag_help: List flag used with block-break flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks.
+
+  command_handler:
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
+
+dRegions_Flag_Chest-Access-Blocks:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Chest-Access-Blocks<&4>]"
+  lore:
+  - <&5>List of blocks used by chest-access flag
+  command_entryType: container
+  command_verifyEntry: <el@val[chest|ender_chest|locked_chest|trapped_chest|dispenser|hopper|dropper].as_list.contains[<def[value]>].not>
+  flag_type: list
+  flag_parent: dRegions_Flag_Chest-Access
+  flag_takeGroup: false
+  flag_help: List flag used with chest-access flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks. Valid container blocks<&co> chest, ender_chest, locked_chest, trapped_chest, dispenser, hopper, and dropper.
+
+  command_handler:
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
+
+dRegions_Flag_Door-Access-Doors:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Door-Access-Doors<&4>]"
+  lore:
+  - <&5>List of doors used by doors-access flag
+  command_entryType: door
+  command_verifyEntry: <el@val[trap_door|iron_trapdoor|wooden_door|iron_door_block|spruce_door|birch_door|jungle_door|dark_oak_door|acacia_door|fence_gate|spruce_fence_gate|birch_fence_gate|jungle_fence_gate|dark_oak_fence_gate|acacia_fence_gate].as_list.contains[<def[value]>].not>
+  flag_type: list
+  flag_parent: dRegions_Flag_Door-Access
+  flag_takeGroup: false
+  flag_help: List flag used with door-access flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks. Valid door blocks<&co> trap_door, iron_trapdoor, wooden_door, iron_door_block, spruce_door, birch_door, jungle_door, dark_oak_door, acacia_door, fence_gate, spruce_fence_gate, birch_fence_gate, jungle_fence_gate, dark_oak_fence_gate, and acacia_fence_gate.
+
+  command_handler:
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
+
+dRegions_Flag_Use-Switches-List:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Use-Switches-List<&4>]"
+  lore:
+  - <&5>List of switches used by use-switches flag
+  command_entryType: switch
+  command_verifyEntry: <el@val[lever|wood_button|stone_button|wood_plate|stone_plate|iron_plate|gold_plate].as_list.contains[<def[value]>].not>
+  flag_type: list
+  flag_parent: dRegions_Flag_Use-Switches
+  flag_takeGroup: false
+  flag_help: List flag used with use-switches flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks. Valid switch blocks<&co> lever, wood_button, stone_button, wood_plate, stone_plate, iron_plate, and gold_plate.
+
+  command_handler:
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
+
+dRegions_Flag_Use-Utilities-Blocks:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Use-Utilities-Blocks<&4>]"
+  lore:
+  - <&5>List of blocks used by use-utilities flag
+  command_entryType: utility
+  command_verifyEntry: <el@val[workbench|furnace|burning_furnace|anvil|cauldron|brewing_stand|enchantment_table|note_block|jukebox|beacon].as_list.contains[<def[value]>].not>
+  flag_type: list
+  flag_parent: dRegions_Flag_Use-Utilities
+  flag_takeGroup: false
+  flag_help: List flag used with use-utilities flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks. Valid utility blocks<&co> workbench, furnace, burning_furnace, anvil, brewing_stand, cauldron, enchantment_table, note_block, jukebox, and beacon.
+
+  command_handler:
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
+
+dRegions_Flag_Player-Damage-Types:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Player-Damage-Types<&4>]"
+  lore:
+  - <&5>List of damage types used by player-damage flag
+  command_entryType: cause
+  command_verifyEntry: <el@val[BLOCK_EXPLOSION|CONTACT|CUSTOM|DROWNING|ENTITY_ATTACK|ENTITY_EXPLOSION|FALL|FALLING_BLOCK|FIRE|FIRE_TICK|LAVA|LIGHTNING|MAGIC|MELTING|POISON|PROJECTILE|STARVATION|SUFFOCATION|SUICIDE|THORNS|VOID|WITHER].as_list.contains[<def[value]>].not>
+  flag_type: list
+  flag_parent: dRegions_Flag_Player-Damage
+  flag_takeGroup: false
+  flag_help: List flag used with player-damage flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of damage types. Valid damage types<&co> block_explosion, contact, custom, drowning, entity_attack, entity_explosion, fall, falling_block, fire, fire_tick, lava, lightning, magic, melting, poison, projectile, starvation, suffocation, suicide, thorns, void, and wither.
+
+  command_handler:
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
+
+dRegions_Flag_Commands-List:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Commands-List<&4>]"
+  lore:
+  - <&5>List of commands used by commands flag
+  command_entryType: cause
+  flag_type: list
+  flag_parent: dRegions_Flag_Commands
+  flag_takeGroup: false
+  flag_help: List flag used with commands flag. To add to the list, use the -a switch. To remove from list use the -r switch. Add/remove one command at a time!
+
+  command_handler:
+    - inject s@dRegions_Flags_CommandProcessors p:command_stringList
+
+
+# END List
+#---------------------------------------
+#
+################################################################################
+#
+# THIS Flag Scripts
+#
+# END THIS
+#---------------------------------------
+#
+################################################################################
