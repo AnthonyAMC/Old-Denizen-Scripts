@@ -7,8 +7,8 @@
 #                                                                              |
 #                                                                              |
 #   Author: |Anthony|                                                          |
-#   Version: 0.3                                                               |
-#   dScript Version: 0.9.5-b1518                                               |
+#   Version: 0.4                                                               |
+#   dScript Version: 0.9.8-DEV-575                                             |
 #                                                                              |
 # ---------------------------------------------------------------------------- #
 #                                                                              |
@@ -67,6 +67,23 @@
 #                                                                              #
 ################################################################################
 #
+#  ConfigFileGenerator Version
+#
+#  Handles ConfigFileGenerator Versioning Checks
+#
+ConfigFileGenerator_Version:
+  type: version
+  author: Anthony
+  name: ConfigFileGenerator
+  version: 0.4
+  description: Automatically extract and update config files
+  id: 7
+#
+#  END ConfigFileGenerator Version
+#--------------------------------------
+#
+################################################################################
+#
 # Config File Generator Helper
 #
 #   This is specifically for creating NEW files! This script tells the
@@ -101,7 +118,7 @@
 #   new file. Check this example:
 #
 #      YourScript_Configurations:
-#        type: task
+#        type: yaml data
 #        debug: false
 #        script: []
 #
@@ -252,7 +269,9 @@ ConfigFileGenerator:
           }
         - yaml set '%writePath%:|:' 'id:%writeID%'
         }
-        else inject s@ConfigFileGenerator p:foreachKeylist instantly
+        else {
+        - inject s@ConfigFileGenerator p:foreachKeylist instantly
+        }
       }
       else {
       - define entry '<yaml[<def[readID]>].read[<def[readPath]>]>'
@@ -278,9 +297,11 @@ ConfigFileGenerator:
 
   foreachEntrylist:
     # This first yaml command clears the node of any values
-    - yaml set '%writePath%:|:' 'id:%writeID%'
+    - if <def[forcewrite]> {
+      - yaml set '%writePath%:|:' 'id:%writeID%'
+      }
     - foreach <def[entry]> {
-      - if !<def[dryrun]> {
+      - if ( <def[dryrun].not> && <yaml[%writeID%].read[%writePath%].contains[%value%].not||true> ) || <def[forcewrite]> {
         - yaml set '%writePath%:->:%value%' 'id:<def[writeID]>'
         }
       - if <def[dryrun]> || <def[verbose]> {
@@ -294,10 +315,13 @@ ConfigFileGenerator:
       }
 
   singleEntry:
-    - if <def[dryrun].is[==].to[false]> {
-      - yaml set 'id:<def[writeID]>' '<def[writePath]>:<def[entry]>'
+#    - if  <def[forcewrite]> {
+#      - yaml set '<def[writePath]>:!' 'id:<def[writeID]>'
+#      }
+    - if ( <def[dryrun].not> && <yaml[%writeID%].read[%writePath%].is[==].to[%entry%].not||true> ) || <def[forcewrite]> {
+      - yaml set '<def[writePath]>:<def[entry]>' 'id:<def[writeID]>'
       }
-    - if <def[dryrun].is[==].to[true]> || <def[verbose].is[==].to[true]> {
+    - if <def[dryrun]> || <def[verbose]> {
       - announce "<&b>ConfigFileGenerator<&co> <&a>Writing<&co> <&c>%writePath%<&co> <&e>%entry%" to_console
       - announce "<&b>ConfigFileGenerator<&co> <&a>Writing<&co> <&c>%writePath%<&co> <&e>%entry%" to_flagged:ConfigFileGeneratorNotify
       - announce "<&b>ConfigFileGenerator<&co> <&4>*-----*" to_flagged:ConfigFileGeneratorNotify
@@ -342,7 +366,9 @@ ConfigFileGenerator:
   events:
 
     on cfg command:
-    - if !<player.has_permission[denizen.cfg]> queue stop
+    - if !<player.has_permission[denizen.cfg]||false> {
+      - queue stop
+      }
     - determine passively fulfilled
     - flag <player> ConfigFileGeneratorNotify:true
     - define dryrun '<tern[<c.args.contains[--dryrun]>]:true || false>'
