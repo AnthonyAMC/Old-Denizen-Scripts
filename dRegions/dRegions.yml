@@ -460,7 +460,6 @@ dRegions_Events_Player_Interact_Entity:
       - queue clear
       }
 
-    - define sameRegion '<def[eLoc].cuboids.equals_case_sensitive[<def[player].location.cuboids>]>'
     - define player '<player>'
     - define object '<c.entity>'
     - define target '<c.entity.entity_type>'
@@ -473,21 +472,6 @@ dRegions_Events_Player_Interact_Entity:
     - define flags '<server.flag[dRegions.EventMap.player_interact_entity].as_list>'
     - foreach '%flags%':
       - define flag '%value%'
-      - if %sameRegion% {
-        - if <def[player].has_flag[dRegions.rateLimit.%flag%.%target%]> {
-          - if '<def[player].flag[dRegions.rateLimit.%flag%.%target%]>' {
-            - if <s@dRegions_Flag_%flag%.list_keys.contains[event-allowed]> {
-            - inject 's@dRegions_Flag_%flag%' 'p:event-allowed'
-            }
-          - foreach next
-          - queue clear
-          }
-          - if <s@dRegions_Flag_%flag%.list_keys.contains[event-cancelled]> {
-            - inject 's@dRegions_Flag_%flag%' 'p:event-cancelled'
-            }
-          - determine cancelled
-          }
-        }
       - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Player_Interact_NPC:
@@ -508,8 +492,7 @@ dRegions_Events_Player_Interact_NPC:
     - foreach '<def[eLoc].cuboids.filter[starts_with[cu@dregions_%world%]].parse[after[cu@dregions_%world%_]]>':
       - define orderedRegions '%orderedRegions%|<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%'
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
-    - define flags '<server.flag[dRegions.EventMap.player_interact_npc].as_list>'
-    - foreach '%flags%':
+    - foreach '<server.flag[dRegions.EventMap.player_interact_npc].as_list>':
       - define flag '%value%'
       - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
@@ -543,8 +526,7 @@ dRegions_Events_Player_Enters_Region:
     - if <def[orderedRegions].get[1].equals_case_sensitive[<def[oldRegions].alphanumeric.reverse.parse[after[/]].get[1]>]> {
       - queue clear
       }
-    - define flags '<server.flag[dRegions.EventMap.player_enters_region].as_list||li@>'
-    - foreach '%flags%':
+    - foreach '<server.flag[dRegions.EventMap.player_enters_region].as_list||li@>':
       - define flag '%value%'
       - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
     - event 'player entered dregion' 'player:%player%' 'context:orderedregions|<def[orderedRegions].separated_by[/]>|to|<c.to>|from|<c.from>'
@@ -561,8 +543,7 @@ dRegions_Events_Player_Entered_dRegion:
     - define orderedRegions '<c.orderedregions.split_by[/]>'
     - define noCancel ''
     - define isEnter 'true'
-    - define flags '<server.flag[dRegions.EventMap.player_entered_dregion].as_list||li@>'
-    - foreach '%flags%':
+    - foreach '<server.flag[dRegions.EventMap.player_entered_dregion].as_list||li@>':
       - define flag '%value%'
       - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
@@ -589,8 +570,7 @@ dRegions_Events_Player_Exits_Region:
     - if <def[orderedRegions].get[1].equals_case_sensitive[<def[newRegions].alphanumeric.reverse.parse[after[/]].get[1]>]> {
       - queue clear
       }
-    - define flags '<server.flag[dRegions.EventMap.player_exits_region].as_list||li@>'
-    - foreach '%flags%':
+    - foreach '<server.flag[dRegions.EventMap.player_exits_region].as_list||li@>':
       - define flag '%value%'
       - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
     # Should we fire an event when the player enters the global region?
@@ -619,8 +599,7 @@ dRegions_Events_Player_Exited_dRegion:
     - define orderedRegions '<c.orderedregions.split_by[/]>'
     - define noCancel ''
     - define isEnter 'false'
-    - define flags '<server.flag[dRegions.EventMap.player_exited_dregion].as_list||li@>'
-    - foreach '%flags%':
+    - foreach '<server.flag[dRegions.EventMap.player_exited_dregion].as_list||li@>':
       - define flag '%value%'
       - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
@@ -637,32 +616,12 @@ dRegions_Events_Player_Place_Block:
     - define target '<c.material.bukkit_enum>'
     - define eLoc '<context.location>'
     - define world '<def[eLoc].world.name>'
-    - define sameRegion '<def[eLoc].cuboids.equals_case_sensitive[<def[player].location.cuboids>]>'
     - define orderedRegions 'li@<yaml[dRegions_%world%_regions].read[regions.__global__.priority]||0>/__global__'
     - foreach '<def[eLoc].cuboids.filter[starts_with[cu@dregions_%world%]].parse[after[cu@dregions_%world%_]]>':
       - define orderedRegions '%orderedRegions%|<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%'
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
-    - define flags '<server.flag[dRegions.EventMap.player_place_block].as_list>'
-#    - foreach '%flags%':
-#      - define flag '%value%'
-#      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
-    - foreach '%flags%':
+    - foreach '<server.flag[dRegions.EventMap.player_place_block].as_list>':
       - define flag '%value%'
-      - if %sameRegion% {
-        - if <def[player].has_flag[dRegions.rateLimit.%flag%.%target%]> {
-          - if '<def[player].flag[dRegions.rateLimit.%flag%.%target%]>' {
-            - if <s@dRegions_Flag_%flag%.list_keys.contains[event-allowed]> {
-            - inject 's@dRegions_Flag_%flag%' 'p:event-allowed'
-            }
-          - foreach next
-          - queue clear
-          }
-          - if <s@dRegions_Flag_%flag%.list_keys.contains[event-cancelled]> {
-            - inject 's@dRegions_Flag_%flag%' 'p:event-cancelled'
-            }
-          - determine cancelled
-          }
-        }
       - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Player_Break_Block:
@@ -678,32 +637,12 @@ dRegions_Events_Player_Break_Block:
     - define target '<c.material.bukkit_enum>'
     - define eLoc '<context.location>'
     - define world '<def[eLoc].world.name>'
-    - define sameRegion '<def[eLoc].cuboids.equals_case_sensitive[<def[player].location.cuboids>]>'
     - define orderedRegions 'li@<yaml[dRegions_%world%_regions].read[regions.__global__.priority]||0>/__global__'
     - foreach '<def[eLoc].cuboids.filter[starts_with[cu@dregions_%world%]].parse[after[cu@dregions_%world%_]]>':
       - define orderedRegions '%orderedRegions%|<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%'
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
-    - define flags '<server.flag[dRegions.EventMap.player_break_block].as_list>'
-#    - foreach '%flags%':
-#      - define flag '%value%'
-#      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
-    - foreach '%flags%':
+    - foreach '<server.flag[dRegions.EventMap.player_break_block].as_list>':
       - define flag '%value%'
-      - if %sameRegion% {
-        - if <def[player].has_flag[dRegions.rateLimit.%flag%.%target%]> {
-          - if '<def[player].flag[dRegions.rateLimit.%flag%.%target%]>' {
-            - if <s@dRegions_Flag_%flag%.list_keys.contains[event-allowed]> {
-            - inject 's@dRegions_Flag_%flag%' 'p:event-allowed'
-            }
-          - foreach next
-          - queue clear
-          }
-          - if <s@dRegions_Flag_%flag%.list_keys.contains[event-cancelled]> {
-            - inject 's@dRegions_Flag_%flag%' 'p:event-cancelled'
-            }
-          - determine cancelled
-          }
-        }
       - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Player_Right_Click:
@@ -729,8 +668,7 @@ dRegions_Events_Player_Right_Click:
     - foreach '<def[eLoc].cuboids.filter[starts_with[cu@dregions_%world%]].parse[after[cu@dregions_%world%_]]>':
       - define orderedRegions '%orderedRegions%|<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%'
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
-    - define flags '<server.flag[dRegions.EventMap.%event%].as_list>'
-    - foreach '%flags%':
+    - foreach '<server.flag[dRegions.EventMap.%event%].as_list>':
       - define flag '%value%'
       - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
@@ -752,8 +690,7 @@ dRegions_Events_Player_Damaged:
     - foreach '<def[eLoc].cuboids.filter[starts_with[cu@dregions_%world%]].parse[after[cu@dregions_%world%_]]>':
       - define orderedRegions '%orderedRegions%|<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%'
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
-    - define flags '<server.flag[dRegions.EventMap.player_damaged].as_list>'
-    - foreach '%flags%':
+    - foreach '<server.flag[dRegions.EventMap.player_damaged].as_list>':
       - define flag '%value%'
       - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
@@ -773,8 +710,7 @@ dRegions_Events_Player_Chat:
     - foreach '<def[eLoc].cuboids.filter[starts_with[cu@dregions_%world%]].parse[after[cu@dregions_%world%_]]>':
       - define orderedRegions '%orderedRegions%|<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%'
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
-    - define flags '<server.flag[dRegions.EventMap.player_chats].as_list>'
-    - foreach '%flags%':
+    - foreach '<server.flag[dRegions.EventMap.player_chats].as_list>':
       - define flag '%value%'
       - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
