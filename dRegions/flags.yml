@@ -19,7 +19,12 @@ dRegions_Flags_Processors:
     # rateLimit values on region enter/exit). Normal processing will follow if the rateLimit value is stale.
     # rateLimit value is stored as a boolean.
     # Rate limiter
-    - define sameRegion '<def[eLoc].cuboids.equals_case_sensitive[<def[player].location.cuboids>]>'
+    - if '<def[eLoc].cuboids>' == '<def[player].location.cuboids>' {
+      - define sameRegion 'true'
+      }
+      else {
+      - define sameRegion 'false'
+      }
     - if %sameRegion% {
       - if <def[player].has_flag[dRegions.rateLimit.%flag%.%target%]> {
         - define a '<def[player].flag[dRegions.rateLimit.%flag%.%target%]>'
@@ -46,8 +51,20 @@ dRegions_Flags_Processors:
         }
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>/all'
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%listflag%].split_by[, ]>'
-      - define c '<def[targetList].contains_any[none|all|%target%].and[<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].after[/].before[/]>|%thisRegion%|%world%|%player%]>]>'
-      - define a '<t[<def[flagObj].starts_with[deny]>]:<def[c].not>||%c%>'
+#      - define c '<def[targetList].contains_any[none|all|%target%].and[<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].after[/].before[/]>|%thisRegion%|%world%|%player%]>]>'
+      - if '<def[targetList].contains_any[none|all|%target%]>' && '<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].after[/].before[/]>|%thisRegion%|%world%|%player%]>' {
+        - define c 'true'
+        }
+        else {
+        - define c 'false'
+        }
+#      - define a '<t[<def[flagObj].starts_with[deny]>]:<def[c].not>||%c%>'
+      - if <def[flagObj].starts_with[deny]> {
+        - define a '<def[c].not>'
+        }
+        else {
+        - define a '%c%'
+        }
       - yaml set 'cache.state-withTarget-WithGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%:%a%' 'id:dRegions_%world%_cache'
       - goto 'a'
       }
@@ -58,21 +75,36 @@ dRegions_Flags_Processors:
       - define thisRegion '%value%'
       - if <yaml[dRegions_%world%_cache].contains[cache.state-withTarget-WithGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]> {
         - define a '<yaml[dRegions_%world%_cache].read[cache.state-withTarget-WithGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]>'
-        - if <def[a].equals_case_sensitive[none]> {
+        - if '%a%' == 'none' {
           - define a 'true'
           - foreach next
           }
         - goto 'a'
         }
+#      - define targetList '<t[<def[targetList].is[==].to[li@none]>]:<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%listflag%].split_by[, ]>||%targetList%>'
+      - if '%targetList%' == 'li@none' {
+        - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%listflag%].split_by[, ]>'
+        }
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>/all'
-      - define targetList '<t[<def[targetList].is[==].to[li@none]>]:<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%listflag%].split_by[, ]>||%targetList%>'
-      - if <def[flagObj].equals_case_sensitive[none]> {
+      - if <def[flagObj].starts_with[none]> {
         - define a 'true'
         - yaml set 'cache.state-withTarget-WithGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%:none' 'id:dRegions_%world%_cache'
         - foreach next
         }
-      - define c '<def[targetList].contains_any[none|all|%target%].and[<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].after[/].before[/]>|%thisRegion%|%world%|%player%]>]>'
-      - define a '<t[<def[flagObj].starts_with[deny]>]:<def[c].not>||%c%>'
+#      - define c '<def[targetList].contains_any[none|all|%target%].and[<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].after[/].before[/]>|%thisRegion%|%world%|%player%]>]>'
+      - if '<def[targetList].contains_any[none|all|%target%]>' && '<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].after[/].before[/]>|%thisRegion%|%world%|%player%]>' {
+        - define c 'true'
+        }
+        else {
+        - define c 'false'
+        }
+#      - define a '<t[<def[flagObj].starts_with[deny]>]:<def[c].not>||%c%>'
+      - if <def[flagObj].starts_with[deny]> {
+        - define a '<def[c].not>'
+        }
+        else {
+        - define a '%c%'
+        }
       - yaml set 'cache.state-withTarget-WithGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%:%a%' 'id:dRegions_%world%_cache'
       - foreach stop
     # Set the rateLimit if applicable
@@ -83,13 +115,13 @@ dRegions_Flags_Processors:
     # Process determinations
     - mark 'b'
     - if '%a%' {
-      - if <s@dRegions_Flag_%flag%.list_keys.contains[event-allowed]> {
+      - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'event-allowed' {
         - inject 's@dRegions_Flag_%flag%' 'p:event-allowed'
         }
       - foreach next
       - queue clear
       }
-    - if <s@dRegions_Flag_%flag%.list_keys.contains[event-cancelled]> {
+    - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'event-cancelled' {
       - inject 's@dRegions_Flag_%flag%' 'p:event-cancelled'
       }
     - if <def[noCancel].exists> {
@@ -112,7 +144,13 @@ dRegions_Flags_Processors:
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>'
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%listflag%].split_by[, ]>'
       - define c '<def[targetList].contains_any[none|all|%target%]>'
-      - define a '<t[<def[flagObj].equals_case_sensitive[deny]>]:<def[c].not>||%c%>'
+#      - define a '<t[<def[flagObj].equals_case_sensitive[deny]>]:<def[c].not>||%c%>'
+      - if '%flagObj%' == 'deny' {
+        - define a '<def[c].not>'
+        }
+        else {
+        - define a '%c%'
+        }
       - yaml set 'cache.state-withTarget.%thisRegion%.%flag%.%target%:%a%' 'id:dRegions_%world%_cache'
       - goto 'a'
       }
@@ -121,33 +159,42 @@ dRegions_Flags_Processors:
       - define thisRegion '%value%'
       - if <yaml[dRegions_%world%_cache].contains[cache.state-withTarget.%thisRegion%.%flag%.%target%]> {
         - define a '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%thisRegion%.%flag%.%target%]>'
-        - if <def[a].equals_case_sensitive[none]> {
+        - if '%a%' == 'none' {
           - define a 'true'
           - foreach next
           }
         - goto 'a'
         }
+#      - define targetList '<t[<def[targetList].is[==].to[li@none]>]:<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%listflag%].split_by[, ]>||%targetList%>'
+      - if '%targetList%' == 'li@none' {
+        - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%listflag%].split_by[, ]>'
+        }
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>'
-      - define targetList '<t[<def[targetList].is[==].to[li@none]>]:<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%listflag%].split_by[, ]>||%targetList%>'
-      - if <def[flagObj].equals_case_sensitive[none]> {
+      - if '%flagObj%' == 'none' {
         - define a 'true'
         - yaml set 'cache.state-withTarget.%thisRegion%.%flag%.%target%:none' 'id:dRegions_%world%_cache'
         - foreach next
         }
       - define c '<def[targetList].contains_any[none|all|%target%]>'
-      - define a '<t[<def[flagObj].equals_case_sensitive[deny]>]:<def[c].not>||%c%>'
+#      - define a '<t[<def[flagObj].equals_case_sensitive[deny]>]:<def[c].not>||%c%>'
+      - if '%flagObj%' == 'deny' {
+        - define a '<def[c].not>'
+        }
+        else {
+        - define a '%c%'
+        }
       - yaml set 'cache.state-withTarget.%thisRegion%.%flag%.%target%:%a%' 'id:dRegions_%world%_cache'
       - foreach stop
 
     - mark 'a'
     - if '%a%' {
-      - if <s@dRegions_Flag_%flag%.list_keys.contains[event-allowed]> {
+      - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'event-allowed' {
         - inject 's@dRegions_Flag_%flag%' 'p:event-allowed'
         }
       - foreach next
       - queue clear
       }
-    - if <s@dRegions_Flag_%flag%.list_keys.contains[event-cancelled]> {
+    - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'event-cancelled' {
       - inject 's@dRegions_Flag_%flag%' 'p:event-cancelled'
       }
     - if <def[noCancel].exists> {
@@ -160,7 +207,12 @@ dRegions_Flags_Processors:
 #---------------------------------------
 #
   state-withGroup:
-    - define sameRegion '<def[eLoc].cuboids.equals_case_sensitive[<def[player].location.cuboids>]>'
+    - if '<def[eLoc].cuboids>' == '<def[player].location.cuboids>' {
+      - define sameRegion 'true'
+      }
+      else {
+      - define sameRegion 'false'
+      }
     - if %sameRegion% {
       - if <def[player].has_flag[dRegions.rateLimit.%flag%]> {
         - define a '<def[player].flag[dRegions.rateLimit.%flag%]>'
@@ -177,7 +229,13 @@ dRegions_Flags_Processors:
         }
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>/all'
       - define c '<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].after[/].before[/]>|%thisRegion%|%world%|%player%]>'
-      - define a '<t[<def[flagObj].starts_with[deny]>]:<def[c].not>||%c%>'
+#      - define a '<t[<def[flagObj].starts_with[deny]>]:<def[c].not>||%c%>'
+      - if <def[flagObj].starts_with[deny]> {
+        - define a '<def[c].not>'
+        }
+        else {
+        - define a '%c%'
+        }
       - yaml set 'cache.state-withGroup.%thisRegion%.%flag%.%prefix%.%uuid%:%a%' 'id:dRegions_%world%_cache'
       - goto 'a'
       }
@@ -185,7 +243,7 @@ dRegions_Flags_Processors:
       - define thisRegion '%value%'
       - if <yaml[dRegions_%world%_cache].contains[cache.state-withGroup.%thisRegion%.%flag%.%prefix%.%uuid%]> {
         - define a '<yaml[dRegions_%world%_cache].read[cache.state-withGroup.%thisRegion%.%flag%.%prefix%.%uuid%]>'
-        - if <def[a].starts_with[none]> {
+        - if '%a%' == 'none' {
           - define a 'true'
           - foreach next
           }
@@ -198,7 +256,13 @@ dRegions_Flags_Processors:
         - foreach next
         }
       - define c '<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].after[/].before[/]>|%thisRegion%|%world%|%player%]>'
-      - define a '<t[<def[flagObj].starts_with[deny]>]:<def[c].not>||%c%>'
+#      - define a '<t[<def[flagObj].starts_with[deny]>]:<def[c].not>||%c%>'
+      - if <def[flagObj].starts_with[deny]> {
+        - define a '<def[c].not>'
+        }
+        else {
+        - define a '%c%'
+        }
       - yaml set 'cache.state-withGroup.%thisRegion%.%flag%.%prefix%.%uuid%:%a%' 'id:dRegions_%world%_cache'
       - foreach stop
 
@@ -208,13 +272,13 @@ dRegions_Flags_Processors:
       }
     - mark 'b'
     - if '%a%' {
-      - if <s@dRegions_Flag_%flag%.list_keys.contains[event-allowed]> {
+      - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'event-allowed' {
         - inject 's@dRegions_Flag_%flag%' 'p:event-allowed'
         }
       - foreach next
       - queue clear
       }
-    - if <s@dRegions_Flag_%flag%.list_keys.contains[event-cancelled]> {
+    - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'event-cancelled' {
       - inject 's@dRegions_Flag_%flag%' 'p:event-cancelled'
       }
     - if <def[noCancel].exists> {
@@ -227,7 +291,12 @@ dRegions_Flags_Processors:
 #---------------------------------------
 #
   state-withTargetString-withGroup:
-    - define sameRegion '<def[eLoc].cuboids.equals_case_sensitive[<def[player].location.cuboids>]>'
+    - if '<def[eLoc].cuboids>' == '<def[player].location.cuboids>' {
+      - define sameRegion 'true'
+      }
+      else {
+      - define sameRegion 'false'
+      }
     - if %sameRegion% {
       - if <def[player].has_flag[dRegions.rateLimit.%flag%.%target%]> {
         - define a '<def[player].flag[dRegions.rateLimit.%flag%.%target%]>'
@@ -255,7 +324,7 @@ dRegions_Flags_Processors:
       - define thisRegion '%value%'
       - if <yaml[dRegions_%world%_cache].contains[cache.state-withTargetString-WithGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]> {
         - define a '<yaml[dRegions_%world%_cache].read[cache.state-withTargetString-WithGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]>'
-        - if <def[a].equals_case_sensitive[none]> {
+        - if %a% == 'none' {
           - define a 'true'
           - foreach next
           }
@@ -263,7 +332,7 @@ dRegions_Flags_Processors:
         }
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>/all'
       - define targetList '<t[<def[targetList].is[==].to[li@none]>]:<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%listflag%].split_by[<def[delimiter]||, >]>||%targetList%>'
-      - if <def[flagObj].equals_case_sensitive[none]> {
+      - if <def[flagObj].starts_with[none]> {
         - define a 'true'
         - yaml set 'cache.state-withTargetString-WithGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%:none' 'id:dRegions_%world%_cache'
         - foreach next
@@ -278,13 +347,13 @@ dRegions_Flags_Processors:
       }
     - mark 'b'
     - if '%a%' {
-      - if <s@dRegions_Flag_%flag%.list_keys.contains[event-allowed]> {
+      - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'event-allowed' {
         - inject 's@dRegions_Flag_%flag%' 'p:event-allowed'
         }
       - foreach next
       - queue clear
       }
-    - if <s@dRegions_Flag_%flag%.list_keys.contains[event-cancelled]> {
+    - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'event-cancelled' {
       - inject 's@dRegions_Flag_%flag%' 'p:event-cancelled'
       }
     - if <def[noCancel].exists> {
@@ -304,7 +373,13 @@ dRegions_Flags_Processors:
         - goto 'a'
         }
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>'
-      - define a '<t[<def[flagObj].equals_case_sensitive[none]>]:true||%flagObj%>'
+#      - define a '<t[<def[flagObj].equals_case_sensitive[none]>]:true||%flagObj%>'
+      - if '%flagObj%' == 'none' {
+        - define a 'true'
+        }
+        else {
+        - define a '%flagObj%'
+        }
       - yaml set 'cache.boolean.%thisRegion%.%flag%:%a%' 'id:dRegions_%world%_cache'
       - goto 'a'
       }
@@ -312,31 +387,31 @@ dRegions_Flags_Processors:
       - define thisRegion '%value%'
       - if <yaml[dRegions_%world%_cache].contains[cache.boolean.%thisRegion%.%flag%]> {
         - define a '<yaml[dRegions_%world%_cache].read[cache.boolean.%thisRegion%.%flag%]>'
-        - if <def[a].equals_case_sensitive[none]> {
+        - if '%a%' == 'none' {
           - define a 'true'
           - foreach next
           }
         - goto 'a'
         }
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>'
-      - if <def[flagObj].equals_case_sensitive[none]> {
+      - if '%flagObj%' == 'none' {
         - define a 'true'
         - yaml set 'cache.boolean.%thisRegion%.%flag%:none' 'id:dRegions_%world%_cache'
         - foreach next
         }
-      - define a '<t[<def[flagObj].equals_case_sensitive[none]>]:true||%flagObj%>'
+      - define a '%flagObj%'
       - yaml set 'cache.boolean.%thisRegion%.%flag%:%a%' 'id:dRegions_%world%_cache'
       - foreach stop
 
     - mark 'a'
     - if '%a%' {
-      - if <s@dRegions_Flag_%flag%.list_keys.contains[event-allowed]> {
+      - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'event-allowed' {
         - inject 's@dRegions_Flag_%flag%' 'p:event-allowed'
         }
       - foreach next
       - queue clear
       }
-    - if <s@dRegions_Flag_%flag%.list_keys.contains[event-cancelled]> {
+    - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'event-cancelled' {
       - inject 's@dRegions_Flag_%flag%' 'p:event-cancelled'
       }
     - if <def[noCancel].exists> {
@@ -353,7 +428,7 @@ dRegions_Flags_Processors:
     - if '<s@dRegions_Flag_%flag%.yaml_key[region_highestOnly]||false>' {
       - define thisRegion '<def[orderedRegions].get[1]>'
       - define val '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>'
-      - if '<def[val].equals_case_sensitive[none].not>' {
+      - if '%val%' != 'none' {
         - goto 'DISPLAY'
         }
       - goto 'END'
@@ -361,11 +436,11 @@ dRegions_Flags_Processors:
     - foreach '%orderedRegions%' {
       - define thisRegion '%value%'
       - define val '<proc[dRegions_GetInheritedFlag].context[%world%|%value%|%flag%]>'
-      - if '<def[val].equals_case_sensitive[none].not>' {
+      - if '%val%' != 'none' {
         - goto 'DISPLAY'
         }
       }
-    - if '<def[val].equals_case_sensitive[none]>' {
+    - if '%val%' == 'none' {
       - goto 'END'
       }
     - mark 'DISPLAY'
@@ -874,6 +949,10 @@ dRegions_Flag_Entity-Grief:
   flag_regionDefault: none
   flag_globalDefault: none
   flag_help: State flag controlling whether entities will be able to alter blocks in this region. Defaults to allow all. Use entity-grieflist flag to specify entities types.
+  event-allowed:
+  - flag %object% 'dRegions.EntityGrief:true' d:5s
+  event-cancelled:
+  - flag %object% 'dRegions.EntityGrief:false' d:5s
 
 dRegions_Flag_Entity-Drops-OnDeath:
   type: item
@@ -1653,7 +1732,7 @@ dRegions_Flag_Lava-Fire:
   display name: "<&4>[<&6>Lava-Fire<&4>]"
   lore:
   - <&5>Can lava cause fires
-  event_hooks: lava_fire
+  event_hooks: firefrom_lava
   event_priority: 5
   region_highestOnly: false
   flag_type: boolean
@@ -1755,7 +1834,7 @@ dRegions_Flag_Mushroom-Spread:
   display name: "<&4>[<&6>Mushroom-Spread<&4>]"
   lore:
   - <&5>Can Mushrooms spread
-  event_hooks: mushroom_spread
+  event_hooks: blockspread_mushroom
   event_priority: 5
   region_highestOnly: false
   flag_type: boolean
@@ -1772,7 +1851,7 @@ dRegions_Flag_Grass-Spread:
   display name: "<&4>[<&6>Grass-Spread<&4>]"
   lore:
   - <&5>Can Grass spread
-  event_hooks: grass_spread
+  event_hooks: blockspread_grass
   event_priority: 5
   region_highestOnly: false
   flag_type: boolean
@@ -1789,7 +1868,7 @@ dRegions_Flag_Mycel-Spread:
   display name: "<&4>[<&6>Mycel-Spread<&4>]"
   lore:
   - <&5>Can Mycelium spread
-  event_hooks: mycel_spread
+  event_hooks: blockspread_mycel
   event_priority: 5
   region_highestOnly: false
   flag_type: boolean
@@ -1806,7 +1885,7 @@ dRegions_Flag_Vines-Spread:
   display name: "<&4>[<&6>Vine-Growth<&4>]"
   lore:
   - <&5>Can Vines grow
-  event_hooks: vine_spread
+  event_hooks: blockspread_vine
   event_priority: 5
   region_highestOnly: false
   flag_type: boolean
@@ -1849,6 +1928,10 @@ dRegions_Flag_Falling-Sand:
   flag_regionDefault: true
   flag_globalDefault: true
   flag_help: Boolean flag controlling whether sand will be able to fall in this region. Set to true or false. Defaults to true.
+  event-allowed:
+  - flag <c.entity> 'dRegions.EntityGrief:true' d:5s
+  event-cancelled:
+  - flag <c.entity> 'dRegions.EntityGrief:false' d:5s
 
 dRegions_Flag_Falling-Gravel:
   type: item
@@ -1866,6 +1949,10 @@ dRegions_Flag_Falling-Gravel:
   flag_regionDefault: true
   flag_globalDefault: true
   flag_help: Boolean flag controlling whether gravel will be able to fall in this region. Set to true or false. Defaults to true.
+  event-allowed:
+  - flag <c.entity> 'dRegions.EntityGrief:true' d:5s
+  event-cancelled:
+  - flag <c.entity> 'dRegions.EntityGrief:false' d:5s
 
 dRegions_Flag_Pistons:
   type: item
