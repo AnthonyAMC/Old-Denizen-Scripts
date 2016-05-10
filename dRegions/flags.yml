@@ -3,9 +3,6 @@
 # Region flag pre-processors
 #
 #   * NOTES *
-#    - Need to experiment with caching methods more. Currently flags are
-#      responsible for setting cache and only do so when an explicit allow/deny
-#      value is returned.
 #    - Entity flags exist in denizen now and can be used as rate limiters
 #    - NIGHTMARE flag - enter bed transport to nightmare. Creates a pseudorandom instance. Hunt for a bed to get out.
 #
@@ -21,15 +18,13 @@ dRegions_Flags_Processors:
     # Rate limiter
     - if '<def[eLoc].cuboids>' == '<def[player].location.cuboids>' {
       - define sameRegion 'true'
-      }
-      else {
-      - define sameRegion 'false'
-      }
-    - if %sameRegion% {
       - if <def[player].has_flag[dRegions.rateLimit.%flag%.%target%]> {
         - define a '<def[player].flag[dRegions.rateLimit.%flag%.%target%]>'
         - goto 'b'
         }
+      }
+      else {
+      - define sameRegion 'false'
       }
     # Cache values can be none, true, or false. If the cache is set that means we have already done a flag
     # lookup once before and can skip the lookup. Cache values are cleared when regions are modified, and
@@ -45,12 +40,28 @@ dRegions_Flags_Processors:
     # First we check the flag if it only wants the highest priority region.
     - if '<s@dRegions_Flag_%flag%.yaml_key[region_highestOnly]||false>' {
       - define thisRegion '<def[orderedRegions].get[1]>'
-      - if <yaml[dRegions_%world%_cache].contains[cache.state-withTarget-WithGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]> {
-        - define a '<yaml[dRegions_%world%_cache].read[cache.state-withTarget-WithGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]>'
+      - if <yaml[dRegions_%world%_cache].contains[cache.state-withTarget-withGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]> {
+        - define a '<yaml[dRegions_%world%_cache].read[cache.state-withTarget-withGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]>'
         - goto 'a'
         }
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>/all'
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%listflag%].split_by[, ]>'
+      - if <def[flagObj].starts_with[none]> {
+        - if '%thisRegion%' == '__global__' {
+          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_globalDefault]||none>/all'
+          }
+          else {
+          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_regionDefault]||none>/all'
+          }
+        }
+      - if '%targetList%' == 'li@none' {
+        - if '%thisRegion%' == '__global__' {
+          - define targetList '<s@dRegions_Flag_%listflag%.yaml_key[flag_globalDefault].split_by[, ]||none>'
+          }
+          else {
+          - define targetList '<s@dRegions_Flag_%listflag%.yaml_key[flag_regionDefault].split_by[, ]||none>'
+          }
+        }
 #      - define c '<def[targetList].contains_any[none|all|%target%].and[<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].after[/].before[/]>|%thisRegion%|%world%|%player%]>]>'
       - if '<def[targetList].contains_any[none|all|%target%]>' && '<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].after[/].before[/]>|%thisRegion%|%world%|%player%]>' {
         - define c 'true'
@@ -65,16 +76,17 @@ dRegions_Flags_Processors:
         else {
         - define a '%c%'
         }
-      - yaml set 'cache.state-withTarget-WithGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%:%a%' 'id:dRegions_%world%_cache'
+      - yaml set 'cache.state-withTarget-withGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%:%a%' 'id:dRegions_%world%_cache'
       - goto 'a'
       }
     # Parse %orderedRegions% until the %flagObj% has a value. Not sure if %targetList% should be filled independently, only in
     # relation to %thisRegion%, or as it is now where it settles on the first none empty value.
     - define targetlist 'li@none'
+    - define s '<def[orderedRegions].size>'
     - foreach '%orderedRegions%':
       - define thisRegion '%value%'
-      - if <yaml[dRegions_%world%_cache].contains[cache.state-withTarget-WithGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]> {
-        - define a '<yaml[dRegions_%world%_cache].read[cache.state-withTarget-WithGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]>'
+      - if <yaml[dRegions_%world%_cache].contains[cache.state-withTarget-withGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]> {
+        - define a '<yaml[dRegions_%world%_cache].read[cache.state-withTarget-withGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]>'
         - if '%a%' == 'none' {
           - define a 'true'
           - foreach next
@@ -86,10 +98,28 @@ dRegions_Flags_Processors:
         - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%listflag%].split_by[, ]>'
         }
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>/all'
+      - if %loop_index% != %s% {
+        - if <def[flagObj].starts_with[none]> {
+          - define a 'true'
+          - yaml set 'cache.state-withTarget-withGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%:none' 'id:dRegions_%world%_cache'
+          - foreach next
+          }
+        }
       - if <def[flagObj].starts_with[none]> {
-        - define a 'true'
-        - yaml set 'cache.state-withTarget-WithGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%:none' 'id:dRegions_%world%_cache'
-        - foreach next
+        - if '%thisRegion%' == '__global__' {
+          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_globalDefault]||none>/all'
+          }
+          else {
+          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_regionDefault]||none>/all'
+          }
+        }
+      - if '%targetList%' == 'li@none' {
+        - if '%thisRegion%' == '__global__' {
+          - define targetList '<s@dRegions_Flag_%listflag%.yaml_key[flag_globalDefault].split_by[, ]||none>'
+          }
+          else {
+          - define targetList '<s@dRegions_Flag_%listflag%.yaml_key[flag_regionDefault].split_by[, ]||none>'
+          }
         }
 #      - define c '<def[targetList].contains_any[none|all|%target%].and[<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].after[/].before[/]>|%thisRegion%|%world%|%player%]>]>'
       - if '<def[targetList].contains_any[none|all|%target%]>' && '<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].after[/].before[/]>|%thisRegion%|%world%|%player%]>' {
@@ -105,12 +135,13 @@ dRegions_Flags_Processors:
         else {
         - define a '%c%'
         }
-      - yaml set 'cache.state-withTarget-WithGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%:%a%' 'id:dRegions_%world%_cache'
+      - yaml set 'cache.state-withTarget-withGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%:%a%' 'id:dRegions_%world%_cache'
       - foreach stop
+
     # Set the rateLimit if applicable
     - mark 'a'
     - if %sameRegion% {
-      - flag %player% 'dRegions.rateLimit.%flag%.%target%:%a%' d:5s
+      - flag %player% 'dRegions.rateLimit.%flag%.%target%:%a%'
       }
     # Process determinations
     - mark 'b'
@@ -143,8 +174,23 @@ dRegions_Flags_Processors:
         }
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>'
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%listflag%].split_by[, ]>'
+      - if '%flagObj%' == 'none' {
+        - if '%thisRegion%' == '__global__' {
+          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_globalDefault]||none>'
+          }
+          else {
+          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_regionDefault]||none>'
+          }
+        }
+      - if '%targetList%' == 'li@none' {
+        - if '%thisRegion%' == '__global__' {
+          - define targetList '<s@dRegions_Flag_%listflag%.yaml_key[flag_globalDefault].split_by[, ]||none>'
+          }
+          else {
+          - define targetList '<s@dRegions_Flag_%listflag%.yaml_key[flag_regionDefault].split_by[, ]||none>'
+          }
+        }
       - define c '<def[targetList].contains_any[none|all|%target%]>'
-#      - define a '<t[<def[flagObj].equals_case_sensitive[deny]>]:<def[c].not>||%c%>'
       - if '%flagObj%' == 'deny' {
         - define a '<def[c].not>'
         }
@@ -155,6 +201,7 @@ dRegions_Flags_Processors:
       - goto 'a'
       }
     - define targetlist 'li@none'
+    - define s '<def[orderedRegions].size>'
     - foreach '%orderedRegions%':
       - define thisRegion '%value%'
       - if <yaml[dRegions_%world%_cache].contains[cache.state-withTarget.%thisRegion%.%flag%.%target%]> {
@@ -165,18 +212,34 @@ dRegions_Flags_Processors:
           }
         - goto 'a'
         }
-#      - define targetList '<t[<def[targetList].is[==].to[li@none]>]:<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%listflag%].split_by[, ]>||%targetList%>'
       - if '%targetList%' == 'li@none' {
         - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%listflag%].split_by[, ]>'
         }
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>'
+      - if %loop_index% != %s% {
+        - if '%flagObj%' == 'none' {
+          - define a 'true'
+          - yaml set 'cache.state-withTarget.%thisRegion%.%flag%.%target%:none' 'id:dRegions_%world%_cache'
+          - foreach next
+          }
+        }
       - if '%flagObj%' == 'none' {
-        - define a 'true'
-        - yaml set 'cache.state-withTarget.%thisRegion%.%flag%.%target%:none' 'id:dRegions_%world%_cache'
-        - foreach next
+        - if '%thisRegion%' == '__global__' {
+          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_globalDefault]||none>'
+          }
+          else {
+          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_regionDefault]||none>'
+          }
+        }
+      - if '%targetList%' == 'li@none' {
+        - if '%thisRegion%' == '__global__' {
+          - define targetList '<s@dRegions_Flag_%listflag%.yaml_key[flag_globalDefault].split_by[, ]||none>'
+          }
+          else {
+          - define targetList '<s@dRegions_Flag_%listflag%.yaml_key[flag_regionDefault].split_by[, ]||none>'
+          }
         }
       - define c '<def[targetList].contains_any[none|all|%target%]>'
-#      - define a '<t[<def[flagObj].equals_case_sensitive[deny]>]:<def[c].not>||%c%>'
       - if '%flagObj%' == 'deny' {
         - define a '<def[c].not>'
         }
@@ -209,15 +272,13 @@ dRegions_Flags_Processors:
   state-withGroup:
     - if '<def[eLoc].cuboids>' == '<def[player].location.cuboids>' {
       - define sameRegion 'true'
-      }
-      else {
-      - define sameRegion 'false'
-      }
-    - if %sameRegion% {
       - if <def[player].has_flag[dRegions.rateLimit.%flag%]> {
         - define a '<def[player].flag[dRegions.rateLimit.%flag%]>'
         - goto 'b'
         }
+      }
+      else {
+      - define sameRegion 'false'
       }
     - define uuid '<def[player].uuid>'
     - define prefix '<def[uuid].substring[1,2]>'
@@ -228,6 +289,14 @@ dRegions_Flags_Processors:
         - goto 'a'
         }
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>/all'
+      - if <def[flagObj].starts_with[none]> {
+        - if '%thisRegion%' == '__global__' {
+          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_globalDefault]||none>/all'
+          }
+          else {
+          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_regionDefault]||none>/all'
+          }
+        }
       - define c '<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].after[/].before[/]>|%thisRegion%|%world%|%player%]>'
 #      - define a '<t[<def[flagObj].starts_with[deny]>]:<def[c].not>||%c%>'
       - if <def[flagObj].starts_with[deny]> {
@@ -239,6 +308,7 @@ dRegions_Flags_Processors:
       - yaml set 'cache.state-withGroup.%thisRegion%.%flag%.%prefix%.%uuid%:%a%' 'id:dRegions_%world%_cache'
       - goto 'a'
       }
+    - define s '<def[orderedRegions].size>'
     - foreach '%orderedRegions%':
       - define thisRegion '%value%'
       - if <yaml[dRegions_%world%_cache].contains[cache.state-withGroup.%thisRegion%.%flag%.%prefix%.%uuid%]> {
@@ -250,10 +320,20 @@ dRegions_Flags_Processors:
         - goto 'a'
         }
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>/all'
+      - if %loop_index% != %s% {
+        - if <def[flagObj].starts_with[none]> {
+          - define a 'true'
+          - yaml set 'cache.state-withGroup.%thisRegion%.%flag%.%prefix%.%uuid%:none' 'id:dRegions_%world%_cache'
+          - foreach next
+          }
+        }
       - if <def[flagObj].starts_with[none]> {
-        - define a 'true'
-        - yaml set 'cache.state-withGroup.%thisRegion%.%flag%.%prefix%.%uuid%:none' 'id:dRegions_%world%_cache'
-        - foreach next
+        - if '%thisRegion%' == '__global__' {
+          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_globalDefault]||none>/all'
+          }
+          else {
+          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_regionDefault]||none>/all'
+          }
         }
       - define c '<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].after[/].before[/]>|%thisRegion%|%world%|%player%]>'
 #      - define a '<t[<def[flagObj].starts_with[deny]>]:<def[c].not>||%c%>'
@@ -268,7 +348,7 @@ dRegions_Flags_Processors:
 
     - mark 'a'
     - if %sameRegion% {
-      - flag %player% 'dRegions.rateLimit.%flag%:%a%' d:5s
+      - flag %player% 'dRegions.rateLimit.%flag%:%a%'
       }
     - mark 'b'
     - if '%a%' {
@@ -293,57 +373,112 @@ dRegions_Flags_Processors:
   state-withTargetString-withGroup:
     - if '<def[eLoc].cuboids>' == '<def[player].location.cuboids>' {
       - define sameRegion 'true'
-      }
-      else {
-      - define sameRegion 'false'
-      }
-    - if %sameRegion% {
       - if <def[player].has_flag[dRegions.rateLimit.%flag%.%target%]> {
         - define a '<def[player].flag[dRegions.rateLimit.%flag%.%target%]>'
         - goto 'b'
         }
+      }
+      else {
+      - define sameRegion 'false'
       }
     - define uuid '<def[player].uuid>'
     - define prefix '<def[uuid].substring[1,2]>'
     - define listflag '<s@dRegions_Flag_%flag%.yaml_key[flag_targetList]||null>'
     - if '<s@dRegions_Flag_%flag%.yaml_key[region_highestOnly]||false>' {
       - define thisRegion '<def[orderedRegions].get[1]>'
-      - if <yaml[dRegions_%world%_cache].contains[cache.state-withTargetString-WithGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]> {
-        - define a '<yaml[dRegions_%world%_cache].read[cache.state-withTargetString-WithGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]>'
+      - if <yaml[dRegions_%world%_cache].contains[cache.state-withTargetString-withGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]> {
+        - define a '<yaml[dRegions_%world%_cache].read[cache.state-withTargetString-withGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]>'
         - goto 'a'
         }
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>/all'
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%listflag%].split_by[<def[delimiter]||, >]>'
-      - define c '<def[targetList].contains_any[none|all|%target%].and[<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].after[/].before[/]>|%thisRegion%|%world%|%player%]>]>'
-      - define a '<t[<def[flagObj].starts_with[deny]>]:<def[c].not>||%c%>'
-      - yaml set 'cache.state-withTargetString-WithGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%:%a%' 'id:dRegions_%world%_cache'
+      - if <def[flagObj].starts_with[none]> {
+        - if '%thisRegion%' == '__global__' {
+          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_globalDefault]||none>/all'
+          }
+          else {
+          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_regionDefault]||none>/all'
+          }
+        }
+      - if '%targetList%' == 'li@none' {
+        - if '%thisRegion%' == '__global__' {
+          - define targetList '<s@dRegions_Flag_%listflag%.yaml_key[flag_globalDefault].split_by[<def[delimiter]||, >]||none>'
+          }
+          else {
+          - define targetList '<s@dRegions_Flag_%listflag%.yaml_key[flag_regionDefault].split_by[<def[delimiter]||, >]||none>'
+          }
+        }
+      - if '<def[targetList].contains_any[none|all|%target%]>' && '<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].after[/].before[/]>|%thisRegion%|%world%|%player%]>' {
+        - define c 'true'
+        }
+        else {
+        - define c 'false'
+        }
+      - if <def[flagObj].starts_with[deny]> {
+        - define a '<def[c].not>'
+        }
+        else {
+        - define a '%c%'
+        }
+      - yaml set 'cache.state-withTargetString-withGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%:%a%' 'id:dRegions_%world%_cache'
       - goto 'a'
       }
     - define targetlist 'li@none'
+    - define s '<def[orderedRegions].size>'
     - foreach '%orderedRegions%':
       - define thisRegion '%value%'
-      - if <yaml[dRegions_%world%_cache].contains[cache.state-withTargetString-WithGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]> {
-        - define a '<yaml[dRegions_%world%_cache].read[cache.state-withTargetString-WithGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]>'
-        - if %a% == 'none' {
+      - if <yaml[dRegions_%world%_cache].contains[cache.state-withTargetString-withGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]> {
+        - define a '<yaml[dRegions_%world%_cache].read[cache.state-withTargetString-withGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]>'
+        - if '%a%' == 'none' {
           - define a 'true'
           - foreach next
           }
         - goto 'a'
         }
-      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>/all'
-      - define targetList '<t[<def[targetList].is[==].to[li@none]>]:<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%listflag%].split_by[<def[delimiter]||, >]>||%targetList%>'
-      - if <def[flagObj].starts_with[none]> {
-        - define a 'true'
-        - yaml set 'cache.state-withTargetString-WithGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%:none' 'id:dRegions_%world%_cache'
-        - foreach next
+      - if '%targetList%' == 'li@none' {
+        - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%listflag%].split_by[<def[delimiter]||, >]>'
         }
-      - define c '<def[targetList].contains_any[none|all|%target%].and[<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].after[/].before[/]>|%thisRegion%|%world%|%player%]>]>'
-      - define a '<t[<def[flagObj].starts_with[deny]>]:<def[c].not>||%c%>'
-      - yaml set 'cache.state-withTargetString-WithGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%:%a%' 'id:dRegions_%world%_cache'
+      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>/all'
+      - if %loop_index% != %s% {
+        - if <def[flagObj].starts_with[none]> {
+          - define a 'true'
+          - yaml set 'cache.state-withTargetString-withGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%:none' 'id:dRegions_%world%_cache'
+          - foreach next
+          }
+        }
+      - if <def[flagObj].starts_with[none]> {
+        - if '%thisRegion%' == '__global__' {
+          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_globalDefault]||none>/all'
+          }
+          else {
+          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_regionDefault]||none>/all'
+          }
+        }
+      - if '%targetList%' == 'li@none' {
+        - if '%thisRegion%' == '__global__' {
+          - define targetList '<s@dRegions_Flag_%listflag%.yaml_key[flag_globalDefault].split_by[<def[delimiter]||, >]||none>'
+          }
+          else {
+          - define targetList '<s@dRegions_Flag_%listflag%.yaml_key[flag_regionDefault].split_by[<def[delimiter]||, >]||none>'
+          }
+        }
+      - if '<def[targetList].contains_any[none|all|%target%]>' && '<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].after[/].before[/]>|%thisRegion%|%world%|%player%]>' {
+        - define c 'true'
+        }
+        else {
+        - define c 'false'
+        }
+      - if <def[flagObj].starts_with[deny]> {
+        - define a '<def[c].not>'
+        }
+        else {
+        - define a '%c%'
+        }
+      - yaml set 'cache.state-withTargetString-withGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%:%a%' 'id:dRegions_%world%_cache'
       - foreach stop
     - mark 'a'
     - if %sameRegion% {
-      - flag %player% 'dRegions.rateLimit.%flag%.%target%:%a%' d:5s
+      - flag %player% 'dRegions.rateLimit.%flag%.%target%:%a%'
       }
     - mark 'b'
     - if '%a%' {
@@ -365,6 +500,32 @@ dRegions_Flags_Processors:
 # END state-withTargetString-withGroup
 #---------------------------------------
 #
+# Testing an alternate method. This process took an average of 1ms longer AND lackd the ability to set a cache at every level.
+#  test_boolean:
+#    - if '<s@dRegions_Flag_%flag%.yaml_key[region_highestOnly]||false>' {
+#      - define f '<proc[dRegions_FlagLookup_H].context[%flag%|%eLoc%]>'
+#      }
+#      else {
+#      - define f '<proc[dRegions_FlagLookup_O].context[%flag%|%eLoc%]>'
+#      }
+#    - define a '<def[f].before[/]>'
+#    - define thisRegion '<def[f].after[/]>'
+#    - if '%a%' == 'false' {
+#      - yaml set 'cache.test_boolean.%thisRegion%.%flag%:false' 'id:dRegions_%world%_cache'
+#      - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'event-cancelled' {
+#        - inject 's@dRegions_Flag_%flag%' 'p:event-cancelled'
+#        }
+#      - if <def[noCancel].exists> {
+#        - foreach next
+#        - queue clear
+#        }
+#      - determine cancelled
+#      }
+#    - yaml set 'cache.test_boolean.%thisRegion%.%flag%:true' 'id:dRegions_%world%_cache'
+#    - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'event-allowed' {
+#      - inject 's@dRegions_Flag_%flag%' 'p:event-allowed'
+#      }
+#
   boolean:
     - if '<s@dRegions_Flag_%flag%.yaml_key[region_highestOnly]||false>' {
       - define thisRegion '<def[orderedRegions].get[1]>'
@@ -373,16 +534,24 @@ dRegions_Flags_Processors:
         - goto 'a'
         }
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>'
-#      - define a '<t[<def[flagObj].equals_case_sensitive[none]>]:true||%flagObj%>'
       - if '%flagObj%' == 'none' {
-        - define a 'true'
+        - if '%thisRegion%' == '__global__' {
+          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_globalDefault]||none>'
+          }
+          else {
+          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_regionDefault]||none>'
+          }
+        }
+      - if '%flagObj%' == 'false' {
+        - define a 'false'
         }
         else {
-        - define a '%flagObj%'
+        - define a 'true'
         }
       - yaml set 'cache.boolean.%thisRegion%.%flag%:%a%' 'id:dRegions_%world%_cache'
       - goto 'a'
       }
+    - define s '<def[orderedRegions].size>'
     - foreach '%orderedRegions%':
       - define thisRegion '%value%'
       - if <yaml[dRegions_%world%_cache].contains[cache.boolean.%thisRegion%.%flag%]> {
@@ -394,14 +563,31 @@ dRegions_Flags_Processors:
         - goto 'a'
         }
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>'
-      - if '%flagObj%' == 'none' {
-        - define a 'true'
-        - yaml set 'cache.boolean.%thisRegion%.%flag%:none' 'id:dRegions_%world%_cache'
-        - foreach next
+      - if '%loop_index%' != '%s%' {
+        - if '%flagObj%' == 'none' {
+          - define a 'true'
+          - yaml set 'cache.boolean.%thisRegion%.%flag%:none' 'id:dRegions_%world%_cache'
+          - foreach next
+          }
+        - define a '%flagObj%'
+        - yaml set 'cache.boolean.%thisRegion%.%flag%:%a%' 'id:dRegions_%world%_cache'
+        - goto 'a'
         }
-      - define a '%flagObj%'
+      - if '%flagObj%' == 'none' {
+        - if '%thisRegion%' == '__global__' {
+          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_globalDefault]||none>'
+          }
+          else {
+          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_regionDefault]||none>'
+          }
+        }
+      - if '%flagObj%' == 'false' {
+        - define a 'false'
+        }
+        else {
+        - define a 'true'
+        }
       - yaml set 'cache.boolean.%thisRegion%.%flag%:%a%' 'id:dRegions_%world%_cache'
-      - foreach stop
 
     - mark 'a'
     - if '%a%' {
@@ -489,7 +675,7 @@ dRegions_Flags_Processors:
 #
 ################################################################################
 #
-# State-withTarget-withGroup Flag Scripts
+# state-withTarget-withGroup Flag Scripts
 #
 dRegions_Flag_PVE:
   type: item
@@ -507,8 +693,8 @@ dRegions_Flag_PVE:
   flag_name: PVE
   flag_targetList: PVE-Moblist
   flag_takeGroup: true
-  flag_regionDefault: none
-  flag_globalDefault: none
+  flag_regionDefault: allow/all
+  flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to damage mobs in this region. Defaults to allow all. Use pve-moblist flag to specify mob types. Takes the -g group switch.
 
   event-cancelled:
@@ -534,8 +720,8 @@ dRegions_Flag_Mob-Damage:
   flag_name: Mob-Damage
   flag_targetList: Mob-DamageList
   flag_takeGroup: true
-  flag_regionDefault: none
-  flag_globalDefault: none
+  flag_regionDefault: allow/all
+  flag_globalDefault: allow/all
   flag_help: State flag controlling whether mobs will be able to damage players in this region. Defaults to allow all. Use mob-damagelist flag to specify mob types. Takes the -g group switch.
 
   event-cancelled:
@@ -580,8 +766,8 @@ dRegions_Flag_Mob-Target:
   flag_name: Mob-Target
   flag_targetList: Mob-TargetList
   flag_takeGroup: true
-  flag_regionDefault: none
-  flag_globalDefault: none
+  flag_regionDefault: allow/all
+  flag_globalDefault: allow/all
   flag_help: State flag controlling whether mobs will be able to target players in this region. Defaults to allow all. Use mob-target flag to specify mob types. Takes the -g group switch.
 
   event-cancelled:
@@ -624,7 +810,7 @@ dRegions_Flag_Entity-Interact:
   flag_targetList: Entity-Interactlist
   flag_takeGroup: true
   flag_regionDefault: deny/nonmembers
-  flag_globalDefault: none
+  flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to interact with entities in this region. Defaults to allow all. Use entity-interactlist flag to specify entity types. Takes the -g group switch.
 
   event-cancelled:
@@ -647,8 +833,8 @@ dRegions_Flag_Block-Place:
   flag_name: Block-Place
   flag_targetList: Block-PlaceList
   flag_takeGroup: true
-  flag_regionDefault: none
-  flag_globalDefault: none
+  flag_regionDefault: deny/nonmembers
+  flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to place blocks in this region. Defaults to allow all. Use block-placelist flag to specify block types. Takes the -g group switch.
 
   event-cancelled:
@@ -671,8 +857,8 @@ dRegions_Flag_Block-Break:
   flag_name: Block-Break
   flag_targetList: Block-BreakList
   flag_takeGroup: true
-  flag_regionDefault: none
-  flag_globalDefault: none
+  flag_regionDefault: deny/nonmembers
+  flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to break blocks in this region. Defaults to allow all. Use block-breaklist flag to specify block types. Takes the -g group switch.
 
   event-cancelled:
@@ -696,7 +882,7 @@ dRegions_Flag_Chest-Access:
   flag_targetList: chest-access-blocks
   flag_takeGroup: true
   flag_regionDefault: deny/nonmembers
-  flag_globalDefault: none
+  flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to open containers in this region. Defaults to deny nonmembers. Use chest-access-blocks flag to specify container blocks types. Takes the -g group switch.
 
   event-cancelled:
@@ -719,8 +905,8 @@ dRegions_Flag_Door-Access:
   flag_name: Door-Access
   flag_targetList: Door-Access-Doors
   flag_takeGroup: true
-  flag_regionDefault: none
-  flag_globalDefault: none
+  flag_regionDefault: allow/all
+  flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to open doors in this region. Defaults to allow all. Use door-access-doors flag to specify door blocks types. Takes the -g group switch.
 
   event-cancelled:
@@ -744,7 +930,7 @@ dRegions_Flag_Use-Switches:
   flag_targetList: Use-Switches-List
   flag_takeGroup: true
   flag_regionDefault: deny/nonmembers
-  flag_globalDefault: none
+  flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to use switches in this region. Defaults to deny nonmembers. Use use-switches-list flag to specify switch block types. Takes the -g group switch.
 
   event-cancelled:
@@ -768,7 +954,7 @@ dRegions_Flag_Use-Utilities:
   flag_targetList: Use-Utilities-Blocks
   flag_takeGroup: true
   flag_regionDefault: deny/nonmembers
-  flag_globalDefault: none
+  flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to use utility blocks in this region. Defaults to deny nonmembers. Use use-utilities-blocks flag to specify utility blocks. Takes the -g group switch.
 
   event-cancelled:
@@ -791,15 +977,15 @@ dRegions_Flag_Player-Damage:
   flag_name: Player-Damage
   flag_targetList: Player-Damage-Types
   flag_takeGroup: true
-  flag_regionDefault: none
-  flag_globalDefault: none
+  flag_regionDefault: allow/all
+  flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will take damage in this region. Defaults to allow all. Use player-damage-types flag to specify damage types. Takes the -g group switch.
 
   event-cancelled:
     - adjust %player% 'fire_time:0'
 
 #
-# END State-withTarget-withGroup
+# END state-withTarget-withGroup
 #---------------------------------------
 #
 ################################################################################
@@ -820,8 +1006,8 @@ dRegions_Flag_Mob-Spawn:
   flag_name: Mob-Spawn
   flag_targetList: Mob-SpawnList
   flag_takeGroup: false
-  flag_regionDefault: none
-  flag_globalDefault: none
+  flag_regionDefault: allow
+  flag_globalDefault: allow
   flag_help: State flag controlling whether mobs will be able to spawn in this region. Defaults to allow all. Use mob-spawnlist flag to specify mob types.
 
 dRegions_Flag_EVE:
@@ -839,8 +1025,8 @@ dRegions_Flag_EVE:
   flag_name: EVE
   flag_targetList: EVE-Moblist
   flag_takeGroup: false
-  flag_regionDefault: none
-  flag_globalDefault: none
+  flag_regionDefault: allow
+  flag_globalDefault: allow
   flag_help: State flag controlling whether mobs can be targeted for attack by other mobs in this region. Defaults to allow. Use eve-moblist flag to specify mob types.
 
   event-cancelled:
@@ -884,8 +1070,8 @@ dRegions_Flag_Mob-Attack:
   flag_name: Mob-Attack
   flag_targetList: Mob-Attack-Moblist
   flag_takeGroup: false
-  flag_regionDefault: none
-  flag_globalDefault: none
+  flag_regionDefault: allow
+  flag_globalDefault: allow
   flag_help: State flag controlling whether mobs can attack other mobs in this region. Defaults to allow. Use mob-attack-moblist flag to specify mob types.
 
   event-cancelled:
@@ -928,8 +1114,8 @@ dRegions_Flag_Entity-Explode:
   flag_name: Entity-Explode
   flag_targetList: Entity-ExplodeList
   flag_takeGroup: false
-  flag_regionDefault: none
-  flag_globalDefault: none
+  flag_regionDefault: allow
+  flag_globalDefault: allow
   flag_help: State flag controlling whether entities will be able to explode in this region. Defaults to allow all. Use entity-explodelist flag to specify entities types.
 
 dRegions_Flag_Entity-Grief:
@@ -946,13 +1132,17 @@ dRegions_Flag_Entity-Grief:
   flag_name: Entity-Grief
   flag_targetList: Entity-GriefList
   flag_takeGroup: false
-  flag_regionDefault: none
-  flag_globalDefault: none
+  flag_regionDefault: deny
+  flag_globalDefault: allow
   flag_help: State flag controlling whether entities will be able to alter blocks in this region. Defaults to allow all. Use entity-grieflist flag to specify entities types.
   event-allowed:
-  - flag %object% 'dRegions.EntityGrief:true' d:5s
+  - if <def[object].is_spawned> {
+    - flag %object% 'dRegions.EntityGrief:true' d:5s
+    }
   event-cancelled:
-  - flag %object% 'dRegions.EntityGrief:false' d:5s
+  - if <def[object].is_spawned> {
+    - flag %object% 'dRegions.EntityGrief:false' d:5s
+    }
 
 dRegions_Flag_Entity-Drops-OnDeath:
   type: item
@@ -968,8 +1158,8 @@ dRegions_Flag_Entity-Drops-OnDeath:
   flag_name: Entity-Drops-OnDeath
   flag_targetList: Entity-Drops-OnDeathList
   flag_takeGroup: false
-  flag_regionDefault: none
-  flag_globalDefault: none
+  flag_regionDefault: allow
+  flag_globalDefault: allow
 
   event-cancelled:
     - determine NO_DROPS
@@ -989,7 +1179,7 @@ dRegions_Flag_Fire-Spread:
   flag_targetList: Fire-SpreadBlocks
   flag_takeGroup: false
   flag_regionDefault: none
-  flag_globalDefault: none
+  flag_globalDefault: allow
   flag_help: State flag controlling whether fire will be able to spread in this region. Defaults to allow all. Use fire-spreadblocks flag to specify blocks to check when spreading.
 
 dRegions_Flag_Fire-Destroy:
@@ -1007,7 +1197,7 @@ dRegions_Flag_Fire-Destroy:
   flag_targetList: Fire-DestroyBlocks
   flag_takeGroup: false
   flag_regionDefault: none
-  flag_globalDefault: none
+  flag_globalDefault: allow
   flag_help: State flag controlling whether fire will be able to spread to and destroy blocks in this region. Defaults to allow all. Use fire-destroyblocks flag to specify blocks to check when spreading.
 
 dRegions_Flag_Lightning-Strikes:
@@ -1024,8 +1214,8 @@ dRegions_Flag_Lightning-Strikes:
   flag_name: Lightning-Strikes
   flag_targetList: Lightning-StrikesBlocks
   flag_takeGroup: false
-  flag_regionDefault: none
-  flag_globalDefault: none
+  flag_regionDefault: allow
+  flag_globalDefault: allow
   flag_help: State flag controlling whether lightning will be able to strike in this region. Defaults to allow all. Use lightning-strikeblocks flag to specify blocks to check when striking.
 
 dRegions_Flag_Water-Spread:
@@ -1042,8 +1232,8 @@ dRegions_Flag_Water-Spread:
   flag_name: Water-Spread
   flag_targetList: Water-SpreadBlocks
   flag_takeGroup: false
-  flag_regionDefault: true
-  flag_globalDefault: true
+  flag_regionDefault: allow
+  flag_globalDefault: allow
   flag_help: State flag controlling whether water will be able to spread in this region. Defaults to allow all. Use water-spreadblocks flag to specify blocks to check when spreading.
 
 dRegions_Flag_Lava-Spread:
@@ -1060,8 +1250,8 @@ dRegions_Flag_Lava-Spread:
   flag_name: Lava-Spread
   flag_targetList: Lava-SpreadBlocks
   flag_takeGroup: false
-  flag_regionDefault: none
-  flag_globalDefault: none
+  flag_regionDefault: allow
+  flag_globalDefault: allow
   flag_help: State flag controlling whether lava will be able to spread in this region. Defaults to allow all. Use lava-spreadblocks flag to specify blocks to check when spreading.
 
 dRegions_Flag_Snow-Fall:
@@ -1078,8 +1268,8 @@ dRegions_Flag_Snow-Fall:
   flag_name: Snow-Fall
   flag_targetList: Snow-FallBlocks
   flag_takeGroup: false
-  flag_regionDefault: none
-  flag_globalDefault: none
+  flag_regionDefault: allow
+  flag_globalDefault: allow
   flag_help: State flag controlling whether snow will be able to accumulate on the ground in this region. Defaults to allow all. Use snow-fallblocks flag to specify blocks below the snow to check when forming.
 
 #
@@ -1104,8 +1294,8 @@ dRegions_Flag_Entry:
   flag_name: Entry
   flag_help: State flag controlling who can enter a region. Can be set to allow, deny, or none and accepts the -g group switch.
   flag_takeGroup: true
-  flag_regionDefault: none
-  flag_globalDefault: none
+  flag_regionDefault: allow/all
+  flag_globalDefault: allow/all
 
   event-allowed:
     - flag %player% dRegions.rateLimit:!
@@ -1144,8 +1334,8 @@ dRegions_Flag_Exit:
   flag_name: Exit
   flag_help: State flag controlling who can exit a region. Can be set to allow, deny, or none and accepts the -g group switch.
   flag_takeGroup: true
-  flag_regionDefault: none
-  flag_globalDefault: none
+  flag_regionDefault: allow/all
+  flag_globalDefault: allow/all
 
   event-allowed:
     - flag %player% dRegions.rateLimit:!
@@ -1186,7 +1376,7 @@ dRegions_Flag_Build:
   flag_name: Build
   flag_takeGroup: true
   flag_regionDefault: deny/nonmembers
-  flag_globalDefault: none
+  flag_globalDefault: allow/all
   flag_help: By default, all members and owners can build in their regions. Setting this flag can over ride that behavior. Can be set to allow, deny, or none and accepts the -g group switch.
 
   event-cancelled:
@@ -1208,8 +1398,8 @@ dRegions_Flag_Receive-Chat:
   flag_type: state-withGroup
   flag_name: Receive-Chat
   flag_takeGroup: true
-  flag_regionDefault: none
-  flag_globalDefault: none
+  flag_regionDefault: allow/all
+  flag_globalDefault: allow/all
   flag_help: Control who can hear chat in a region. Takes the -g group switch.
 
   event-cancelled:
@@ -1235,8 +1425,8 @@ dRegions_Flag_Send-Chat:
   flag_type: state-withGroup
   flag_name: Send-Chat
   flag_takeGroup: true
-  flag_regionDefault: none
-  flag_globalDefault: none
+  flag_regionDefault: allow/all
+  flag_globalDefault: allow/all
   flag_help: Control who can send chat in a region. Takes the -g group switch.
 
   event-allowed:
@@ -1261,8 +1451,8 @@ dRegions_Flag_Hunger:
   flag_type: state-withGroup
   flag_name: Hunger
   flag_takeGroup: true
-  flag_regionDefault: none
-  flag_globalDefault: none
+  flag_regionDefault: allow/all
+  flag_globalDefault: allow/all
   flag_help: Control whether players will loose hunger in this region. Takes the -g group switch.
 
 dRegions_Flag_Npc-Interact:
@@ -1278,8 +1468,8 @@ dRegions_Flag_Npc-Interact:
   flag_type: state-withGroup
   flag_name: Npc-Interact
   flag_takeGroup: true
-  flag_regionDefault: none
-  flag_globalDefault: none
+  flag_regionDefault: allow/all
+  flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to interact with NPCs in this region. Defaults to allow. Takes the -g group switch.
 
   event-cancelled:
@@ -1303,7 +1493,7 @@ dRegions_Flag_Lighter:
   flag_name: Lighter
   flag_takeGroup: true
   flag_regionDefault: deny/nonmembers
-  flag_globalDefault: none
+  flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to use lighters in this region. Defaults to allow. Takes the -g group switch.
 
   event-cancelled:
@@ -1326,7 +1516,7 @@ dRegions_Flag_Bucket-Fill:
   flag_name: Bucket-Fill
   flag_takeGroup: true
   flag_regionDefault: deny/nonmembers
-  flag_globalDefault: none
+  flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to fill buckets in this region. Defaults to allow. Takes the -g group switch.
 
   event-cancelled:
@@ -1349,7 +1539,7 @@ dRegions_Flag_Bucket-Empty:
   flag_name: Bucket-Empty
   flag_takeGroup: true
   flag_regionDefault: deny/nonmembers
-  flag_globalDefault: none
+  flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to empty buckets in this region. Defaults to allow. Takes the -g group switch.
 
   event-cancelled:
@@ -1372,7 +1562,7 @@ dRegions_Flag_Hanging-Place:
   flag_name: Hanging-Place
   flag_takeGroup: true
   flag_regionDefault: deny/nonmembers
-  flag_globalDefault: none
+  flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to place item frames and paintings in this region. Defaults to allow. Takes the -g group switch.
 
   event-cancelled:
@@ -1395,7 +1585,7 @@ dRegions_Flag_Hanging-Break:
   flag_name: Hanging-Break
   flag_takeGroup: true
   flag_regionDefault: deny/nonmembers
-  flag_globalDefault: none
+  flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to break item frames and paintings in this region. Defaults to allow. Takes the -g group switch.
 
   event-cancelled:
@@ -1418,7 +1608,7 @@ dRegions_Flag_Sleep:
   flag_name: Sleep
   flag_takeGroup: true
   flag_regionDefault: deny/nonmembers
-  flag_globalDefault: none
+  flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to enter beds in this region. Defaults to allow. Takes the -g group switch.
 
   event-cancelled:
@@ -1440,8 +1630,8 @@ dRegions_Flag_Player-Drops:
   flag_type: state-withGroup
   flag_name: Player-Drops
   flag_takeGroup: true
-  flag_regionDefault: none
-  flag_globalDefault: none
+  flag_regionDefault: allow/all
+  flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to drop items from their inventory in this region. Defaults to allow. Takes the -g group switch.
 
   event-cancelled:
@@ -1463,8 +1653,8 @@ dRegions_Flag_Player-Drops-OnDeath:
   flag_type: state-withGroup
   flag_name: Player-Drops-OnDeath
   flag_takeGroup: true
-  flag_regionDefault: none
-  flag_globalDefault: none
+  flag_regionDefault: allow/all
+  flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will drop items when they die in this region. Defaults to allow. Takes the -g group switch.
 
   event-cancelled:
@@ -1484,7 +1674,7 @@ dRegions_Flag_Player-KeepItems:
   flag_name: Player-KeepItems
   flag_takeGroup: true
   flag_regionDefault: deny/all
-  flag_globalDefault: none
+  flag_globalDefault: deny/all
   flag_help: State flag controlling whether players will keep their items when they die in a region. Default is to deny all. Takes the -g group switch.
 
   event-allowed:
@@ -1511,8 +1701,8 @@ dRegions_Flag_Player-Pickup:
   flag_type: state-withGroup
   flag_name: Player-Pickup
   flag_takeGroup: true
-  flag_regionDefault: none
-  flag_globalDefault: none
+  flag_regionDefault: allow/all
+  flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to pickup items in this region. Defaults to allow. Takes the -g group switch.
 
   event-cancelled:
@@ -1534,8 +1724,8 @@ dRegions_Flag_Potion-Drink:
   flag_type: state-withGroup
   flag_name: Potion-Drink
   flag_takeGroup: true
-  flag_regionDefault: none
-  flag_globalDefault: none
+  flag_regionDefault: allow/all
+  flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to drink potions in this region. Defaults to allow. Takes the -g group switch.
 
   event-cancelled:
@@ -1557,8 +1747,8 @@ dRegions_Flag_Enderpearl:
   flag_type: state-withGroup
   flag_name: Enderpearl
   flag_takeGroup: true
-  flag_regionDefault: none
-  flag_globalDefault: none
+  flag_regionDefault: allow/all
+  flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to teleport with enderpearls in this region. Defaults to allow. Takes the -g group switch.
 
   event-cancelled:
@@ -1581,7 +1771,7 @@ dRegions_Flag_Vehicle-Place:
   flag_name: Vehicle-Place
   flag_takeGroup: true
   flag_regionDefault: deny/nonmembers
-  flag_globalDefault: none
+  flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to place vehicles in this region. Defaults to allow. Takes the -g group switch.
 
   event-cancelled:
@@ -1604,7 +1794,7 @@ dRegions_Flag_Vehicle-Destroy:
   flag_name: Vehicle-Destroy
   flag_takeGroup: true
   flag_regionDefault: deny/nonmembers
-  flag_globalDefault: none
+  flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to break vehicles in this region. Defaults to allow. Takes the -g group switch.
 
   event-cancelled:
@@ -1634,8 +1824,8 @@ dRegions_Flag_Commands:
   flag_name: Commands
   flag_targetList: Commands-List
   flag_takeGroup: true
-  flag_regionDefault: none
-  flag_globalDefault: none
+  flag_regionDefault: allow/all
+  flag_globalDefault: allow/all
   flag_help: State flag controlling whether players can use commands in this region. Defaults to allow all. Use commands-list flag to specify commands. Takes the -g group switch.
 
   event-allowed:
@@ -2688,6 +2878,8 @@ dRegions_Flag_Mob-TargetList:
   flag_type: list
   flag_parent: dRegions_Flag_Mob-Target
   flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
   flag_help: List flag used with mob-targeting flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of mobs.
 
   command_handler:
@@ -2705,6 +2897,8 @@ dRegions_Flag_Mob-Damagelist:
   flag_type: list
   flag_parent: dRegions_Flag_Mob-Damage
   flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
   flag_help: List flag used with mob-damage flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of mobs.
 
   command_handler:
@@ -2722,6 +2916,8 @@ dRegions_Flag_Mob-SpawnList:
   flag_type: list
   flag_parent: dRegions_Flag_Mob-Spawn
   flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
   flag_help: List flag used with mob-spawn flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of mobs.
 
   command_handler:
@@ -2739,6 +2935,8 @@ dRegions_Flag_EVE-Moblist:
   flag_type: list
   flag_parent: dRegions_Flag_EVE
   flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
   flag_help: List flag used with eve flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of mobs.
 
   command_handler:
@@ -2756,6 +2954,8 @@ dRegions_Flag_Mob-Attack-Moblist:
   flag_type: list
   flag_parent: dRegions_Flag_Mob-Attack
   flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
   flag_help: List flag used with mob-attack flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of mobs.
 
   command_handler:
@@ -2773,6 +2973,8 @@ dRegions_Flag_PVE-Moblist:
   flag_type: list
   flag_parent: dRegions_Flag_PVE
   flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
   flag_help: List flag used with pve flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of mobs.
 
   command_handler:
@@ -2790,6 +2992,8 @@ dRegions_Flag_Entity-Interactlist:
   flag_type: list
   flag_parent: dRegions_Flag_Entity-Interact
   flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
   flag_help: List flag used with entity-interact flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of entities.
 
   command_handler:
@@ -2807,6 +3011,8 @@ dRegions_Flag_Entity-ExplodeList:
   flag_type: list
   flag_parent: dRegions_Flag_Entity-Explode
   flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
   flag_help: List flag used with entity-explode flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of entities. Valid entities<&co> creeper, ender_crystal, ender_dragon, primed_tnt, minecart_tnt, fireball, small_fireball, wither, wither_skull
 
   command_handler:
@@ -2824,6 +3030,8 @@ dRegions_Flag_Entity-GriefList:
   flag_type: list
   flag_parent: dRegions_Flag_Entity-Grief
   flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
   flag_help: List flag used with entity-grief flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of entities. Valid entities<&co> sheep, enderman, zombie, squid
 
   command_handler:
@@ -2841,6 +3049,8 @@ dRegions_Flag_Entity-Drops-OnDeathList:
   flag_type: list
   flag_parent: dRegions_Flag_Entity-Drops-OnDeath
   flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
   flag_help: List flag used with entity-drops-ondeath flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of entities.
 
   command_handler:
@@ -2858,6 +3068,8 @@ dRegions_Flag_Fire-SpreadBlocks:
   flag_type: list
   flag_parent: dRegions_Flag_Fire-Spread
   flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
   flag_help: List flag used with fire-spread flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks.
 
   command_handler:
@@ -2875,6 +3087,8 @@ dRegions_Flag_Fire-DestroyBlocks:
   flag_type: list
   flag_parent: dRegions_Flag_Fire-Destroy
   flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
   flag_help: List flag used with fire-destroy flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks.
 
   command_handler:
@@ -2892,6 +3106,8 @@ dRegions_Flag_Lightning-StrikesBlocks:
   flag_type: list
   flag_parent: dRegions_Flag_Lightning-Strikes
   flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
   flag_help: List flag used with lightning-strike flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks.
 
   command_handler:
@@ -2909,6 +3125,8 @@ dRegions_Flag_Water-SpreadBlocks:
   flag_type: list
   flag_parent: dRegions_Flag_Water-Spread
   flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
   flag_help: List flag used with water-spread flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks.
 
   command_handler:
@@ -2926,6 +3144,8 @@ dRegions_Flag_Lava-SpreadBlocks:
   flag_type: list
   flag_parent: dRegions_Flag_Lava-Spread
   flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
   flag_help: List flag used with lava-spread flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks.
 
   command_handler:
@@ -2943,6 +3163,8 @@ dRegions_Flag_Snow-FallBlocks:
   flag_type: list
   flag_parent: dRegions_Flag_Snow-Fall
   flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
   flag_help: List flag used with snow-fall flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks.
 
   command_handler:
@@ -2960,6 +3182,8 @@ dRegions_Flag_Block-PlaceList:
   flag_type: list
   flag_parent: dRegions_Flag_Block-Place
   flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
   flag_help: List flag used with block-place flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks.
 
   command_handler:
@@ -2977,6 +3201,8 @@ dRegions_Flag_Block-BreakList:
   flag_type: list
   flag_parent: dRegions_Flag_Block-Break
   flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
   flag_help: List flag used with block-break flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks.
 
   command_handler:
@@ -2994,6 +3220,8 @@ dRegions_Flag_Chest-Access-Blocks:
   flag_type: list
   flag_parent: dRegions_Flag_Chest-Access
   flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
   flag_help: List flag used with chest-access flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks. Valid container blocks<&co> chest, ender_chest, locked_chest, trapped_chest, dispenser, hopper, and dropper.
 
   command_handler:
@@ -3011,6 +3239,8 @@ dRegions_Flag_Door-Access-Doors:
   flag_type: list
   flag_parent: dRegions_Flag_Door-Access
   flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
   flag_help: List flag used with door-access flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks. Valid door blocks<&co> trap_door, iron_trapdoor, wooden_door, iron_door_block, spruce_door, birch_door, jungle_door, dark_oak_door, acacia_door, fence_gate, spruce_fence_gate, birch_fence_gate, jungle_fence_gate, dark_oak_fence_gate, and acacia_fence_gate.
 
   command_handler:
@@ -3028,6 +3258,8 @@ dRegions_Flag_Use-Switches-List:
   flag_type: list
   flag_parent: dRegions_Flag_Use-Switches
   flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
   flag_help: List flag used with use-switches flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks. Valid switch blocks<&co> lever, wood_button, stone_button, wood_plate, stone_plate, iron_plate, and gold_plate.
 
   command_handler:
@@ -3045,6 +3277,8 @@ dRegions_Flag_Use-Utilities-Blocks:
   flag_type: list
   flag_parent: dRegions_Flag_Use-Utilities
   flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
   flag_help: List flag used with use-utilities flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks. Valid utility blocks<&co> workbench, furnace, burning_furnace, anvil, brewing_stand, cauldron, enchantment_table, note_block, jukebox, and beacon.
 
   command_handler:
@@ -3062,6 +3296,8 @@ dRegions_Flag_Player-Damage-Types:
   flag_type: list
   flag_parent: dRegions_Flag_Player-Damage
   flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
   flag_help: List flag used with player-damage flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of damage types. Valid damage types<&co> block_explosion, contact, custom, drowning, entity_attack, entity_explosion, fall, falling_block, fire, fire_tick, lava, lightning, magic, melting, poison, projectile, starvation, suffocation, suicide, thorns, void, and wither.
 
   command_handler:
@@ -3078,6 +3314,8 @@ dRegions_Flag_Commands-List:
   flag_type: list
   flag_parent: dRegions_Flag_Commands
   flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
   flag_help: List flag used with commands flag. To add to the list, use the -a switch. To remove from list use the -r switch. Add/remove one command at a time!
 
   command_handler:

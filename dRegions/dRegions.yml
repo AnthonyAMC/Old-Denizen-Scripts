@@ -4,8 +4,8 @@
 #
 #
 #   Authors: |Anthony|
-#   Version: 0.3
-#   dScript Version: 0.9.8-DEV_b578
+#   Version: 0.32
+#   dScript Version: 0.9.8-DEV_b579
 #
 #
 #   Dependencies:
@@ -14,13 +14,21 @@
 #      - Integrates with region selection wand
 #      - https://github.com/AnthonyAMC/Public-Denizen-Scripts/blob/master/dWE/dWorldEditor.yml
 #
+#    - MessageConstructorLibrary
+#      - Library for messaging system.
+#      - https://github.com/AnthonyAMC/Public-Denizen-Scripts/blob/master/MessageConstructors.yml
+#
 #    - ConfigFileGenerator
 #      - Used to build default config files and data storage.
 #      - https://github.com/AnthonyAMC/Public-Denizen-Scripts/blob/master/ConfigFileGenerator.yml
 #
 #    - Flags
-#      - All the flags for dRegions. It will be bundled in eventually.
-#      - https://github.com/AnthonyAMC/Public-Denizen-Scripts/blob/master/dRegions/flags.dscript
+#      - All the flags for dRegions. It is bundled in the repo releases.
+#      - https://github.com/AnthonyAMC/Public-Denizen-Scripts/blob/master/dRegions/flags.yml
+#
+#    - Commands
+#      - All the commands for dRegions. It is bundled in the repo releases.
+#      - https://github.com/AnthonyAMC/Public-Denizen-Scripts/blob/master/dRegions/commands.yml
 #
 #_______________________________________________________________________________
 #
@@ -117,7 +125,7 @@ dRegions_Version:
   type: version
   author: Anthony
   name: dRegions
-  version: 0.30
+  version: 0.32
   description: Denizen Region Management and Protection
   id: 23
 #
@@ -372,40 +380,27 @@ dRegions:
     - yaml 'savefile:dRegions/%file%.yml' 'id:%writeID%'
 
   clearCache:
-    - ^define region %1%
-    - ^define world %2%
-    - ^define flag %3%
+    - ^define region '%1%'
+    - ^define world '%2%'
+    - ^define flag '%3%'
     - ^define type '<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
-    - ^if %type% == list {
+    - ^if '%type%' == 'list' {
       - define type '<s@dRegions_Flag_%flag%.yaml_key[flag_parent].as_script.yaml_key[flag_type]>'
       - define flag '<s@dRegions_Flag_%flag%.yaml_key[flag_parent].after_last[_]>'
       }
     - ^define children '<yaml[dRegions_%world%_regions].read[regions.%region%.children]||li@>'
-
-    - ^if li@boolean|state-withGroup|state-withTarget contains %type% {
-      - foreach <def[children].include[%region%]> {
-        - yaml set 'cache.%type%.%value%.%flag%:!' 'id:dRegions_%world%_cache'
-        }
-      - yaml 'savefile:dRegions/worlds/%world%/cache.yml' 'id:dRegions_%world%_cache'
-      }
-      else if li@state-withTarget-withGroup|state-withTargetString-withGroup contains %type% {
-      - foreach <w@%world%.players> {
-        - define player '%value%'
-        - foreach <def[children].include[%region%]> {
-          - flag %player% dRegions.cache.%world%.%value%.%flag%:!
-          }
-        }
-      }
+    - ^foreach '<def[children].include[%region%]>':
+      - yaml set 'cache.%type%.%value%.%flag%:!' 'id:dRegions_%world%_cache'
+    - ^yaml 'savefile:dRegions/worlds/%world%/cache.yml' 'id:dRegions_%world%_cache'
 
   saveCache:
     - while 'true':
       - wait 5m
-      - foreach <server.list_worlds.parse[name.to_lowercase]> {
+      - foreach '<server.list_worlds.parse[name.to_lowercase]>':
         - if !<yaml.list.contains[dRegions_%value%_cache]> {
           - yaml 'load:dRegions/worlds/%value%/cache.yml' 'id:dRegions_%value%_cache'
           }
         - yaml 'savefile:dRegions/worlds/%value%/cache.yml' 'id:dRegions_%value%_cache'
-        }
 
   # Event Preprocessors
   #
@@ -540,12 +535,12 @@ dRegions_Events_Player_Enters_Region:
     - define world '<def[eLoc].world.name>'
     - define orderedRegions 'li@<yaml[dRegions_%world%_regions].read[regions.__global__.priority]||0>/__global__'
     - foreach '<def[eLoc].cuboids.filter[starts_with[cu@dregions_%world%]].parse[after[cu@dregions_%world%_]]>':
-      - define orderedRegions '%orderedRegions%|<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
+      - define orderedRegions '%orderedRegions%|<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%'
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     # Ignore crossing into lower priority region and non-dRegion cuboids
     - define oldRegions 'li@<yaml[dRegions_%world%_regions].read[regions.__global__.priority]||0>/__global__'
     - foreach '<c.from.cuboids.filter[starts_with[cu@dregions_%world%]].parse[after[cu@dregions_%world%_]]>':
-      - define oldRegions '%oldRegions%|<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
+      - define oldRegions '%oldRegions%|<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%'
     - if '<def[orderedRegions].get[1]>' == '<def[oldRegions].alphanumeric.reverse.parse[after[/]].get[1]>' {
       - queue clear
       }
@@ -584,12 +579,12 @@ dRegions_Events_Player_Exits_Region:
     - define world '<def[eLoc].world.name>'
     - define orderedRegions 'li@<yaml[dRegions_%world%_regions].read[regions.__global__.priority]||0>/__global__'
     - foreach '<def[eLoc].cuboids.filter[starts_with[cu@dregions_%world%]].parse[after[cu@dregions_%world%_]]>':
-      - define orderedRegions '%orderedRegions%|<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
+      - define orderedRegions '%orderedRegions%|<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%'
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     # Ignore crossing into lower priority region and non-dRegion cuboids
     - define newRegions 'li@<yaml[dRegions_%world%_regions].read[regions.__global__.priority]||0>/__global__'
     - foreach '<c.to.cuboids.filter[starts_with[cu@dregions_%world%]].parse[after[cu@dregions_%world%_]]>':
-      - define newRegions '%newRegions%|<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
+      - define newRegions '%newRegions%|<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%'
     - if '<def[orderedRegions].get[1]>' == '<def[newRegions].alphanumeric.reverse.parse[after[/]].get[1]>' {
       - queue clear
       }
@@ -1219,6 +1214,9 @@ dRegions_Events_Entity_Damage_Entity:
   eventHooks: player_damage_player|player_damage_entity|player_damage_npc|player_damage_armorstand|player_damage_itemframe|entity_damage_entity|entity_damage_player|entity_damage_npc|entity_damage_armorstand|entity_damage_itemframe|npc_damage_npc|npc_damage_player|npc_damage_entity|npc_damage_itemframe|npc_damage_armorstand
   events:
     on entity damages entity:
+    - if !<c.entity.is_spawned> || !<c.damager.is_spawned> {
+      - queue clear
+      }
 #    - define atype '<t[<c.damager.is_npc>]:npc||<c.damager.prefix>>'
     - if <c.damager.is_npc> {
       - define atype 'npc'
@@ -1261,6 +1259,9 @@ dRegions_Events_Entity_Target_Entity:
   events:
     on entity targets entity:
 #    - define atype '<t[<c.entity.is_npc>]:npc||<c.entity.prefix>>'
+    - if !<c.entity.is_spawned> || !<c.target.is_spawned> {
+      - queue clear
+      }
     - if <c.entity.is_npc> {
       - define atype 'npc'
       }
@@ -1324,6 +1325,7 @@ dRegions_Events_Entity_Change_Block:
     - if <c.old_material.bukkit_enum> == soil || li@falling_block|creeper|primed_tnt contains <c.entity.entity_type> {
       - queue clear
       }
+    - if <c.entity.is_spawned.not> queue clear
     - if <c.entity.has_flag[dRegions.EntityGrief]> {
       - if <c.entity.flag[dRegions.EntityGrief]> {
         - queue clear
@@ -1350,6 +1352,7 @@ dRegions_Events_Fallingblock_Change_Block:
   eventHooks: falling_sand|falling_gravel
   events:
     on falling_block changes block:
+    - if <c.entity.is_spawned.not> queue clear
     - if <c.entity.has_flag[dRegions.EntityGrief]> {
       - if <c.entity.flag[dRegions.EntityGrief]> {
         - queue clear
@@ -1556,6 +1559,10 @@ dRegions_Events_Snow_Form:
   eventHooks: blockform_snow
   events:
     on snow forms:
+    - define cub 'cu@<c.location>|<c.location.add[0,1,0]>'
+    - if !<def[cub].list_entities[snowman].is_empty> {
+      - queue clear
+      }
     - define eLoc '<c.location>'
     - define world '<def[eLoc].world.name>'
     - define target '<def[eLoc].sub[0,1,0].material.bukkit_enum>'
@@ -1711,6 +1718,29 @@ dRegions_Events_Leaf_Decay:
     - foreach '<yaml[dRegions_eventmap].read[blockfade_leaves]||li@>':
       - define flag '%value%'
       - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+# Was testing an alternate method. It took an average of 1ms longer :/
+#      - define ftype '<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+#      - define cache '<parse:<def[orderedRegions].parse[replace[regex:^].with[<&lt>yaml<&lb>dRegions_%world%_cache<&rb>.read<&lb>cache.%ftype%.]].parse[replace[regex:$].with[.%flag%<&rb>||null<&gt>]]>>'
+#      - define cache '<def[cache].filter[is[!=].to[null]]>'
+#      - if <def[cache].size> == '0' {
+#        - inject 's@dRegions_Flags_Processors' 'p:%ftype%'
+#        - foreach next
+#        }
+#      - define cache '<def[cache].filter[is[!=].to[none]].get[1]||true>'
+#      - if '%cache%' {
+#        - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'event-allowed' {
+#          - inject 's@dRegions_Flag_%flag%' 'p:event-allowed'
+#          }
+#        - foreach next
+#        }
+#      - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'event-cancelled' {
+#        - inject 's@dRegions_Flag_%flag%' 'p:event-cancelled'
+#        }
+#      - if <def[noCancel].exists> {
+#        - foreach next
+#        - queue clear
+#        }
+#      - determine cancelled
 
 dRegions_Events_Potion_Splash:
   type: world
@@ -1736,16 +1766,22 @@ dRegions_Events_Pistons:
   eventHooks: piston_extend|piston_retract
   events:
     on piston extends:
-    - define lastBlock '<tern[<c.length.is[==].to[0]||true>]:<c.relative>||<c.relative.sub[<c.location>].add[<c.blocks.last>]>>'
+#    - define lastBlock '<tern[<c.length.is[==].to[0]||true>]:<c.relative>||<c.relative.sub[<c.location>].add[<c.blocks.last>]>>'
+    - if <c.length||0> == 0 {
+      - define lastBlock <c.relative>
+      }
+      else {
+      - define lastBlock <c.relative.sub[<c.location>].add[<c.blocks.last>]>
+      }
     - define eLoc '<c.location>'
     - define world '<def[eLoc].world.name>'
     - define originRegions 'li@<yaml[dRegions_%world%_regions].read[regions.__global__.priority]||0>/__global__'
     - foreach '<def[eLoc].cuboids.filter[starts_with[cu@dregions_%world%]].parse[after[cu@dregions_%world%_]]>':
-      - define originRegions '%originRegions%|<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
+      - define originRegions '%originRegions%|<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%'
     - define originRegions '<def[originRegions].alphanumeric.reverse.parse[after[/]]>'
     - define orderedRegions 'li@<yaml[dRegions_%world%_regions].read[regions.__global__.priority]||0>/__global__'
     - foreach '<c.blocks.include[%lastBlock%].parse[cuboids.separated_by[|]].deduplicate.filter[starts_with[cu@dregions_%world%]].parse[after[cu@dregions_%world%_]]>':
-      - define orderedRegions '%orderedRegions%|<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
+      - define orderedRegions '%orderedRegions%|<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%'
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     # Block piston blocks from crossing region borders
     - if '<def[orderedRegions].get[1]>' != '<def[originRegions].get[1]>' {
@@ -1756,16 +1792,22 @@ dRegions_Events_Pistons:
       - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
     on piston retracts:
-    - define lastBlock '<tern[<c.length.is[==].to[0]||true>]:<c.relative>||<c.relative.sub[<c.location>].add[<c.blocks.last>]>>'
+#    - define lastBlock '<tern[<c.length.is[==].to[0]||true>]:<c.relative>||<c.relative.sub[<c.location>].add[<c.blocks.last>]>>'
+    - if <c.length||0> == 0 {
+      - define lastBlock <c.relative>
+      }
+      else {
+      - define lastBlock <c.relative.sub[<c.location>].add[<c.blocks.last>]>
+      }
     - define eLoc '<c.location>'
     - define world '<def[eLoc].world.name>'
     - define originRegions 'li@<yaml[dRegions_%world%_regions].read[regions.__global__.priority]||0>/__global__'
     - foreach '<def[eLoc].cuboids.filter[starts_with[cu@dregions_%world%]].parse[after[cu@dregions_%world%_]]>':
-      - define originRegions '%originRegions%|<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
+      - define originRegions '%originRegions%|<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%'
     - define originRegions '<def[originRegions].alphanumeric.reverse.parse[after[/]]>'
     - define orderedRegions 'li@<yaml[dRegions_%world%_regions].read[regions.__global__.priority]||0>/__global__'
     - foreach '<c.blocks.include[%lastBlock%].parse[cuboids.separated_by[|]].deduplicate.filter[starts_with[cu@dregions_%world%]].parse[after[cu@dregions_%world%_]]>':
-      - define orderedRegions '%orderedRegions%|<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
+      - define orderedRegions '%orderedRegions%|<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%'
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     # Block piston blocks from crossing region borders
     - if '<def[orderedRegions].get[1]>' != '<def[originRegions].get[1]>' {
@@ -1782,25 +1824,20 @@ dRegions_Events_Issue_Command:
   events:
     on command:
 #    - define type '<t[<c.server||false>]:server||player>'
-    - if <c.server> {
-      - define type 'server'
-      }
-      else {
-      - define type 'player'
-      }
     - define target '<c.command.to_lowercase> <c.raw_args.to_lowercase>'
     - define target '<def[target].escaped>'
     - define delimiter ' ; '
-    - if %type% == server {
+    - if <c.server> {
+      - define type 'server'
       - goto 'FLAGS'
       }
-
+    - define type 'player'
     - define player '<player>'
     - define eLoc '<def[player].location>'
     - define world '<def[eLoc].world.name>'
     - define orderedRegions 'li@<yaml[dRegions_%world%_regions].read[regions.__global__.priority]||0>/__global__'
     - foreach '<def[eLoc].cuboids.filter[starts_with[cu@dregions_%world%]].parse[after[cu@dregions_%world%_]]>':
-      - define orderedRegions '%orderedRegions%|<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
+      - define orderedRegions '%orderedRegions%|<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%'
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - mark 'FLAGS'
     - foreach '<yaml[dRegions_eventmap].read[%type%_command]||li@>':
@@ -1818,31 +1855,113 @@ dRegions_Events_Issue_Command:
 dRegions_GetInheritedFlag:
   # Get a region flag value. Start at current child and ascend through parents
   # until a value is set or you reach the origin ancestor.
-  # If the value is still undefined, lookup the default set in the flagscript.
+  # Since this method is shared by highestOnly and orderedRegions lookups we can not return the default flag value.
+  # Doing so would interfere with the orderedRegions lookup. Flag processors are responsible for looking up defaults
+  # after they have traversed all applicable regions.
   # <proc[dRegions_GetInheritedFlag].context[world|region|flag]>
   type: procedure
   definitions: world|region|flag
   debug: false
 
   script:
-    - define return '<yaml[dRegions_%world%_regions].read[regions.%region%.flags.%flag%]||n>'
-    - while '<def[return].equals_case_sensitive[n]>':
+    - define return '<yaml[dRegions_%world%_regions].read[regions.%region%.flags.%flag%]||none>'
+    - while '<def[return].equals_case_sensitive[none]>':
       - if <yaml[dRegions_%world%_regions].contains[regions.%region%.parent]> {
         - define region '<yaml[dRegions_%world%_regions].read[regions.%region%.parent]>'
-        - define return '<yaml[dRegions_%world%_regions].read[regions.%region%.flags.%flag%]||n>'
+        - define return '<yaml[dRegions_%world%_regions].read[regions.%region%.flags.%flag%]||none>'
+        - while next
+        }
+      - while stop
+    - determine '%return%'
+#    - determine '<t[<def[return].equals_case_sensitive[n].not>]:%return%||<s@dRegions_Flag_%flag%.yaml_key[flag_<t[<def[region].equals_case_sensitive[__global__]>]:global||region>Default]||none>>'
+#    - if %return% == 'none' {
+#      - if %region% == '__global__' {
+#        - determine '<s@dRegions_Flag_%flag%.yaml_key[flag_globalDefault]||none>'
+#        }
+#      - determine '<s@dRegions_Flag_%flag%.yaml_key[flag_regionDefault]||none>'
+#      }
+#--------------------------------------
+#
+dRegions_FlagLookup_H:
+  # Get a flag value at a location. For use with flags that set highestOnly.
+  # If the location does not set the flag value, lookup the default set in the flagscript.
+  # <proc[dRegions_FlagLookup_H].context[flag|location]>
+  type: procedure
+  definitions: flag|loc
+  debug: false
+
+  script:
+    - define w '<def[loc].world.name>'
+#    - define orderedRegions '<def[loc].cuboids.filter[starts_with[cu@dregions_%w%_]].parse[after[cu@dregions_%w%_]].include[<yaml[dRegions_%w%_regions].read[regions.__global__.priority]||0>/__global__]>'
+#    - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
+    - define orderedRegions 'li@<yaml[dRegions_%w%_regions].read[regions.__global__.priority]||0>/__global__'
+    - foreach '<def[loc].cuboids.filter[starts_with[cu@dregions_%w%]].parse[after[cu@dregions_%w%_]]>':
+      - define orderedRegions '%orderedRegions%|<yaml[dRegions_%w%_regions].read[regions.%value%.priority]||0>/%value%'
+    - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
+    - define region '<def[orderedRegions].get[1]>'
+
+    - define return '<yaml[dRegions_%w%_regions].read[regions.%region%.flags.%flag%]||none>'
+    - define child '%region%'
+    - while '<def[return].equals_case_sensitive[none]>':
+      - if <yaml[dRegions_%w%_regions].contains[regions.%child%.parent]> {
+        - define child '<yaml[dRegions_%w%_regions].read[regions.%child%.parent]>'
+        - define return '<yaml[dRegions_%w%_regions].read[regions.%child%.flags.%flag%]||none>'
         }
         else {
         - while stop
         }
-#    - determine '<t[<def[return].equals_case_sensitive[n].not>]:%return%||<s@dRegions_Flag_%flag%.yaml_key[flag_<t[<def[region].equals_case_sensitive[__global__]>]:global||region>Default]||none>>'
-    - if %return% == 'n' {
-      - if %region% == '__global__' {
-        - determine '<s@dRegions_Flag_%flag%.yaml_key[flag_globalDefault]||none>'
+    - if '%return%' == 'none' {
+      - if '%region%' == '__global__' {
+        - determine '<s@dRegions_Flag_%flag%.yaml_key[flag_globalDefault]||none>/%region%'
         }
-      - determine '<s@dRegions_Flag_%flag%.yaml_key[flag_regionDefault]||none>'
+      - determine '<s@dRegions_Flag_%flag%.yaml_key[flag_regionDefault]||none>/%region%'
       }
-    - determine '%return%'
 
+    - determine '%return%/%region%'
+#
+#---------------------------------------
+#
+dRegions_FlagLookup_O:
+  # Get a flag value at a location. For use with flags that traverse orderedRegions.
+  # If the location does not set the flag value, lookup the default set in the flagscript.
+  # <proc[dRegions_FlagLookup_O].context[flag|location]>
+  type: procedure
+  definitions: flag|loc
+  debug: false
+
+  script:
+    - define w '<def[loc].world.name>'
+#    - define orderedRegions '<def[loc].cuboids.filter[starts_with[cu@dregions_%w%_]].parse[after[cu@dregions_%w%_]].include[<yaml[dRegions_%w%_regions].read[regions.__global__.priority]||0>/__global__]>'
+#    - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
+    - define orderedRegions 'li@<yaml[dRegions_%w%_regions].read[regions.__global__.priority]||0>/__global__'
+    - foreach '<def[loc].cuboids.filter[starts_with[cu@dregions_%w%]].parse[after[cu@dregions_%w%_]]>':
+      - define orderedRegions '%orderedRegions%|<yaml[dRegions_%w%_regions].read[regions.%value%.priority]||0>/%value%'
+    - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
+    - foreach '%orderedRegions%':
+      - define region '%value%'
+      - define return '<yaml[dRegions_%w%_regions].read[regions.%region%.flags.%flag%]||none>'
+      - define child '%region%'
+      - while '<def[return].equals_case_sensitive[none]>':
+        - if <yaml[dRegions_%w%_regions].contains[regions.%child%.parent]> {
+          - define child '<yaml[dRegions_%w%_regions].read[regions.%child%.parent]>'
+          - define return '<yaml[dRegions_%w%_regions].read[regions.%child%.flags.%flag%]||none>'
+          }
+          else {
+          - while stop
+          }
+      - if '%return%' != 'none' {
+        - foreach stop
+        }
+    - if '%return%' == 'none' {
+      - if '%region%' == '__global__' {
+        - determine '<s@dRegions_Flag_%flag%.yaml_key[flag_globalDefault]||none>/%region%'
+        }
+      - determine '<s@dRegions_Flag_%flag%.yaml_key[flag_regionDefault]||none>/%region%'
+      }
+    - determine '%return%/%region%'
+#
+#---------------------------------------
+#
 dRegions_PlayerMatchRegionGroup:
   # Check if a player matches a region flag group setting.
   # <proc[dRegions_PlayerMatchRegionGroup].context[group|region|world|player]>
@@ -1905,7 +2024,9 @@ dRegions_PlayerMatchRegionGroup:
             - determine 'false'
             }
         - determine 'true'
-
+#
+#---------------------------------------
+#
 dRegions_IsOwner:
   # A procedure script to check if a player is a region owner
   # <proc[dRegions_IsOwner].context[region|world|player]>
@@ -1926,7 +2047,9 @@ dRegions_IsOwner:
         - determine 'true'
         }
     - determine 'false'
-
+#
+#---------------------------------------
+#
 dRegions_IsMember:
   # A procedure script to check if a player is a region member
   # <proc[dRegions_IsMember].context[region|world|player]>
@@ -2008,8 +2131,9 @@ dRegions_HasPerm_Command:
         }
       }
     - determine false
-
-
+#
+#---------------------------------------
+#
 dRegions_RegionSort:
 # An attempt to sort regions by priority. The existing method is faster.
 # Keeping for reference and lulz.
@@ -2029,8 +2153,9 @@ dRegions_RegionSort:
     - if %region1pri% == %region2pri% {
       - determine 0
       }
-
-
+#
+#---------------------------------------
+#
 dRegions_RegionExists:
   # A procedure script to check if a region exists
   # <proc[dRegions_RegionExists].context[region|world]>
@@ -2054,8 +2179,9 @@ dRegions_RegionExists:
       else {
       - determine true
       }
-
-
+#
+#---------------------------------------
+#
 dRegions_HighestPriority:
 # Used sparingly in some commands. Events implement this method directly.
   # Filter a list of regions by priority in descending order
@@ -2071,8 +2197,9 @@ dRegions_HighestPriority:
       - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
       }
     - determine '<def[regionPri].alphanumeric.reverse.parse[split[/].get[2]]>'
-
-
+#
+#---------------------------------------
+#
 dRegions_RegionOverlaps:
   # A procedure script to check if a region overlaps other (un)owned regions
   # <proc[dRegions_RegionOverlaps].context[<def[selectedCuboid].separated_by[/].replace[cu@]>|%name%|%world%|<player>]>
@@ -2090,20 +2217,19 @@ dRegions_RegionOverlaps:
     - define notables '<def[regions].parse[replace[regex:^].with[cu@dregions_%world%_]].filter[as_cuboid.is[!=].to[null]]||li@>'
     - define overlaps '<def[notables].filter[intersects[<def[selectedCuboid].as_cuboid>]].parse[replace[cu@dregions_%world%_]]||li@>'
     - define orderedRegions '<proc[dRegions_HighestPriority].context[%world%|<def[overlaps].separated_by[,]>]||li@>'
-    - foreach <def[orderedRegions]> {
+    - foreach '%orderedRegions%':
       - if <proc[dRegions_IsOwner].context[%value%|%world%|<player>].not> {
         - determine true
         }
-#      - if <proc[dRegions_CuboidIsWithinCuboid].context[<def[selectedCuboid].separated_by[/]>|<def[value].replace[regex:^].with[cu@dregions_%world%_].as_cuboid.full.separated_by[/]>]> {
       - if <def[selectedCuboid].is_within[<def[value].replace[regex:^].with[cu@dregions_%world%_].as_cuboid>]> {
         - determine false
         }
-      }
     # By this point, we've determined that the player either owns all the regions at this cuboid location
     # or that the new cuboid is completely within a region that he does own.
     - determine false
-
-
+#
+#---------------------------------------
+#
 dRegions_CuboidIsWithinCuboid:
 # Not used anywhere since Denizen implemented its own which is faster.
 # Keeping for reference.
@@ -2128,30 +2254,9 @@ dRegions_CuboidIsWithinCuboid:
       else {
       - determine false
       }
-
-
-#dRegions_GetInheritedFlag:
-#  # Get a region flag value. Start at current child and ascend through parents
-#  # until a value is set or you reach the origin ancestor.
-#  # If the value is still undefined, lookup the default set in the flagscript.
-#  # <proc[dRegions_GetInheritedFlag].context[world|region|flag]>
-#  type: procedure
-#  definitions: world|region|flag
-#  debug: false
-
-#  script:
-#    - define return '<yaml[dRegions_%world%_regions].read[regions.%region%.flags.%flag%]||null>'
-#    - while <def[return].is[==].to[null]> {
-#      - define region '<yaml[dRegions_%world%_regions].read[regions.%region%.parent]||null>'
-#      - if %region% == null {
-#        - while stop
-#        }
-#      - define return '<yaml[dRegions_%world%_regions].read[regions.%region%.flags.%flag%]||null>'
-#      }
-##    - determine '<t[<def[return].is[!=].to[null]>]:%return%||<s@dRegions_Flag_%flag%.yaml_key[flag_<t[<def[region].is[==].to[__global__]>]:global||region>Default]||none>>'
-#    - determine %return%
-
-
+#
+#---------------------------------------
+#
 dRegions_CanUse_Block:
 # Not used internally. It's intended as part of an API for external scripts.
 # Procedure script to determine if a player can use a block at a location.
@@ -2249,8 +2354,9 @@ dRegions_CanUse_Block:
           }
         }
       }
-
-
+#
+#---------------------------------------
+#
 dRegions_getRelativeLocation:
 # Not used anywhere, but still fun to look at, though totally bonkers.
   # A procedure script to get a location relative to another location.
@@ -2277,8 +2383,9 @@ dRegions_getRelativeLocation:
     - define math '<script.yaml_key[%d%_math]>'
     - define coord '<script.yaml_key[%d%_coord]>'
     - determine "<def[l].as_location.%math%[%coord%]>"
-
-
+#
+#---------------------------------------
+#
 dRegions_LineWrap:
 # This should mostly be unused since <proc[lineWrap].context[string|targetLen]>
 # exists in MessageConstructorLibrary
@@ -2417,7 +2524,6 @@ dRegions_Map_Interactions:
     mob_spawner: player_interact_blocks/monster_egg
 
   item:
-    ink_sac:
     gold_record: jukebox
     glass_bottle: cauldron
     flint_and_steel: tnt
