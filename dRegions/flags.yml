@@ -152,6 +152,12 @@ dRegions_Flags_Processors:
       - foreach next
       - queue clear
       }
+    - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'msg_cancelled' {
+      - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
+        - flag %player% dRegions.Message_Cooldown duration:3s
+        - run s@msgPrefixed delay:1t 'player:%player%' 'def:dRegions|<&c><&o><parse:<s@dRegions_Flag_%flag%.yaml_key[msg_cancelled]||null>>'
+        }
+      }
     - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'event-cancelled' {
       - inject 's@dRegions_Flag_%flag%' 'p:event-cancelled'
       }
@@ -257,6 +263,12 @@ dRegions_Flags_Processors:
       - foreach next
       - queue clear
       }
+    - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'msg_cancelled' {
+      - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
+        - flag %player% dRegions.Message_Cooldown duration:3s
+        - run s@msgPrefixed delay:1t 'player:%player%' 'def:dRegions|<&c><&o><parse:<s@dRegions_Flag_%flag%.yaml_key[msg_cancelled]||null>>'
+        }
+      }
     - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'event-cancelled' {
       - inject 's@dRegions_Flag_%flag%' 'p:event-cancelled'
       }
@@ -357,6 +369,12 @@ dRegions_Flags_Processors:
         }
       - foreach next
       - queue clear
+      }
+    - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'msg_cancelled' {
+      - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
+        - flag %player% dRegions.Message_Cooldown duration:3s
+        - run s@msgPrefixed delay:1t 'player:%player%' 'def:dRegions|<&c><&o><parse:<s@dRegions_Flag_%flag%.yaml_key[msg_cancelled]||null>>'
+        }
       }
     - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'event-cancelled' {
       - inject 's@dRegions_Flag_%flag%' 'p:event-cancelled'
@@ -488,6 +506,12 @@ dRegions_Flags_Processors:
       - foreach next
       - queue clear
       }
+    - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'msg_cancelled' {
+      - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
+        - flag %player% dRegions.Message_Cooldown duration:3s
+        - run s@msgPrefixed delay:1t 'player:%player%' 'def:dRegions|<&c><&o><parse:<s@dRegions_Flag_%flag%.yaml_key[msg_cancelled]||null>>'
+        }
+      }
     - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'event-cancelled' {
       - inject 's@dRegions_Flag_%flag%' 'p:event-cancelled'
       }
@@ -597,6 +621,12 @@ dRegions_Flags_Processors:
       - foreach next
       - queue clear
       }
+    - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'msg_cancelled' {
+      - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
+        - flag %player% dRegions.Message_Cooldown duration:3s
+        - run s@msgPrefixed delay:1t 'player:%player%' 'def:dRegions|<&c><&o><parse:<s@dRegions_Flag_%flag%.yaml_key[msg_cancelled]||null>>'
+        }
+      }
     - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'event-cancelled' {
       - inject 's@dRegions_Flag_%flag%' 'p:event-cancelled'
       }
@@ -696,13 +726,10 @@ dRegions_Flag_PVE:
   flag_regionDefault: allow/all
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to damage mobs in this region. Defaults to allow all. Use pve-moblist flag to specify mob types. Takes the -g group switch.
+  msg_cancelled: 'You can not attack <def[target].to_lowercase.replace[_].with[ ]>s here!'
 
   event-cancelled:
     - remove <c.projectile||li@>
-    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
-      - flag %player% dRegions.Message_Cooldown duration:3s
-      - run s@msgPrefixed delay:1t 'player:%player%' 'def:dRegions|<&c><&o>You can not attack <def[target].to_lowercase.replace[_].with[ ]>s here!'
-      }
 
 dRegions_Flag_Mob-Damage:
   type: item
@@ -730,7 +757,7 @@ dRegions_Flag_Mob-Damage:
     - if <yaml[dRegions_global_config].read[config.regions.invincibility-confuses-mobs]||false> && <yaml[dRegions_%world%_config].read[config.regions.invincibility-confuses-mobs]||false> {
       - run delay:1t locally wander 'def:%object%|%world%'
       }
-      else if <yaml[dRegions_global_config].read[config.regions.invincibility-removes-mobs]||false> && <yaml[dRegions_%world%_config].read[config.regions.invincibility-removes-mobs]||false> {
+    - if <yaml[dRegions_global_config].read[config.regions.invincibility-removes-mobs]||false> && <yaml[dRegions_%world%_config].read[config.regions.invincibility-removes-mobs]||false> {
       - remove %object%
       }
 
@@ -775,7 +802,7 @@ dRegions_Flag_Mob-Target:
     - if <yaml[dRegions_global_config].read[config.regions.invincibility-confuses-mobs]||false> && <yaml[dRegions_%world%_config].read[config.regions.invincibility-confuses-mobs]||false> {
       - run delay:1t locally wander 'def:%object%|%world%'
       }
-      else if <yaml[dRegions_global_config].read[config.regions.invincibility-removes-mobs]||false> && <yaml[dRegions_%world%_config].read[config.regions.invincibility-removes-mobs]||false> {
+    - if <yaml[dRegions_global_config].read[config.regions.invincibility-removes-mobs]||false> && <yaml[dRegions_%world%_config].read[config.regions.invincibility-removes-mobs]||false> {
       - remove %object%
       }
 
@@ -812,12 +839,7 @@ dRegions_Flag_Entity-Interact:
   flag_regionDefault: deny/nonmembers
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to interact with entities in this region. Defaults to allow all. Use entity-interactlist flag to specify entity types. Takes the -g group switch.
-
-  event-cancelled:
-    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
-      - flag %player% dRegions.Message_Cooldown duration:3s
-      - run s@msgPrefixed delay:1t 'player:%player%' 'def:dRegions|<&c><&o>You can not interact with <def[target].to_lowercase.replace[_].with[ ]>s here!'
-      }
+  msg_cancelled: 'You can not interact with <def[target].to_lowercase.replace[_].with[ ]>s here!'
 
 dRegions_Flag_Block-Place:
   type: item
@@ -836,12 +858,7 @@ dRegions_Flag_Block-Place:
   flag_regionDefault: deny/nonmembers
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to place blocks in this region. Defaults to allow all. Use block-placelist flag to specify block types. Takes the -g group switch.
-
-  event-cancelled:
-    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
-      - flag %player% dRegions.Message_Cooldown duration:3s
-      - run s@msgPrefixed delay:1t 'player:%player%' 'def:dRegions|<&c><&o>You can not place <def[target].to_lowercase.replace[_].with[ ]> in this region!'
-      }
+  msg_cancelled: 'You can not place <def[target].to_lowercase.replace[_].with[ ]> in this region!'
 
 dRegions_Flag_Block-Break:
   type: item
@@ -860,12 +877,7 @@ dRegions_Flag_Block-Break:
   flag_regionDefault: deny/nonmembers
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to break blocks in this region. Defaults to allow all. Use block-breaklist flag to specify block types. Takes the -g group switch.
-
-  event-cancelled:
-    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
-      - flag %player% dRegions.Message_Cooldown duration:3s
-      - run s@msgPrefixed delay:1t 'player:%player%' 'def:dRegions|<&c><&o>You can not break <def[target].to_lowercase.replace[_].with[ ]> in this region!'
-      }
+  msg_cancelled: 'You can not break <def[target].to_lowercase.replace[_].with[ ]> in this region!'
 
 dRegions_Flag_Chest-Access:
   type: item
@@ -884,12 +896,7 @@ dRegions_Flag_Chest-Access:
   flag_regionDefault: deny/nonmembers
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to open containers in this region. Defaults to deny nonmembers. Use chest-access-blocks flag to specify container blocks types. Takes the -g group switch.
-
-  event-cancelled:
-    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
-      - flag %player% dRegions.Message_Cooldown duration:3s
-      - run s@msgPrefixed delay:1t 'player:%player%' 'def:dRegions|<&c><&o>You can not open <def[target].to_lowercase.replace[_].with[ ]>s in this region!'
-      }
+  msg_cancelled: 'You can not open <def[target].to_lowercase.replace[_].with[ ]>s in this region!'
 
 dRegions_Flag_Door-Access:
   type: item
@@ -908,12 +915,7 @@ dRegions_Flag_Door-Access:
   flag_regionDefault: allow/all
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to open doors in this region. Defaults to allow all. Use door-access-doors flag to specify door blocks types. Takes the -g group switch.
-
-  event-cancelled:
-    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
-      - flag %player% dRegions.Message_Cooldown duration:3s
-      - run s@msgPrefixed delay:1t 'player:%player%' 'def:dRegions|<&c><&o>You can not open <def[target].to_lowercase.replace[_].with[ ]>s in this region!'
-      }
+  msg_cancelled: 'You can not open <def[target].to_lowercase.replace[_].with[ ]>s in this region!'
 
 dRegions_Flag_Use-Switches:
   type: item
@@ -932,12 +934,7 @@ dRegions_Flag_Use-Switches:
   flag_regionDefault: deny/nonmembers
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to use switches in this region. Defaults to deny nonmembers. Use use-switches-list flag to specify switch block types. Takes the -g group switch.
-
-  event-cancelled:
-    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
-      - flag %player% dRegions.Message_Cooldown duration:3s
-      - run s@msgPrefixed delay:1t 'player:%player%' 'def:dRegions|<&c><&o>You can not use <def[target].to_lowercase.replace[_].with[ ]>s in this region!'
-      }
+  msg_cancelled: 'You can not use <def[target].to_lowercase.replace[_].with[ ]>s in this region!'
 
 dRegions_Flag_Use-Utilities:
   type: item
@@ -956,12 +953,7 @@ dRegions_Flag_Use-Utilities:
   flag_regionDefault: deny/nonmembers
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to use utility blocks in this region. Defaults to deny nonmembers. Use use-utilities-blocks flag to specify utility blocks. Takes the -g group switch.
-
-  event-cancelled:
-    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
-      - flag %player% dRegions.Message_Cooldown duration:3s
-      - run s@msgPrefixed delay:1t 'player:%player%' 'def:dRegions|<&c><&o>You can not use <def[target].to_lowercase.replace[_].with[ ]>s in this region!'
-      }
+  msg_cancelled: 'You can not use <def[target].to_lowercase.replace[_].with[ ]>s in this region!'
 
 dRegions_Flag_Player-Damage:
   type: item
@@ -1035,7 +1027,7 @@ dRegions_Flag_EVE:
     - if <yaml[dRegions_global_config].read[config.regions.invincibility-confuses-mobs]||false> && <yaml[dRegions_%world%_config].read[config.regions.invincibility-confuses-mobs]||false> {
       - run delay:1t locally wander 'def:%object%|%world%'
       }
-      else if <yaml[dRegions_global_config].read[config.regions.invincibility-removes-mobs]||false> && <yaml[dRegions_%world%_config].read[config.regions.invincibility-removes-mobs]||false> {
+    - if <yaml[dRegions_global_config].read[config.regions.invincibility-removes-mobs]||false> && <yaml[dRegions_%world%_config].read[config.regions.invincibility-removes-mobs]||false> {
       - remove %object%
       }
 
@@ -1080,7 +1072,7 @@ dRegions_Flag_Mob-Attack:
     - if <yaml[dRegions_global_config].read[config.regions.invincibility-confuses-mobs]||false> && <yaml[dRegions_%world%_config].read[config.regions.invincibility-confuses-mobs]||false> {
       - run delay:1t locally wander 'def:%object%|%world%'
       }
-      else if <yaml[dRegions_global_config].read[config.regions.invincibility-removes-mobs]||false> && <yaml[dRegions_%world%_config].read[config.regions.invincibility-removes-mobs]||false> {
+    - if <yaml[dRegions_global_config].read[config.regions.invincibility-removes-mobs]||false> && <yaml[dRegions_%world%_config].read[config.regions.invincibility-removes-mobs]||false> {
       - remove %object%
       }
 
@@ -1296,15 +1288,12 @@ dRegions_Flag_Entry:
   flag_takeGroup: true
   flag_regionDefault: allow/all
   flag_globalDefault: allow/all
+  msg_cancelled: 'You may not enter this area!'
 
   event-allowed:
     - flag %player% dRegions.rateLimit:!
 
   event-cancelled:
-    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
-      - flag %player% dRegions.Message_Cooldown duration:3s
-      - run s@msgPrefixed delay:1t player:%player% 'def:dRegions|<&c><&o>You may not enter this area!'
-      }
     - if <def[player].is_inside_vehicle> {
       - run locally vehicle 'def:<def[player].get_vehicle>|<c.from>' delay:1t
       }
@@ -1336,15 +1325,12 @@ dRegions_Flag_Exit:
   flag_takeGroup: true
   flag_regionDefault: allow/all
   flag_globalDefault: allow/all
+  msg_cancelled: 'You may not exit this area!'
 
   event-allowed:
     - flag %player% dRegions.rateLimit:!
 
   event-cancelled:
-    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
-      - flag %player% dRegions.Message_Cooldown duration:3s
-      - run s@msgPrefixed delay:1t player:%player% 'def:dRegions|<&c><&o>You may not exit this area!'
-      }
     - if <def[player].is_inside_vehicle> {
       - run locally vehicle 'def:<def[player].get_vehicle>|<c.from>' delay:1t
       }
@@ -1378,12 +1364,7 @@ dRegions_Flag_Build:
   flag_regionDefault: deny/nonmembers
   flag_globalDefault: allow/all
   flag_help: By default, all members and owners can build in their regions. Setting this flag can over ride that behavior. Can be set to allow, deny, or none and accepts the -g group switch.
-
-  event-cancelled:
-    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
-      - flag %player% dRegions.Message_Cooldown duration:3s
-      - run s@msgPrefixed delay:1t player:%player% 'def:dRegions|<&c><&o>You do not have permission to build in this region!'
-      }
+  msg_cancelled: 'You do not have permission to build in this region!'
 
 dRegions_Flag_Receive-Chat:
   type: item
@@ -1428,15 +1409,10 @@ dRegions_Flag_Send-Chat:
   flag_regionDefault: allow/all
   flag_globalDefault: allow/all
   flag_help: Control who can send chat in a region. Takes the -g group switch.
+  msg_cancelled: 'You can not chat here.'
 
   event-allowed:
     - determine 'recipients:<context.recipients.exclude[<server.flag[dRegions.Chat.Deaf].as_list||li@>]>'
-
-  event-cancelled:
-    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
-      - flag %player% dRegions.Message_Cooldown duration:3s
-      - run s@msgPrefixed delay:1t player:%player% 'def:dRegions|<&c><&o>You can not chat here.'
-      }
 
 dRegions_Flag_Hunger:
   type: item
@@ -1471,12 +1447,7 @@ dRegions_Flag_Npc-Interact:
   flag_regionDefault: allow/all
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to interact with NPCs in this region. Defaults to allow. Takes the -g group switch.
-
-  event-cancelled:
-    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
-      - flag %player% dRegions.Message_Cooldown duration:3s
-      - run s@msgPrefixed delay:1t player:%player% 'def:dRegions|<&c><&o>You can not interact with NPCs here!'
-      }
+  msg_cancelled: 'You can not interact with NPCs here!'
 
 dRegions_Flag_Lighter:
   type: item
@@ -1495,12 +1466,7 @@ dRegions_Flag_Lighter:
   flag_regionDefault: deny/nonmembers
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to use lighters in this region. Defaults to allow. Takes the -g group switch.
-
-  event-cancelled:
-    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
-      - flag %player% dRegions.Message_Cooldown duration:3s
-      - run s@msgPrefixed delay:1t player:%player% 'def:dRegions|<&c><&o>You can not use a lighter in this region!'
-      }
+  msg_cancelled: 'You can not use a lighter in this region!'
 
 dRegions_Flag_Bucket-Fill:
   type: item
@@ -1518,12 +1484,7 @@ dRegions_Flag_Bucket-Fill:
   flag_regionDefault: deny/nonmembers
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to fill buckets in this region. Defaults to allow. Takes the -g group switch.
-
-  event-cancelled:
-    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
-      - flag %player% dRegions.Message_Cooldown duration:3s
-      - run s@msgPrefixed delay:1t player:%player% 'def:dRegions|<&c><&o>You can not fill a bucket in this region!'
-      }
+  msg_cancelled: 'You can not fill a bucket in this region!'
 
 dRegions_Flag_Bucket-Empty:
   type: item
@@ -1541,12 +1502,7 @@ dRegions_Flag_Bucket-Empty:
   flag_regionDefault: deny/nonmembers
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to empty buckets in this region. Defaults to allow. Takes the -g group switch.
-
-  event-cancelled:
-    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
-      - flag %player% dRegions.Message_Cooldown duration:3s
-      - run s@msgPrefixed delay:1t player:%player% 'def:dRegions|<&c><&o>You can not empty a bucket in this region!'
-      }
+  msg_cancelled: 'You can not empty a bucket in this region!'
 
 dRegions_Flag_Hanging-Place:
   type: item
@@ -1564,12 +1520,7 @@ dRegions_Flag_Hanging-Place:
   flag_regionDefault: deny/nonmembers
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to place item frames and paintings in this region. Defaults to allow. Takes the -g group switch.
-
-  event-cancelled:
-    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
-      - flag %player% dRegions.Message_Cooldown duration:3s
-      - run s@msgPrefixed delay:1t player:%player% 'def:dRegions|<&c><&o>You can not hang that in this region!'
-      }
+  msg_cancelled: 'You can not hang that in this region!'
 
 dRegions_Flag_Hanging-Break:
   type: item
@@ -1587,12 +1538,7 @@ dRegions_Flag_Hanging-Break:
   flag_regionDefault: deny/nonmembers
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to break item frames and paintings in this region. Defaults to allow. Takes the -g group switch.
-
-  event-cancelled:
-    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
-      - flag %player% dRegions.Message_Cooldown duration:3s
-      - run s@msgPrefixed delay:1t player:%player% 'def:dRegions|<&c><&o>You can not break that in this region!'
-      }
+  msg_cancelled: 'You can not break that in this region!'
 
 dRegions_Flag_Sleep:
   type: item
@@ -1610,12 +1556,7 @@ dRegions_Flag_Sleep:
   flag_regionDefault: deny/nonmembers
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to enter beds in this region. Defaults to allow. Takes the -g group switch.
-
-  event-cancelled:
-    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
-      - flag %player% dRegions.Message_Cooldown duration:3s
-      - run s@msgPrefixed delay:1t player:%player% 'def:dRegions|<&c><&o>You can not sleep here!'
-      }
+  msg_cancelled: 'You can not sleep here!'
 
 dRegions_Flag_Player-Drops:
   type: item
@@ -1633,12 +1574,7 @@ dRegions_Flag_Player-Drops:
   flag_regionDefault: allow/all
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to drop items from their inventory in this region. Defaults to allow. Takes the -g group switch.
-
-  event-cancelled:
-    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
-      - flag %player% dRegions.Message_Cooldown duration:3s
-      - run s@msgPrefixed delay:1t player:%player% 'def:dRegions|<&c><&o>You can not drop items in this region!'
-      }
+  msg_cancelled: 'You can not drop items in this region!'
 
 dRegions_Flag_Player-Drops-OnDeath:
   type: item
@@ -1704,12 +1640,7 @@ dRegions_Flag_Player-Pickup:
   flag_regionDefault: allow/all
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to pickup items in this region. Defaults to allow. Takes the -g group switch.
-
-  event-cancelled:
-    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
-      - flag %player% dRegions.Message_Cooldown duration:3s
-      - run s@msgPrefixed delay:1t player:%player% 'def:dRegions|<&c><&o>You can not pick up items here!'
-      }
+  msg_cancelled: 'You can not pick up items in this region!'
 
 dRegions_Flag_Potion-Drink:
   type: item
@@ -1727,12 +1658,7 @@ dRegions_Flag_Potion-Drink:
   flag_regionDefault: allow/all
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to drink potions in this region. Defaults to allow. Takes the -g group switch.
-
-  event-cancelled:
-    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
-      - flag %player% dRegions.Message_Cooldown duration:3s
-      - run s@msgPrefixed delay:1t player:%player% 'def:dRegions|<&c><&o>You can not drink potions here!'
-      }
+  msg_cancelled: 'You can not drink potions here!'
 
 dRegions_Flag_Enderpearl:
   type: item
@@ -1750,12 +1676,7 @@ dRegions_Flag_Enderpearl:
   flag_regionDefault: allow/all
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to teleport with enderpearls in this region. Defaults to allow. Takes the -g group switch.
-
-  event-cancelled:
-    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
-      - flag %player% dRegions.Message_Cooldown duration:3s
-      - run s@msgPrefixed delay:1t player:%player% 'def:dRegions|<&c><&o>You can not use enderpearls here!'
-      }
+  msg_cancelled: 'You can not use enderpearls here!'
 
 dRegions_Flag_Vehicle-Place:
   type: item
@@ -1773,12 +1694,7 @@ dRegions_Flag_Vehicle-Place:
   flag_regionDefault: deny/nonmembers
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to place vehicles in this region. Defaults to allow. Takes the -g group switch.
-
-  event-cancelled:
-    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
-      - flag %player% dRegions.Message_Cooldown duration:3s
-      - run s@msgPrefixed delay:1t player:%player% 'def:dRegions|<&c><&o>You can not place vehicles here!'
-      }
+  msg_cancelled: 'You can not place vehicles here!'
 
 dRegions_Flag_Vehicle-Destroy:
   type: item
@@ -1796,12 +1712,7 @@ dRegions_Flag_Vehicle-Destroy:
   flag_regionDefault: deny/nonmembers
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to break vehicles in this region. Defaults to allow. Takes the -g group switch.
-
-  event-cancelled:
-    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
-      - flag %player% dRegions.Message_Cooldown duration:3s
-      - run s@msgPrefixed delay:1t player:%player% 'def:dRegions|<&c><&o>You can not break vehicles here!'
-      }
+  msg_cancelled: 'You can not break vehicles here!'
 #
 # END State-withGroup
 #---------------------------------------
@@ -1827,29 +1738,8 @@ dRegions_Flag_Commands:
   flag_regionDefault: allow/all
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players can use commands in this region. Defaults to allow all. Use commands-list flag to specify commands. Takes the -g group switch.
-
-  event-allowed:
-    - if <def[setCache].exists> {
-      - if %sameRegion% {
-        - flag %player% 'dRegions.rateLimit.%flag%.%target%:true' d:10s
-        }
-      - flag %player% 'dRegions.cache.%world%.%thisRegion%.%flag%.%target%:true'
-      }
-
-  event-cancelled:
-    - if <def[setCache].exists> {
-      - if %sameRegion% {
-        - flag %player% 'dRegions.rateLimit.%flag%.%target%:false' d:10s
-        }
-      - flag %player% 'dRegions.cache.%world%.%thisRegion%.%flag%.%target%:false'
-      }
-    - run locally msg delay:1t 'player:%player%' 'def:%target%'
-
-  msg:
-    - ^if <player.has_flag[dRegions.Message_Cooldown].not> {
-      - flag <player> dRegions.Message_Cooldown duration:3s
-      - run s@msgPrefixed 'def:dRegions|<&c><&o>You can not use the %1% <&c>command in this region!'
-      }
+  msg_cancelled: 'You can not use the %1% <&c>command in this region!'
+#
 # END State-withTargetString-withGroup
 #---------------------------------------
 #
@@ -2214,12 +2104,7 @@ dRegions_Flag_PVP:
   flag_regionDefault: true
   flag_globalDefault: true
   flag_help: Boolean flag controlling whether players can attack eachother in this region. Set to true or false. Defaults to true.
-
-  event-cancelled:
-    - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
-      - flag %player% dRegions.Message_Cooldown duration:3s
-      - run s@msgPrefixed delay:1t 'player:%player%' 'def:dRegions|<&c><&o>You are in a no PVP zone.'
-      }
+  msg_cancelled: 'You are in a no PVP zone.'
 
 dRegions_Flag_Potion-Throw:
   type: item
@@ -2239,6 +2124,7 @@ dRegions_Flag_Potion-Throw:
   flag_help: Boolean flag controlling whether potions can be thrown and broken in this region. Set to true or false. Defaults to true.
 
   event-cancelled:
+    # This flag handles players and non-players alike so we need to find out if it is a player before we send a message.
     - if <def[player].equals_case_sensitive[null].not||false> {
       - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
         - flag %player% dRegions.Message_Cooldown duration:3s
