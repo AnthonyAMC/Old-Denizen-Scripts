@@ -6,11 +6,10 @@
 #    - Entity flags exist in denizen now and can be used as rate limiters
 #    - NIGHTMARE flag - enter bed transport to nightmare. Creates a pseudorandom instance. Hunt for a bed to get out.
 #
-dRegions_Flags_Processors:
+dRegions_Flags_Processors_state-withTarget-withGroup:
   type: task
   debug: false
-
-  state-withTarget-withGroup:
+  script:
     # This is a rate limiter implemented BEFORE caching. The idea here is that if the player and event are in
     # the same region (even Global) we can safely expect that the values will be consistent (because we clear
     # rateLimit values on region enter/exit). Normal processing will follow if the rateLimit value is stale.
@@ -170,7 +169,10 @@ dRegions_Flags_Processors:
 # END state-withTarget-withGroup
 #---------------------------------------
 #
-  state-withTarget:
+dRegions_Flags_Processors_state-withTarget:
+  type: task
+  debug: false
+  script:
     - define listflag '<s@dRegions_Flag_%flag%.yaml_key[flag_targetList]||null>'
     - if '<s@dRegions_Flag_%flag%.yaml_key[region_highestOnly]||false>' {
       - define thisRegion '<def[orderedRegions].get[1]>'
@@ -281,7 +283,10 @@ dRegions_Flags_Processors:
 # END state-withTarget
 #---------------------------------------
 #
-  state-withGroup:
+dRegions_Flags_Processors_state-withGroup:
+  type: task
+  debug: false
+  script:
     - if '<def[eLoc].cuboids>' == '<def[player].location.cuboids>' {
       - define sameRegion 'true'
       - if <def[player].has_flag[dRegions.rateLimit.%flag%]> {
@@ -388,7 +393,10 @@ dRegions_Flags_Processors:
 # END state-withGroup
 #---------------------------------------
 #
-  state-withTargetString-withGroup:
+dRegions_Flags_Processors_state-withTargetString-withGroup:
+  type: task
+  debug: false
+  script:
     - if '<def[eLoc].cuboids>' == '<def[player].location.cuboids>' {
       - define sameRegion 'true'
       - if <def[player].has_flag[dRegions.rateLimit.%flag%.%target%]> {
@@ -550,7 +558,10 @@ dRegions_Flags_Processors:
 #      - inject 's@dRegions_Flag_%flag%' 'p:event-allowed'
 #      }
 #
-  boolean:
+dRegions_Flags_Processors_boolean:
+  type: task
+  debug: false
+  script:
     - if '<s@dRegions_Flag_%flag%.yaml_key[region_highestOnly]||false>' {
       - define thisRegion '<def[orderedRegions].get[1]>'
       - if <yaml[dRegions_%world%_cache].contains[cache.boolean.%thisRegion%.%flag%]> {
@@ -639,7 +650,10 @@ dRegions_Flags_Processors:
 # END boolean
 #---------------------------------------
 #
-  string:
+dRegions_Flags_Processors_string:
+  type: task
+  debug: false
+  script:
   # It is possible to send messages for /any/ dRegions event. Just make a new string flag.
     - if '<s@dRegions_Flag_%flag%.yaml_key[region_highestOnly]||false>' {
       - define thisRegion '<def[orderedRegions].get[1]>'
@@ -677,21 +691,30 @@ dRegions_Flags_Processors:
 # END string
 #---------------------------------------
 #
-  custom:
+dRegions_Flags_Processors_custom:
+  type: task
+  debug: false
+  script:
     - inject 's@dRegions_Flag_%flag%' 'p:event'
 #
 #
 # END custom
 #---------------------------------------
 #
-  number:
+dRegions_Flags_Processors_number:
+  type: task
+  debug: false
+  script:
     - inject 's@dRegions_Flag_%flag%' 'p:event'
 #
 #
 # END number
 #---------------------------------------
 #
-  location:
+dRegions_Flags_Processors_location:
+  type: task
+  debug: false
+  script:
     - inject 's@dRegions_Flag_%flag%' 'p:event'
 #
 #

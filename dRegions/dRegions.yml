@@ -490,7 +490,7 @@ dRegions_Events_Player_Interact_Entity:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[player_interact_entity]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Player_Interact_NPC:
   type: world
@@ -512,7 +512,7 @@ dRegions_Events_Player_Interact_NPC:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[player_interact_npc]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Player_Enters_Region:
   type: world
@@ -546,7 +546,7 @@ dRegions_Events_Player_Enters_Region:
       }
     - foreach '<yaml[dRegions_eventmap].read[player_enters_region]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
     - event 'player entered dregion' 'player:%player%' 'context:orderedregions|<def[orderedRegions].separated_by[/]>|to|<c.to>|from|<c.from>'
 
 dRegions_Events_Player_Entered_dRegion:
@@ -563,7 +563,7 @@ dRegions_Events_Player_Entered_dRegion:
     - define isEnter 'true'
     - foreach '<yaml[dRegions_eventmap].read[player_entered_dregion]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Player_Exits_Region:
   type: world
@@ -590,7 +590,7 @@ dRegions_Events_Player_Exits_Region:
       }
     - foreach '<yaml[dRegions_eventmap].read[player_exits_region]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
     # Should we fire an event when the player enters the global region?
     - if <c.to.cuboids.is_empty> {
       - event 'player enters notable cuboid' 'player:%player%' 'context:cuboids|<c.to.cuboids.escaped>|from|<c.from>|to|<c.to>' save:enter
@@ -619,7 +619,7 @@ dRegions_Events_Player_Exited_dRegion:
     - define isEnter 'false'
     - foreach '<yaml[dRegions_eventmap].read[player_exited_dregion]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Player_Place_Block:
   type: world
@@ -640,7 +640,7 @@ dRegions_Events_Player_Place_Block:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[player_place_block]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Player_Break_Block:
   type: world
@@ -661,7 +661,7 @@ dRegions_Events_Player_Break_Block:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[player_break_block]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Player_Right_Click:
   type: world
@@ -694,7 +694,7 @@ dRegions_Events_Player_Right_Click:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[%event%]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Player_Damaged:
   type: world
@@ -716,7 +716,7 @@ dRegions_Events_Player_Damaged:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[player_damaged]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Player_Chat:
   type: world
@@ -736,7 +736,7 @@ dRegions_Events_Player_Chat:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[player_chats]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Player_Break_Vehicle:
   type: world
@@ -757,7 +757,7 @@ dRegions_Events_Player_Break_Vehicle:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[player_break_vehicle]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Player_Place_Boat:
   type: world
@@ -778,7 +778,7 @@ dRegions_Events_Player_Place_Boat:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[player_place_vehicle]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Player_Stands_On:
   type: world
@@ -799,7 +799,7 @@ dRegions_Events_Player_Stands_On:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[player_interact_switches]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Player_Throws_Potion:
   type: world
@@ -819,7 +819,7 @@ dRegions_Events_Player_Throws_Potion:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[player_throw_potion]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Player_Drinks_Potion:
   type: world
@@ -839,7 +839,7 @@ dRegions_Events_Player_Drinks_Potion:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[player_drink_potion]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Player_Place_Armorstand:
   type: world
@@ -860,7 +860,7 @@ dRegions_Events_Player_Place_Armorstand:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[player_place_armorstand]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Player_Use_Monsteregg:
   type: world
@@ -881,7 +881,7 @@ dRegions_Events_Player_Use_Monsteregg:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[player_use_spawnegg]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Player_Throw_Egg:
   type: world
@@ -909,7 +909,7 @@ dRegions_Events_Player_Throw_Egg:
 #    - foreach '<yaml[dRegions_eventmap].read[player_throw_<t[<context.is_hatching>]:hatchingegg||egg>]||li@>':
     - foreach '<yaml[dRegions_eventmap].read[player_throw_%type%]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Player_Enters_Bed:
   type: world
@@ -929,7 +929,7 @@ dRegions_Events_Player_Enters_Bed:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[player_enters_bed]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Player_Empties_Bucket:
   type: world
@@ -949,7 +949,7 @@ dRegions_Events_Player_Empties_Bucket:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[player_empty_bucket]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Player_Fills_Bucket:
   type: world
@@ -969,7 +969,7 @@ dRegions_Events_Player_Fills_Bucket:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[player_fill_bucket]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Player_Drops_Item:
   type: world
@@ -990,7 +990,7 @@ dRegions_Events_Player_Drops_Item:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[player_drops_item]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Player_Pickup_Item:
   type: world
@@ -1011,7 +1011,7 @@ dRegions_Events_Player_Pickup_Item:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[player_pickup_item]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Player_Place_Hanging:
   type: world
@@ -1032,7 +1032,7 @@ dRegions_Events_Player_Place_Hanging:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[player_place_hanging]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Player_Break_Hanging:
   type: world
@@ -1054,7 +1054,7 @@ dRegions_Events_Player_Break_Hanging:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[player_break_hanging]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Player_Interact_Armorstand:
   type: world
@@ -1075,7 +1075,7 @@ dRegions_Events_Player_Interact_Armorstand:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[player_interact_armorstand]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Player_Interact_Itemframe:
   type: world
@@ -1096,7 +1096,7 @@ dRegions_Events_Player_Interact_Itemframe:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[player_interact_itemframe]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Player_Extinguish_BlockFire:
   type: world
@@ -1119,7 +1119,7 @@ dRegions_Events_Player_Extinguish_BlockFire:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[player_extinguish_blockfire]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Player_Use_Bonemeal:
   type: world
@@ -1139,7 +1139,7 @@ dRegions_Events_Player_Use_Bonemeal:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[player_use_bonemeal]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Player_Changes_Foodlevel:
   type: world
@@ -1157,7 +1157,7 @@ dRegions_Events_Player_Changes_Foodlevel:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[player_change_foodlevel]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Player_Teleports:
   type: world
@@ -1188,7 +1188,7 @@ dRegions_Events_Player_Teleports:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[player_use_enderpearl]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Entity_Spawn:
   type: world
@@ -1206,7 +1206,7 @@ dRegions_Events_Entity_Spawn:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[entity_spawn]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Entity_Damage_Entity:
   type: world
@@ -1250,7 +1250,7 @@ dRegions_Events_Entity_Damage_Entity:
       - define player '<def[<s@dRegions_Flag_%flag%.yaml_key[event_player]||object>]>'
       - define target '<def[object].entity_type>'
       - define eLoc '<def[object].location>'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Entity_Target_Entity:
   type: world
@@ -1294,7 +1294,7 @@ dRegions_Events_Entity_Target_Entity:
       - define player '<def[<s@dRegions_Flag_%flag%.yaml_key[event_player]||object>]>'
       - define target '<def[object].entity_type>'
       - define eLoc '<def[object].location>'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Entity_Explode:
   type: world
@@ -1312,7 +1312,7 @@ dRegions_Events_Entity_Explode:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[entity_explode]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Entity_Change_Block:
   type: world
@@ -1344,7 +1344,7 @@ dRegions_Events_Entity_Change_Block:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[entity_change_block]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Fallingblock_Change_Block:
   type: world
@@ -1371,7 +1371,7 @@ dRegions_Events_Fallingblock_Change_Block:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[falling_%mat%]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Entity_Form_Block:
   type: world
@@ -1396,7 +1396,7 @@ dRegions_Events_Entity_Form_Block:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[entity_form_block]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 # Handles 3 events: npc_dies entity_dies player_dies
 dRegions_Events_Entity_Dies:
@@ -1429,7 +1429,7 @@ dRegions_Events_Entity_Dies:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[%target%_dies]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Entity_Trample_Crops:
   type: world
@@ -1448,7 +1448,7 @@ dRegions_Events_Entity_Trample_Crops:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[%type%_trample_crops]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Entity_Break_Hanging:
   type: world
@@ -1470,7 +1470,7 @@ dRegions_Events_Entity_Break_Hanging:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[entity_break_%type%]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 #
 ################################################################################
 #
@@ -1514,7 +1514,7 @@ dRegions_Events_Block_Ignites:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[fireFrom_<c.cause>]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Block_Burns:
   type: world
@@ -1533,7 +1533,7 @@ dRegions_Events_Block_Burns:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[block_burns]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Ice_Forms:
   type: world
@@ -1551,7 +1551,7 @@ dRegions_Events_Ice_Forms:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[blockform_ice]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Snow_Form:
   type: world
@@ -1574,7 +1574,7 @@ dRegions_Events_Snow_Form:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[blockform_snow]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Soil_Fades:
   type: world
@@ -1592,7 +1592,7 @@ dRegions_Events_Soil_Fades:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[blockfade_soil]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Ice_Fades:
   type: world
@@ -1610,7 +1610,7 @@ dRegions_Events_Ice_Fades:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[blockfade_ice]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Snow_Fades:
   type: world
@@ -1628,7 +1628,7 @@ dRegions_Events_Snow_Fades:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[blockfade_snow]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Block_Spread:
   type: world
@@ -1648,7 +1648,7 @@ dRegions_Events_Block_Spread:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[blockspread_%mat%]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Liquid_Spread:
   type: world
@@ -1680,7 +1680,7 @@ dRegions_Events_Liquid_Spread:
       }
     - foreach '<yaml[dRegions_eventmap].read[%mat%_spread]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Lightning_Strikes:
   type: world
@@ -1699,7 +1699,7 @@ dRegions_Events_Lightning_Strikes:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[lightning_strikes]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Leaf_Decay:
   type: world
@@ -1717,7 +1717,7 @@ dRegions_Events_Leaf_Decay:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[blockfade_leaves]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 # Was testing an alternate method. It took an average of 1ms longer :/
 #      - define ftype '<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 #      - define cache '<parse:<def[orderedRegions].parse[replace[regex:^].with[<&lt>yaml<&lb>dRegions_%world%_cache<&rb>.read<&lb>cache.%ftype%.]].parse[replace[regex:$].with[.%flag%<&rb>||null<&gt>]]>>'
@@ -1758,7 +1758,7 @@ dRegions_Events_Potion_Splash:
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[potion_splash]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Pistons:
   type: world
@@ -1789,7 +1789,7 @@ dRegions_Events_Pistons:
       }
     - foreach '<yaml[dRegions_eventmap].read[piston_extend]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
     on piston retracts:
 #    - define lastBlock '<tern[<c.length.is[==].to[0]||true>]:<c.relative>||<c.relative.sub[<c.location>].add[<c.blocks.last>]>>'
@@ -1815,7 +1815,7 @@ dRegions_Events_Pistons:
       }
     - foreach '<yaml[dRegions_eventmap].read[piston_retract]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
 dRegions_Events_Issue_Command:
   type: world
@@ -1842,7 +1842,7 @@ dRegions_Events_Issue_Command:
     - mark 'FLAGS'
     - foreach '<yaml[dRegions_eventmap].read[%type%_command]||li@>':
       - define flag '%value%'
-      - inject 's@dRegions_Flags_Processors' 'p:<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 #
 ################################################################################
 #
