@@ -3,12 +3,25 @@
 #                    M e s s a g e   C o n s t r u c t o r                     #
 #                              L I B R A R Y                                   #
 #                                                                              #
+#     A set of utilities to make displaying text pretty, uniform, and easy     #
 #                                                                              #
 #   Authors: |Anthony|                                                         #
-#   Version: 0.2                                                               #
+#   Version: 0.3                                                               #
 #   dScript Version: 0.9.8-DEV_b548                                            #
 #                                                                              #
-#  A set of utilities to make displaying text pretty, uniform, and easy.       #
+#   For bleeding-edge code, bug reports, code contributions, and feature       #
+#    requests, visit the GitHub project:                                       #
+#    - github.com/AnthonyAMC/Public-Denizen-Scripts/blob/master/MessageConstructors.yml
+#                                                                              #
+#   Has my work helped you in some way? Show your support by clicking the      #
+#    Like button.                                                              #
+#   Feeling generous? Get me a coffee :D                                       #
+#    https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=NPXKHCNMTGSUG
+#                                                                              #
+#--------------------------------------                                        #
+#                                                                              #
+#--- About this script                                                         #
+#                                                                              #
 #                                                                              #
 #  This library will be a dependency for nearly all of my scripts. Mainly so   #
 #  I don't have to duplicate the code so much, but also because it makes       #
@@ -31,7 +44,7 @@ MSG_Version:
   type: version
   author: Anthony
   name: MessageConstructorLibrary
-  version: 0.2
+  version: 0.3
   description: A Library for Message Construction
   id: 90
 #
@@ -74,7 +87,7 @@ msgPrefixed:
     - ^define click '/%title% help'
     - ^define button '"text":"%text%","clickEvent":{"action":"run_command","value":"%click%"},"hoverEvent":{"action":"show_item","value":"%hover%"}'
     - ^define spacer '"text":"  "'
-    - ^foreach '<proc[lineWrap].context[<def[msg]>|70]>' {
+    - ^foreach '<proc[lineWrap].context[<parse:<def[msg]>>|58]>' {
       - ^execute as_server 'tellraw <player.name> {"text":"","extra":[{%button%},{%spacer%},{"text":"%value%"}]}'
       }
     - mark 'end'
@@ -86,35 +99,89 @@ msgPrefixed:
 # - Encapsulate your messages in a neat and tidy box format
 #   Messages sent through will be linewrapped and given a header and footer
 # - Header displays specified script title, page title, and page number(s)
+# - Page numbers are clickable to ease navigation
 # - Footer can display clickable buttons for your script authors
-#   - You must have a valid author item script named %scriptname%_Author_%authorname%
+#   - You must have a valid author item script named %script%_Author_%authorname%
+#
+# Definitions Explained:
+#
+#  %script%      - The prefix used to find your authors
+#  %title%       - The title to display in the Header
+#  %subTitle%    - The subtitle to display in the Header
+#  %command%     - The command to run when the page buttons are clicked
+#  %page%        - The current page to display
+#  %pageWidth%   - How many characters (roughly) to display on one line
+#  %pageHeight%  - How many lines in the body of the message should be on one page
+#  %entries%     - The complete contents of the document your are working with.
+#                  Every entry in the list is displayed on its own line. Long
+#                  entries are automatically linewrapped to fit the box message.
 #
 #  Usage:
-#    - run s@msgBoxed 'def:%script%|%title%|%subTitle%|%page%|%pageWidth%|%pageHeight%|%paragraphs%'
+#    - run s@msgBoxed 'def:%script%|%title%|%subTitle%|%command%|%page%|%pageWidth%|%pageHeight%|%entries%'
 #
 msgBoxed:
   type: task
   debug: false
   speed: 0
-  definitions: script|title|subTitle|page|pageWidth|pageHeight
+  definitions: script|title|subTitle|command|page|pageWidth|pageHeight
   script:
-    - ^define paragraphs 'li@'
-    - ^foreach '<queue.definitions.exclude[script|title|subTitle|page|pageWidth|pageHeight|paragraphs].alphanumeric>' {
-      - define paragraphs '<def[paragraphs].include[<def[%value%]>]>'
+    - ^define entries 'li@'
+    - ^foreach '<queue.definitions.exclude[script|title|subTitle|command|page|pageWidth|pageHeight|entries].alphanumeric>' {
+      - define entries '<def[entries].include[<def[%value%]>]>'
       }
-    - ^define pageInfo '<proc[pagination].context[<def[page]||1>|<def[pageHeight]||10>|<def[paragraphs].separated_by[|]>]>'
+    - ^define paragraphs '<proc[paragraph].context[%pageWidth%|%entries%]>'
+    - ^if %page% < 1 {
+      - define page '1'
+      }
+    - ^define pageInfo '<proc[pagination].context[%page%>|%pageHeight%|<def[paragraphs].separated_by[|]>]>'
+    - ^define pageTotal '<def[pageInfo].get[2]>'
+    - ^if %page% > %pageTotal% {
+      - define page '%pageTotal%'
+      }
     - ^define lines '<def[pageInfo].get[3].to[<def[pageInfo].size>]>'
-    - ^define pagesInfo '<&7><&o>Page <&f><&o><def[pageInfo].get[1]> <&7><&o>of <def[pageInfo].get[2]>'
+    - ^define heading '<def[title].pad_right[<def[pageWidth].mul[0.15].round>].with[ ]>  <def[subTitle]>'
+    - ^define pagesInfo '<&7><&o>Page <&f>%page% <&7><&o>of <&f>%pageTotal%'
+    - ^define pad '<def[pageWidth].sub[<def[heading].strip_color.length>].sub[<def[pagesInfo].strip_color.length>].mul[1.6].round>'
 
+    - ^if !<player.is_player||false> {
+      - ^announce to_console "<&5>|<&pipe.pad_left[<def[pageWidth]>].with[-]>"
+      - ^announce to_console "<&5>|<&sp><&sp><&sp><&6><def[heading]> <&7.pad_right[%pad%].with[ ]><def[pagesInfo]>"
+      - ^announce to_console "<&5>|<&f>"
+      - ^foreach <def[lines]> {
+        - announce to_console "<&5>|<&f><&sp><&sp><def[value].unescaped>"
+        }
+      - ^announce to_console "<&5>|"
+      - ^inject locally msgsFooter
+      - ^queue clear
+      }
     - ^inject locally msgsHeader
     - ^inject locally msgsBody
     - ^inject locally msgsFooter
 
   msgsHeader:
-    - ^define heading '<def[title].pad_right[<def[pageWidth].mul[0.15].round>].with[ ]>  <def[subTitle]>'
-    - ^define pad '<def[pageWidth].sub[<def[heading].strip_color.length>].sub[<def[pagesInfo].strip_color.length>].mul[1.6].round>'
+    - ^if %page% == 1 {
+      - define buttonThis '"text":"1"'
+      }
+      else {
+      - define iconThis 'i@human_skull[display_name=<proc[msgCentered].context[19|Previous Page]>]'
+      - define hoverThis '{<def[iconThis].json>}'
+      - define clickThis '/%command% <def[page].sub[1]>'
+      - define buttonThis '"text":"%page%","clickEvent":{"action":"run_command","value":"%clickThis%"},"hoverEvent":{"action":"show_item","value":"%hoverThis%"}'
+      }
+    - ^if %page% == %pageTotal% {
+      - define buttonNext '"text":"%pageTotal%"'
+      }
+      else {
+      - define iconNext 'i@human_skull[display_name=<proc[msgCentered].context[19|Next Page]>]'
+      - define hoverNext '{<def[iconNext].json>}'
+      - define clickNext '/%command% <def[page].add[1]>'
+      - define buttonNext '"text":"%pageTotal%","clickEvent":{"action":"run_command","value":"%clickNext%"},"hoverEvent":{"action":"show_item","value":"%hoverNext%"}'
+      }
+    - ^define prefix '"text":"<&5>|<&sp><&sp><&sp><&6><def[heading]> <&7.pad_right[%pad%].with[ ]>"'
+    - ^define p '"text":"<&7><&o>Page<&sp>"'
+    - ^define o '"text":"<&7><&o><&sp>of<&sp>"'
     - ^narrate "<&5>|<&pipe.pad_left[<def[pageWidth]>].with[-]>"
-    - ^narrate "<&5>|<&sp><&sp><&sp><&6><def[heading]> <&7.pad_right[%pad%].with[ ]><def[pagesInfo]>"
+    - ^execute as_server 'tellraw <player.name> {"text":"","extra":[{%prefix%},{%p%},{%buttonThis%},{%o%},{%buttonNext%}]}'
     - ^narrate "<&5>|<&f>"
 
   msgsBody:
@@ -204,10 +271,10 @@ lineWrap:
 #  Pagination utility
 #
 #  - Retrun a list of entries for display on a specific page
-#    Pagination simply takes a list of entries, the desired page number, and the
-#    desired page size and returns only those entries.
+#    Pagination simply takes a list of entries, and the desired page length and
+#    returns only the entries for the desired page number.
 #
-#  Usage: <proc[pagination].context[page|pageSize|list|...]>
+#  Usage: <proc[pagination].context[page|pageLen|list|...]>
 #
 pagination:
   type: procedure
@@ -266,7 +333,7 @@ paragraph:
     - determine '<def[result]>'
 #
 # Put this inside the second foreach just before it closes to automatically
-# insert a newline at the end of paragraphs.
+# insert a newline at the end of each paragraph.
 #      - define result '<def[result].include[<&sp>]>'
 #
 #  END paragraph
