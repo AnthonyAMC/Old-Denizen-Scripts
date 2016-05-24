@@ -129,19 +129,19 @@ msgBoxed:
     - ^foreach '<queue.definitions.exclude[script|title|subTitle|command|page|pageWidth|pageHeight|entries].alphanumeric>' {
       - define entries '<def[entries].include[<def[%value%]>]>'
       }
-    - ^define paragraphs '<proc[paragraph].context[%pageWidth%|%entries%]>'
+    - ^define paragraphs '<proc[paragraph].context[%pageWidth%|<def[entries].separated_by[|]>]>'
     - ^if %page% < 1 {
       - define page '1'
       }
-    - ^define pageInfo '<proc[pagination].context[%page%>|%pageHeight%|<def[paragraphs].separated_by[|]>]>'
+    - ^define pageInfo '<proc[pagination].context[%page%|%pageHeight%|<def[paragraphs].separated_by[|]>]>'
     - ^define pageTotal '<def[pageInfo].get[2]>'
     - ^if %page% > %pageTotal% {
       - define page '%pageTotal%'
       }
     - ^define lines '<def[pageInfo].get[3].to[<def[pageInfo].size>]>'
-    - ^define heading '<def[title].pad_right[<def[pageWidth].mul[0.15].round>].with[ ]>  <def[subTitle]>'
+    - ^define heading '<def[title].pad_right[<def[title].length.max[10].as_int>].with[<&sp>]>  <def[subTitle]>'
     - ^define pagesInfo '<&7><&o>Page <&f>%page% <&7><&o>of <&f>%pageTotal%'
-    - ^define pad '<def[pageWidth].sub[<def[heading].strip_color.length>].sub[<def[pagesInfo].strip_color.length>].mul[1.6].round>'
+    - ^define pad '<def[pageWidth].sub[<def[heading].strip_color.length>].sub[<def[pagesInfo].strip_color.length>].mul[1.5].round>'
 
     - ^if !<player.is_player||false> {
       - ^announce to_console "<&5>|<&pipe.pad_left[<def[pageWidth]>].with[-]>"
@@ -226,6 +226,7 @@ msgBoxed:
 #
 # - Turn a long string into a list of smaller strings
 #   Treats the <&nl> symbol as intended
+#   Preserves the last color used from the previous line
 #
 #  Usage: <proc[lineWrap].context[string|targetLen]>
 #
@@ -237,7 +238,7 @@ lineWrap:
 
   script:
     - define stringLen '<def[string].length>'
-    - define c '<def[string].last_color||<&f>>'
+    - define c '<&f>'
     - if <def[stringLen].is[MORE].than[%targetLen%]> {
       - define lines 'li@'
       - while <def[stringLen].is[MORE].than[0]> {
@@ -251,8 +252,9 @@ lineWrap:
           else {
           - define brake '<t[<def[pass].contains[<&nl>]>]:<def[pass].index_of[<&nl>]>||<def[pass].last_index_of[<&sp>]>>'
           - define increment '<def[increment].add[%brake%]||%brake%>'
-          - define passtrim '<def[pass].substring[1,<t[<def[brake].is[MORE].than[0]>]:%brake%||<def[pass].length>>]>'
-          - define lines '<def[lines].include[%c%%passtrim%]||<def[lines]>>'
+          - define passtrim '%c%<def[pass].substring[1,<t[<def[brake].is[MORE].than[0]>]:%brake%||<def[pass].length>>]>'
+          - define lines '<def[lines].include[%passtrim%]||<def[lines]>>'
+          - define c '<def[passtrim].last_color||<&f>>'
           - define stringLen '<def[stringLen].sub[%brake%]>'
           }
         - if <def[loop_index].is[MORE].than[10]> {
