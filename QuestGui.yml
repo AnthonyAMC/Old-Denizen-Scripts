@@ -5,7 +5,7 @@
 #
 #
 #   Authors: |Anthony|
-#   Version: 0.3
+#   Version: 0.31
 #   dScript Version: 0.9.8-DEV_b548
 #
 #
@@ -75,7 +75,7 @@ QuestGUI_Version:
   type: version
   author: Anthony
   name: QuestGUI
-  version: 0.3
+  version: 0.31
   description: QuestGUI - An advanced menu for displaying and managing player quest data
   id: 91
 #
@@ -99,13 +99,17 @@ QuestGUI_Command:
     help:
       desc: Learn how to use QuestGUI
       long:
-        - 'A lot of help will go here'
-        - 'And some more here too.'
+        - 'I am not entirely sure what to include in the help.'
+        - ' '
+        - 'I<&sq>m all for including your FAQs here. Just submit them via GitHub <&co>)'
     about:
       desc: Learn about the project
       long:
-        - 'A lot of help will go here'
-        - 'And some more here too.'
+        - '<&f> QuestGUI is system for players to track, and admins to administrate, quests written with the Denizen Scripting Engine.'
+        - ' '
+        - '<&f> QuestGUI provides a graphical user interface to all player quest data. Users can see their available, active, and completed quests. Detailed stats, and available and completed objectives are provided for every quest. There<&sq>s even a trophy room!'
+        - ' '
+        - '<&f> Administrators are able to manage all of the player data through the GUI.'
   tab complete:
     - if <context.server> {
       - queue clear
@@ -145,32 +149,32 @@ QuestGUI_Command:
 
 
   about:
-    - define page '<tern[<c.args.get[2].is[matches].to[number]||false>]:<def[args].get[1].abs.round>||1>'
-    - define msg1 ' QuestGUI is system for players to track, and admins to administrate, quests written with the Denizen Scripting Engine.'
-    - define msg2 ' QuestGUI provides a graphical user interface to all player quest data. Users can see their available, active, and completed quests. Detailed stats, and available and completed objectives are provided for every quest. There<&sq>s even a trophy room!'
-    - define msg3 ' Administrators are able to manage all of the player data through the GUI.'
-    - run s@msgBoxed 'def:QuestGUI|QuestGUI|About|%page%|52|12|<proc[paragraph].context[52|<&7>%msg1%| |<&7>%msg2%| |<&7>%msg3%]>'
+    - define page '<tern[<c.args.get[2].is[matches].to[number]||false>]:<c.args.get[2].abs.round>||1>'
+    - define msgs '<parse:<script.yaml_key[helpData.about.long].separated_by[|]>>'
+    - run s@msgBoxed 'def:QuestGUI|QuestGUI|About|qg about|%page%|52|12|%msgs%'
 
   help:
-    - define page '<c.args.filter[is[matches].to[number]].get[1]||1>'
-    - define topic '<c.args.exclude[%page%|%arg%].get[1]||null>'
+    - define page '<c.args.filter[is[matches].to[number]].get[1].abs.round||1>'
+    - define topic '<c.args.remove[<c.args.find[%page%]>|<c.args.find[%arg%]>].get[1].to_titlecase||null>'
     - define topics '<script.list_keys[helpData]>'
     - if '%topics%' contains '%topic%' {
       - define title 'Help - %topic%'
+      - define command 'qg help %topic%'
       - define desc '<script.yaml_key[helpData.%topic%.desc]>'
-      - define long '<script.yaml_key[helpData.%topic%.long].separated_by[|]>'
-      - define msgs '<&7>%desc%|<&sp>|<&f>%long%]>'
+      - define long '<parse:<script.yaml_key[helpData.%topic%.long].separated_by[|]>>'
+      - define msgs '<&7>%desc%|<&sp>|<&f>%long%'
       }
       else {
       - define title 'Help List'
+      - define command 'qg help'
       - define msgs 'li@'
       - foreach %topics% {
         - define topic '%value%'
         - define desc '<script.yaml_key[helpData.%topic%.desc]>'
-        - define msgs '<def[msgs].include[<&f>%loop_index%<&dot> <&e>%topic%|<&sp><&sp><&sp><&b>%desc%]>'
+        - define msgs '<def[msgs].include[<&f>%loop_index%<&dot> <&e><def[topic].to_titlecase>|<&sp><&sp><&sp><&b>%desc%]>'
         }
       }
-    - run s@msgBoxed 'def:QuestGUI|QuestGUI|%title%|%page%|52|12|<proc[paragraph].context[52|%msgs%]>'
+    - run s@msgBoxed 'def:QuestGUI|QuestGUI|%title%|%command%|%page%|52|12|%msgs%'
 #
 #  END QuestGUI Command Script
 #--------------------------------------
