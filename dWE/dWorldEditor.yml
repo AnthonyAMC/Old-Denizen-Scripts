@@ -601,14 +601,7 @@ dWE_Commands_Help:
         - define helpDoc '<def[helpDoc].include[<def[value].to_titlecase><&co><&sp><&7><parse:<s@dWE_Commands_%value%.yaml_key[description]||Short Description>>|<&e.pad_left[4].with[<&sp>]><parse:<s@dWE_Commands_%value%.yaml_key[data.usage]||No usage info available!>>]>'
         }
       }
-    - define script 'dwe'
-    - define title 'dWorldEditor'
-    - define subTitle '<&e>Help Files'
-    - define pageHeight '10'
-    - define pageWidth '52'
-    - define page '<def[page]||1>'
-    - define paragraphs '<proc[paragraph].context[%pageWidth%|%helpDoc%]>'
-    - run s@msgBoxed instantly 'def:%script%|%title%|%subTitle%|%page%|%pageWidth%|%pageHeight%|%paragraphs%'
+    - run s@msgBoxed instantly 'def:dwe|dWorldEditor|<&e>Help Files|dwe help|<def[page]||1>|52|10|<def[helpDoc].separated_by[|]>'
 
   helpCommand:
     # Help for a specific command
@@ -616,15 +609,8 @@ dWE_Commands_Help:
     - define desc '<parse:<s@dWE_Commands_%command%.yaml_key[data.description]||A not so useless description should be here!>>'
     - define usage '<parse:<s@dWE_Commands_%command%.yaml_key[data.usage]||No help for you!>>'
     - define examples '<parse:<s@dWE_Commands_%command%.yaml_key[data.examples]||No help for you!>>'
-
-    - define script 'dwe'
-    - define title 'dWorldEditor'
-    - define subTitle '<&e>Help - <def[arg].to_titlecase>'
-    - define pageHeight '10'
-    - define pageWidth '52'
-    - define page '<def[page]||1>'
-    - define paragraphs '<proc[paragraph].context[%pageWidth%|<&7>%short%| |%desc%| |<&b><&n>Usage<&co>| |<&e.pad_left[3].with[ ]>%usage%| |<&3><&n>Examples<&co>| |%examples%]>'
-    - run s@msgBoxed 'def:%script%|%title%|%subTitle%|%page%|%pageWidth%|%pageHeight%|%paragraphs%'
+    - define entries '<&7>%short%| |%desc%| |<&b><&n>Usage<&co>| |<&e.pad_left[3].with[ ]>%usage%| |<&3><&n>Examples<&co>| |%examples%'
+    - run s@msgBoxed instantly 'def:dwe|dWorldEditor|<&e>Help - <def[arg].to_titlecase>|dwe help %arg%|<def[page]||1>|52|10|%entries%'
 
 dWE_Commands_About:
   type: command
@@ -655,7 +641,7 @@ dWE_Commands_About:
       }
     - define prerun 'a'
     - inject s@dWE_Commands p:prerun
-    - run s@msgBoxed 'def:dwe|dWorldEditor|About|<tern[<def[args].get[1].is[matches].to[number]||false>]:<def[args].get[1].abs.round>||1>|52|12|<proc[paragraph].context[52|<&7><parse:<s@dWE_Commands_%command%.yaml_key[description]>>| |<parse:<s@dWE_Commands_%command%.yaml_key[data.description]>>]>'
+    - run s@msgBoxed instantly 'def:dwe|dWorldEditor|About|dwe about|<tern[<def[args].get[1].is[matches].to[number]||false>]:<def[args].get[1].abs.round>||1>|52|12|<&7><parse:<s@dWE_Commands_%command%.yaml_key[description]>>| |<parse:<s@dWE_Commands_%command%.yaml_key[data.description]>>'
 
 
 dWE_Commands_Show:
@@ -1786,10 +1772,10 @@ dWE_Commands_Sphere:
       - 'Arguments and -switches to the sphere command can be compounded and supplied in any order you like.'
     usage: '/dwe sphere [<&lt>material<&gt>(<&pc><&ns>)/...] (<&lt>x<&gt>(,<&lt>y<&gt>,<&lt>z<&gt>)) (-d, -g, -n, -l, -w, -p)'
     examples:
-      - '<&f>Creata a white wool ellipsoid from you selection using minecraft material name and data value.'
+      - '<&f>Create a white wool ellipsoid from you selection using minecraft material name and data value.'
       - '  <&e>/dwe sphere wool,0'
       - ' '
-      - '<&f>Creata a white wool ellipsoid from you selection using specific material name.'
+      - '<&f>Create a white wool ellipsoid from you selection using specific material name.'
       - '  <&e>/dwe sphere white_wool'
       - ' '
       - '<&f>Create an ellipsoid that is 50<&pc> stone and 50<&pc> dirt from your selection.'
