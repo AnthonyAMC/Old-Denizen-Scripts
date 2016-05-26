@@ -4,7 +4,7 @@
 #
 #
 #   Authors: |Anthony|, mcmonkey
-#   Version: 0.26
+#   Version: 0.27
 #   dScript Version: 0.9.8-DEV-b575
 #
 #
@@ -171,7 +171,7 @@ dWE_Version:
   type: version
   author: Anthony
   name: dWorldEditor
-  version: 0.26
+  version: 0.27
   description: Denizen World Editor
   id: 22
 #
