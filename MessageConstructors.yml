@@ -68,7 +68,6 @@ MSG_Version:
 msgPrefixed:
   type: item
   debug: false
-  speed: 0
   definitions: title|msg
   material: i@human_skull
   display name: "<&4>     [<&6>---<&4>]"
@@ -122,7 +121,6 @@ msgPrefixed:
 msgBoxed:
   type: task
   debug: false
-  speed: 0
   definitions: script|title|subTitle|command|page|pageWidth|pageHeight
   script:
     - ^define entries 'li@'
@@ -222,6 +220,24 @@ msgBoxed:
 #
 #  END msgBoxed
 #--------------------------------------
+#  URL Parser
+#
+# - Allow scripters to easily have clickable text to open urls
+#
+#  Usage:
+#
+#msgParser:
+#  type: world
+#  debug: false
+#  events:
+#    on player receives message:
+#    - if <context.system_message> {
+#      - queue clear
+#      }
+#    - announce to_console '<context.raw_json>'
+#
+#  END URL Parser
+#--------------------------------------
 #  Line Wrapping utility
 #
 # - Turn a long string into a list of smaller strings
@@ -233,11 +249,10 @@ msgBoxed:
 lineWrap:
   type: procedure
   definitions: string|targetLen
-  speed: 0
   debug: false
 
   script:
-    - define stringLen '<def[string].length>'
+    - define stringLen '<def[string].unescaped.length>'
     - define c '<&f>'
     - if <def[stringLen].is[MORE].than[%targetLen%]> {
       - define lines 'li@'
@@ -246,14 +261,14 @@ lineWrap:
         - define hi '<def[increment].add[<def[targetLen].add[1]>].as_int||%targetLen%>'
         - define pass '<def[string].substring[%low%,%hi%]>'
         - if <def[pass].length.is[==].to[%stringLen%]> {
-          - define lines '<def[lines].include[%c%%pass%]||<def[lines]>>'
+          - define lines '<def[lines].include[%c%<def[pass].escaped>]||<def[lines]>>'
           - while stop
           }
           else {
           - define brake '<t[<def[pass].contains[<&nl>]>]:<def[pass].index_of[<&nl>]>||<def[pass].last_index_of[<&sp>]>>'
           - define increment '<def[increment].add[%brake%]||%brake%>'
-          - define passtrim '%c%<def[pass].substring[1,<t[<def[brake].is[MORE].than[0]>]:%brake%||<def[pass].length>>]>'
-          - define lines '<def[lines].include[%passtrim%]||<def[lines]>>'
+          - define passtrim '%c%<def[pass].unescaped.substring[1,<t[<def[brake].is[MORE].than[0]>]:%brake%||<def[pass].length>>]>'
+          - define lines '<def[lines].include[<def[passtrim].escaped>]||<def[lines]>>'
           - define c '<def[passtrim].last_color||<&f>>'
           - define stringLen '<def[stringLen].sub[%brake%]>'
           }
@@ -281,7 +296,6 @@ lineWrap:
 pagination:
   type: procedure
   definitions: page|pageSize
-  speed: 0
   debug: false
 
   script:
@@ -316,7 +330,6 @@ pagination:
 paragraph:
   type: procedure
   definitions: lineLen
-  speed: 0
   debug: false
 
   script:
@@ -350,12 +363,32 @@ paragraph:
 msgCentered:
   type: procedure
   definitions: lineLen|string
-  speed: 0
   debug: false
 
   script:
     - define pad '<el@val[%lineLen%].sub[<def[string].length>].div[2].as_int>'
     - determine '<&6.pad_right[%pad%].with[<&sp>]><def[string]><&6.pad_right[%pad%].with[<&sp>]>'
+#
+#  END msgCentered
+#--------------------------------------
+#
+#  Trimmed Message Utility
+#
+#  Returns your text trimmed to fit a specified length.
+#  Extra text is shown as an elipsis...
+#
+#  Usage: <proc[msgTrim].context[lineLen|string]>
+#
+msgTrim:
+  type: procedure
+  definitions: lineLen|string
+  debug: false
+
+  script:
+    - if <def[string].length> > %linelen% {
+      - determine '<def[string].unescaped.substring[1,<def[lineLen].sub[3].as_int||40>].escaped>...'
+      }
+    - determine '%string%'
 #
 #  END msgCentered
 #--------------------------------------
