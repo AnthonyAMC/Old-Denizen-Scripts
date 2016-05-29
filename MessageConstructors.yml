@@ -6,7 +6,7 @@
 #     A set of utilities to make displaying text pretty, uniform, and easy     #
 #                                                                              #
 #   Authors: |Anthony|                                                         #
-#   Version: 0.31                                                              #
+#   Version: 0.32                                                              #
 #   dScript Version: 0.9.8-DEV_b548                                            #
 #                                                                              #
 #   For bleeding-edge code, bug reports, code contributions, and feature       #
@@ -44,11 +44,11 @@ MSG_Version:
   type: version
   author: Anthony
   name: MessageConstructorLibrary
-  version: 0.31
+  version: 0.32
   description: A Library for Message Construction
   id: 90
 #
-#  END dWorldEditor Version
+#  END MCL Version
 #--------------------------------------
 #
 #
@@ -56,6 +56,7 @@ MSG_Version:
 #
 #
 #--------------------------------------
+#
 #  Message Prefixer
 #
 # - Pop-Up on hover shows your script title and 'Click for Help'
@@ -93,6 +94,7 @@ msgPrefixed:
 #
 #  END msgPrefixed
 #--------------------------------------
+#
 #  Boxed Message
 #
 # - Encapsulate your messages in a neat and tidy box format
@@ -220,24 +222,59 @@ msgBoxed:
 #
 #  END msgBoxed
 #--------------------------------------
+#
 #  URL Parser
 #
-# - Allow scripters to easily have clickable text to open urls
+# - Allow scripters to easily have clickable text to open urls, run commands, or just show messages on hover
 #
-#  Usage:
+#  Example Usage:
+#    - narrate "click <&e><proc[msgUrl].context[<&e>this|google.com/search|<&9>click]> link"
+#    - narrate "read the <&e><proc[msgcommand].context[<&e>help|help|<&a>click here fool!]> docs"
+#    - narrate "hover your mouse on the <&e><proc[msghover].context[<&e>secret|<&6>gold star!]> message"
 #
-#msgParser:
-#  type: world
-#  debug: false
-#  events:
-#    on player receives message:
-#    - if <context.system_message> {
-#      - queue clear
-#      }
-#    - announce to_console '<context.raw_json>'
+msgParser:
+  type: world
+  debug: false
+
+  events:
+    on player receives message:
+    - if !<context.message.contains_text[<&ss>@<&ss><&chr[260f]>]> {
+      - determine 'RAW_JSON:<context.raw_json>'
+      }
+    - define message '<context.raw_json.after[<&lb>].before_last[<&rb>]>'
+    - foreach '<def[message].after[<&lc>].before_last[<&rc>].split_by[<&rc>,<&lc>]>':
+      - define element '<def[value]>'
+      - foreach '<def[element].split_by[,]>':
+        - define node '<def[value]>'
+        - define attribute '<def[node].before[<&co>]>'
+        - define aValue '<def[node].after[<&co>]>'
+        - if '<def[attribute]>' == '<&dq>text<&dq>' {
+          - if '<def[aValue].starts_with[<&dq><&ss>@<&ss><&chr[260f]>]>' {
+            - define split '<def[aValue].after[<&dq><&ss>@<&ss><&chr[260f]>].split_by[_-_]>'
+            - define type '<def[split].get[1].unescaped>'
+            - define text '<def[split].get[2].replace[\u0026].with[&].unescaped>'
+            - if '%type%' == URL {
+              - define url 'http<&co>//<def[split].get[3].replace[\u0026].with[&].unescaped>'
+              - define hover '<def[split].get[4].before_last[<&dq>].replace[\u0026].with[&].unescaped>'
+              - define button '"text":"%text%","clickEvent":{"action":"open_url","value":"%url%"},"hoverEvent":{"action":"show_text","value":"%hover%"}'
+              }
+              else if '%type%' == command {
+              - define command '/<def[split].get[3].replace[\u0026].with[&].unescaped>'
+              - define hover '<def[split].get[4].before_last[<&dq>].replace[\u0026].with[&].unescaped>'
+              - define button '"text":"%text%","clickEvent":{"action":"run_command","value":"%command%"},"hoverEvent":{"action":"show_text","value":"%hover%"}'
+              }
+              else if '%type%' == hover {
+              - define hover '<def[split].get[3].before_last[<&dq>].replace[\u0026].with[&].unescaped>'
+              - define button '"text":"%text%","hoverEvent":{"action":"show_text","value":"%hover%"}'
+              }
+            - define message '<def[message].replace[%node%].with[%button%]>'
+            }
+          }
+    - determine 'RAW_JSON:{"extra":[<def[message]>],"text":""}'
 #
 #  END URL Parser
 #--------------------------------------
+#
 #  Line Wrapping utility
 #
 # - Turn a long string into a list of smaller strings
@@ -390,7 +427,58 @@ msgTrim:
       }
     - determine '%string%'
 #
-#  END msgCentered
+#  END msgTrim
+#--------------------------------------
+#
+#  URL Message Formatter
+#
+#  Returns your text formatted for automatic conversion to JSON.
+#
+#  Usage: <proc[msgUrl].context[%display%|%url%|%hover%]>
+#
+msgUrl:
+  type: procedure
+  definitions: display|url|hover
+  debug: false
+
+  script:
+    - determine '<&r><&ss>@<&ss><&chr[260f]>URL_-_<def[display].escaped>_-_<def[url].escaped>_-_<def[hover].escaped><&r>'
+#
+#  END msgUrl
+#--------------------------------------
+#
+#  Command Message Formatter
+#
+#  Returns your text formatted for automatic conversion to JSON.
+#
+#  Usage: <proc[msgCommand].context[%display%|%command%|%hover%]>
+#
+msgCommand:
+  type: procedure
+  definitions: display|command|hover
+  debug: false
+
+  script:
+    - determine '<&r><&ss>@<&ss><&chr[260f]>command_-_<def[display].escaped>_-_<def[command].escaped>_-_<def[hover].escaped><&r>'
+#
+#  END msgUrl
+#--------------------------------------
+#
+#  Hover Message Formatter
+#
+#  Returns your text formatted for automatic conversion to JSON.
+#
+#  Usage: <proc[msgHover].context[%display%|%hover%]>
+#
+msgHover:
+  type: procedure
+  definitions: display|hover
+  debug: false
+
+  script:
+    - determine '<&r><&ss>@<&ss><&chr[260f]>hover_-_<def[display].escaped>_-_<def[hover].escaped><&r>'
+#
+#  END msgUrl
 #--------------------------------------
 #
 #
