@@ -4,7 +4,7 @@
 #
 #
 #   Authors: |Anthony|, mcmonkey
-#   Version: 0.27
+#   Version: 0.28
 #   dScript Version: 0.9.8-DEV-b575
 #
 #
@@ -171,7 +171,7 @@ dWE_Version:
   type: version
   author: Anthony
   name: dWorldEditor
-  version: 0.27
+  version: 0.28
   description: Denizen World Editor
   id: 22
 #
@@ -600,7 +600,8 @@ dWE_Commands_Help:
         else {
         - define usage '<parse:<s@dWE_Commands_%value%.yaml_key[data.usage]||No usage info available!>>'
         - define usage '<proc[msgTrim].context[40|<def[usage].escaped>]>'
-        - define helpDoc '<def[helpDoc].include[<def[value].to_titlecase><&co><&sp><&7><parse:<s@dWE_Commands_%value%.yaml_key[description]||Short Description>>|<&e.pad_left[4].with[<&sp>]>%usage%]>'
+        - define button '<proc[msgCommand].context[<def[value].to_titlecase><&co>|.help %value%|<&a>Click for <&b><def[value].to_titlecase> <&a>help]>'
+        - define helpDoc '<def[helpDoc].include[%button%<&sp><&7><parse:<s@dWE_Commands_%value%.yaml_key[description]||Short Description>>|<&e.pad_left[3].with[<&sp>]>%usage%]>'
         }
       }
     - run s@msgBoxed instantly 'def:dwe|dWorldEditor|<&e>Help Files|dwe help|<def[page]||1>|52|10|<def[helpDoc].separated_by[|]>'
