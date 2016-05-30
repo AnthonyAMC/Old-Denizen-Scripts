@@ -289,14 +289,35 @@ lineWrap:
   debug: false
 
   script:
-    - define stringLen '<def[string].unescaped.length>'
+    - define cleanString 'li@'
+    - foreach '<def[string].split_by[ ]>':
+      - if '%value%' == '' {
+        - define word '<&sp>'
+        }
+        else {
+        - define word '%value%'
+        }
+      - if '<def[word].starts_with[<&r><&ss>@<&ss><&chr[260f]>]>' {
+        - define text '<def[word].after[<&r><&ss>@<&ss><&chr[260f]>].split_by[_-_].get[2].replace[\u0026].with[&].unescaped>'
+        - define %loop_index% '<def[word].replace[&].with[<&bs><&bs>u0026]>'
+        - define cleanString '<def[cleanString].include[%text%]>'
+        }
+        else {
+        - define cleanString '<def[cleanString].include[%word%]>'
+        }
+    - if <def[cleanString].is_empty> {
+      - determine 'li@ '
+      }
+    - define cleanString '<def[cleanString].separated_by[ ]>'
+
+    - define stringLen '<def[cleanString].unescaped.length>'
     - define c '<&f>'
     - if <def[stringLen].is[MORE].than[%targetLen%]> {
       - define lines 'li@'
       - while <def[stringLen].is[MORE].than[0]> {
         - define low '<def[increment].add[1].as_int||1>'
         - define hi '<def[increment].add[<def[targetLen].add[1]>].as_int||%targetLen%>'
-        - define pass '<def[string].substring[%low%,%hi%]>'
+        - define pass '<def[cleanString].substring[%low%,%hi%]>'
         - if <def[pass].length.is[==].to[%stringLen%]> {
           - define lines '<def[lines].include[%c%<def[pass].escaped>]||<def[lines]>>'
           - while stop
@@ -313,10 +334,40 @@ lineWrap:
           - while stop
           }
         }
-      - determine '<def[lines].as_list>'
+      - define i '0'
+      - define finalLines 'li@'
+      - foreach '<def[lines]>' {
+        - define finalString 'li@'
+        - foreach '<def[value].split_by[ ]>' {
+          - define i '<def[i].add[1].as_int>'
+          - if <def[%i%].exists> {
+            - define finalString '<def[finalString].include[<def[%i%]>]>'
+            }
+            else {
+            - if '%value%' == '' {
+              - define value '&sp'
+              }
+            - define finalString '<def[finalString].include[%value%]>'
+            }
+          }
+        - define finalLines '<def[finalLines].include[<def[finalString].separated_by[&sp]>]>'
+        }
+      - determine '<def[finalLines].as_list>'
       }
       else {
-      - determine '<def[string].as_list>'
+      - define finalString 'li@'
+      - foreach '<def[cleanString].split_by[ ]>' {
+        - if <def[%loop_index%].exists> {
+          - define finalString '<def[finalString].include[<def[%loop_index%]>]>'
+          }
+          else {
+          - if '%value%' == '' {
+            - define value '&sp'
+            }
+          - define finalString '<def[finalString].include[%value%]>'
+          }
+        }
+      - determine '<def[finalString].separated_by[&sp].as_list>'
       }
 #
 #  END lineWrap
@@ -442,7 +493,7 @@ msgUrl:
   debug: false
 
   script:
-    - determine '<&r><&ss>@<&ss><&chr[260f]>URL_-_<def[display].escaped>_-_<def[url].escaped>_-_<def[hover].escaped><&r>'
+    - determine '<&r><&ss>@<&ss><&chr[260f]>URL_-_<def[display].escaped.replace[ ].with[&sp]>_-_<def[url].escaped.replace[ ].with[&sp]>_-_<def[hover].escaped.replace[ ].with[&sp]><&r>'
 #
 #  END msgUrl
 #--------------------------------------
@@ -459,7 +510,7 @@ msgCommand:
   debug: false
 
   script:
-    - determine '<&r><&ss>@<&ss><&chr[260f]>command_-_<def[display].escaped>_-_<def[command].escaped>_-_<def[hover].escaped><&r>'
+    - determine '<&r><&ss>@<&ss><&chr[260f]>command_-_<def[display].escaped.replace[ ].with[&sp]>_-_<def[command].escaped.replace[ ].with[&sp]>_-_<def[hover].escaped.replace[ ].with[&sp]><&r>'
 #
 #  END msgUrl
 #--------------------------------------
@@ -476,7 +527,7 @@ msgHover:
   debug: false
 
   script:
-    - determine '<&r><&ss>@<&ss><&chr[260f]>hover_-_<def[display].escaped>_-_<def[hover].escaped><&r>'
+    - determine '<&r><&ss>@<&ss><&chr[260f]>hover_-_<def[display].escaped.replace[ ].with[&sp]>_-_<def[hover].escaped.replace[ ].with[&sp]><&r>'
 #
 #  END msgUrl
 #--------------------------------------
