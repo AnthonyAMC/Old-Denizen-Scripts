@@ -6,7 +6,7 @@
 #     A set of utilities to make displaying text pretty, uniform, and easy     #
 #                                                                              #
 #   Authors: |Anthony|                                                         #
-#   Version: 0.32                                                              #
+#   Version: 0.33                                                              #
 #   dScript Version: 0.9.8-DEV_b548                                            #
 #                                                                              #
 #   For bleeding-edge code, bug reports, code contributions, and feature       #
@@ -44,7 +44,7 @@ MSG_Version:
   type: version
   author: Anthony
   name: MessageConstructorLibrary
-  version: 0.32
+  version: 0.33
   description: A Library for Message Construction
   id: 90
 #
