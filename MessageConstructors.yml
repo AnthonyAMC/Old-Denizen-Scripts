@@ -6,7 +6,7 @@
 #     A set of utilities to make displaying text pretty, uniform, and easy     #
 #                                                                              #
 #   Authors: |Anthony|                                                         #
-#   Version: 0.33                                                              #
+#   Version: 0.34                                                              #
 #   dScript Version: 0.9.8-DEV_b548                                            #
 #                                                                              #
 #   For bleeding-edge code, bug reports, code contributions, and feature       #
@@ -44,7 +44,7 @@ MSG_Version:
   type: version
   author: Anthony
   name: MessageConstructorLibrary
-  version: 0.33
+  version: 0.34
   description: A Library for Message Construction
   id: 90
 #
@@ -88,7 +88,7 @@ msgPrefixed:
     - ^define button '"text":"%text%","clickEvent":{"action":"run_command","value":"%click%"},"hoverEvent":{"action":"show_item","value":"%hover%"}'
     - ^define spacer '"text":"  "'
     - ^foreach '<proc[lineWrap].context[<parse:<def[msg]>>|58]>' {
-      - ^execute as_server 'tellraw <player.name> {"text":"","extra":[{%button%},{%spacer%},{"text":"%value%"}]}'
+      - ^execute as_server 'tellraw <player.name> {"text":"","extra":[{%button%},{%spacer%},{"text":"<def[value].unescaped>"}]}'
       }
     - mark 'end'
 #
@@ -139,10 +139,32 @@ msgBoxed:
       - define page '%pageTotal%'
       }
     - ^define lines '<def[pageInfo].get[3].to[<def[pageInfo].size>]>'
-    - ^define heading '<def[title].pad_right[<def[title].length.max[10].as_int>].with[<&sp>]>  <def[subTitle]>'
+    - ^define cList 'li@0/black|1/dark_blue|2/dark_green|3/dark_aqua|4/dark_red|5/dark_purple|6/gold|7/gray|8/dark_gray|9/blue|a/green|b/aqua|c/red|d/light_purple|e/yellow|f/white|k/obfuscated|l/bold|m/strikethrough|n/underline|o/italic|r/reset'
+
+    - ^define i 0
+    - ^foreach 'li@title|subTitle':
+      - define this '%value%'
+      - define thisValue '<def[%this%]>'
+      - define clean%this% 'li@'
+      - foreach '<def[thisValue].split_by[ ]>':
+        - define i <def[i].add[1]>
+        - define word '%value%'
+        - if '%word%' == '' {
+          - define clean%this% '<def[clean%this%].include[<&sp>]>'
+          - foreach next
+          }
+        - if !<def[word].starts_with[<&r><&ss>@<&ss><&chr[260f]>]> {
+          - define clean%this% '<def[clean%this%].include[%word%]>'
+          - foreach next
+          }
+        - define text '<def[word].after[<&r><&ss>@<&ss><&chr[260f]>].split_by[_-_].get[2].replace[\u0026].with[&].unescaped>'
+        - define %text% '<def[word].replace[&].with[<&bs><&bs>u0026]>'
+        - define clean%this% '<def[clean%this%].include[%text%]>'
+      - define clean%this% '<def[clean%this%].separated_by[<&sp>]>'
+    - ^define hpad '<def[cleanTitle].length.max[10].as_int>'
+    - ^define heading '<def[cleanTitle].pad_right[%hpad%].with[<&sp>]>  <def[cleansubTitle]>'
     - ^define pagesInfo '<&7><&o>Page <&f>%page% <&7><&o>of <&f>%pageTotal%'
     - ^define pad '<def[pageWidth].sub[<def[heading].strip_color.length>].sub[<def[pagesInfo].strip_color.length>].mul[1.5].round>'
-
     - ^if !<player.is_player||false> {
       - ^announce to_console "<&5>|<&pipe.pad_left[<def[pageWidth]>].with[-]>"
       - ^announce to_console "<&5>|<&sp><&sp><&sp><&6><def[heading]> <&7.pad_right[%pad%].with[ ]><def[pagesInfo]>"
@@ -154,6 +176,51 @@ msgBoxed:
       - ^inject locally msgsFooter
       - ^queue clear
       }
+
+    - ^define finalHeading 'li@'
+    - ^foreach '<def[heading].split_by[ ]>':
+      - define c '<def[value].last_color.escaped.after[&ss]>'
+      - if '%c%' == '' {
+        - if <def[lc].exists> {
+          - define c '%lc%'
+          }
+          else {
+          - define c 'white'
+          }
+        }
+        else {
+        - define c '<def[cList].map_get[%c%]>'
+        }
+      - define lc '%c%'
+      - if <def[%value%].exists> {
+        - define split '<def[%value%].after[<&ss>@<&ss><&chr[260f]>].split_by[_-_]>'
+        - define type '<def[split].get[1].unescaped>'
+        - define text '<def[split].get[2].replace[\u0026].with[&].unescaped> '
+        - if '%type%' == 'URL' {
+          - define url 'http<&co>//<def[split].get[3].replace[\u0026].with[&].unescaped>'
+          - define hover '<def[split].get[4].replace[\u0026].with[&].unescaped>'
+          - define button '"color":"<def[c]>","text":"%text%","clickEvent":{"action":"open_url","value":"%url%"},"hoverEvent":{"action":"show_text","value":"%hover%"}'
+          }
+          else if '%type%' == 'command' {
+          - define tcommand '/<def[split].get[3].replace[\u0026].with[&].unescaped>'
+          - define hover '<def[split].get[4].replace[\u0026].with[&].unescaped>'
+          - define button '"color":"<def[c]>","text":"%text%","clickEvent":{"action":"run_command","value":"%tcommand%"},"hoverEvent":{"action":"show_text","value":"%hover%"}'
+          }
+          else if '%type%' == 'hover' {
+          - define hover '<def[split].get[3].replace[\u0026].with[&].unescaped>'
+          - define button '"color":"<def[c]>","text":"%text%","hoverEvent":{"action":"show_text","value":"%hover%"}'
+          }
+
+        - define finalHeading '<def[finalHeading].include[{%button%}]>'
+        }
+        else {
+        - if '%value%' == '' {
+          - define value '&sp'
+          }
+        - define finalHeading '<def[finalHeading].include[{"text":"<def[value].strip_color>","color":"<def[c]>"}|{"text":"<&sp>"}]>'
+        }
+    - ^define finalHeading '<def[finalHeading].separated_by[,].unescaped>'
+
     - ^inject locally msgsHeader
     - ^inject locally msgsBody
     - ^inject locally msgsFooter
@@ -177,11 +244,12 @@ msgBoxed:
       - define clickNext '/%command% <def[page].add[1]>'
       - define buttonNext '"text":"%pageTotal%","clickEvent":{"action":"run_command","value":"%clickNext%"},"hoverEvent":{"action":"show_item","value":"%hoverNext%"}'
       }
-    - ^define prefix '"text":"<&5>|<&sp><&sp><&sp><&6><def[heading]> <&7.pad_right[%pad%].with[ ]>"'
+    - ^define prefix '"text":"<&5>|<&sp><&sp><&sp><&6>"'
+    - ^define tpad '"text":"<&7.pad_right[%pad%].with[ ]>"'
     - ^define p '"text":"<&7><&o>Page<&sp>"'
     - ^define o '"text":"<&7><&o><&sp>of<&sp>"'
     - ^narrate "<&5>|<&pipe.pad_left[<def[pageWidth]>].with[-]>"
-    - ^execute as_server 'tellraw <player.name> {"text":"","extra":[{%prefix%},{%p%},{%buttonThis%},{%o%},{%buttonNext%}]}'
+    - ^execute as_server 'tellraw <player.name> {"text":"","extra":[{%prefix%},%finalHeading%,{%tpad%},{%p%},{%buttonThis%},{%o%},{%buttonNext%}]}'
     - ^narrate "<&5>|<&f>"
 
   msgsBody:
@@ -239,7 +307,7 @@ msgParser:
   events:
     on player receives message:
     - if !<context.message.contains_text[<&ss>@<&ss><&chr[260f]>]> {
-      - determine 'RAW_JSON:<context.raw_json>'
+      - queue clear
       }
     - define message '<context.raw_json.after[<&lb>].before_last[<&rb>]>'
     - foreach '<def[message].after[<&lc>].before_last[<&rc>].split_by[<&rc>,<&lc>]>':
@@ -248,28 +316,28 @@ msgParser:
         - define node '<def[value]>'
         - define attribute '<def[node].before[<&co>]>'
         - define aValue '<def[node].after[<&co>]>'
-        - if '<def[attribute]>' == '<&dq>text<&dq>' {
-          - if '<def[aValue].starts_with[<&dq><&ss>@<&ss><&chr[260f]>]>' {
-            - define split '<def[aValue].after[<&dq><&ss>@<&ss><&chr[260f]>].split_by[_-_]>'
-            - define type '<def[split].get[1].unescaped>'
-            - define text '<def[split].get[2].replace[\u0026].with[&].unescaped>'
-            - if '%type%' == URL {
-              - define url 'http<&co>//<def[split].get[3].replace[\u0026].with[&].unescaped>'
-              - define hover '<def[split].get[4].before_last[<&dq>].replace[\u0026].with[&].unescaped>'
-              - define button '"text":"%text%","clickEvent":{"action":"open_url","value":"%url%"},"hoverEvent":{"action":"show_text","value":"%hover%"}'
-              }
-              else if '%type%' == command {
-              - define command '/<def[split].get[3].replace[\u0026].with[&].unescaped>'
-              - define hover '<def[split].get[4].before_last[<&dq>].replace[\u0026].with[&].unescaped>'
-              - define button '"text":"%text%","clickEvent":{"action":"run_command","value":"%command%"},"hoverEvent":{"action":"show_text","value":"%hover%"}'
-              }
-              else if '%type%' == hover {
-              - define hover '<def[split].get[3].before_last[<&dq>].replace[\u0026].with[&].unescaped>'
-              - define button '"text":"%text%","hoverEvent":{"action":"show_text","value":"%hover%"}'
-              }
-            - define message '<def[message].replace[%node%].with[%button%]>'
-            }
+        - if '<def[attribute]>' != '<&dq>text<&dq>' {
+          - foreach next
           }
+        - if !<def[aValue].starts_with[<&dq><&ss>@<&ss><&chr[260f]>]> {
+          - foreach next
+          }
+        - define split '<def[aValue].after[<&dq><&ss>@<&ss><&chr[260f]>].split_by[_-_]>'
+        - define type '<def[split].get[1].unescaped>'
+        - define text '<def[split].get[2].replace[\u0026].with[&].unescaped>'
+        - choose '<def[split].get[1].unescaped>':
+          - case 'URL':
+            - define url 'http<&co>//<def[split].get[3].replace[\u0026].with[&].unescaped>'
+            - define hover '<def[split].get[4].before_last[<&dq>].replace[\u0026].with[&].unescaped>'
+            - define button '"text":"%text%","clickEvent":{"action":"open_url","value":"%url%"},"hoverEvent":{"action":"show_text","value":"%hover%"}'
+          - case 'command':
+            - define command '/<def[split].get[3].replace[\u0026].with[&].unescaped>'
+            - define hover '<def[split].get[4].before_last[<&dq>].replace[\u0026].with[&].unescaped>'
+            - define button '"text":"%text%","clickEvent":{"action":"run_command","value":"%command%"},"hoverEvent":{"action":"show_text","value":"%hover%"}'
+          - case 'hover':
+            - define hover '<def[split].get[3].before_last[<&dq>].replace[\u0026].with[&].unescaped>'
+            - define button '"text":"%text%","hoverEvent":{"action":"show_text","value":"%hover%"}'
+        - define message '<def[message].replace[%node%].with[%button%]>'
     - determine 'RAW_JSON:{"extra":[<def[message]>],"text":""}'
 #
 #  END URL Parser
@@ -292,69 +360,24 @@ lineWrap:
     - define cleanString 'li@'
     - foreach '<def[string].split_by[ ]>':
       - if '%value%' == '' {
-        - define word '<&sp>'
+        - define cleanString '<def[cleanString].include[&sp]>'
+        - foreach next
         }
-        else {
-        - define word '%value%'
+      - define word '%value%'
+      - if !<def[word].starts_with[<&r><&ss>@<&ss><&chr[260f]>]> {
+        - define cleanString '<def[cleanString].include[<def[word]>]>'
+        - foreach next
         }
-      - if '<def[word].starts_with[<&r><&ss>@<&ss><&chr[260f]>]>' {
-        - define text '<def[word].after[<&r><&ss>@<&ss><&chr[260f]>].split_by[_-_].get[2].replace[\u0026].with[&].unescaped>'
-        - define %loop_index% '<def[word].replace[&].with[<&bs><&bs>u0026]>'
-        - define cleanString '<def[cleanString].include[%text%]>'
-        }
-        else {
-        - define cleanString '<def[cleanString].include[%word%]>'
-        }
+      - define text '<def[word].after[<&r><&ss>@<&ss><&chr[260f]>].split_by[_-_].get[2].replace[\u0026].with[&].unescaped>'
+      - define %loop_index% '<def[word].replace[&].with[<&bs><&bs>u0026]>'
+      - define cleanString '<def[cleanString].include[%text%]>'
+
     - if <def[cleanString].is_empty> {
       - determine 'li@ '
       }
     - define cleanString '<def[cleanString].separated_by[ ]>'
-
     - define stringLen '<def[cleanString].unescaped.length>'
-    - define c '<&f>'
-    - if <def[stringLen].is[MORE].than[%targetLen%]> {
-      - define lines 'li@'
-      - while <def[stringLen].is[MORE].than[0]> {
-        - define low '<def[increment].add[1].as_int||1>'
-        - define hi '<def[increment].add[<def[targetLen].add[1]>].as_int||%targetLen%>'
-        - define pass '<def[cleanString].substring[%low%,%hi%]>'
-        - if <def[pass].length.is[==].to[%stringLen%]> {
-          - define lines '<def[lines].include[%c%<def[pass].escaped>]||<def[lines]>>'
-          - while stop
-          }
-          else {
-          - define brake '<t[<def[pass].contains[<&nl>]>]:<def[pass].index_of[<&nl>]>||<def[pass].last_index_of[<&sp>]>>'
-          - define increment '<def[increment].add[%brake%]||%brake%>'
-          - define passtrim '%c%<def[pass].unescaped.substring[1,<t[<def[brake].is[MORE].than[0]>]:%brake%||<def[pass].length>>]>'
-          - define lines '<def[lines].include[<def[passtrim].escaped>]||<def[lines]>>'
-          - define c '<def[passtrim].last_color||<&f>>'
-          - define stringLen '<def[stringLen].sub[%brake%]>'
-          }
-        - if <def[loop_index].is[MORE].than[10]> {
-          - while stop
-          }
-        }
-      - define i '0'
-      - define finalLines 'li@'
-      - foreach '<def[lines]>' {
-        - define finalString 'li@'
-        - foreach '<def[value].split_by[ ]>' {
-          - define i '<def[i].add[1].as_int>'
-          - if <def[%i%].exists> {
-            - define finalString '<def[finalString].include[<def[%i%]>]>'
-            }
-            else {
-            - if '%value%' == '' {
-              - define value '&sp'
-              }
-            - define finalString '<def[finalString].include[%value%]>'
-            }
-          }
-        - define finalLines '<def[finalLines].include[<def[finalString].separated_by[&sp]>]>'
-        }
-      - determine '<def[finalLines].as_list>'
-      }
-      else {
+    - if %stringLen% <= %targetLen% {
       - define finalString 'li@'
       - foreach '<def[cleanString].split_by[ ]>' {
         - if <def[%loop_index%].exists> {
@@ -367,8 +390,46 @@ lineWrap:
           - define finalString '<def[finalString].include[%value%]>'
           }
         }
-      - determine '<def[finalString].separated_by[&sp].as_list>'
+      - determine '<def[finalString].separated_by[<&sp>].as_list>'
       }
+    - define c '<&f>'
+    - define lines 'li@'
+    - while '<def[stringLen].is[MORE].than[0]>':
+      - define low '<def[increment].add[1].as_int||1>'
+      - define hi '<def[increment].add[<def[targetLen].add[1]>].as_int||%targetLen%>'
+      - define pass '<def[cleanString].unescaped.substring[%low%,%hi%]>'
+      - if <def[pass].length> == %stringLen% {
+        - define lines '<def[lines].include[%c%<def[pass].escaped>]>'
+        - while stop
+        }
+        else {
+        - define brake '<t[<def[pass].contains[<&nl>]>]:<def[pass].index_of[<&nl>]>||<def[pass].last_index_of[<&sp>]>>'
+        - define increment '<def[increment].add[%brake%]||%brake%>'
+        - define passtrim '%c%<def[pass].unescaped.substring[1,<t[<def[brake].is[MORE].than[0]>]:%brake%||<def[pass].length>>]>'
+        - define lines '<def[lines].include[<def[passtrim].escaped>]||<def[lines]>>'
+        - define c '<def[passtrim].last_color||<&f>>'
+        - define stringLen '<def[stringLen].sub[%brake%]>'
+        }
+      - if <def[loop_index].is[MORE].than[10]> {
+        - while stop
+        }
+    - define i '0'
+    - define finalLines 'li@'
+    - foreach '<def[lines]>':
+      - define finalString 'li@'
+      - foreach '<def[value].split_by[ ]>':
+        - define i '<def[i].add[1].as_int>'
+        - if <def[%i%].exists> {
+          - define finalString '<def[finalString].include[<def[%i%]>]>'
+          }
+          else {
+          - if '%value%' == '' {
+            - define value '<&sp>'
+            }
+          - define finalString '<def[finalString].include[%value%]>'
+          }
+      - define finalLines '<def[finalLines].include[<def[finalString].separated_by[<&sp>]>]>'
+    - determine '<def[finalLines].as_list>'
 #
 #  END lineWrap
 #--------------------------------------
@@ -512,7 +573,7 @@ msgCommand:
   script:
     - determine '<&r><&ss>@<&ss><&chr[260f]>command_-_<def[display].escaped.replace[ ].with[&sp]>_-_<def[command].escaped.replace[ ].with[&sp]>_-_<def[hover].escaped.replace[ ].with[&sp]><&r>'
 #
-#  END msgUrl
+#  END msgCommand
 #--------------------------------------
 #
 #  Hover Message Formatter
@@ -529,8 +590,9 @@ msgHover:
   script:
     - determine '<&r><&ss>@<&ss><&chr[260f]>hover_-_<def[display].escaped.replace[ ].with[&sp]>_-_<def[hover].escaped.replace[ ].with[&sp]><&r>'
 #
-#  END msgUrl
+#  END msgHover
 #--------------------------------------
+#
 #
 #
 ################################################################################
