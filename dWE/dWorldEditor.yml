@@ -4,7 +4,7 @@
 #
 #
 #   Authors: |Anthony|, mcmonkey
-#   Version: 0.28
+#   Version: 0.29
 #   dScript Version: 0.9.8-DEV-b575
 #
 #
@@ -171,7 +171,7 @@ dWE_Version:
   type: version
   author: Anthony
   name: dWorldEditor
-  version: 0.28
+  version: 0.29
   description: Denizen World Editor
   id: 22
 #
@@ -604,7 +604,7 @@ dWE_Commands_Help:
         - define helpDoc '<def[helpDoc].include[%button%<&sp><&7><parse:<s@dWE_Commands_%value%.yaml_key[description]||Short Description>>|<&e.pad_left[3].with[<&sp>]>%usage%]>'
         }
       }
-    - run s@msgBoxed instantly 'def:dwe|dWorldEditor|<&e>Help Files|dwe help|<def[page]||1>|52|10|<def[helpDoc].separated_by[|]>'
+    - run s@msgBoxed instantly 'def:dwe|<proc[msgCommand].context[<&6>dWorldEditor|.about|<&a>Click to learn<&nl><&a>about the project!]>|<proc[msgCommand].context[<&e>Help|.help|<&a>Go back to main help]> Files|dwe help|<def[page]||1>|52|10|<def[helpDoc].separated_by[|]>'
 
   helpCommand:
     # Help for a specific command
@@ -613,7 +613,7 @@ dWE_Commands_Help:
     - define usage '<parse:<s@dWE_Commands_%command%.yaml_key[data.usage]||No help for you!>>'
     - define examples '<parse:<s@dWE_Commands_%command%.yaml_key[data.examples]||No help for you!>>'
     - define entries '<&7>%short%| |%desc%| |<&b><&n>Usage<&co>| |<&e.pad_left[3].with[ ]>%usage%| |<&3><&n>Examples<&co>| |%examples%'
-    - run s@msgBoxed instantly 'def:dwe|dWorldEditor|<&e>Help - <def[arg].to_titlecase>|dwe help %arg%|<def[page]||1>|52|10|%entries%'
+    - run s@msgBoxed instantly 'def:dwe|<proc[msgCommand].context[<&6>dWorldEditor|.about|<&a>Click to learn<&nl><&a>about the project!]>|<proc[msgCommand].context[<&e>Help|.help|<&a>Go back to main help]> - <def[arg].to_titlecase>|.help %arg%|<def[page]||1>|52|10|%entries%'
 
 dWE_Commands_About:
   type: command
@@ -644,7 +644,7 @@ dWE_Commands_About:
       }
     - define prerun 'a'
     - inject s@dWE_Commands p:prerun
-    - run s@msgBoxed instantly 'def:dwe|dWorldEditor|About|dwe about|<tern[<def[args].get[1].is[matches].to[number]||false>]:<def[args].get[1].abs.round>||1>|52|12|<&7><parse:<s@dWE_Commands_%command%.yaml_key[description]>>| |<parse:<s@dWE_Commands_%command%.yaml_key[data.description]>>'
+    - run s@msgBoxed instantly 'def:dwe|<proc[msgCommand].context[<&6>dWorldEditor|.help|<&a>Go back to main help]>|<&e>About|dwe about|<tern[<def[args].get[1].is[matches].to[number]||false>]:<def[args].get[1].abs.round>||1>|52|12|<&7><parse:<s@dWE_Commands_%command%.yaml_key[description]>>| |<parse:<s@dWE_Commands_%command%.yaml_key[data.description]>>'
 
 
 dWE_Commands_Show:
