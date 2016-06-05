@@ -154,7 +154,7 @@ dRegions:
       }
 
     on world initializes:
-    - if <proc[list_instances].contains[<context.world.name>]> {
+    - if <context.world.name.starts_with[instancing/instances]> {
       - queue clear
       }
     - run locally loadYaml instantly
@@ -2141,7 +2141,7 @@ dRegions_HasPerm_Command:
 #
 dRegions_CloneWord:
   type: world
-  debug: false
+  debug: true
 
   events:
     on instance created:
