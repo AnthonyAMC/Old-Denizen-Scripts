@@ -6,7 +6,11 @@
 #    - Entity flags exist in denizen now and can be used as rate limiters
 #    - NIGHTMARE flag - enter bed transport to nightmare. Creates a pseudorandom instance. Hunt for a bed to get out.
 #
-dRegions_Flags_Processors_state-withTarget-withGroup:
+#---------------------------------------
+#
+# State-withTarget-withGroup
+#
+dRegions_Flags_Processors_stg:
   type: task
   debug: false
   script:
@@ -39,8 +43,8 @@ dRegions_Flags_Processors_state-withTarget-withGroup:
     # First we check the flag if it only wants the highest priority region.
     - if '<s@dRegions_Flag_%flag%.yaml_key[region_highestOnly]||false>' {
       - define thisRegion '<def[orderedRegions].get[1]>'
-      - if <yaml[dRegions_%world%_cache].contains[cache.state-withTarget-withGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]> {
-        - define a '<yaml[dRegions_%world%_cache].read[cache.state-withTarget-withGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]>'
+      - if <yaml[dRegions_%world%_cache].contains[cache.stg.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]> {
+        - define a '<yaml[dRegions_%world%_cache].read[cache.stg.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]>'
         - goto 'a'
         }
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>/all'
@@ -75,7 +79,7 @@ dRegions_Flags_Processors_state-withTarget-withGroup:
         else {
         - define a '%c%'
         }
-      - yaml set 'cache.state-withTarget-withGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%:%a%' 'id:dRegions_%world%_cache'
+      - yaml set 'cache.stg.%thisRegion%.%flag%.%target%.%prefix%.%uuid%:%a%' 'id:dRegions_%world%_cache'
       - goto 'a'
       }
     # Parse %orderedRegions% until the %flagObj% has a value. Not sure if %targetList% should be filled independently, only in
@@ -84,8 +88,8 @@ dRegions_Flags_Processors_state-withTarget-withGroup:
     - define s '<def[orderedRegions].size>'
     - foreach '%orderedRegions%':
       - define thisRegion '%value%'
-      - if <yaml[dRegions_%world%_cache].contains[cache.state-withTarget-withGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]> {
-        - define a '<yaml[dRegions_%world%_cache].read[cache.state-withTarget-withGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]>'
+      - if <yaml[dRegions_%world%_cache].contains[cache.stg.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]> {
+        - define a '<yaml[dRegions_%world%_cache].read[cache.stg.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]>'
         - if '%a%' == 'none' {
           - define a 'true'
           - foreach next
@@ -100,7 +104,7 @@ dRegions_Flags_Processors_state-withTarget-withGroup:
       - if %loop_index% != %s% {
         - if <def[flagObj].starts_with[none]> {
           - define a 'true'
-          - yaml set 'cache.state-withTarget-withGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%:none' 'id:dRegions_%world%_cache'
+          - yaml set 'cache.stg.%thisRegion%.%flag%.%target%.%prefix%.%uuid%:none' 'id:dRegions_%world%_cache'
           - foreach next
           }
         }
@@ -134,7 +138,7 @@ dRegions_Flags_Processors_state-withTarget-withGroup:
         else {
         - define a '%c%'
         }
-      - yaml set 'cache.state-withTarget-withGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%:%a%' 'id:dRegions_%world%_cache'
+      - yaml set 'cache.stg.%thisRegion%.%flag%.%target%.%prefix%.%uuid%:%a%' 'id:dRegions_%world%_cache'
       - foreach stop
 
     # Set the rateLimit if applicable
@@ -166,18 +170,20 @@ dRegions_Flags_Processors_state-withTarget-withGroup:
       }
     - determine cancelled
 #
-# END state-withTarget-withGroup
+# END stg
 #---------------------------------------
 #
-dRegions_Flags_Processors_state-withTarget:
+# State-withTarget
+#
+dRegions_Flags_Processors_st:
   type: task
   debug: false
   script:
     - define listflag '<s@dRegions_Flag_%flag%.yaml_key[flag_targetList]||null>'
     - if '<s@dRegions_Flag_%flag%.yaml_key[region_highestOnly]||false>' {
       - define thisRegion '<def[orderedRegions].get[1]>'
-      - if <yaml[dRegions_%world%_cache].contains[cache.state-withTarget.%thisRegion%.%flag%.%target%]> {
-        - define a '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%thisRegion%.%flag%.%target%]>'
+      - if <yaml[dRegions_%world%_cache].contains[cache.st.%thisRegion%.%flag%.%target%]> {
+        - define a '<yaml[dRegions_%world%_cache].read[cache.st.%thisRegion%.%flag%.%target%]>'
         - goto 'a'
         }
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>'
@@ -205,15 +211,15 @@ dRegions_Flags_Processors_state-withTarget:
         else {
         - define a '%c%'
         }
-      - yaml set 'cache.state-withTarget.%thisRegion%.%flag%.%target%:%a%' 'id:dRegions_%world%_cache'
+      - yaml set 'cache.st.%thisRegion%.%flag%.%target%:%a%' 'id:dRegions_%world%_cache'
       - goto 'a'
       }
     - define targetlist 'li@none'
     - define s '<def[orderedRegions].size>'
     - foreach '%orderedRegions%':
       - define thisRegion '%value%'
-      - if <yaml[dRegions_%world%_cache].contains[cache.state-withTarget.%thisRegion%.%flag%.%target%]> {
-        - define a '<yaml[dRegions_%world%_cache].read[cache.state-withTarget.%thisRegion%.%flag%.%target%]>'
+      - if <yaml[dRegions_%world%_cache].contains[cache.st.%thisRegion%.%flag%.%target%]> {
+        - define a '<yaml[dRegions_%world%_cache].read[cache.st.%thisRegion%.%flag%.%target%]>'
         - if '%a%' == 'none' {
           - define a 'true'
           - foreach next
@@ -227,7 +233,7 @@ dRegions_Flags_Processors_state-withTarget:
       - if %loop_index% != %s% {
         - if '%flagObj%' == 'none' {
           - define a 'true'
-          - yaml set 'cache.state-withTarget.%thisRegion%.%flag%.%target%:none' 'id:dRegions_%world%_cache'
+          - yaml set 'cache.st.%thisRegion%.%flag%.%target%:none' 'id:dRegions_%world%_cache'
           - foreach next
           }
         }
@@ -254,7 +260,7 @@ dRegions_Flags_Processors_state-withTarget:
         else {
         - define a '%c%'
         }
-      - yaml set 'cache.state-withTarget.%thisRegion%.%flag%.%target%:%a%' 'id:dRegions_%world%_cache'
+      - yaml set 'cache.st.%thisRegion%.%flag%.%target%:%a%' 'id:dRegions_%world%_cache'
       - foreach stop
 
     - mark 'a'
@@ -280,10 +286,12 @@ dRegions_Flags_Processors_state-withTarget:
       }
     - determine cancelled
 #
-# END state-withTarget
+# END st
 #---------------------------------------
 #
-dRegions_Flags_Processors_state-withGroup:
+# State-withGroup
+#
+dRegions_Flags_Processors_sg:
   type: task
   debug: false
   script:
@@ -301,8 +309,8 @@ dRegions_Flags_Processors_state-withGroup:
     - define prefix '<def[uuid].substring[1,2]>'
     - if '<s@dRegions_Flag_%flag%.yaml_key[region_highestOnly]||false>' {
       - define thisRegion '<def[orderedRegions].get[1]>'
-      - if <yaml[dRegions_%world%_cache].contains[cache.state-withGroup.%thisRegion%.%flag%.%prefix%.%uuid%]> {
-        - define a '<yaml[dRegions_%world%_cache].read[cache.state-withGroup.%thisRegion%.%flag%.%prefix%.%uuid%]>'
+      - if <yaml[dRegions_%world%_cache].contains[cache.sg.%thisRegion%.%flag%.%prefix%.%uuid%]> {
+        - define a '<yaml[dRegions_%world%_cache].read[cache.sg.%thisRegion%.%flag%.%prefix%.%uuid%]>'
         - goto 'a'
         }
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>/all'
@@ -322,14 +330,14 @@ dRegions_Flags_Processors_state-withGroup:
         else {
         - define a '%c%'
         }
-      - yaml set 'cache.state-withGroup.%thisRegion%.%flag%.%prefix%.%uuid%:%a%' 'id:dRegions_%world%_cache'
+      - yaml set 'cache.sg.%thisRegion%.%flag%.%prefix%.%uuid%:%a%' 'id:dRegions_%world%_cache'
       - goto 'a'
       }
     - define s '<def[orderedRegions].size>'
     - foreach '%orderedRegions%':
       - define thisRegion '%value%'
-      - if <yaml[dRegions_%world%_cache].contains[cache.state-withGroup.%thisRegion%.%flag%.%prefix%.%uuid%]> {
-        - define a '<yaml[dRegions_%world%_cache].read[cache.state-withGroup.%thisRegion%.%flag%.%prefix%.%uuid%]>'
+      - if <yaml[dRegions_%world%_cache].contains[cache.sg.%thisRegion%.%flag%.%prefix%.%uuid%]> {
+        - define a '<yaml[dRegions_%world%_cache].read[cache.sg.%thisRegion%.%flag%.%prefix%.%uuid%]>'
         - if '%a%' == 'none' {
           - define a 'true'
           - foreach next
@@ -340,7 +348,7 @@ dRegions_Flags_Processors_state-withGroup:
       - if %loop_index% != %s% {
         - if <def[flagObj].starts_with[none]> {
           - define a 'true'
-          - yaml set 'cache.state-withGroup.%thisRegion%.%flag%.%prefix%.%uuid%:none' 'id:dRegions_%world%_cache'
+          - yaml set 'cache.sg.%thisRegion%.%flag%.%prefix%.%uuid%:none' 'id:dRegions_%world%_cache'
           - foreach next
           }
         }
@@ -360,7 +368,7 @@ dRegions_Flags_Processors_state-withGroup:
         else {
         - define a '%c%'
         }
-      - yaml set 'cache.state-withGroup.%thisRegion%.%flag%.%prefix%.%uuid%:%a%' 'id:dRegions_%world%_cache'
+      - yaml set 'cache.sg.%thisRegion%.%flag%.%prefix%.%uuid%:%a%' 'id:dRegions_%world%_cache'
       - foreach stop
 
     - mark 'a'
@@ -390,10 +398,12 @@ dRegions_Flags_Processors_state-withGroup:
       }
     - determine cancelled
 #
-# END state-withGroup
+# END sg
 #---------------------------------------
 #
-dRegions_Flags_Processors_state-withTargetString-withGroup:
+# State-withTargetString-withGroup
+#
+dRegions_Flags_Processors_stsg:
   type: task
   debug: false
   script:
@@ -412,8 +422,8 @@ dRegions_Flags_Processors_state-withTargetString-withGroup:
     - define listflag '<s@dRegions_Flag_%flag%.yaml_key[flag_targetList]||null>'
     - if '<s@dRegions_Flag_%flag%.yaml_key[region_highestOnly]||false>' {
       - define thisRegion '<def[orderedRegions].get[1]>'
-      - if <yaml[dRegions_%world%_cache].contains[cache.state-withTargetString-withGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]> {
-        - define a '<yaml[dRegions_%world%_cache].read[cache.state-withTargetString-withGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]>'
+      - if <yaml[dRegions_%world%_cache].contains[cache.stsg.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]> {
+        - define a '<yaml[dRegions_%world%_cache].read[cache.stsg.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]>'
         - goto 'a'
         }
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>/all'
@@ -446,15 +456,15 @@ dRegions_Flags_Processors_state-withTargetString-withGroup:
         else {
         - define a '%c%'
         }
-      - yaml set 'cache.state-withTargetString-withGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%:%a%' 'id:dRegions_%world%_cache'
+      - yaml set 'cache.stsg.%thisRegion%.%flag%.%target%.%prefix%.%uuid%:%a%' 'id:dRegions_%world%_cache'
       - goto 'a'
       }
     - define targetlist 'li@none'
     - define s '<def[orderedRegions].size>'
     - foreach '%orderedRegions%':
       - define thisRegion '%value%'
-      - if <yaml[dRegions_%world%_cache].contains[cache.state-withTargetString-withGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]> {
-        - define a '<yaml[dRegions_%world%_cache].read[cache.state-withTargetString-withGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]>'
+      - if <yaml[dRegions_%world%_cache].contains[cache.stsg.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]> {
+        - define a '<yaml[dRegions_%world%_cache].read[cache.stsg.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]>'
         - if '%a%' == 'none' {
           - define a 'true'
           - foreach next
@@ -468,7 +478,7 @@ dRegions_Flags_Processors_state-withTargetString-withGroup:
       - if %loop_index% != %s% {
         - if <def[flagObj].starts_with[none]> {
           - define a 'true'
-          - yaml set 'cache.state-withTargetString-withGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%:none' 'id:dRegions_%world%_cache'
+          - yaml set 'cache.stsg.%thisRegion%.%flag%.%target%.%prefix%.%uuid%:none' 'id:dRegions_%world%_cache'
           - foreach next
           }
         }
@@ -500,7 +510,7 @@ dRegions_Flags_Processors_state-withTargetString-withGroup:
         else {
         - define a '%c%'
         }
-      - yaml set 'cache.state-withTargetString-withGroup.%thisRegion%.%flag%.%target%.%prefix%.%uuid%:%a%' 'id:dRegions_%world%_cache'
+      - yaml set 'cache.stsg.%thisRegion%.%flag%.%target%.%prefix%.%uuid%:%a%' 'id:dRegions_%world%_cache'
       - foreach stop
     - mark 'a'
     - if %sameRegion% {
@@ -529,7 +539,7 @@ dRegions_Flags_Processors_state-withTargetString-withGroup:
       }
     - determine cancelled
 #
-# END state-withTargetString-withGroup
+# END stsg
 #---------------------------------------
 #
 # Testing an alternate method. This process took an average of 1ms longer AND lackd the ability to set a cache at every level.
@@ -558,80 +568,154 @@ dRegions_Flags_Processors_state-withTargetString-withGroup:
 #      - inject 's@dRegions_Flag_%flag%' 'p:event-allowed'
 #      }
 #
-dRegions_Flags_Processors_boolean:
+#dRegions_Flags_Processors_b:
+#  type: task
+#  debug: false
+#  script:
+#    - if '<s@dRegions_Flag_%flag%.yaml_key[region_highestOnly]||false>' {
+#      - define thisRegion '<def[orderedRegions].get[1]>'
+#      - if <yaml[dRegions_%world%_cache].contains[cache.b.%thisRegion%.%flag%]> {
+#        - define a '<yaml[dRegions_%world%_cache].read[cache.b.%thisRegion%.%flag%]>'
+#        - goto 'a'
+#        }
+#      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>'
+#      - if '%flagObj%' == 'none' {
+#        - if '%thisRegion%' == '__global__' {
+#          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_globalDefault]||none>'
+#          }
+#          else {
+#          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_regionDefault]||none>'
+#          }
+#        }
+#      - if '%flagObj%' == 'false' {
+#        - define a 'false'
+#        }
+#        else {
+#        - define a 'true'
+#        }
+#      - yaml set 'cache.b.%thisRegion%.%flag%:%a%' 'id:dRegions_%world%_cache'
+#      - goto 'a'
+#      }
+#    - define s '<def[orderedRegions].size>'
+#    - foreach '%orderedRegions%':
+#      - define thisRegion '%value%'
+#      - if <yaml[dRegions_%world%_cache].contains[cache.b.%thisRegion%.%flag%]> {
+#        - define a '<yaml[dRegions_%world%_cache].read[cache.b.%thisRegion%.%flag%]>'
+#        - if '%a%' == 'none' {
+#          - define a 'true'
+#          - foreach next
+#          }
+#        - goto 'a'
+#        }
+#      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>'
+#      - if '%loop_index%' != '%s%' {
+#        - if '%flagObj%' == 'none' {
+#          - define a 'true'
+#          - yaml set 'cache.b.%thisRegion%.%flag%:none' 'id:dRegions_%world%_cache'
+#          - foreach next
+#          }
+#        - define a '%flagObj%'
+#        - yaml set 'cache.b.%thisRegion%.%flag%:%a%' 'id:dRegions_%world%_cache'
+#        - goto 'a'
+#        }
+#      - if '%flagObj%' == 'none' {
+#        - if '%thisRegion%' == '__global__' {
+#          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_globalDefault]||none>'
+#          }
+#          else {
+#          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_regionDefault]||none>'
+#          }
+#        }
+#      - if '%flagObj%' == 'false' {
+#        - define a 'false'
+#        }
+#        else {
+#        - define a 'true'
+#        }
+#      - yaml set 'cache.b.%thisRegion%.%flag%:%a%' 'id:dRegions_%world%_cache'
+
+#    - mark 'a'
+#    - if '%a%' {
+#      - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'event-allowed' {
+#        - inject 's@dRegions_Flag_%flag%' 'p:event-allowed'
+#        }
+#      - foreach next
+#      - queue clear
+#      }
+#    - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'msg_cancelled' {
+#      - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
+#        - flag %player% dRegions.Message_Cooldown duration:3s
+#        - run s@msgPrefixed delay:1t 'player:%player%' 'def:dRegions|<&c><&o><parse:<s@dRegions_Flag_%flag%.yaml_key[msg_cancelled]||null>>'
+#        }
+#      }
+#    - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'event-cancelled' {
+#      - inject 's@dRegions_Flag_%flag%' 'p:event-cancelled'
+#      }
+#    - if <def[noCancel].exists> {
+#      - foreach next
+#      - queue clear
+#      }
+#    - determine cancelled
+#---------------------------------------
+#
+# Boolean
+#
+dRegions_Flags_Processors_b:
   type: task
   debug: false
   script:
     - if '<s@dRegions_Flag_%flag%.yaml_key[region_highestOnly]||false>' {
       - define thisRegion '<def[orderedRegions].get[1]>'
-      - if <yaml[dRegions_%world%_cache].contains[cache.boolean.%thisRegion%.%flag%]> {
-        - define a '<yaml[dRegions_%world%_cache].read[cache.boolean.%thisRegion%.%flag%]>'
-        - goto 'a'
-        }
-      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>'
-      - if '%flagObj%' == 'none' {
+      - define a '<yaml[dRegions_%world%_cache].read[cache.b.%thisRegion%.%flag%]||a>'
+      - goto '%a%'
+      - mark 'a'
+      - define a '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>'
+      - if '%a%' == 'none' {
         - if '%thisRegion%' == '__global__' {
-          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_globalDefault]||none>'
+          - define a '<s@dRegions_Flag_%flag%.yaml_key[flag_globalDefault]||none>'
           }
           else {
-          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_regionDefault]||none>'
+          - define a '<s@dRegions_Flag_%flag%.yaml_key[flag_regionDefault]||none>'
           }
         }
-      - if '%flagObj%' == 'false' {
-        - define a 'false'
-        }
-        else {
+      - if '%a%' != 'false' {
         - define a 'true'
         }
-      - yaml set 'cache.boolean.%thisRegion%.%flag%:%a%' 'id:dRegions_%world%_cache'
-      - goto 'a'
+      - yaml set 'cache.b.%thisRegion%.%flag%:%a%' 'id:dRegions_%world%_cache'
+      - goto '%a%'
       }
     - define s '<def[orderedRegions].size>'
     - foreach '%orderedRegions%':
       - define thisRegion '%value%'
-      - if <yaml[dRegions_%world%_cache].contains[cache.boolean.%thisRegion%.%flag%]> {
-        - define a '<yaml[dRegions_%world%_cache].read[cache.boolean.%thisRegion%.%flag%]>'
-        - if '%a%' == 'none' {
-          - define a 'true'
-          - foreach next
-          }
-        - goto 'a'
-        }
-      - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>'
+      - define a '<yaml[dRegions_%world%_cache].read[cache.b.%thisRegion%.%flag%]||b>'
+      - goto '%a%'
+      - mark 'none'
+      - define a 'true'
+      - foreach next
+      - mark 'b'
+      - define a '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>'
       - if '%loop_index%' != '%s%' {
-        - if '%flagObj%' == 'none' {
-          - define a 'true'
-          - yaml set 'cache.boolean.%thisRegion%.%flag%:none' 'id:dRegions_%world%_cache'
-          - foreach next
-          }
-        - define a '%flagObj%'
-        - yaml set 'cache.boolean.%thisRegion%.%flag%:%a%' 'id:dRegions_%world%_cache'
-        - goto 'a'
+        - yaml set 'cache.b.%thisRegion%.%flag%:%a%' 'id:dRegions_%world%_cache'
+        - goto '%a%'
+        - mark 'none'
+        - define a 'true'
+        - foreach next
         }
-      - if '%flagObj%' == 'none' {
+      - if '%a%' == 'none' {
         - if '%thisRegion%' == '__global__' {
-          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_globalDefault]||none>'
+          - define a '<s@dRegions_Flag_%flag%.yaml_key[flag_globalDefault]||none>'
           }
           else {
-          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_regionDefault]||none>'
+          - define a '<s@dRegions_Flag_%flag%.yaml_key[flag_regionDefault]||none>'
           }
         }
-      - if '%flagObj%' == 'false' {
-        - define a 'false'
-        }
-        else {
+      - if '%a%' != 'false' {
         - define a 'true'
         }
-      - yaml set 'cache.boolean.%thisRegion%.%flag%:%a%' 'id:dRegions_%world%_cache'
+      - yaml set 'cache.b.%thisRegion%.%flag%:%a%' 'id:dRegions_%world%_cache'
+      - goto '%a%'
 
-    - mark 'a'
-    - if '%a%' {
-      - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'event-allowed' {
-        - inject 's@dRegions_Flag_%flag%' 'p:event-allowed'
-        }
-      - foreach next
-      - queue clear
-      }
+    - mark 'false'
     - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'msg_cancelled' {
       - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
         - flag %player% dRegions.Message_Cooldown duration:3s
@@ -646,6 +730,10 @@ dRegions_Flags_Processors_boolean:
       - queue clear
       }
     - determine cancelled
+    - mark 'true'
+    - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'event-allowed' {
+      - inject 's@dRegions_Flag_%flag%' 'p:event-allowed'
+      }
 #
 # END boolean
 #---------------------------------------
@@ -728,7 +816,7 @@ dRegions_Flags_Processors_location:
 #
 ################################################################################
 #
-# state-withTarget-withGroup Flag Scripts
+# stg Flag Scripts
 #
 dRegions_Flag_PVE:
   type: item
@@ -742,7 +830,7 @@ dRegions_Flag_PVE:
   event_player: attacker
   event_target: defender
   region_highestOnly: true
-  flag_type: state-withTarget-withGroup
+  flag_type: stg
   flag_name: PVE
   flag_targetList: PVE-Moblist
   flag_takeGroup: true
@@ -766,7 +854,7 @@ dRegions_Flag_Mob-Damage:
   event_player: defender
   event_target: attacker
   region_highestOnly: true
-  flag_type: state-withTarget-withGroup
+  flag_type: stg
   flag_name: Mob-Damage
   flag_targetList: Mob-DamageList
   flag_takeGroup: true
@@ -780,7 +868,7 @@ dRegions_Flag_Mob-Damage:
     - if <yaml[dRegions_global_config].read[config.regions.invincibility-confuses-mobs]||false> && <yaml[dRegions_%world%_config].read[config.regions.invincibility-confuses-mobs]||false> {
       - run delay:1t locally wander 'def:%object%|%world%'
       }
-    - if <yaml[dRegions_global_config].read[config.regions.invincibility-removes-mobs]||false> && <yaml[dRegions_%world%_config].read[config.regions.invincibility-removes-mobs]||false> {
+      else if <yaml[dRegions_global_config].read[config.regions.invincibility-removes-mobs]||false> && <yaml[dRegions_%world%_config].read[config.regions.invincibility-removes-mobs]||false> {
       - remove %object%
       }
 
@@ -812,7 +900,7 @@ dRegions_Flag_Mob-Target:
   event_target: attacker
   event_player: defender
   region_highestOnly: true
-  flag_type: state-withTarget-withGroup
+  flag_type: stg
   flag_name: Mob-Target
   flag_targetList: Mob-TargetList
   flag_takeGroup: true
@@ -825,7 +913,7 @@ dRegions_Flag_Mob-Target:
     - if <yaml[dRegions_global_config].read[config.regions.invincibility-confuses-mobs]||false> && <yaml[dRegions_%world%_config].read[config.regions.invincibility-confuses-mobs]||false> {
       - run delay:1t locally wander 'def:%object%|%world%'
       }
-    - if <yaml[dRegions_global_config].read[config.regions.invincibility-removes-mobs]||false> && <yaml[dRegions_%world%_config].read[config.regions.invincibility-removes-mobs]||false> {
+      else if <yaml[dRegions_global_config].read[config.regions.invincibility-removes-mobs]||false> && <yaml[dRegions_%world%_config].read[config.regions.invincibility-removes-mobs]||false> {
       - remove %object%
       }
 
@@ -855,7 +943,7 @@ dRegions_Flag_Entity-Interact:
   event_hooks: player_interact_entity
   event_priority: 10
   region_highestOnly: true
-  flag_type: state-withTarget-withGroup
+  flag_type: stg
   flag_name: Entity-Interact
   flag_targetList: Entity-Interactlist
   flag_takeGroup: true
@@ -874,7 +962,7 @@ dRegions_Flag_Block-Place:
   event_hooks: player_place_block
   event_priority: 5
   region_highestOnly: true
-  flag_type: state-withTarget-withGroup
+  flag_type: stg
   flag_name: Block-Place
   flag_targetList: Block-PlaceList
   flag_takeGroup: true
@@ -893,7 +981,7 @@ dRegions_Flag_Block-Break:
   event_hooks: player_break_block
   event_priority: 5
   region_highestOnly: true
-  flag_type: state-withTarget-withGroup
+  flag_type: stg
   flag_name: Block-Break
   flag_targetList: Block-BreakList
   flag_takeGroup: true
@@ -912,7 +1000,7 @@ dRegions_Flag_Chest-Access:
   event_hooks: player_interact_container
   event_priority: 10
   region_highestOnly: true
-  flag_type: state-withTarget-withGroup
+  flag_type: stg
   flag_name: Chest-Access
   flag_targetList: chest-access-blocks
   flag_takeGroup: true
@@ -931,7 +1019,7 @@ dRegions_Flag_Door-Access:
   event_hooks: player_interact_door
   event_priority: 10
   region_highestOnly: true
-  flag_type: state-withTarget-withGroup
+  flag_type: stg
   flag_name: Door-Access
   flag_targetList: Door-Access-Doors
   flag_takeGroup: true
@@ -950,7 +1038,7 @@ dRegions_Flag_Use-Switches:
   event_hooks: player_interact_switches
   event_priority: 10
   region_highestOnly: true
-  flag_type: state-withTarget-withGroup
+  flag_type: stg
   flag_name: Use-Switches
   flag_targetList: Use-Switches-List
   flag_takeGroup: true
@@ -969,7 +1057,7 @@ dRegions_Flag_Use-Utilities:
   event_hooks: player_interact_utilityBlocks
   event_priority: 10
   region_highestOnly: true
-  flag_type: state-withTarget-withGroup
+  flag_type: stg
   flag_name: Use-Utilities
   flag_targetList: Use-Utilities-Blocks
   flag_takeGroup: true
@@ -988,7 +1076,7 @@ dRegions_Flag_Player-Damage:
   event_hooks: player_damaged
   event_priority: 10
   region_highestOnly: false
-  flag_type: state-withTarget-withGroup
+  flag_type: stg
   flag_name: Player-Damage
   flag_targetList: Player-Damage-Types
   flag_takeGroup: true
@@ -1000,12 +1088,12 @@ dRegions_Flag_Player-Damage:
     - adjust %player% 'fire_time:0'
 
 #
-# END state-withTarget-withGroup
+# END stg
 #---------------------------------------
 #
 ################################################################################
 #
-# State-withTarget Flag Scripts
+# st Flag Scripts
 #
 dRegions_Flag_Mob-Spawn:
   type: item
@@ -1017,7 +1105,7 @@ dRegions_Flag_Mob-Spawn:
   event_hooks: entity_spawn
   event_priority: 10
   region_highestOnly: false
-  flag_type: state-withTarget
+  flag_type: st
   flag_name: Mob-Spawn
   flag_targetList: Mob-SpawnList
   flag_takeGroup: false
@@ -1036,7 +1124,7 @@ dRegions_Flag_EVE:
   event_priority: 10
   event_target: defender
   region_highestOnly: false
-  flag_type: state-withTarget
+  flag_type: st
   flag_name: EVE
   flag_targetList: EVE-Moblist
   flag_takeGroup: false
@@ -1050,7 +1138,7 @@ dRegions_Flag_EVE:
     - if <yaml[dRegions_global_config].read[config.regions.invincibility-confuses-mobs]||false> && <yaml[dRegions_%world%_config].read[config.regions.invincibility-confuses-mobs]||false> {
       - run delay:1t locally wander 'def:%object%|%world%'
       }
-    - if <yaml[dRegions_global_config].read[config.regions.invincibility-removes-mobs]||false> && <yaml[dRegions_%world%_config].read[config.regions.invincibility-removes-mobs]||false> {
+      else if <yaml[dRegions_global_config].read[config.regions.invincibility-removes-mobs]||false> && <yaml[dRegions_%world%_config].read[config.regions.invincibility-removes-mobs]||false> {
       - remove %object%
       }
 
@@ -1081,7 +1169,7 @@ dRegions_Flag_Mob-Attack:
   event_priority: 20
   event_target: attacker
   region_highestOnly: false
-  flag_type: state-withTarget
+  flag_type: st
   flag_name: Mob-Attack
   flag_targetList: Mob-Attack-Moblist
   flag_takeGroup: false
@@ -1095,7 +1183,7 @@ dRegions_Flag_Mob-Attack:
     - if <yaml[dRegions_global_config].read[config.regions.invincibility-confuses-mobs]||false> && <yaml[dRegions_%world%_config].read[config.regions.invincibility-confuses-mobs]||false> {
       - run delay:1t locally wander 'def:%object%|%world%'
       }
-    - if <yaml[dRegions_global_config].read[config.regions.invincibility-removes-mobs]||false> && <yaml[dRegions_%world%_config].read[config.regions.invincibility-removes-mobs]||false> {
+      else if <yaml[dRegions_global_config].read[config.regions.invincibility-removes-mobs]||false> && <yaml[dRegions_%world%_config].read[config.regions.invincibility-removes-mobs]||false> {
       - remove %object%
       }
 
@@ -1125,7 +1213,7 @@ dRegions_Flag_Entity-Explode:
   event_hooks: entity_explode
   event_priority: 10
   region_highestOnly: false
-  flag_type: state-withTarget
+  flag_type: st
   flag_name: Entity-Explode
   flag_targetList: Entity-ExplodeList
   flag_takeGroup: false
@@ -1143,7 +1231,7 @@ dRegions_Flag_Entity-Grief:
   event_hooks: entity_change_block|entity_form_block
   event_priority: 10
   region_highestOnly: false
-  flag_type: state-withTarget
+  flag_type: st
   flag_name: Entity-Grief
   flag_targetList: Entity-GriefList
   flag_takeGroup: false
@@ -1169,7 +1257,7 @@ dRegions_Flag_Entity-Drops-OnDeath:
   event_hooks: entity_dies
   event_priority: 10
   region_highestOnly: false
-  flag_type: state-withTarget
+  flag_type: st
   flag_name: Entity-Drops-OnDeath
   flag_targetList: Entity-Drops-OnDeathList
   flag_takeGroup: false
@@ -1189,7 +1277,7 @@ dRegions_Flag_Fire-Spread:
   event_hooks: firefrom_spread
   event_priority: 10
   region_highestOnly: false
-  flag_type: state-withTarget
+  flag_type: st
   flag_name: Fire-Spread
   flag_targetList: Fire-SpreadBlocks
   flag_takeGroup: false
@@ -1207,7 +1295,7 @@ dRegions_Flag_Fire-Destroy:
   event_hooks: block_burns
   event_priority: 10
   region_highestOnly: false
-  flag_type: state-withTarget
+  flag_type: st
   flag_name: Fire-Destroy
   flag_targetList: Fire-DestroyBlocks
   flag_takeGroup: false
@@ -1225,7 +1313,7 @@ dRegions_Flag_Lightning-Strikes:
   event_hooks: lightning_strikes
   event_priority: 10
   region_highestOnly: false
-  flag_type: state-withTarget
+  flag_type: st
   flag_name: Lightning-Strikes
   flag_targetList: Lightning-StrikesBlocks
   flag_takeGroup: false
@@ -1243,7 +1331,7 @@ dRegions_Flag_Water-Spread:
   event_hooks: water_spread
   event_priority: 10
   region_highestOnly: false
-  flag_type: state-withTarget
+  flag_type: st
   flag_name: Water-Spread
   flag_targetList: Water-SpreadBlocks
   flag_takeGroup: false
@@ -1261,7 +1349,7 @@ dRegions_Flag_Lava-Spread:
   event_hooks: lava_spread
   event_priority: 10
   region_highestOnly: false
-  flag_type: state-withTarget
+  flag_type: st
   flag_name: Lava-Spread
   flag_targetList: Lava-SpreadBlocks
   flag_takeGroup: false
@@ -1279,7 +1367,7 @@ dRegions_Flag_Snow-Fall:
   event_hooks: blockform_snow
   event_priority: 10
   region_highestOnly: false
-  flag_type: state-withTarget
+  flag_type: st
   flag_name: Snow-Fall
   flag_targetList: Snow-FallBlocks
   flag_takeGroup: false
@@ -1288,12 +1376,12 @@ dRegions_Flag_Snow-Fall:
   flag_help: State flag controlling whether snow will be able to accumulate on the ground in this region. Defaults to allow all. Use snow-fallblocks flag to specify blocks below the snow to check when forming.
 
 #
-# END State-withTarget
+# END st
 #---------------------------------------
 #
 ################################################################################
 #
-# State-withGroup Flag Scripts
+# sg Flag Scripts
 #
 dRegions_Flag_Entry:
   type: item
@@ -1305,7 +1393,7 @@ dRegions_Flag_Entry:
   event_hooks: player_enters_region
   event_priority: 0
   region_highestOnly: true
-  flag_type: state-withGroup
+  flag_type: sg
   flag_name: Entry
   flag_help: State flag controlling who can enter a region. Can be set to allow, deny, or none and accepts the -g group switch.
   flag_takeGroup: true
@@ -1342,7 +1430,7 @@ dRegions_Flag_Exit:
   event_hooks: player_exits_region
   event_priority: 0
   region_highestOnly: true
-  flag_type: state-withGroup
+  flag_type: sg
   flag_name: Exit
   flag_help: State flag controlling who can exit a region. Can be set to allow, deny, or none and accepts the -g group switch.
   flag_takeGroup: true
@@ -1381,7 +1469,7 @@ dRegions_Flag_Build:
   event_player: attacker
   event_target: defender
   region_highestOnly: true
-  flag_type: state-withGroup
+  flag_type: sg
   flag_name: Build
   flag_takeGroup: true
   flag_regionDefault: deny/nonmembers
@@ -1399,7 +1487,7 @@ dRegions_Flag_Receive-Chat:
   event_hooks: player_entered_dregion|player_exited_dregion
   event_priority: 0
   region_highestOnly: true
-  flag_type: state-withGroup
+  flag_type: sg
   flag_name: Receive-Chat
   flag_takeGroup: true
   flag_regionDefault: allow/all
@@ -1426,7 +1514,7 @@ dRegions_Flag_Send-Chat:
   event_hooks: player_chats
   event_priority: 0
   region_highestOnly: true
-  flag_type: state-withGroup
+  flag_type: sg
   flag_name: Send-Chat
   flag_takeGroup: true
   flag_regionDefault: allow/all
@@ -1447,7 +1535,7 @@ dRegions_Flag_Hunger:
   event_hooks: player_change_foodlevel
   event_priority: 0
   region_highestOnly: true
-  flag_type: state-withGroup
+  flag_type: sg
   flag_name: Hunger
   flag_takeGroup: true
   flag_regionDefault: allow/all
@@ -1464,7 +1552,7 @@ dRegions_Flag_Npc-Interact:
   event_hooks: player_interact_npc
   event_priority: 0
   region_highestOnly: true
-  flag_type: state-withGroup
+  flag_type: sg
   flag_name: Npc-Interact
   flag_takeGroup: true
   flag_regionDefault: allow/all
@@ -1483,7 +1571,7 @@ dRegions_Flag_Lighter:
   event_hooks: fireFrom_flint_and_steel
   event_priority: 0
   region_highestOnly: true
-  flag_type: state-withGroup
+  flag_type: sg
   flag_name: Lighter
   flag_takeGroup: true
   flag_regionDefault: deny/nonmembers
@@ -1501,7 +1589,7 @@ dRegions_Flag_Bucket-Fill:
   event_hooks: player_fill_bucket
   event_priority: 0
   region_highestOnly: true
-  flag_type: state-withGroup
+  flag_type: sg
   flag_name: Bucket-Fill
   flag_takeGroup: true
   flag_regionDefault: deny/nonmembers
@@ -1519,7 +1607,7 @@ dRegions_Flag_Bucket-Empty:
   event_hooks: player_empty_bucket
   event_priority: 0
   region_highestOnly: true
-  flag_type: state-withGroup
+  flag_type: sg
   flag_name: Bucket-Empty
   flag_takeGroup: true
   flag_regionDefault: deny/nonmembers
@@ -1537,7 +1625,7 @@ dRegions_Flag_Hanging-Place:
   event_hooks: player_place_hanging
   event_priority: 0
   region_highestOnly: true
-  flag_type: state-withGroup
+  flag_type: sg
   flag_name: Hanging-Place
   flag_takeGroup: true
   flag_regionDefault: deny/nonmembers
@@ -1555,7 +1643,7 @@ dRegions_Flag_Hanging-Break:
   event_hooks: player_break_hanging
   event_priority: 0
   region_highestOnly: true
-  flag_type: state-withGroup
+  flag_type: sg
   flag_name: Hanging-Break
   flag_takeGroup: true
   flag_regionDefault: deny/nonmembers
@@ -1573,7 +1661,7 @@ dRegions_Flag_Sleep:
   event_hooks: player_enters_bed
   event_priority: 0
   region_highestOnly: true
-  flag_type: state-withGroup
+  flag_type: sg
   flag_name: Sleep
   flag_takeGroup: true
   flag_regionDefault: deny/nonmembers
@@ -1591,7 +1679,7 @@ dRegions_Flag_Player-Drops:
   event_hooks: player_drops_item
   event_priority: 0
   region_highestOnly: true
-  flag_type: state-withGroup
+  flag_type: sg
   flag_name: Player-Drops
   flag_takeGroup: true
   flag_regionDefault: allow/all
@@ -1609,7 +1697,7 @@ dRegions_Flag_Player-Drops-OnDeath:
   event_hooks: player_dies
   event_priority: 10
   region_highestOnly: true
-  flag_type: state-withGroup
+  flag_type: sg
   flag_name: Player-Drops-OnDeath
   flag_takeGroup: true
   flag_regionDefault: allow/all
@@ -1629,7 +1717,7 @@ dRegions_Flag_Player-KeepItems:
   event_hooks: player_dies
   event_priority: 5
   region_highestOnly: true
-  flag_type: state-withGroup
+  flag_type: sg
   flag_name: Player-KeepItems
   flag_takeGroup: true
   flag_regionDefault: deny/all
@@ -1657,7 +1745,7 @@ dRegions_Flag_Player-Pickup:
   event_hooks: player_pickup_item
   event_priority: 0
   region_highestOnly: true
-  flag_type: state-withGroup
+  flag_type: sg
   flag_name: Player-Pickup
   flag_takeGroup: true
   flag_regionDefault: allow/all
@@ -1675,7 +1763,7 @@ dRegions_Flag_Potion-Drink:
   event_hooks: player_drink_potion
   event_priority: 0
   region_highestOnly: true
-  flag_type: state-withGroup
+  flag_type: sg
   flag_name: Potion-Drink
   flag_takeGroup: true
   flag_regionDefault: allow/all
@@ -1693,7 +1781,7 @@ dRegions_Flag_Enderpearl:
   event_hooks: player_use_enderpearl
   event_priority: 0
   region_highestOnly: true
-  flag_type: state-withGroup
+  flag_type: sg
   flag_name: Enderpearl
   flag_takeGroup: true
   flag_regionDefault: allow/all
@@ -1711,7 +1799,7 @@ dRegions_Flag_Vehicle-Place:
   event_hooks: player_place_vehicle
   event_priority: 0
   region_highestOnly: true
-  flag_type: state-withGroup
+  flag_type: sg
   flag_name: Vehicle-Place
   flag_takeGroup: true
   flag_regionDefault: deny/nonmembers
@@ -1729,7 +1817,7 @@ dRegions_Flag_Vehicle-Destroy:
   event_hooks: player_break_vehicle
   event_priority: 0
   region_highestOnly: true
-  flag_type: state-withGroup
+  flag_type: sg
   flag_name: Vehicle-Destroy
   flag_takeGroup: true
   flag_regionDefault: deny/nonmembers
@@ -1737,12 +1825,12 @@ dRegions_Flag_Vehicle-Destroy:
   flag_help: State flag controlling whether players will be able to break vehicles in this region. Defaults to allow. Takes the -g group switch.
   msg_cancelled: 'You can not break vehicles here!'
 #
-# END State-withGroup
+# END sg
 #---------------------------------------
 #
 ################################################################################
 #
-# State-withTargetString-withGroup Flag Scripts
+# stsg Flag Scripts
 #
 dRegions_Flag_Commands:
   type: item
@@ -1754,7 +1842,7 @@ dRegions_Flag_Commands:
   event_hooks: player_command
   event_priority: 0
   region_highestOnly: false
-  flag_type: state-withTargetString-withGroup
+  flag_type: stsg
   flag_name: Commands
   flag_targetList: Commands-List
   flag_takeGroup: true
@@ -1763,7 +1851,7 @@ dRegions_Flag_Commands:
   flag_help: State flag controlling whether players can use commands in this region. Defaults to allow all. Use commands-list flag to specify commands. Takes the -g group switch.
   msg_cancelled: 'You can not use the %1% <&c>command in this region!'
 #
-# END State-withTargetString-withGroup
+# END stsg
 #---------------------------------------
 #
 ################################################################################
@@ -1779,7 +1867,7 @@ dRegions_Flag_Notify-Enter:
   - <&5>Send notification to marked players
   event_hooks: player_entered_dregion
   event_priority: 5
-  flag_type: boolean
+  flag_type: b
   flag_takeGroup: false
   flag_defaultValue: false
   flag_help: Boolean flag controlling whether notifications are sent for entering this region. Set to true or false. Defaults to false.
@@ -1799,7 +1887,7 @@ dRegions_Flag_Notify-Exit:
   event_hooks: player_exited_dregion
   event_priority: 5
   region_highestOnly: false
-  flag_type: boolean
+  flag_type: b
   flag_name: Notify-Exit
   flag_takeGroup: false
   flag_regionDefault: false
@@ -1821,7 +1909,7 @@ dRegions_Flag_Ice-Form:
   event_hooks: blockform_ice
   event_priority: 5
   region_highestOnly: false
-  flag_type: boolean
+  flag_type: b
   flag_name: Ice-Form
   flag_takeGroup: false
   flag_regionDefault: true
@@ -1838,7 +1926,7 @@ dRegions_Flag_Lava-Fire:
   event_hooks: firefrom_lava
   event_priority: 5
   region_highestOnly: false
-  flag_type: boolean
+  flag_type: b
   flag_name: Lava-Fire
   flag_takeGroup: false
   flag_regionDefault: true
@@ -1855,7 +1943,7 @@ dRegions_Flag_Ice-Melt:
   event_hooks: blockfade_ice
   event_priority: 5
   region_highestOnly: false
-  flag_type: boolean
+  flag_type: b
   flag_name: Ice-Melt
   flag_takeGroup: false
   flag_regionDefault: true
@@ -1872,7 +1960,7 @@ dRegions_Flag_Snow-Melt:
   event_hooks: blockfade_snow
   event_priority: 5
   region_highestOnly: false
-  flag_type: boolean
+  flag_type: b
   flag_name: Snow-Melt
   flag_takeGroup: false
   flag_regionDefault: true
@@ -1889,7 +1977,7 @@ dRegions_Flag_Soil-Dry:
   event_hooks: blockfade_soil
   event_priority: 5
   region_highestOnly: false
-  flag_type: boolean
+  flag_type: b
   flag_name: Soil-Dry
   flag_takeGroup: false
   flag_regionDefault: true
@@ -1906,7 +1994,7 @@ dRegions_Flag_Trample-Crops-Player:
   event_hooks: player_trample_crops
   event_priority: 5
   region_highestOnly: false
-  flag_type: boolean
+  flag_type: b
   flag_name: Trample-Crops-Player
   flag_takeGroup: false
   flag_regionDefault: true
@@ -1923,7 +2011,7 @@ dRegions_Flag_Trample-Crops-Entity:
   event_hooks: entity_trample_crops
   event_priority: 5
   region_highestOnly: false
-  flag_type: boolean
+  flag_type: b
   flag_name: Trample-Crops-Entity
   flag_takeGroup: false
   flag_regionDefault: true
@@ -1940,7 +2028,7 @@ dRegions_Flag_Mushroom-Spread:
   event_hooks: blockspread_mushroom
   event_priority: 5
   region_highestOnly: false
-  flag_type: boolean
+  flag_type: b
   flag_name: Mushroom-Spread
   flag_takeGroup: false
   flag_regionDefault: true
@@ -1957,7 +2045,7 @@ dRegions_Flag_Grass-Spread:
   event_hooks: blockspread_grass
   event_priority: 5
   region_highestOnly: false
-  flag_type: boolean
+  flag_type: b
   flag_name: Grass-Spread
   flag_takeGroup: false
   flag_regionDefault: true
@@ -1974,7 +2062,7 @@ dRegions_Flag_Mycel-Spread:
   event_hooks: blockspread_mycel
   event_priority: 5
   region_highestOnly: false
-  flag_type: boolean
+  flag_type: b
   flag_name: Mycel-Spread
   flag_takeGroup: false
   flag_regionDefault: true
@@ -1991,7 +2079,7 @@ dRegions_Flag_Vines-Spread:
   event_hooks: blockspread_vine
   event_priority: 5
   region_highestOnly: false
-  flag_type: boolean
+  flag_type: b
   flag_name: Vine-Growth
   flag_takeGroup: false
   flag_regionDefault: true
@@ -2008,7 +2096,7 @@ dRegions_Flag_Leaf-Decay:
   event_hooks: blockfade_leaves
   event_priority: 5
   region_highestOnly: false
-  flag_type: boolean
+  flag_type: b
   flag_name: Leaf-Decay
   flag_takeGroup: false
   flag_regionDefault: true
@@ -2025,7 +2113,7 @@ dRegions_Flag_Falling-Sand:
   event_hooks: falling_sand
   event_priority: 5
   region_highestOnly: false
-  flag_type: boolean
+  flag_type: b
   flag_name: Falling-Sand
   flag_takeGroup: false
   flag_regionDefault: true
@@ -2046,7 +2134,7 @@ dRegions_Flag_Falling-Gravel:
   event_hooks: falling_gravel
   event_priority: 5
   region_highestOnly: false
-  flag_type: boolean
+  flag_type: b
   flag_name: Falling-Gravel
   flag_takeGroup: false
   flag_regionDefault: true
@@ -2067,7 +2155,7 @@ dRegions_Flag_Pistons:
   event_hooks: piston_extend|piston_retract
   event_priority: 5
   region_highestOnly: false
-  flag_type: boolean
+  flag_type: b
   flag_name: Pistons
   flag_takeGroup: false
   flag_regionDefault: true
@@ -2084,7 +2172,7 @@ dRegions_Flag_Entity-Break-Painting:
   event_hooks: entity_break_painting
   event_priority: 5
   region_highestOnly: false
-  flag_type: boolean
+  flag_type: b
   flag_name: Entity-Break-Painting
   flag_takeGroup: false
   flag_regionDefault: true
@@ -2102,7 +2190,7 @@ dRegions_Flag_Entity-Break-ItemFrame:
   event_target: attacker
   event_priority: 5
   region_highestOnly: false
-  flag_type: boolean
+  flag_type: b
   flag_name: Entity-Break-ItemFrame
   flag_takeGroup: false
   flag_regionDefault: true
@@ -2121,7 +2209,7 @@ dRegions_Flag_PVP:
   event_player: attacker
   event_target: defender
   region_highestOnly: false
-  flag_type: boolean
+  flag_type: b
   flag_name: PVP
   flag_takeGroup: false
   flag_regionDefault: true
@@ -2139,7 +2227,7 @@ dRegions_Flag_Potion-Throw:
   event_hooks: potion_splash|player_throw_potion
   event_priority: 5
   region_highestOnly: false
-  flag_type: boolean
+  flag_type: b
   flag_name: Potion-Throw
   flag_takeGroup: false
   flag_regionDefault: true

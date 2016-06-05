@@ -154,6 +154,9 @@ dRegions:
       }
 
     on world initializes:
+    - if <proc[list_instances].contains[<context.world.name>]> {
+      - queue clear
+      }
     - run locally loadYaml instantly
 
     on script reload:
@@ -327,7 +330,7 @@ dRegions:
       }
     - yaml create 'id:%writeID%'
     - define readPath '%readID%.regions.__global__'
-    - define writePath 'regions.%region%'
+    - define writePath 'regions.<def[region]||__global__>'
     - run s@ConfigFileGenerator def:%readID%|%writeID%|%readPath%|%writePath%|false|false|false instantly
     - yaml unload 'id:%readID%'
     - yaml 'savefile:dRegions/%file%.yml' 'id:%writeID%'
@@ -1067,7 +1070,7 @@ dRegions_Events_Player_Interact_Armorstand:
       }
     - define player '<player>'
     - define object '<c.entity>'
-    - define eLoc '<c.location>'
+    - define eLoc '<c.entity.location>'
     - define world '<def[eLoc].world.name>'
     - define orderedRegions 'li@<yaml[dRegions_%world%_regions].read[regions.__global__.priority]||0>/__global__'
     - foreach '<def[eLoc].cuboids.filter[starts_with[cu@dregions_%world%]].parse[after[cu@dregions_%world%_]]>':
@@ -1325,6 +1328,7 @@ dRegions_Events_Entity_Change_Block:
     - if <c.old_material.bukkit_enum> == soil || li@falling_block|creeper|primed_tnt contains <c.entity.entity_type> {
       - queue clear
       }
+    # This is generic rateLimiter and does not run a full allow/deny flag process. It is required due to the high frequency of snowmen.
     - if <c.entity.is_spawned.not> queue clear
     - if <c.entity.has_flag[dRegions.EntityGrief]> {
       - if <c.entity.flag[dRegions.EntityGrief]> {
@@ -1559,6 +1563,7 @@ dRegions_Events_Snow_Form:
   eventHooks: blockform_snow
   events:
     on snow forms:
+    # This tries to account for snowmen but can result in snow forming on restricted blocks as the entity grief flag is effectively responsible for the event.
     - define cub 'cu@<c.location>|<c.location.add[0,1,0]>'
     - if !<def[cub].list_entities[snowman].is_empty> {
       - queue clear
@@ -2134,6 +2139,47 @@ dRegions_HasPerm_Command:
 #
 #---------------------------------------
 #
+dRegions_CloneWord:
+  type: world
+  debug: false
+
+  events:
+    on instance created:
+    - define clone <c.blueprint_world>
+    - define world <c.instance>
+    - if !<server.has_file[dRegions/worlds/%clone%]> {
+      - run s@msgPrefixed instantly delayed:1t 'def:dRegions|<&c>%clone% is an unknown world!'
+      - queue clear
+      }
+    - foreach 'li@config|regions|inventories|cache':
+      - define this '%value%'
+      - define file 'worlds/%clone%/%this%'
+      - if <server.has_file[dRegions/%file%.yml]> {
+        - define readID 'dRegions_%clone%_%this%'
+        - if !<yaml.list.contains[%readID%]> {
+          - yaml 'load:dRegions/%file%.yml' 'id:%readID%'
+          }
+        - define writeID 'dRegions_%world%_%this%'
+        - define readPath '%this%'
+        - define writePath '%this%'
+        - yaml create 'id:%writeID%'
+        - run s@ConfigFileGenerator instantly 'def:%readID%|%writeID%|%readPath%|%writePath%|false|false|false'
+        - yaml 'savefile:dRegions/worlds/%world%/%this%.yml' 'id:%writeID%'
+        }
+        else {
+        - inject s@dRegions create%this%File
+        }
+      - if <yaml.list.contains[%writeID%]> {
+        - yaml unload 'id:%writeID%'
+        }
+      - yaml 'load:dRegions/worlds/%world%/%this%.yml' 'id:%writeID%'
+    - foreach '<yaml[dRegions_%world%_regions].list_keys[regions]>':
+      - note 'cu@<yaml[dRegions_%world%_regions].read[regions.%value%.min]>|<yaml[dRegions_%world%_regions].read[regions.%value%.max]>' 'as:dregions_%world%_%value%'
+
+
+#
+#---------------------------------------
+#
 dRegions_RegionSort:
 # An attempt to sort regions by priority. The existing method is faster.
 # Keeping for reference and lulz.
@@ -2672,11 +2718,11 @@ dRegions_Configurations:
               inv: []
 
   cache:
-    boolean: []
-    state-withGroup: []
-    state-withTarget: []
-    state-withTarget-withGroup: []
-    state-withTargetString-withGroup: []
+    b: []
+    sg: []
+    st: []
+    stg: []
+    stsg: []
     info:
       - This is the cache file. We use this file to cache individual specific events so that we can reduce the number of flag lookups later on.
       - Expect it to grow to a considerable size!
