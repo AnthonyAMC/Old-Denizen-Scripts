@@ -5,7 +5,8 @@
 #
 # This script covers all dRegions commands
 #
-#
+# I haven't examined this in great detail since dRegions 0.2x. It's probably
+# due for some revisions
 #
 #--------------------------------------
 #
@@ -1246,52 +1247,39 @@ dRegions_Commands:
         }
       }
     - inject locally regionInfo instantly
-    - define msgsHeaderTitle '<&7>Region Info<&co> <&e>%name% <&8><&lb><&7>%world%<&8><&rb>'
-    - inject locally msgsHeader instantly
-    - narrate "<&5><el@val[|].pad_right[3]><&7>Type<&co> <&f>%type% <&8><&lb><&7><&o><def[pos1].split[,].remove[4].comma_separated.replace[ ]> <&8><&pipe> <&7><&o><def[pos2].split[,].remove[4].comma_separated.replace[ ]><&8><&rb> <&lb><&7><&o>%size%<&8><&rb>"
-    - narrate "<&5><el@val[|].pad_right[3]><&7>Priority<&co> <&f><el@val[%priority%].pad_right[3]><&7>  Parent<&co> <&f>%parent%"
-    - if <def[ownerPlayers].is_empty||true>
-      && <def[ownerGroups].is_empty||true> {
-      - narrate "<&5><el@val[|].pad_right[3]><&7>Owners<&co> <&c>none"
+
+    - define title '<proc[msgCommand].context[<&6>dRegions|drg help|<&a>Go back to main help]>'
+    - define subTitle '<&e>Region Info'
+    - define command 'drg info %name%'
+    - define entries 'li@<&7>Region<&co> <&e><proc[msgTrim].context[15|%name%]>  <&7>World<&co> <&e><proc[msgTrim].context[15|%world%]>'
+    - define entries '<def[entries].include[<&7>Type<&co> <&f>%type%  <&7>Volume<&co> <&8><&lb><&f><&o>%size%<&8><&rb>]>'
+    - define entries '<def[entries].include[<&7>Area<&co> <&8><&lb><&f><&o><def[pos1].split[,].remove[4].separated_by[,]> <&f><&o><def[pos2].split[,].remove[4].separated_by[,]><&8><&rb>]>'
+    - define entries '<def[entries].include[<&7>Priority<&co> <&f><el@val[%priority%].pad_right[3]><&7>  Parent<&co> <&f>%parent%]>'
+    - if <def[ownerPlayers].is_empty||true> && <def[ownerGroups].is_empty||true> {
+      - define entries '<def[entries].include[<&7>Owners<&co> <&c>none]>'
       }
       else {
-      - define ownerList '<def[ownerPlayers].parse[as_player.name].include[<def[ownerGroups].parse[replace[regex:^].with[<&b>]]||>].comma_separated>'
-      - define lines '<proc[dRegions_LineWrap].context[Owners, <def[ownerList]>|45]>'
-      - narrate "<&5><el@val[|].pad_right[3]><&7><def[lines].get[1].split[, ].get[1]><&co>  <&f><def[lines].get[1].split[, ].remove[1].comma_separated>"
-      - foreach <def[lines].remove[1]> {
-        - narrate "<&5><el@val[|].pad_right[7]><&f><def[value]>"
-        }
+      - define entries '<def[entries].include[<&7>Owners<&co> <&f><def[ownerPlayers].parse[as_player.name].include[<def[ownerGroups].parse[replace[regex:^].with[<&b>]]||>].comma_separated>]>'
       }
-    - if <def[memberPlayers].is_empty||true>
-      && <def[memberGroups].is_empty||true> {
-      - narrate "<&5><el@val[|].pad_right[3]><&7>Members<&co> <&c>none"
+    - if <def[memberPlayers].is_empty||true> && <def[memberGroups].is_empty||true> {
+      - define entries '<def[entries].include[<&7>Members<&co> <&c>none]>'
       }
       else {
-      - define memberList '<def[memberPlayers].parse[as_player.name].include[<def[memberGroups].parse[replace[regex:^].with[<&b>]]||>].comma_separated>'
-      - define lines '<proc[dRegions_LineWrap].context[Members, <def[memberList]>|45]>'
-      - narrate "<&5><el@val[|].pad_right[3]><&7><def[lines].get[1].split[, ].get[1]><&co>  <&f><def[lines].get[1].split[, ].remove[1].comma_separated>"
-      - foreach <def[lines].remove[1]> {
-        - narrate "<&5><el@val[|].pad_right[7]><&f><def[value]>"
-        }
+      - define entries '<def[entries].include[<&7>Members<&co> <&f><def[memberPlayers].parse[as_player.name].include[<def[memberGroups].parse[replace[regex:^].with[<&b>]]||>].comma_separated>]>'
       }
     - if <def[flags].is_empty> {
-      - narrate "<&5><el@val[|].pad_right[3]><&7>Flags<&co> <&c>none"
+      - define entries '<def[entries].include[<&7>Flags<&co> <&c>none]>'
       }
       else {
-      - narrate "<&5><el@val[|].pad_right[3]><&7>Flags<&co>"
+      - define entries '<def[entries].include[<&7>Flags<&co>]>'
       - foreach '<def[flags].alphanumeric>' {
         - define flag '<def[value].split[/].get[1]>'
-        - define flagVal '<def[value].after[/]>'
-        - define flagValLength '<def[flagVal].length>'
-        - define lines '<proc[dRegions_LineWrap].context[%flag%, <def[flagVal]>|45]>'
-        - narrate "<&5><el@val[|].pad_right[5]><&e><def[lines].get[1].split[, ].get[1]><&co> <&f><def[lines].get[1].split[, ].remove[1].comma_separated>"
-        - foreach <def[lines].remove[1]> {
-          - narrate "<&5><el@val[|].pad_right[7]><&f><def[value]>"
-          }
+        - define flagVal '<def[value].after[/].strip_color>'
+        - define entries '<def[entries].include[<&e.pad_left[3]>%flag%<&co> <&f><parse:%flagVal%>]>'
         }
       }
-    - narrate "<&5>|"
-    - inject locally msgsFooter instantly
+
+    - run s@msgBoxed 'def:dRegions|%title%|%subTitle%|%command%|%page%|52|14|<def[entries].separated_by[|]>'
 
   addowner:
   # /drg addowner [ID] g:group player
@@ -1682,23 +1670,30 @@ dRegions_Commands:
 
     # Display the list
     - define page '<def[args].get[1].replace[-].escaped||1>'
-    - if <def[page].is[MATCHES].to[number].not> {
-      - define page '1'
-      }
-    - define pages '<def[regions].size.div[14].round_up||1>'
-    - if <def[page].is[MORE].than[%pages%]> {
-      - define page '%pages%'
-      }
-    - define highNumber '<def[page].mul[14].as_int>'
-    - define lowNumber '<def[highNumber].sub[13].as_int>'
-    - define msgsHeaderTitle '<&e>Region List   <el@val[<&7><&o>Page <&f><&o>%page% <&7><&o>of %pages%].pad_left[30]>'
-    - inject locally msgsHeader instantly
-    - foreach <def[regions].get[%lowNumber%].to[%highNumber%]||li@> {
-      - define color '<t[<def[value].split[/].get[3].is[==].to[owner]>]:&6||<t[<def[value].split[/].get[3].is[==].to[member]>]:&e||&f>>'
-      - narrate "<&5>|<&sp><&7><el@val[<el@val[<def[lowNumber].add[<def[loop_index].sub[1]>].as_int>.].pad_left[4].with[<&sp>]>].pad_right[5].with[<&sp>]> <%color%><def[value].split[/].get[2]>"
-      }
-    - narrate "<&5>|"
-    - inject locally msgsFooter instantly
+    - define entries 'li@'
+    - foreach '<def[regions]>':
+      - define color '<t[<def[value].split[.].get[3].is[==].to[owner]>]:&6||<t[<def[value].split[.].get[3].is[==].to[member]>]:&e||&f>>'
+      - define entry '<def[loop_index].pad_left[3].with[<&sp>]><&dot.pad_right[2].with[<&sp>]> <proc[msgCommand].context[<%color%><def[value].split[.].get[2]>|drg info <def[value].split[.].get[2]>|<&d>Click for region info]>'
+      - define entries '<def[entries].include[%entry%]>'
+    - run s@msgBoxed 'def:dRegions|<proc[msgCommand].context[<&6>dRegions|drg help|<&a>Go back to main help]>|<&e>Region List|drg list|%page%|52|10|<def[entries].separated_by[|]>'
+
+#    - if <def[page].is[MATCHES].to[number].not> {
+#      - define page '1'
+#      }
+#    - define pages '<def[regions].size.div[14].round_up||1>'
+#    - if <def[page].is[MORE].than[%pages%]> {
+#      - define page '%pages%'
+#      }
+#    - define highNumber '<def[page].mul[14].as_int>'
+#    - define lowNumber '<def[highNumber].sub[13].as_int>'
+#    - define msgsHeaderTitle '<&e>Region List   <el@val[<&7><&o>Page <&f><&o>%page% <&7><&o>of %pages%].pad_left[30]>'
+#    - inject locally msgsHeader instantly
+#    - foreach <def[regions].get[%lowNumber%].to[%highNumber%]||li@> {
+#      - define color '<t[<def[value].split[/].get[3].is[==].to[owner]>]:&6||<t[<def[value].split[/].get[3].is[==].to[member]>]:&e||&f>>'
+#      - narrate "<&5>|<&sp><&7><el@val[<el@val[<def[lowNumber].add[<def[loop_index].sub[1]>].as_int>.].pad_left[4].with[<&sp>]>].pad_right[5].with[<&sp>]> <%color%><def[value].split[/].get[2]>"
+#      }
+#    - narrate "<&5>|"
+#    - inject locally msgsFooter instantly
 
   flag:
   # /drg flag [ID] [flag] [value] -g group -w world
@@ -2084,6 +2079,7 @@ dRegions_Commands:
       - run s@msgPrefixed delay:1t 'def:dRegions|<script.yaml_key[commandArgs.%command%.usage]>'
       - queue stop
       }
+    - define page "<t[<c.args.filter[is[matches].to[number]].is_empty.not>]:<c.args.filter[is[matches].to[number]].get[1]>||1>"
 #    - inject s@dRegions_Commands p:selection_Size instantly
 #    - define oldSize '%size%'
 
@@ -2105,13 +2101,13 @@ dRegions_Commands:
     - foreach %worldRegions% {
       - define worldRegion '%value%'
       - if <proc[dRegions_IsOwner].context[<def[worldRegion]>|<def[world]>|<def[player].as_player>]||false> {
-        - define regions '<def[regions].include[<def[world]>/<def[worldRegion]>/owner]||<def[regions]>>'
+        - define regions '<def[regions].include[<def[world]>.<def[worldRegion]>.owner]||<def[regions]>>'
         }
         else if <proc[dRegions_IsMember].context[<def[worldRegion]>|<def[world]>|<def[player].as_player>]||false> {
-        - define regions '<def[regions].include[<def[world]>/<def[worldRegion]>/member]||<def[regions]>>'
+        - define regions '<def[regions].include[<def[world]>.<def[worldRegion]>.member]||<def[regions]>>'
         }
         else if <def[filterPlayer].exists.not||true> {
-        - define regions '<def[regions].include[<def[world]>/<def[worldRegion]>/nonmember]||<def[regions]>>'
+        - define regions '<def[regions].include[<def[world]>.<def[worldRegion]>.nonmember]||<def[regions]>>'
         }
       }
 
@@ -2121,7 +2117,7 @@ dRegions_Commands:
     - if <def[type].is[==].to[cuboid]||false> {
       - define POS1 '<yaml[dRegions_%world%_regions].read[regions.%name%.min]||null>'
       - define POS2 '<yaml[dRegions_%world%_regions].read[regions.%name%.max]||null>'
-      - inject s@dWE_Commands p:selection_Size instantly
+      - define size '<proc[selectionSize].context[%pos1%|%pos2%]>'
       }
       else if <def[type].is[==].to[global]||false> {
       - define POS1 '0,0,0,%world%'
@@ -2370,17 +2366,17 @@ dRegion_FlagTypeMatch:
         - determine '<def[YourValue].is[MATCHES].to[number]>'
       - case 'decimal':
         - determine '<def[YourValue].is[MATCHES].to[number]>.and[<def[YourValue].as_int.is[==].to[%YourValue%]>]>'
-      - case 'boolean':
+      - case 'b':
         - determine '<def[YourValue].is[MATCHES].to[boolean]>'
       - case 'location':
         - determine '<def[YourValue].as_location.world.is[!=].to[null]||false>'
-      - case 'state-withTarget-withGroup':
+      - case 'stg':
         - determine '<li@allow|deny|none.contains[%YourValue%]||false>'
-      - case 'state-withTarget':
+      - case 'st':
         - determine '<li@allow|deny|none.contains[%YourValue%]||false>'
-      - case 'state-withGroup':
+      - case 'sg':
         - determine '<li@allow|deny|none.contains[%YourValue%]||false>'
-      - case 'state-withTargetString-withGroup':
+      - case 'stsg':
         - determine '<li@allow|deny|none.contains[%YourValue%]||false>'
       - case 'group':
         - determine '<li@members|nonmembers|owners|nonowners|all.as_list.contains[%YourValue%]||false>'
