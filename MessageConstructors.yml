@@ -256,7 +256,9 @@ msgBoxed:
     - ^foreach <def[lines]> {
       - narrate "<&5>|<&f><&sp><&sp><def[value].unescaped>"
       }
-    - ^narrate "<&5>|"
+    - ^repeat <def[pageHeight].sub[<def[lines].size>].add[1].as_int> {
+      - narrate "<&5>|"
+      }
 
   msgsFooter:
     - ^define authors '<server.list_scripts.filter[starts_with[s@%script%_Author_]]||li@>'
