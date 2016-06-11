@@ -6,7 +6,7 @@
 #     A set of utilities to make displaying text pretty, uniform, and easy     #
 #                                                                              #
 #   Authors: |Anthony|                                                         #
-#   Version: 0.34                                                              #
+#   Version: 0.35                                                              #
 #   dScript Version: 0.9.8-DEV_b548                                            #
 #                                                                              #
 #   For bleeding-edge code, bug reports, code contributions, and feature       #
@@ -44,7 +44,7 @@ MSG_Version:
   type: version
   author: Anthony
   name: MessageConstructorLibrary
-  version: 0.34
+  version: 0.35
   description: A Library for Message Construction
   id: 90
 #
@@ -636,7 +636,7 @@ msgHint:
 #  This will make it so that a player chats the message they click.
 #  Good for situations where an NPC is expecting chat input.
 #
-#  Usage: <proc[msgChat].context[%display%|%command%|%hover%|<player>]>
+#  Usage: <proc[msgChat].context[%display%|%chat%|%hover%]>
 #
 msgChat:
   type: procedure
