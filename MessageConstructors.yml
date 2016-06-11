@@ -206,6 +206,16 @@ msgBoxed:
           - define hover '<def[split].get[4].replace[\u0026].with[&].unescaped>'
           - define button '"color":"<def[c]>","text":"%text%","clickEvent":{"action":"run_command","value":"%tcommand%"},"hoverEvent":{"action":"show_text","value":"%hover%"}'
           }
+          else if '%type' == 'hint' {
+          - define hint '/<def[split].get[3].replace[\u0026].with[&].unescaped>'
+          - define hover '<def[split].get[4].before_last[<&dq>].replace[\u0026].with[&].unescaped>'
+          - define button '"text":"%text%","clickEvent":{"action":"suggest_command","value":"%hint%"},"hoverEvent":{"action":"show_text","value":"%hover%"}'
+          }
+          else if '%type%' == 'chat' {
+          - define chat '<def[split].get[3].replace[\u0026].with[&].unescaped>'
+          - define hover '<def[split].get[4].replace[\u0026].with[&].unescaped>'
+          - define button '"text":"%text%","clickEvent":{"action":"run_command","value":"%chat%"},"hoverEvent":{"action":"show_text","value":"%hover%"}'
+          }
           else if '%type%' == 'hover' {
           - define hover '<def[split].get[3].replace[\u0026].with[&].unescaped>'
           - define button '"color":"<def[c]>","text":"%text%","hoverEvent":{"action":"show_text","value":"%hover%"}'
@@ -336,6 +346,14 @@ msgParser:
             - define command '/<def[split].get[3].replace[\u0026].with[&].unescaped>'
             - define hover '<def[split].get[4].before_last[<&dq>].replace[\u0026].with[&].unescaped>'
             - define button '"text":"%text%","clickEvent":{"action":"run_command","value":"%command%"},"hoverEvent":{"action":"show_text","value":"%hover%"}'
+          - case 'hint':
+            - define command '/<def[split].get[3].replace[\u0026].with[&].unescaped>'
+            - define hover '<def[split].get[4].before_last[<&dq>].replace[\u0026].with[&].unescaped>'
+            - define button '"text":"%text%","clickEvent":{"action":"suggest_command","value":"%command%"},"hoverEvent":{"action":"show_text","value":"%hover%"}'
+          - case 'chat':
+            - define chat '<def[split].get[3].replace[\u0026].with[&].unescaped>'
+            - define hover '<def[split].get[4].before_last[<&dq>].replace[\u0026].with[&].unescaped>'
+            - define button '"text":"%text%","clickEvent":{"action":"run_command","value":"%chat%"},"hoverEvent":{"action":"show_text","value":"%hover%"}'
           - case 'hover':
             - define hover '<def[split].get[3].before_last[<&dq>].replace[\u0026].with[&].unescaped>'
             - define button '"text":"%text%","hoverEvent":{"action":"show_text","value":"%hover%"}'
@@ -594,6 +612,41 @@ msgHover:
 #
 #  END msgHover
 #--------------------------------------
+#
+#  Hint Message Formatter
+#
+#  Returns your text formatted for automatic conversion to JSON.
+#
+#  Usage: <proc[msgHint].context[%display%|%hint%|%hover%]>
+#
+msgHint:
+  type: procedure
+  definitions: display|hint|hover
+  debug: false
+
+  script:
+    - determine '<&r><&ss>@<&ss><&chr[260f]>hint_-_<def[display].escaped.replace[ ].with[&sp]>_-_<def[hint].escaped.replace[ ].with[&sp]>_-_<def[hover].escaped.replace[ ].with[&sp]><&r>'
+#
+#  END msgHint
+#--------------------------------------
+#
+#  Chat Message Formatter
+#
+#  Returns your text formatted for automatic conversion to JSON.
+#  This will make it so that a player chats the message they click.
+#  Good for situations where an NPC is expecting chat input.
+#
+#  Usage: <proc[msgChat].context[%display%|%command%|%hover%|<player>]>
+#
+msgChat:
+  type: procedure
+  definitions: display|chat|hover
+  debug: false
+
+  script:
+    - determine '<&r><&ss>@<&ss><&chr[260f]>chat_-_<def[display].escaped.replace[ ].with[&sp]>_-_<def[chat].escaped.replace[ ].with[&sp]>_-_<def[hover].escaped.replace[ ].with[&sp]><&r>'
+#
+#  END msgChat
 #
 #
 #
