@@ -762,7 +762,7 @@ dRegions_Flags_Processors_string:
       - goto 'END'
       }
     - mark 'DISPLAY'
-    - choose '<s@dRegions_Flag_%flag%.yaml_key[string-type]||narrate>':
+    - choose '<s@dRegions_Flag_%flag%.yaml_key[string_type]||narrate>':
       - case 'narrate':
         - run s@msgPrefixed 'def:dRegions|<parse:%val%>'
       - case 'bossbar':
