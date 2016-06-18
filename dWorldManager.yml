@@ -1,27 +1,35 @@
 ################################################################################
-#
-#                            d W o r l d M a n a g e r
-#
-#
-#   Authors: |Anthony|
-#   Version: 0.1
-#   dScript Version: 0.9.8-DEV-b554
-#
-#
-#
-#--- About this script
-#
-#  dWorldManager is a world management system written with the Denizen
-#  Scripting Engine. It is meant to take the place of existing world management
-#  plugins such as MultiVerse for those of us who want a pure Denizen Server.
-#
-#  This is a very early ALPHA version of dWorldManager. Currently it will track
-#  new worlds as they are created and automatically make sure that they are
-#  loaded when the server starts. It provides no commands and no configurations
-#  at this time, though features will be added in the future.
-#
-#
-#_______________________________________________________________________________
+#                                                                              #
+#                            d W o r l d M a n a g e r                         #
+#                                                                              #
+#                                                                              #
+#   Authors: |Anthony|                                                         #
+#   Version: 0.22                                                              #
+#   dScript Version: 0.9.8-DEV-b554                                            #
+#                                                                              #
+#   For bleeding-edge code, bug reports, code contributions, and feature       #
+#    requests, visit the GitHub project:                                       #
+#    - github.com/AnthonyAMC/Public-Denizen-Scripts/blob/master/dWorldManager.yml
+#                                                                              #
+#   Has my work helped you in some way? Show your support by clicking the      #
+#    Like button.                                                              #
+#   Feeling generous? Get me a coffee :D                                       #
+#    https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=NPXKHCNMTGSUG
+#                                                                              #
+#------------------------------------------------------------------------------#
+#                                                                              #
+#                                                                              #
+#--- About this script                                                         #
+#                                                                              #
+#    dWorldManager is a world management system written with the Denizen       #
+#  Scripting Engine. It is meant to take the place of existing world           #
+#  management plugins such as MultiVerse for those of us who want a pure       #
+#  Denizen Server.                                                             #
+#                                                                              #
+#    dWM is fairly feature rich, providing commands for all the basic world    #
+#  operations. More configuration options will come.                           #
+#                                                                              #
+#______________________________________________________________________________#
 #
 #   Dependencies:
 #
@@ -38,11 +46,13 @@
 #
 #  Command                Permission            Description
 #
+# Every command has it's own permission, i'm too lazy to type them all here atm
 #  /dwm help [arg/#]      dwm.help              Get help.
 #
 #
 # TODO:
 #
+#  - Better code docs
 #
 ################################################################################
 #
@@ -54,13 +64,12 @@ dWM_Version:
   type: version
   author: Anthony
   name: dWorldManager
-  version: 0.1
+  version: 0.22
   description: Denizen World Manager
   id: 93
 #
 #  END dWorldManager Version
 #--------------------------------------
-#
 #
 ################################################################################
 #
@@ -82,14 +91,29 @@ dWM_Events:
           - yaml 'savefile:dWorldManager/config.yml' 'id:dWM_Config'
           }
         }
+      - define path '<yaml[dWM_Config].read[config.worldpath]||../..>'
       - foreach '<yaml[dWM_Config].list_keys[worlds]||li@>' {
-        - if <yaml[dWM_Config].read[worlds.%value%.loaded]||true> {
-          - createworld '%value%'
+        - if <server.has_file[%path%/%value%]> {
+          - if <yaml[dWM_Config].read[worlds.%value%.loaded]||true> {
+            - createworld '%value%' 'worldtype:<yaml[dWM_Config].read[worlds.%value%.worldtype]||NORMAL>' 'environment:<yaml[dWM_Config].read[worlds.%value%.environment]||NORMAL>'
+            }
+          }
+          # Maybe we shouldn't do this here and instead remove deleted worlds from the configs with only the purge command?
+          else if <yaml[dWM_Config].read[config.remove_deleted]||false> {
+          - yaml set 'worlds.%value%:!' 'id:dWM_Config'
+          - yaml 'savefile:dWorldManager/config.yml' 'id:dWM_Config'
           }
         }
+      - run locally instantly load_command_list delay:1t
 
     on server shutdown:
       - yaml 'savefile:dWorldManager/config.yml' 'id:dWM_Config'
+
+    on player teleports:
+      - define w '<c.origin.world.name>'
+      - define loc '<c.origin.before[,%w%].after[l@]>'
+      - run instantly delay:1t s@dWM_SetLL 'def:<player>|%w%|%loc%'
+
 
     on world loads:
       - if !<yaml[dWM_Config].list_keys[worlds].contains[<context.world.name>]||false> {
@@ -105,13 +129,22 @@ dWM_Events:
         - yaml 'savefile:dWorldManager/config.yml' 'id:dWM_Config'
         }
 
+    on reload scripts:
+      - run locally instantly load_command_list delay:1t
+
+  load_command_list:
+    - flag server 'dWM.Command_List:!'
+    - flag server 'dWM.Command_List:|:<server.list_scripts.filter[starts_with[s@dWM_Commands_]].parse[after[s@dWM_Commands_]].alphanumeric.to_lowercase||li@>'
+
   loadYaml:
   # Reloads the yaml files and generates default files if they don't exist.
   # Rewrites config files that do not match internal version number!
-    - run s@msgPrefixed 'def:dWM|<&3>Loading system config files...'
     - if !<server.has_file[dWorldManager/config.yml]> {
       - inject locally createConfigFile
       - run s@msgPrefixed 'def:dWM|<&7><&o>Created config file!'
+      }
+      else {
+      - run s@msgPrefixed 'def:dWM|<&3>Loading system config files...'
       }
     - if <yaml.list.contains[dWM_Config]> {
       - yaml unload 'id:dWM_Config'
@@ -163,8 +196,1409 @@ dWM_Events:
 #
 #
 ################################################################################
+#
+# dWorldManager Commands
+#
+# Every command has its own script container. The root command functions mostly
+# as link to specific commands and provides some initial processing.
+#
+#
+#--------------------------------------
+#
+#  dWM Command Script Registrar
+#
+# The root command. Validates minor input and sends to command script.
+#
+dWM_Commands:
+  type: command
+  debug: false
+  name: dwm
+  description: Denizen World Manager
+  usage: /dworldmanager
+  aliases: 'dworldmanager'
+  allowed help:
+  - determine <player.has_permission[dwm.basic]||<player.is_op>>
+
+  script:
+    - define command '<c.args.get[1].escaped||help>'
+    - define commands '<server.flag[dWM.Command_List].as_list||li@>'
+    - define args '<c.args.get[2].to[<c.args.size>].escape_contents||li@>'
+    - if !<def[commands].contains[%command%]> || !<proc[dWM_HasPerm_Command].context[%command%|<player||server>]> {
+      - inject s@dWM_Commands_Help
+      }
+    - inject s@dWM_Commands_%command%
+
+  tab complete:
+    - define command '<c.args.get[1]||>'
+    - define commands '<server.flag[dWM.Command_List].as_list||li@>'
+    - define args '<c.args.get[2].to[<c.args.size>]||li@>'
+    - define spaces '<c.raw_args.to_list.count[ ]||0>'
+    - if <def[commands].contains[%command%]> {
+      - inject s@dWM_Commands_%command% 'p:tab complete'
+      }
+      else {
+      - define commands '<def[commands].filter[starts_with[%command%]]||%commands%>'
+      }
+    - foreach %commands% {
+      - if !<proc[dWM_HasPerm_Command].context[%command%|<player||server>]> {
+        - define commands '<def[commands].exclude[%value%]||%commands%>'
+        }
+      }
+    - if <def[commands].is_empty||true> {
+      - determine 'li@'
+      }
+    - determine '<def[commands]||li@>'
+
+# Preprocessors. Does some pre-processing and passes back to the calling command
+  prerun:
+    - if <c.server||false> {
+      - define sender 'server'
+      }
+      else {
+      - define sender '<player>'
+      }
+    - if <c.alias> == 'dwm%command%' {
+      - if !<proc[dWM_HasPerm_Command].context[%command%|<player>]> {
+        - inject s@dWM_Commands_Help p:helpList
+        - queue clear
+        }
+      - define commands '<server.flag[dWM.Command_List].as_list||li@>'
+      - define args "<c.args.escape_contents>"
+      }
+#
+#  END dWM Command Registrar
+#--------------------------------------
+#
+#
+################################################################################
+#
+#
+#  dWorldManager Command Scripts
+#
+# This section holds all of the commands for dWorldManager. The root command /dWM
+# takes many arguments but most of those arguments can also be run as individual
+# commands. This results in dWorldManager command args having a shorthand version
+# in the form of /dwmarg
+#
+
+dWM_Commands_Help:
+  type: command
+  debug: false
+  speed: 0
+  name: dwmhelp
+  description: Show dWorldManager help
+  usage: /dwmhelp
+  aliases: ''
+  allowed help:
+  - determine <player.has_permission[dWM.basic]||<player.is_op>>
+
+  data:
+    description:
+      - ' The help docs provide usage info and examples for all commands.'
+      - ' '
+      - ' <&6><&l>Clickable page navigation is available!'
+    usage: '/dwm help (<&lt>arg<&gt>) (<&lt><&ns><&gt>)'
+    examples:
+      - '<&f>To show the <&a>second<&f> page of help for the <&2>help<&f> command'
+      - '<&sp>'
+      - '   <&e>/dwm help <&2>help <&a>2'
+      - ' '
+      - '<&f>To show the <&a>third<&f> page of the help files'
+      - '<&sp>'
+      - '   <&e>/dwm help <&a>3'
+    permissions: []
+
+  tab complete:
+    - if !<def[command].exists> {
+      - define commands '<server.flag[dWM.Command_List].as_list||li@>'
+      - define args "<c.args>"
+      }
+    - define command '<def[args].get[1].escaped||>'
+    - if <def[commands].contains[%command%]> {
+      - determine 'li@'
+      }
+      else {
+      - define commands '<def[commands].filter[starts_with[%command%]]||%commands%>'
+      }
+    - foreach %commands% {
+      - if !<proc[dWM_HasPerm_Command].context[%command%|<player||server>]> {
+        - define commands '<def[commands].exclude[%value%]||%commands%>'
+        }
+      }
+    - if <def[commands].is_empty||true> {
+      - determine 'li@'
+      }
+    - determine '<def[commands]||li@>'
+
+  script:
+    - if !<def[command].exists> {
+      - define command 'help'
+      }
+    - inject s@dWM_Commands p:prerun
+
+    - define arg '<def[args].get[1].escaped||1>'
+    - if <def[commands].contains[%arg%]||false> {
+      - define command '%arg%'
+      - define page '<tern[<def[args].get[2].is[matches].to[number]||false>]:<def[args].get[2].abs.round>||1>'
+      - inject s@dWM_Commands_Help p:helpCommand
+      - queue clear
+      }
+    - define page '<tern[<def[arg].is[matches].to[number]||false>]:<def[arg].abs.round>||1>'
+    - inject s@dWM_Commands_Help p:helpList
+    - queue clear
+
+  helpList:
+    # Filter the list of commands this player can use
+    # Build the help documentation
+    - define helpDoc 'li@'
+    - foreach %commands% {
+      - if !<proc[dWM_HasPerm_Command].context[%value%|<player||server>]> {
+        - define commands '<def[commands].exclude[%value%]>'
+        }
+        else {
+        - define button '<proc[msgCommand].context[<def[value].to_titlecase><&co>|dwm help %value%|<&a>Click for <&b><def[value].to_titlecase> <&a>help]>'
+        - define helpDoc '<def[helpDoc].include[%button%<&sp><&7><parse:<s@dWM_Commands_%value%.yaml_key[description]||Short Description>>|<&e.pad_left[3].with[<&sp>]><proc[msgTrim].context[48|<parse:<s@dWM_Commands_%value%.yaml_key[data.usage]||No usage info available!>>]>]>'
+        }
+      }
+    - run s@msgBoxed instantly 'def:dWM|<proc[msgCommand].context[<&6>dWorldManager|dwm about|<&a>Click to learn<&nl><&a>about the project!]>|<proc[msgCommand].context[<&e>Help|dwm help|<&a>Go back to main help]> Files|dWM help|<def[page]||1>|52|10|<def[helpDoc].separated_by[|]>'
+
+  helpCommand:
+    # Help for a specific command
+    - define short '<parse:<s@dWM_Commands_%command%.yaml_key[description]||A not so useless description should be here!>>'
+    - define desc '<parse:<s@dWM_Commands_%command%.yaml_key[data.description]||A not so useless description should be here!>>'
+    - define usage '<parse:<s@dWM_Commands_%command%.yaml_key[data.usage]||No help for you!>>'
+    - define examples '<parse:<s@dWM_Commands_%command%.yaml_key[data.examples]||No help for you!>>'
+    - define entries '<&7>%short%| |%desc%| |<&b><&n>Usage<&co>| |<&e.pad_left[3].with[ ]>%usage%| |<&3><&n>Examples<&co>| |%examples%'
+    - run s@msgBoxed instantly 'def:dWM|<proc[msgCommand].context[<&6>dWorldManager|dwm about|<&a>Click to learn<&nl><&a>about the project!]>|<proc[msgCommand].context[<&e>Help|dwm help|<&a>Go back to main help]> - <def[command].to_titlecase>|dWM help %command%|<def[page]||1>|52|10|%entries%'
 
 
+dWM_Commands_About:
+  type: command
+  debug: false
+  speed: 0
+  name: dwmabout
+  description: Details about the project
+  usage: /dwmabout
+  aliases: ''
+
+  data:
+    description:
+      - ' dWorldManager is a world management system written with the Denizen Scripting Engine. It is meant to take the place of existing world management plugins such as MultiVerse for those of us who want a pure Denizen Server.'
+      - ' '
+      - ' dWM is fairly feature rich, providing all the familiar commands you would expect from a world manager.'
+      - ' '
+      - ' Future development will bring more advanced world configuration options. Maybe dWM will even provide world instancing support if that sort of thing is useful to people.'
+    usage: '/dwe about'
+    examples:
+      - 'You<&sq>ve got to be kidding me...'
+      - '  <proc[msgUrl].context[<&e>/dwm|data.whicdn.com/images/129295787/large.jpg|If you click this...<&nl>I just don<&sq>t even know...]> <proc[msgUrl].context[<&e>about|data.whicdn.com/images/129295787/large.jpg|If you click this...<&nl>I just don<&sq>t even know...]>'
+      - ' '
+    permissions: []
+
+  tab complete:
+    - determine 'li@'
+
+  script:
+    - if !<def[command].exists> {
+      - define command 'about'
+      }
+    - inject s@dWM_Commands p:prerun
+    - run s@msgBoxed instantly 'def:dwm|<proc[msgCommand].context[<&6>dWorldManager|dwm help|<&a>Go back to main help]>|<&e>About|dwm about|<tern[<def[args].get[1].is[matches].to[number]||false>]:<def[args].get[1].abs.round>||1>|52|10|<&7><parse:<s@dWM_Commands_%command%.yaml_key[description]>>| |<parse:<s@dWM_Commands_%command%.yaml_key[data.description]>>'
+
+
+dWM_Commands_List:
+  type: command
+  debug: false
+  speed: 0
+  name: dwmlist
+  description: List all worlds
+  usage: /dwmlist
+  aliases: ''
+
+  data:
+    description:
+      - ' List all worlds known to dWM.'
+      - ' '
+      - ' Green worlds are loaded'
+      - ' Gray worlds are unloaded'
+      - ' Dark gray worlds are not registered'
+    usage: '/dwe list'
+    examples:
+      - 'You<&sq>ve got to be kidding me...'
+      - '  <proc[msgUrl].context[<&e>/dwm|data.whicdn.com/images/129295787/large.jpg|If you click this...<&nl>I just don<&sq>t even know...]> <proc[msgUrl].context[<&e>list|data.whicdn.com/images/129295787/large.jpg|If you click this...<&nl>I just don<&sq>t even know...]>'
+      - ' '
+    permissions: []
+
+  tab complete:
+    - determine 'li@'
+
+  script:
+    - if !<def[command].exists> {
+      - define command 'list'
+      }
+    - inject s@dWM_Commands p:prerun
+    - define path '<yaml[dWM_Config].read[config.worldpath]||../..>'
+    - define worlds 'li@'
+    - define n '0'
+    - foreach '<server.list_files[%path%]>':
+      - if !<server.has_file[%path%/%value%/level.dat]> {
+        - foreach next
+        }
+      - define v '<proc[dWM_VW].context[%value%]>'
+      - choose '%v%':
+        - case '0':
+          - define n '<def[n].add[1].as_int>'
+          - define desc '<&b><yaml[dWM_Config].read[worlds.%value%.description].as_list.separated_by[<&nl><&b>]||<&5>No Description>'
+          - define worlds '<def[worlds].include[<&e>%n%.  <proc[msgHover].context[<&a>%value%|%desc%]>]>'
+        - case '4':
+          - define n '<def[n].add[1].as_int>'
+          - define desc '<&b><yaml[dWM_Config].read[worlds.%value%.description].as_list.separated_by[<&nl><&b>]||<&5>No Description>'
+          - define worlds '<def[worlds].include[<&e>%n%.  <proc[msgHover].context[<&8>%value%|%desc%]>]>'
+        - case '5':
+          - define n '<def[n].add[1].as_int>'
+          - define desc '<&b><yaml[dWM_Config].read[worlds.%value%.description].as_list.separated_by[<&nl><&b>]||<&5>No Description>'
+          - define worlds '<def[worlds].include[<&e>%n%.  <proc[msgHover].context[<&7>%value%|%desc%]>]>'
+    - run s@msgBoxed instantly 'def:dwm|<proc[msgCommand].context[<&6>dWorldManager|dwm help|<&a>Go back to main help]>|<&e>World List|dwm list|<tern[<def[args].get[1].is[matches].to[number]||false>]:<def[args].get[1].abs.round>||1>|52|10|<def[worlds].separated_by[|]>'
+
+
+dWM_Commands_Create:
+  type: command
+  debug: false
+  name: dwmcreate
+  description: Create new worlds
+  usage: /dwmcreate
+  aliases: ''
+
+  data:
+    description: 'Create new worlds'
+    usage: '/dwm create <&lb><&lt>name<&gt><&rb> (g<&co><&lt>generator<&gt>) (t<&co><&lt>type<&gt>) (e<&co><&lt>environment<&gt>)'
+    examples:
+      - 'Create a normal world named denizen'
+      - '  <&e>/dwm create denizen'
+      - ' '
+      - 'Create a nether world named hell'
+      - '  <&e>/dwm create hell e:NETHER'
+      - ' '
+      - 'Create an amplified end world named megaend'
+      - '  <&e>/dwm create megaend t:AMPLIFIED e:THE_END'
+      - ' '
+      - 'Create a normal world named city using the CityWorld generator'
+      - '  <&e>/dwm create city g:CityWorld'
+      - ' '
+    permissions:
+      - admin
+      - create
+
+  tab complete:
+    - determine 'li@'
+
+  script:
+    - if !<def[command].exists> {
+      - define command 'create'
+      }
+    - inject s@dWM_Commands p:prerun
+    - inject s@dWM_ParseArgs
+    - if !<def[t].exists> {
+      - define t 'NORMAL'
+      }
+    - if !<def[e].exists> {
+      - define e 'NORMAL'
+      }
+    - define w '<def[worlds].get[1].escaped.to_lowercase||null>'
+    - define v '<proc[dWM_VW].context[%w%]>'
+    - define vval 'li@3'
+    - inject s@dWM_CreateWorldConfigs
+    - run s@msgPrefixed 'def:dWM|<&a>Created <&o>%w%<&a>!'
+
+
+dWM_Commands_Unload:
+  type: command
+  debug: false
+  name: dwmunload
+  description: Unload worlds
+  usage: /dwmunload
+  aliases: ''
+
+  data:
+    description: 'Unload worlds from the system. Does not delete them!'
+    usage: '/dwm unload <&lb><&lt>name<&gt><&rb>'
+    examples:
+      - 'Unload the world named denizen'
+      - '  <&e>/dwm unload denizen'
+      - ' '
+    permissions:
+      - admin
+      - unload
+
+  tab complete:
+    - determine 'li@'
+
+  script:
+    - if !<def[command].exists> {
+      - define command 'unload'
+      }
+    - inject s@dWM_Commands p:prerun
+    - inject s@dWM_ParseArgs
+    - define w '<def[worlds].get[1].escaped||null>'
+    - inject s@dWM_UnloadWorld
+    - run s@msgPrefixed 'def:dWM|<&d><&o>%w% <&d>has been unloaded.'
+
+
+dWM_Commands_Load:
+  type: command
+  debug: false
+  name: dwmload
+  description: Load worlds
+  usage: /dwmload
+  aliases: ''
+
+  data:
+    description: 'Load registered worlds'
+    usage: '/dwm load <&lb><&lt>name<&gt><&rb>'
+    examples:
+      - 'Load the world named denizen'
+      - '  <&e>/dwm load denizen'
+      - ' '
+    permissions:
+      - admin
+      - load
+
+  tab complete:
+    - determine 'li@'
+
+  script:
+    - if !<def[command].exists> {
+      - define command 'load'
+      }
+    - inject s@dWM_Commands p:prerun
+    - inject s@dWM_ParseArgs
+    - define w '<def[worlds].get[1].escaped||null>'
+    - inject s@dWM_LoadWorld
+    - run s@msgPrefixed 'def:dWM|<&a>Loaded <&o>%w%<&a>!'
+
+
+dWM_Commands_Reload:
+  type: command
+  debug: false
+  name: dwmreload
+  description: Reload config file
+  usage: /dwmreload
+  aliases: ''
+
+  data:
+    description: 'Reload dWM config files.'
+    usage: '/dwm reload'
+    examples:
+      - 'If you<&sq>ve been given access to this command, you<&sq>d better damn well know how to use it!'
+      - '  <proc[msgUrl].context[<&e>/dwm|data.whicdn.com/images/129295787/large.jpg|I wonder what happens when i click this...]> <proc[msgUrl].context[<&e>reload|data.whicdn.com/images/129295787/large.jpg|I wonder what happens when i click this...]>'
+      - ' '
+    permissions:
+      - admin
+      - unload
+
+  tab complete:
+    - determine 'li@'
+
+  script:
+    - if !<def[command].exists> {
+      - define command 'reload'
+      }
+    - inject s@dWM_Commands p:prerun
+    - inject s@dWM_Events p:reloadYaml
+    - inject s@dWM_Events p:load_command_list
+
+
+dWM_Commands_Remove:
+  type: command
+  debug: false
+  name: dwmremove
+  description: Remove worlds
+  usage: /dwmremove
+  aliases: ''
+
+  data:
+    description:
+      - 'Remove worlds from the system.'
+      - 'This command will DELETE world files, but will keep the dWM configurations for it.'
+    usage: '/dwm remove <&lb><&lt>name<&gt><&rb>'
+    examples:
+      - 'Remove the world named denizen'
+      - '  <&e>/dwm remove denizen'
+      - ' '
+    permissions:
+      - admin
+      - remove
+
+  tab complete:
+    - determine 'li@'
+
+  script:
+    - if !<def[command].exists> {
+      - define command 'remove'
+      }
+    - inject s@dWM_Commands p:prerun
+    - inject s@dWM_ParseArgs
+    - define w '<def[worlds].get[1].escaped||null>'
+    - define v '<proc[dWM_VW].context[%w%]>'
+    - if 'li@0|4|5' !contains '%v%' {
+      - run instantly delay:1t 's@dWM_Error' 'def:world|%v%|%sender%|%w%'
+      - queue clear
+      }
+    - if !<server.has_flag[dWM.RemoveWorld.%sender%.%w%]> {
+      - run s@msgPrefixed 'def:dWM|<&d>Enter command again to confirm removing %w%!'
+      - flag server 'dWM.RemoveWorld.%sender%.%w%' d:100t
+      - queue clear
+      }
+    - flag server 'dWM.RemoveWorld.%sender%.%w%:!'
+    - inject s@dWM_RemoveWorld
+    - run s@msgPrefixed 'def:dWM|<&a>Removed <&o>%w%<&a>!'
+
+
+dWM_Commands_Purge:
+  type: command
+  debug: false
+  name: dwmpurge
+  description: Remove world data
+  usage: /dwmpurge
+  aliases: ''
+
+  data:
+    description:
+      - 'Remove world data from dWM.'
+      - 'This command will purge all world data from dWM.'
+    usage: '/dwm purge <&lb><&lt>name<&gt><&rb>'
+    examples:
+      - 'Purge the world named denizen'
+      - '  <&e>/dwm purge denizen'
+      - ' '
+    permissions:
+      - admin
+      - purge
+
+  tab complete:
+    - determine 'li@'
+
+  script:
+    - if !<def[command].exists> {
+      - define command 'purge'
+      }
+    - inject s@dWM_Commands p:prerun
+    - inject s@dWM_ParseArgs
+    - define w '<def[worlds].get[1].escaped||null>'
+    - define v '<proc[dWM_VW].context[%w%]>'
+    - if 'li@1|2|4' contains '%v%' {
+      - run instantly delay:1t 's@dWM_Error' 'def:world|%v%|%sender%|%w%'
+      - queue clear
+      }
+    - if '%v%' == '0' {
+      - run instantly delay:1t 's@dWM_Error' 'def:purge|1|%sender%|%w%'
+      - queue clear
+      }
+      else if '%v%' == '3' {
+      - if !<yaml[dWM_Config].contains[worlds.%w%]> {
+        - run instantly delay:1t 's@dWM_Error' 'def:purge|2|%sender%|%w%'
+        - queue clear
+        }
+      }
+    - if !<server.has_flag[dWM.PurgeWorld.%sender%.%w%]> {
+      - run s@msgPrefixed 'def:dWM|<&d>Enter command again to confirm purging %w%!'
+      - flag server 'dWM.PurgeWorld.%sender%.%w%' d:100t
+      - queue clear
+      }
+    - flag server 'dWM.PurgeWorld.%sender%.%w%:!'
+    - yaml set 'worlds.%w%:!' 'id:dWM_Config'
+    - yaml 'savefile:dWorldManager/config.yml' 'id:dWM_Config'
+    - run s@msgPrefixed 'def:dWM|<&a>Purged <&o>%w%<&a> from config files!'
+
+
+dWM_Commands_Import:
+  type: command
+  debug: false
+  name: dwmimport
+  description: Import an existing world
+  usage: /dwmimport
+  aliases: ''
+
+  data:
+    description:
+      - 'You can import pre-made worlds by placing them in your world folder and running the importer.'
+      - 'Worlds will not be registered with dWM unless they have been imported!'
+    usage: '/dwm import <&lb><&lt>name<&gt><&rb>'
+    examples:
+      - 'Import the world named denizen'
+      - '  <&e>/dwm import denizen'
+      - ' '
+    permissions:
+      - admin
+      - import
+
+  tab complete:
+    - determine 'li@'
+
+  script:
+    - if !<def[command].exists> {
+      - define command 'import'
+      }
+    - inject s@dWM_Commands p:prerun
+    - inject s@dWM_ParseArgs
+    - if !<def[t].exists> {
+      - define t 'NORMAL'
+      }
+    - if !<def[e].exists> {
+      - define e 'NORMAL'
+      }
+    - define w '<def[worlds].get[1].escaped||null>'
+#    - inject s@dWM_ImportWorld
+    - define v '<proc[dWM_VW].context[%w%]>'
+    - define vval 'li@4'
+    - inject s@dWM_CreateWorldConfigs
+    - run s@msgPrefixed 'def:dWM|<&a>Imported <&o>%w%<&a>!'
+
+
+dWM_Commands_Clone:
+  type: command
+  debug: false
+  name: dwmclone
+  description: Clone an existing world
+  usage: /dwmclone
+  aliases: ''
+
+  data:
+    description:
+      - 'You can clone existing worlds.'
+      - 'Worlds will not be registered with dWM unless they have been imported!'
+    usage: '/dwm clone <&lb><&lt>oldWorld<&gt><&rb> <&lb><&lt>newWorld<&gt><&rb>'
+    examples:
+      - 'Clone the world named denizen and name it doodlepop'
+      - '  <&e>/dwm clone denizen doodlepop'
+      - ' '
+    permissions:
+      - admin
+      - clone
+
+  tab complete:
+    - determine 'li@'
+
+  script:
+    - if !<def[command].exists> {
+      - define command 'clone'
+      }
+    - inject s@dWM_Commands p:prerun
+    - inject s@dWM_ParseArgs
+    - define c '<def[worlds].get[1].escaped||null>'
+    - define w '<def[worlds].get[2].escaped||null>'
+    - define v '<proc[dWM_VW].context[%c%]>'
+    - if 'li@0|5' !contains '%v%' {
+      - run instantly delay:1t 's@dWM_Error' 'def:world|%v%|%sender%|%c%'
+      - queue clear
+      }
+    - define t '<yaml[dWM_Config].read[worlds.%w%.worldtype]||NORMAL>'
+    - define e '<yaml[dWM_Config].read[worlds.%w%.environment]||NORMAL>'
+    - define g '<yaml[dWM_Config].read[worlds.%w%.generator]||none>'
+    - define vval 'li@3'
+    - define clone ''
+    - inject s@dWM_CreateWorldConfigs
+    - run s@msgPrefixed 'def:dWM|<&a>Cloned <&o>%w%<&a>!'
+
+
+dWM_Commands_Tp:
+  type: command
+  debug: false
+  name: dwmtp
+  description: Teleport anyone anywhere
+  usage: /dwmtp
+  aliases: ''
+
+  data:
+    description:
+      - 'Teleport anyone anywhere. Teleport everything everywhere.'
+      - ' '
+    usage: '/dwm tp (-abehnps) (<&lt>x,y,z<&gt>) <&lb><&lt>world<&gt><&rb>'
+    examples:
+      - '<&d>The following is a list of planned teleport usages. The current implementation only allows for teleporting yourself to a world.'
+      - ' '
+      - 'Teleport yourself to your last location in the hub world'
+      - '  <&e>/dwm tp hub'
+      - ' '
+      - 'Teleport mcmonkey and morphan1 to their last location in the hub world'
+      - '  <&e>/dwm tp hub mcmonkey morphan1'
+      - ' '
+      - 'Teleport mcmonkey and morphan1 to their beds in the dream world'
+      - '  <&e>/dwm tp -b dream mcmonkey morphan1'
+      - ' '
+      - 'Teleport mcmonkey to the spawn location in hell and teleport all ghasts and zombie pigmen to him'
+      - '  <&e>/dwm tp -es hell mcmonkey ghast zombie_pigmen'
+      - ' '
+      - 'Teleport mcmonkey and morphan1 to mcmonkeys bed in the whacky world'
+      - '  <&e>/dwm tp -pb whacky mcmonkey morphan1'
+      - ' '
+      - 'Teleport mcmonkey and morphan1 to you so you can laugh at them'
+      - '  <&e>/dwm tp -ph mcmonkey morphan1'
+      - ' '
+      - 'Teleport everyone to notch to ask him for some of that 2.5 billion'
+      - '  <&e>/dwm tp -ap notch'
+      - ' '
+    permissions:
+      - admin
+      - tp
+
+  tab complete:
+    - determine 'li@'
+
+  script:
+    - if !<def[command].exists> {
+      - define command 'tp'
+      }
+    - inject s@dWM_Commands p:prerun
+    - inject s@dWM_ParseArgs
+    - define prefix '<proc[msgCommand].context[<&4><&lb><&6>dWM<&4><&rb>|dwm help|<&6>      dWM<&nl><&d>Click for help]>   '
+
+  # Determine the destination
+    # World spawn
+    # Player World Bed
+    # Player World last location
+    # Player current location
+    # NPC current location
+
+  # Determine the entities to teleport
+    - if !<def[entities].is_empty> {
+      - run instantly delay:1t 's@dWM_Error' 'def:entity|1|%sender%'
+      }
+    - if !<def[npcs].is_empty> {
+      - run instantly delay:1t 's@dWM_Error' 'def:npc|1|%sender%'
+      }
+    - if <def[players].is_empty> {
+      - if '%sender%' == 'server' {
+        - announce to_console '<&4><&lb><&6>dWM<&4><&rb> <&c>You did not specify an entity to teleport!'
+        - queue clear
+        }
+      - if <def[worlds].is_empty> {
+        - define w <player.world.name>
+        }
+        else {
+        - define w <def[worlds].get[1]>
+        - define v '<proc[dWM_VW].context[%w%]>'
+        - if '%v%' != '0' {
+          - run instantly delay:1t 's@dWM_Error' 'def:world|%v%|%sender%|%w%'
+          - queue clear
+          }
+        }
+      - define lastLoc '<proc[dWM_LL].context[<player>|%w%]>'
+      - if '%lastLoc%' == '1' {
+        - run instantly delay:1t 's@dWM_Error' 'def:ll|1|%sender%|%w%'
+        - teleport <player> '<def[w].as_world.spawn_location>'
+        - queue clear
+        }
+        else {
+        - teleport <player> '<el@val[<def[lastLoc]>,%w%].as_location>'
+        }
+      }
+
+
+#    - if <def[switches].is_empty> {
+#      - if <def[players].is_empty> {
+#        - define targets 'li@%sender%'
+#        - if <def[locations].is_empty> {
+#          - if <def[worlds].is_empty> {
+#            - run instantly delay:1t 's@dWM_Error' 'def:loc|1|%sender%'
+#            - queue clear
+#            }
+#            else {
+#            - define w '<def[worlds].get[1]>'
+#            - define lastLoc '<proc[dWM_LL].context[%object%|%w%]>'
+#            - if lastLoc == '0' {
+#              - run instantly delay:1t 's@dWM_Error' 'def:ll|1|%sender%|%w%'
+#              - queue clear
+#              }
+#            -
+#            }
+#          }
+#          else {
+#          - define l '<def[locations].get[1].as_location>'
+#          }
+#        - if <def[worlds].is_empty> {
+#          - define w '<def[sender].world.name>'
+#          }
+#          else {
+#          - define w '<def[worlds].get[1]>'
+#          }
+#        # Maybe this should be moved to the end? To validate the world /after/ everything else has been parsed.
+#        - define v '<proc[dWM_VW].context[%w%]>'
+#        - if '%v%' != '0' {
+#          - run instantly delay:1t 's@dWM_Error' 'def:world|%v%|%sender%|%w%'
+#          - queue clear
+#          }
+#        - teleport %targets% '<el@val[%l%,%w%].as_location>'
+#        - queue clear
+#        }
+
+#        else if <def[players].size> == 1 {
+#        - if <def[worlds].is_empty> {
+#          - if  <def[locations].is_empty> {
+#            - teleport %sender% '<def[players].get[1].location>'
+#            }
+#            else {
+#            - teleport <def[players].get[1]> <el@val[%l%,<def[players].get[1].world>].as_location>
+#            }
+#          }
+#          else {
+#          - define w '<def[worlds].get[1]>'
+#          - if  <def[locations].is_empty> {
+#            - define object '<def[players].get[1]>'
+#            - define lastLoc '<proc[dWM_LL].context[%object%|%world%]>'
+#            - if lastLoc == '0' {
+#              - run instantly delay:1t 's@dWM_Error' 'def:ll|1|%sender%|%w%'
+#              - queue clear
+#              }
+#            - teleport %sender% '<def[lastLoc].as_location>'
+#            }
+#            else {
+#            - teleport <def[players].get[1]> <el@val[%l%,<def[players].get[1].world>].as_location>
+#            }
+#          - define l '<def[locations].get[1].as_location>'
+#          }
+#        - define targets '<def[players]>'
+#        }
+
+#        else {
+#        - define targets '<def[players].get[2].to[<def[players].size>]>'
+#        }
+
+
+#      - if <def[worlds].is_empty> {
+#        - define w '<player.world>'
+#        }
+#        else {
+#        - define w '<def[worlds].get[1].as_world>'
+#        - define v '<proc[dWM_VW].context[%world%]>'
+#        - if '%v%' != '0' {
+#          - run instantly delay:1t 's@dWM_Error' 'def:world|%v%|%sender%|%w%'
+#          - queue clear
+#          }
+#        }
+#      - if <def[locations].is_empty> {
+#        - define l ''
+#        - run instantly delay:1t 's@dWM_Error' 'def:loc|1|%sender%|%w%'
+#        - queue clear
+#        }
+#        else {
+#        - define l '<def[locations].get[1].as_location.simple>'
+#        }
+#      }
+
+#    # The 'a' switch will teleport all entity types to the target.
+#    - if %switches% contains a {
+#      -
+#      }
+#      else if %switches% contains h {
+#      -
+#      }
+#      else if %switches% contains b {
+#      -
+#      }
+#      else if %switches% contains p {
+#      -
+#      }
+#      else if %switches% contains e {
+#      -
+#      }
+#      else if %switches% contains n {
+#      -
+#      }
+#      else if %switches% contains s {
+#      - if <def[worlds].is_empty> {
+#        - if <def[players].is_empty> {
+#          - define error ''
+#          }
+#          else {
+#          - define destination '<def[players].get[1].world.spawn_location>'
+#          }
+#        }
+#        else {
+#        - define destination '<def[worlds].get[1].spawn_location>'
+#        }
+#      }
+#
+################################################################################
+#
+#  dWorldManager Other Utilities
+#
+# Other Utility functions used throughout dWorldManager
+#
+#--------------------------------------
+#
+#  Command Permission Check Procedure script
+#  - Used to check if a player has permission to use a command.
+#
+dWM_HasPerm_Command:
+# Usage: <proc[dWM_HasPerm_Command].context[command|player]>
+  type: procedure
+  debug: false
+  definitions: command|player
+
+  script:
+    - if %player% == 'server' || <def[player].is_op> || <def[player].permission[dwm.admin]||false> {
+      - determine true
+      }
+    - define perms "<s@dWM_Commands_%command%.yaml_key[data.permissions]||li@>"
+    - if <def[perms].is_empty> {
+      - determine true
+      }
+    - foreach '%perms%':
+      - define perm '<parse:%value%>'
+      - if <def[player].permission[dwm.%perm%]> {
+        - determine true
+        }
+    - determine false
+#
+#  END dWM_HasPerm_Command
+##--------------------------------------
+##
+##  dWorldManager World Creation
+##
+## Required definitions
+##  w - The name of the world
+##  g - The world generator
+##  e - The environment
+##  t - the world type
+##
+#dWM_CreateWorld:
+#  type: task
+#  debug: false
+
+#  script:
+#    - define v '<proc[dWM_VW].context[%w%]>'
+#    - if '%v%' != '3' {
+#      - run instantly delay:1t 's@dWM_Error' 'def:world|%v%|%sender%|%w%'
+#      - define fail ''
+#      }
+#    - if <def[g].exists> {
+#      - if !<s@dWM_Enums.yaml_key[g].contains[%g%]> {
+#        - run instantly delay:1t 's@dWM_Error' 'def:gen|1|%sender%|%g%'
+#        - define fail ''
+#        }
+#        else if '<server.list_plugins>' !contains '%g%' {
+#        - run instantly delay:1t 's@dWM_Error' 'def:gen|2|%sender%|%g%'
+#        - define fail ''
+#        }
+#      }
+#    - if !<s@dWM_Enums.yaml_key[t].contains[%t%]> {
+#      - run instantly delay:1t 's@dWM_Error' 'def:type|1|%sender%|%g%'
+#      - define fail ''
+#      }
+#    - if !<s@dWM_Enums.yaml_key[e].contains[%e%]> {
+#      - run instantly delay:1t 's@dWM_Error' 'def:env|1|%sender%|%g%'
+#      - define fail ''
+#      }
+#    - if <def[fail].exists> {
+#      - random {
+#        - define msg "You<&sq>re not very good at this."
+#        - define msg "Try that again, but now do it right."
+#        - define msg "Reading the help is helpful"
+#        }
+#      - run s@msgPrefixed 'def:dWM|<&d><&o>%msg%'
+#      }
+#      else {
+#      - if <def[g].exists> {
+#        - createworld '%w%' 'generator:%g%' 'worldtype:%t%' 'environment:%e%'
+#        }
+#        else {
+#        - createworld '%w%' 'worldtype:%t%' 'environment:%e%'
+#        }
+#      - yaml set 'worlds.%w%.loaded:true' 'id:dWM_Config'
+#      - yaml set 'worlds.%w%.generator:<def[g]||none>' 'id:dWM_Config'
+#      - yaml set 'worlds.%w%.environment:%e%' 'id:dWM_Config'
+#      - yaml set 'worlds.%w%.spawn:<def[n].as_world.spawn_location.simple>' 'id:dWM_Config'
+#      - yaml 'savefile:dWorldManager/config.yml' 'id:dWM_Config'
+#      }
+##
+##  END dWM_CreateWorld
+#--------------------------------------
+#
+#  dWorldManager World Importer
+#
+# Required definitions
+#  w - The name of the world
+#  g - The world generator
+#  e - The environment
+#  t - the world type
+#
+dWM_ImportWorld:
+  type: task
+  debug: false
+
+  script:
+    - define v '<proc[dWM_VW].context[%w%]>'
+    - define vval 'li@4'
+    - inject s@dWM_CreateWorldConfigs
+#
+#  END dWM_ImportWorld
+#--------------------------------------
+#
+#  dWorldManager Unload World
+#
+# Required definitions
+#  w - The name of the world
+#
+dWM_UnloadWorld:
+  type: task
+  debug: false
+
+  script:
+    - define v '<proc[dWM_VW].context[%w%]>'
+    - if '%v%' != '0' {
+      - run instantly delay:1t 's@dWM_Error' 'def:world|%v%|%sender%|%w%'
+      - queue clear
+      }
+    - event dwm_UnloadWorld 'context:world|%w%' save:return
+    - define rval '<entry[return].determinations.filter[starts_with[cancelled/]||li@>'
+    - if <def[rval].is_empty> {
+      - teleport <def[w].as_world.players> <server.list_worlds.get[1].spawn_location>
+      - adjust '<def[w].as_world>' 'unload'
+      - yaml set 'worlds.%w%.loaded:false' 'id:dWM_Config'
+      - yaml 'savefile:dWorldManager/config.yml' 'id:dWM_Config'
+      }
+      else {
+      - run instantly delay:1t 's@dWM_Error' 'def:unload|1|%sender%|<entry[return].determinations.parse[after[cancelled/]||li@>'
+      }
+#
+#  END dWM_UnloadWorld
+#--------------------------------------
+#
+#  dWorldManager Load World
+#
+# Required definitions
+#  w - The name of the world
+#
+dWM_LoadWorld:
+  type: task
+  debug: false
+
+  script:
+    - define v '<proc[dWM_VW].context[%w%]>'
+    - if '%v%' != '5' {
+      - run instantly delay:1t 's@dWM_Error' 'def:world|%v%|%sender%|%w%'
+      - queue clear
+      }
+    - define t '<yaml[dWM_Config].read[worlds.%w%.worldtype]||NORMAL>'
+    - define e '<yaml[dWM_Config].read[worlds.%w%.environment]||NORMAL>'
+    - define g '<yaml[dWM_Config].read[worlds.%w%.generator]||none>'
+    - if '%g%' == 'none' {
+      - createworld '%w%' 'worldtype:%t%' 'environment:%e%'
+      }
+      else {
+      - createworld '%w%' 'worldtype:%t%' 'environment:%e%' 'generator:%e%'
+      }
+    - yaml set 'worlds.%w%.loaded:true' 'id:dWM_Config'
+    - yaml 'savefile:dWorldManager/config.yml' 'id:dWM_Config'
+    - run s@msgPrefixed 'def:dWM|<&d><&o>%w% <&d>has been loaded.'
+#
+#  END dWM_LoadWorld
+#--------------------------------------
+#
+#  dWorldManager Remove World
+#
+# Required definitions
+#  w - The name of the world
+#
+dWM_RemoveWorld:
+  type: task
+  debug: false
+
+  script:
+    - define v '<proc[dWM_VW].context[%w%]>'
+    - if 'li@0|4|5' !contains '%v%' {
+      - run instantly delay:1t 's@dWM_Error' 'def:world|%v%|%sender%|%w%'
+      - queue clear
+      }
+    - if '%v%' != '0' {
+      - createworld '%w%'
+      }
+    - adjust '<def[w].as_world>' 'destroy'
+    - if <yaml[dWM_Config].read[config.remove_deleted]||false> {
+      - yaml set 'worlds.%w%:!' 'id:dWM_Config'
+      }
+      else {
+      - yaml set 'worlds.%w%.loaded:false' 'id:dWM_Config'
+      }
+    - yaml 'savefile:dWorldManager/config.yml' 'id:dWM_Config'
+    - define v '<proc[dWM_VW].context[%w%]>'
+    - if '%v%' != '3' {
+      - run instantly delay:1t 's@dWM_Error' 'def:rem|1|%sender%|%w%'
+      - queue clear
+      }
+#
+#  END dWM_RemoveWorld
+#--------------------------------------
+#
+#  dWorldManager Purge World
+#
+# Required definitions
+#  w - The name of the world
+#
+dWM_PurgeWorld:
+  type: task
+  debug: false
+
+  script:
+    - define v '<proc[dWM_VW].context[%w%]>'
+    - if 'li@1|2|4' contains '%v%' {
+      - run instantly delay:1t 's@dWM_Error' 'def:world|%v%|%sender%|%w%'
+      - queue clear
+      }
+    - if '%v%' == '0' {
+      - run instantly delay:1t 's@dWM_Error' 'def:purge|1|%sender%|%w%'
+      - queue clear
+      }
+      else if '%v%' == '3' {
+      - if !<yaml[dWM_Config].contains[worlds.%w%]> {
+        - run instantly delay:1t 's@dWM_Error' 'def:purge|2|%sender%|%w%'
+        - queue clear
+        }
+      }
+    - yaml set 'worlds.%w%:!' 'id:dWM_Config'
+    - yaml 'savefile:dWorldManager/config.yml' 'id:dWM_Config'
+#
+#  END dWM_RemoveWorld
+#--------------------------------------
+#
+#  dWorldManager World Config Writer
+#
+#  This writes the config file entries
+#
+# Required definitions
+#  w - The name of the world
+#  g - The world generator
+#  e - The environment
+#  t - The world type
+#  sender - Either 'server' or '<player>'
+#  vval - The return value(s) of dWM_VW to pass on
+#
+dWM_CreateWorldConfigs:
+  type: task
+  debug: false
+
+  script:
+    - define v '<proc[dWM_VW].context[%w%]>'
+    - if '%vval%' !contains '%v%' {
+      - run instantly delay:1t 's@dWM_Error' 'def:world|%v%|%sender%|%w%'
+      - queue clear
+      }
+    - if <def[g].exists> && '%g%' != 'none' {
+      - if !<s@dWM_Enums.yaml_key[g].contains[%g%]> {
+        - run instantly delay:1t 's@dWM_Error' 'def:gen|1|%sender%|%g%'
+        - queue clear
+        }
+        else if '<server.list_plugins>' !contains '%g%' {
+        - run instantly delay:1t 's@dWM_Error' 'def:gen|2|%sender%|%g%'
+        - queue clear
+        }
+      }
+    - if !<s@dWM_Enums.yaml_key[t].contains[%t%]> {
+      - run instantly delay:1t 's@dWM_Error' 'def:type|1|%sender%|%g%'
+      - queue clear
+      }
+    - if !<s@dWM_Enums.yaml_key[e].contains[%e%]> {
+      - run instantly delay:1t 's@dWM_Error' 'def:env|1|%sender%|%g%'
+      - queue clear
+      }
+    - yaml set 'worlds.%w%.loaded:true' 'id:dWM_Config'
+    - yaml set 'worlds.%w%.generator:<def[g]||none>' 'id:dWM_Config'
+    - yaml set 'worlds.%w%.environment:%e%' 'id:dWM_Config'
+    - yaml set 'worlds.%w%.description:|:A nondescriptive description' 'id:dWM_Config'
+    - yaml 'savefile:dWorldManager/config.yml' 'id:dWM_Config'
+    - if <def[clone].exists> {
+      - if <def[g].exists> && '%g%' != 'none' {
+        - createworld '%w%' 'worldtype:%t%' 'environment:%e%' 'generator:%g%' 'copy_from:%c%'
+        }
+        else {
+        - createworld '%w%' 'worldtype:%t%' 'environment:%e%' 'copy_from:%c%'
+        }
+      }
+      else {
+      - if <def[g].exists> && '%g%' != 'none' {
+        - createworld '%w%' 'worldtype:%t%' 'environment:%e%' 'generator:%g%'
+        }
+        else {
+        - createworld '%w%' 'worldtype:%t%' 'environment:%e%'
+        }
+      }
+    - yaml set 'worlds.%w%.spawn:<def[w].as_world.spawn_location.simple>' 'id:dWM_Config'
+    - yaml 'savefile:dWorldManager/config.yml' 'id:dWM_Config'
+
+#
+#  END dWM_CreateWorldConfigs
+#--------------------------------------
+#
+#  Validate World Names
+#
+dWM_VW:
+# Usage: <proc[dWM_VW].context[%world%]>
+  type: procedure
+  debug: false
+  definitions: w
+
+  script:
+    - if '%w%' == 'null' {
+      - determine 1
+      }
+    - if '<def[w].matches[^[a-zA-Z0-9-_]+$].not>' {
+      - determine 2
+      }
+    - if !<server.has_file[<yaml[dWM_Config].read[config.worldpath]||../..>/%w%/level.dat]> {
+      - determine 3
+      }
+    - if !<yaml[dWM_Config].contains[worlds.%w%]> {
+      - determine 4
+      }
+    - if !<yaml[dWM_Config].read[worlds.%w%.loaded]||false> || ( <server.list_worlds.parse[name]> !contains '%w%' ) {
+      - determine 5
+      }
+    - determine 0
+#
+#  END dWM_Validate_World
+#--------------------------------------
+#
+#  Get a players last location in a world
+#
+dWM_LL:
+# Usage: <proc[dWM_LL].context[%player%|%world%]>
+  type: procedure
+  debug: false
+  definitions: p|w
+
+  script:
+    - define u '<def[p].uuid>'
+    - if !<server.has_file[dWorldManager/playerdata/%u%.yml]> {
+      - yaml create 'id:dWM_pd_%u%'
+      - yaml 'savefile:dWorldManager/playerdata/%u%.yml' 'id:dWM_pd_%u%'
+      }
+    - if <yaml.list.contains[dWM_pd_%u%]> {
+      - yaml unload 'id:dWM_pd_%u%'
+      }
+    - yaml 'load:dWorldManager/playerdata/%u%.yml' 'id:dWM_pd_%u%'
+    - define l '<yaml[dWM_pd_%u%].read[%w%.lastLoc]||null>'
+    - yaml unload 'id:dWM_pd_%u%'
+    - if '%l%' == 'null' {
+      - determine 1
+      }
+    - determine '%l%'
+#
+#  END dWM_LL
+#--------------------------------------
+#
+#  Get a players last location in a world
+#
+dWM_SetLL:
+# Usage: run instantly delay:1t s@dWM_SetLL 'def:<player>|%world%|%location%'
+  type: task
+  debug: false
+  definitions: p|w|l
+
+  script:
+    - define u '<def[p].uuid>'
+    - if !<server.has_file[dWorldManager/playerdata/%u%.yml]> {
+      - yaml create 'id:dWM_pd_%u%'
+      - yaml 'savefile:dWorldManager/playerdata/%u%.yml' 'id:dWM_pd_%u%'
+      }
+    - if <yaml.list.contains[dWM_pd_%u%]> {
+      - yaml unload 'id:dWM_pd_%u%'
+      }
+    - yaml 'load:dWorldManager/playerdata/%u%.yml' 'id:dWM_pd_%u%'
+    - yaml set '%w%.lastLoc:%l%' 'id:dWM_pd_%u%'
+    - yaml 'savefile:dWorldManager/playerdata/%u%.yml' 'id:dWM_pd_%u%'
+    - yaml unload 'id:dWM_pd_%u%'
+#
+#  END dWM_LL
+#--------------------------------------
+#
+#  dWorldManager Arg Parser
+#
+#
+dWM_ParseArgs:
+  type: task
+  debug: false
+
+  script:
+    - define switches 'li@'
+    - define players 'li@'
+    - define offline 'li@'
+    - define entities 'li@'
+    - define npcs 'li@'
+    - define locations 'li@'
+    - define worlds 'li@'
+    - foreach '<def[args]>':
+      - define a '%value%'
+      - if <def[a].starts_with[-]> {
+        - define args '<def[args].remove[%loop_index%]>'
+        - foreach '<def[a].after[-].to_list>' {
+          - if '%switches%' !contains '%value%' {
+            - define switches '<def[switches].include[%value%]>'
+            }
+          }
+        }
+        else if <def[a].contains[<&co>]> {
+        - define args '<def[args].remove[%loop_index%]>'
+        - define '<def[a].before[<&co>]>' '<def[a].after[<&co>]>'
+        }
+        else if <server.match_player[%a%]||false> {
+        - define args '<def[args].remove[%loop_index%]>'
+        - if '%players%' !contains '%a%' {
+          - define players '<def[players].include[<server.match_player[%a%]>]>'
+          }
+        }
+        else if <server.match_offline_player[%a%]||false> {
+        - define args '<def[args].remove[%loop_index%]>'
+        - if '%offline%' !contains '%a%' {
+          - define offline '<def[offline].include[<server.match_offline_player[%a%]>]>'
+          }
+        }
+        else if %a% matches entity {
+        - define args '<def[args].remove[%loop_index%]>'
+        - if '%offline%' !contains '%a%' {
+          - define entities '<def[entities].include[%a%]>'
+          }
+        }
+        else if <server.list_npcs.parse[name].contains[%a%]> {
+        - define args '<def[args].remove[%loop_index%]>'
+        - if '%npcs%' !contains '%a%' {
+          - define npcs '<def[npcs].include[<def[a].as_npc>]>'
+          }
+        }
+        else if <def[a].split_by[,].filter[is[matches].to[number]].size> >= 3 {
+        - define args '<def[args].remove[%loop_index%]>'
+        - if '%locations%' !contains '%a%' {
+          - define locations '<def[locations].include[%a%]>'
+          }
+        }
+        else {
+        - define args '<def[args].remove[%loop_index%]>'
+        - if '%worlds%' !contains '%a%' {
+          - define worlds '<def[worlds].include[%a%]>'
+          }
+        }
+#
+#  END dWM_ParseArgs
+#--------------------------------------
+#
+#  dWorldManager Error Messages
+#
+dWM_Error:
+  type: task
+  debug: false
+  msgs:
+    world:
+      0:
+        - '<&a><&o><def[4]><&a> is currently loaded.'
+      1:
+        - '<&c>You didn<&sq>t enter a world name.'
+        - '<&a>Maybe you want to see the <proc[msgCommand].context[<&b>list|dwm list|<&c>Click to list world names]> <&a>of worlds?'
+      2:
+        - '<&c>World name may only contain letters, numbers, hyphen, and underscore!'
+      3:
+        - '<&c><&o><def[4]> <&c>does not exist!'
+        - '<&a>Maybe you want to <proc[msgHint].context[<&b>create|dwm create <def[4]>|<&c>Click to create <def[4]>]> <&a>it?'
+      4:
+        - '<&c><&o><def[4]> <&c>is not registered!'
+        - '<&a>Maybe you want to <proc[msgHint].context[<&b>import|dwm import <def[4]>|<&c>Click to import <def[4]>]> <&a>it?'
+      5:
+        - '<&c><&o><def[4]> <&c>is not loaded!'
+        - '<&a>Maybe you want to <proc[msgHint].context[<&b>load|dwm load <def[4]>|<&c>Click to load <def[4]>]> <&a>it?'
+    loc:
+      1:
+        - '<&c>You didn<&sq>t enter a location.'
+    ll:
+      1:
+        - '<&c>No previous location in <def[4]>.'
+    entity:
+      1:
+        - '<&c>Entity teleportation isn<&sq>t supported at this time.'
+    npc:
+      1:
+        - '<&c>NPC teleportation isn<&sq>t supported at this time.'
+    gen:
+      1:
+        - '<&c><&o><def[4]> <&c>is an unknown generator.'
+      2:
+        - '<&c><&o><def[4]> <&c>is not installed.'
+    type:
+      1:
+        - '<&c><&o><def[4]> <&c>is an unknown world type.'
+    env:
+      1:
+        - '<&c><&o><def[4]> <&c>is an unknown environment.'
+    rem:
+      1:
+        - '<&c>Unable to remove<&o> <def[4]>!'
+        - '<&c>Check the console for more information.'
+    purge:
+      1:
+        - '<&c><&o><def[4]> <&c>is currently loaded!'
+        - '<&a>You must <proc[msgHint].context[<&b>unload|dwm unload <def[4]>|<&c>Click to unload <def[4]>]> <&a>it first.'
+      2:
+        - '<&c><&o><def[4]> <&c>is not in the config file!'
+    unload:
+      1:
+        - '<&c>World unload cancelled by <&o><def[4]>!'
+
+  script:
+    - if '%3%' == 'server' {
+      - announce to_console '<&4><&lb><&6>dWM<&4><&rb>  '
+      - define prefix '<&4><&lb><&6>dWM<&4><&rb>  <script.yaml_key[msgs.%1%.%2%].get[1]>'
+      }
+      else {
+      - define prefix '<proc[msgCommand].context[<&4><&lb><&6>dWM<&4><&rb>|dwm help|<&6>      dWM<&nl><&d>Click for help]>   '
+      - foreach '<script.yaml_key[msgs.%1%.%2%]>' {
+        - narrate '%prefix%<parse:<def[value]>>'
+        }
+      }
+#
+#
+#  END dWM_Error
+#--------------------------------------
+#
+#  dWorldManager Enums
+#
+dWM_Enums:
+  type: yaml data
+  debug: false
+  t:
+    - NORMAL
+    - FLAT
+    - LARGE_BIOMES
+    - AMPLIFIED
+  e:
+    - NORMAL
+    - NETHER
+    - THE_END
+  g:
+    - NORMAL
+#
+#  END dWM_Enums
+#--------------------------------------
+#
+#  dWorldManager Author Banner Items
+#
+# Banner items representing the authors
+#
+dwm_Author_Anthony:
+  type: item
+  debug: false
+  material: i@human_skull
+  display name: "<&f>             &pipeAnthony&pipe"
+  text_name: '|Anthony|'
+  url: 'http://mineconomy.org'
+  lore:
+  - <&7>  Owner<&co> <&e>M<&6>ine<&e>C<&6>onomy <&e>N<&6>etwork
+  - <&5>-------------------------
+  - <&7>
+  - <&7>  I<&sq>ve been playing minecraft
+  - <&7> and running a server since
+  - <&7> 2010. I have fun and share
+  - <&7> what I do.
+  - <&7>
+  - <&9>           Click To Visit
+#
 ################################################################################
 #                                                                              #
 # Configuration Files                                                          #
@@ -182,8 +1616,18 @@ dWM_Configurations:
   type: yaml data
 
   config:
-    version: 0.1
-    worlds: {}
+    version: 0.2
+    worldpath: '../..'
+    remove_deleted: 'true'
+  worlds:
+    world:
+      loaded: 'true'
+      description:
+        - 'A non-descriptive description'
+      generator: ''
+      environment: ''
+      worldtype: ''
+      spawn: ''
 
 
 #
