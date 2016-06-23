@@ -762,17 +762,18 @@ dRegions_Flags_Processors_string:
       - goto 'END'
       }
     - mark 'DISPLAY'
+    - define val '<def[val].replace[<&pc>name<&pc>].with[<def[player].name>].parse_color.replace[<&lt>].replace[<&gt>]>'
     - choose '<s@dRegions_Flag_%flag%.yaml_key[string_type]||narrate>':
       - case 'narrate':
-        - run s@msgPrefixed 'def:dRegions|<parse:%val%>'
+        - run s@msgPrefixed 'def:dRegions|%val%'
       - case 'bossbar':
-        - adjust %player% 'action_bar:<parse:%val%>'
+        - adjust %player% 'action_bar:%val%'
       - case 'console':
-        - announce to_console '<&4>[<&6>dRegions<&4>]  <parse:%val%>'
+        - announce to_console '<&4>[<&6>dRegions<&4>]  %val%'
       - case 'title':
         - define title '<def[val].before[/]>'
         - define sub '<def[val].after[/]>'
-        - title 'title:<parse:%title%>' 'subtitle:<parse:%sub%>'
+        - title 'title:<def[title]>' 'subtitle:<def[sub]>'
     - mark 'END'
 
 #
@@ -1220,6 +1221,26 @@ dRegions_Flag_Entity-Explode:
   flag_regionDefault: allow
   flag_globalDefault: allow
   flag_help: State flag controlling whether entities will be able to explode in this region. Defaults to allow all. Use entity-explodelist flag to specify entities types.
+  event-allowed:
+      # Block explosions from effecting neighboring dregions
+#    - define blocks '<c.blocks.filter[is_within[<def[orderedRegions].get[1].replace[regex:^].with[cu@dregions_%world%_].as_cuboid>]]>'
+    - define cuboids '<c.location.cuboids>'
+    - define thisR '<def[orderedRegions].get[1]>'
+    - define global '<yaml[dRegions_%world%_regions].read[regions.__global__.priority]||0>/__global__'
+    - define final 'li@'
+    - foreach '<c.blocks>':
+      - define l '%value%'
+      - if '%cuboids%' != '<def[l].cuboids>' {
+        - define r 'li@%global%'
+        - foreach '<def[l].cuboids.filter[starts_with[cu@dregions_%world%]].parse[after[cu@dregions_%world%_]]>' {
+          - define r '%r%|<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%'
+          }
+        - if '%thisR%' != '<def[r].alphanumeric.reverse.parse[after[/]].get[1]>' {
+          - foreach next
+          }
+        }
+      - define final '<def[final].include[%l%]>'
+    - determine '%final%'
 
 dRegions_Flag_Entity-Grief:
   type: item

@@ -4,7 +4,7 @@
 #
 #
 #   Authors: |Anthony|
-#   Version: 0.32
+#   Version: 0.33
 #   dScript Version: 0.9.8-DEV_b579
 #
 #
@@ -125,7 +125,7 @@ dRegions_Version:
   type: version
   author: Anthony
   name: dRegions
-  version: 0.32
+  version: 0.33
   description: Denizen Region Management and Protection
   id: 23
 #
@@ -1325,7 +1325,7 @@ dRegions_Events_Entity_Change_Block:
     # Maybe we want to check block changes here for explosions?
     # It's currently disabled because even if the explosion is cancelled, the block
     # change event(s) still fire (yes, one explosion can have multiple block changes)
-    - if <c.old_material.bukkit_enum> == soil || li@falling_block|creeper|primed_tnt contains <c.entity.entity_type> {
+    - if <c.old_material.bukkit_enum> == soil || li@falling_block|creeper|primed_tnt|unknown contains <c.entity.entity_type||unknown> {
       - queue clear
       }
     # This is generic rateLimiter and does not run a full allow/deny flag process. It is required due to the high frequency of snowmen.
@@ -2173,7 +2173,7 @@ dRegions_CloneWord:
         - yaml unload 'id:%writeID%'
         }
       - yaml 'load:dRegions/worlds/%world%/%this%.yml' 'id:%writeID%'
-    - foreach '<yaml[dRegions_%world%_regions].list_keys[regions]>':
+    - foreach '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__]>':
       - note 'cu@<yaml[dRegions_%world%_regions].read[regions.%value%.min]>|<yaml[dRegions_%world%_regions].read[regions.%value%.max]>' 'as:dregions_%world%_%value%'
 
 
@@ -2481,12 +2481,14 @@ dRegions_Author_Anthony:
   type: item
   debug: false
   material: i@human_skull
-  display name: "<&f>             |Anthony|"
+  display name: "<&f>             &pipeAnthony&pipe"
+  text_name: '|Anthony|'
+  url: 'http://mineconomy.org'
   lore:
   - <&7>  Owner<&co> <&e>M<&6>ine<&e>C<&6>onomy <&e>N<&6>etwork
   - <&5>-------------------------
   - <&7>
-  - <&7>  I\<&sq>ve been playing minecraft
+  - <&7>  I<&sq>ve been playing minecraft
   - <&7> and running a server since
   - <&7> 2010. I have fun and share
   - <&7> what I do.
