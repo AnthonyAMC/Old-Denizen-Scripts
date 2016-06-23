@@ -2355,12 +2355,10 @@ dRegions_Flags_CommandProcessors:
 dRegion_FlagTypeMatch:
 # Used to check if the value supplied when setting a flag is valid for the flag type.
   type: procedure
-  speed: 0
   debug: false
   definitions: YourValue|Flag
 
   script:
-    - announce '<s@dRegions_Flag_%Flag%.yaml_key[flag_type]||null>'
     - choose '<s@dRegions_Flag_%Flag%.yaml_key[flag_type]||null>':
       - case 'number':
         - determine '<def[YourValue].is[MATCHES].to[number]>'
