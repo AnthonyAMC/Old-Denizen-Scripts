@@ -5,7 +5,7 @@
 #
 #   Authors: |Anthony|, mcmonkey
 #   Version: 0.29
-#   dScript Version: 0.9.8-DEV-b575
+#   dScript Version: 0.9.8-DEV-b602
 #
 #
 #
@@ -31,6 +31,10 @@
 #  * This is a BETA release of dWE and should only be used for the selection
 #    wand which is required by dRegions.
 #
+#   Has my work helped you in some way? Show your support by clicking the
+#    Like button.
+#   Feeling generous? Get me a coffee :D
+#    https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=NPXKHCNMTGSUG
 #
 #--------------------------------------
 #
@@ -133,6 +137,10 @@
 #                                             dwe.undo
 #
 #  /dwe redo [#] (-n, -a, -d)                 dwe.admin               Redo previous edits. You can specify
+#                                             dwe.edit              which undo to redo.
+#                                             dwe.undo
+#
+#  /dwe schem [] (-p)                 dwe.admin               Redo previous edits. You can specify
 #                                             dwe.edit              which undo to redo.
 #                                             dwe.undo
 #
@@ -644,7 +652,7 @@ dWE_Commands_About:
       }
     - define prerun 'a'
     - inject s@dWE_Commands p:prerun
-    - run s@msgBoxed instantly 'def:dwe|<proc[msgCommand].context[<&6>dWorldEditor|.help|<&a>Go back to main help]>|<&e>About|dwe about|<tern[<def[args].get[1].is[matches].to[number]||false>]:<def[args].get[1].abs.round>||1>|52|12|<&7><parse:<s@dWE_Commands_%command%.yaml_key[description]>>| |<parse:<s@dWE_Commands_%command%.yaml_key[data.description]>>'
+    - run s@msgBoxed instantly 'def:dwe|<proc[msgCommand].context[<&6>dWorldEditor|.help|<&a>Go back to main help]>|<&e>About|dwe about|<tern[<def[args].get[1].is[matches].to[number]||false>]:<def[args].get[1].abs.round>||1>|52|10|<&7><parse:<s@dWE_Commands_%command%.yaml_key[description]>>| |<parse:<s@dWE_Commands_%command%.yaml_key[data.description]>>'
 
 
 dWE_Commands_Show:
@@ -1522,10 +1530,10 @@ dWE_Commands_Shift:
       - run s@msgPrefixed 'def:dWE|<&c>SYNTAX<&co> <&e>/dwe shift <&6><&lb><&7>amount<&6><&rb> <&6>(<&7>direction<&6>)'
       - queue clear
       }
-    - if <el@[li@n|e|s|w|u|d].contains[%d%].not||true> {
+    - if <li@n|e|s|w|u|d.contains[%d%].not||true> {
       - define d '<proc[getFacing].context[<player.location.pitch.as_money>|<player.location.yaw.as_money>]>'
       }
-    - if <el@[li@n|e|s|w|u|d].contains[%d%].not||true> {
+    - if <li@n|e|s|w|u|d.contains[%d%].not||true> {
       - run s@msgPrefixed 'def:dWE|<&4><&l>ERROR<&co> <&c>Unknown direction!'
       - queue clear
       }
@@ -1971,7 +1979,7 @@ dWE_Commands_Cut:
     - determine 'li@'
 
   script:
-  # /dwe copy
+  # /dwe cut
     - if !<def[command].exists> {
       - define command 'cut'
       }
@@ -2278,6 +2286,208 @@ dWE_Commands_Redo:
     - run s@msgPrefixed 'def:dWE|<&7><&o>Redo entry %number% complete!'
 
 
+dWE_Commands_Schematic:
+  type: command
+  debug: false
+  speed: 0
+  name: .schem
+  description: Manage Schematics
+  usage: /.schem
+  aliases: ''
+
+  data:
+    description: 'Do what you need to with schematics'
+    usage: '/dwe schem <&lb>list/load/unload/save/delete/copy/rename<&rb> (-p)'
+    examples:
+      - 'List the second page of schematics.'
+      - '  <&e>/dwe schem list 2'
+      - ' '
+      - 'Load the schematic named house1'
+      - '  <&e>/dwe schem load house1'
+      - ' '
+      - 'Unload the public schematic named house1'
+      - '  <&e>/dwe schem unload -p house1'
+      - ' '
+      - 'Save your current selection as park_bench15'
+      - '  <&e>/dwe schem save park_bench15'
+      - ' '
+      - 'Delete the schematic named aa1'
+      - '  <&e>/dwe schem delete aa1'
+      - ' '
+      - 'Copy the big_tree schematic and name it tree1'
+      - '  <&e>/dwe schem copy big_tree tree1'
+      - ' '
+      - 'Rename the dirt_shack schematic to my_mansion'
+      - '  <&e>/dwe schem rename dirt_shack my_mansion'
+      - ' '
+    args:
+      - list
+      - load
+      - unload
+      - save
+      - delete
+      - copy
+      - rename
+    permissions:
+      - admin
+      - schematic
+
+  tab complete:
+    - determine 'li@'
+
+  script:
+  # /dwe schematic [list/load/unload/save/delete/copy/rename]
+    - if !<def[command].exists> {
+      - define command 'schem'
+      }
+    - define prerun 'b'
+    - inject s@dWE_Commands p:prerun
+
+    - define n '<def[args].filter[is[matches].to[number]].get[1]||1>'
+    - define p '<def[args].filter[starts_with[-p]].is_empty.not||false>'
+    - if '%p%' {
+      - define p 'public'
+      }
+      else {
+      - define pl 'li@'
+      - define rm 'li@'
+      - foreach '%args%' {
+        - define a '%value%'
+        - if <server.match_offline_player[%a%].name.is[==].to[%a%]||false> {
+          - define rm '<def[rm].include[%loop_index%]>'
+          - if '%pl%' !contains '%a%' {
+            - define pl '<def[pl].include[<server.match_offline_player[%a%]>]>'
+            }
+          }
+        }
+      - define args '<def[args].remove[<def[rm].separated_by[|]>]>'
+      - if <def[pl].is_empty> {
+        - define p '<player.uuid>'
+        }
+        else {
+        - if <def[player].is_op> || <def[player].permission[dwe.admin]||false> {
+          - define p '<def[pl].get[1].uuid>'
+          }
+          else {
+          - define p '<player.uuid>'
+          }
+        }
+      }
+    - define args '<def[args].exclude[%n%|%p%|-p]>'
+    - define cmd '<def[args].get[1]||null>'
+    - define cmds '<script.yaml_key[data.args]>'
+    - if '%cmds%' !contains '%cmd%' {
+      - run s@msgPrefixed 'def:dWE|<&c>SYNTAX<&co> <&e>/dwe schem <&lb><def[cmds].separated_by[/]><&rb> (-p)'
+      - queue clear
+      }
+    - choose '%cmd%':
+
+      - case 'list':
+        - define entries 'li@'
+        - define i '0'
+        - foreach '<server.list_files[schematics/dWE/saves/%p%].filter[ends_with[.schematic]]||li@>':
+          - define name '<def[value].before[.schematic]>'
+          - define v '<proc[dWE_SNV].context[%name%|%p%]>'
+          - define i '<def[i].add[1]>'
+          - choose '%v%':
+            - case '5':
+              - define entry '<proc[msgHint].context[<&7>%name%|.schem load <tern[<def[p].is[==].to[public]>]:-p %name%||%name%>|<&a>Click to load <&b>%name%]>'
+            - case '0':
+              - define entry '<proc[msgHint].context[<&f>%name%|.schem unload <tern[<def[p].is[==].to[public]>]:-p %name%||%name%>|<&7>Height<&co><&6.pad_right[4]><schematic[dWE_saves_%p%_%name%].height.as_int><&nl><&7>Length<&co><&6.pad_right[4]><schematic[dWE_saves_%p%_%name%].length.as_int><&nl><&7>Width<&co><&6.pad_right[4]><schematic[dWE_saves_%p%_%name%].width.as_int><&nl><&7>Total Size<&co><&6.pad_right[4]><schematic[dWE_saves_%p%_%name%].blocks><&nl><&nl><proc[msgCentered].context[30|<&a>Click to Unload]>]>'
+            - default:
+              - define entry '<proc[msgHover].context[<&8>%name%|<proc[msgCentered].context[20|<&c>This is invalid!]>]>'
+          - define entries '<def[entries].include[<&6><def[i].pad_left[2]>.<&sp>%entry%]>'
+        - if <def[entries].is_empty> {
+          - define entries '<def[entries].include[<&c>No schematics for you!]>'
+          }
+        - run s@msgBoxed instantly 'def:dwe|<proc[msgCommand].context[<&6>dWorldEditor|.help|<&a>Go back to main help]>|<&e><tern[<def[p].is[==].to[public]>]:Public||<def[p].as_player.name>> Schematic List|dwe help|<def[n]||1>|52|10|<def[entries].separated_by[|]||>'
+
+      - case 'load':
+        - define name '<def[args].get[2]||null>'
+        - define v '<proc[dWE_SNV].context[%name%|%p%]>'
+        - if '%v%' != '5' {
+          - run instantly delay:1t 's@dWE_Error' 'def:schem_name|%v%|<player>|%name%'
+          - queue clear
+          }
+        - schematic load 'name:dWE_saves_%p%_%name%' 'filename:dWE/saves/%p%/%name%'
+        - run s@msgPrefixed 'def:dWE|Loaded %name%'
+
+      - case 'unload':
+        - define name '<def[args].get[2]||null>'
+        - define v '<proc[dWE_SNV].context[%name%|%p%]>'
+        - if '%v%' != '0' {
+          - run instantly delay:1t 's@dWE_Error' 'def:schem_name|%v%|<player>|%name%'
+          - queue clear
+          }
+        - schematic unload 'name:dWE_saves_%p%_%name%'
+        - run s@msgPrefixed 'def:dWE|Unloaded %name%'
+
+      - case 'save':
+        - define name '<def[args].get[2]||null>'
+        - define v '<proc[dWE_SNV].context[%name%|%p%]>'
+        - if 'li@3|4' !contains '%v%' {
+          - run instantly delay:1t 's@dWE_Error' 'def:schem_name|%v%|<player>|%name%'
+          - queue clear
+          }
+        - schematic create 'name:dWE_saves_%p%_%name%' '<def[cuboid].min.simple>' '%cuboid%'
+        - schematic save 'name:dWE_saves_%p%_%name%' 'filename:dWE/saves/%p%/%name%'
+        - schematic unload 'name:dWE_saves_%p%_%name%'
+        - run s@msgPrefixed 'def:dWE|Saved %name%'
+
+      - case 'delete':
+        - define name '<def[args].get[2]||null>'
+        - define v '<proc[dWE_SNV].context[%name%|%p%]>'
+        - if '%v%' != '5' {
+          - run instantly delay:1t 's@dWE_Error' 'def:schem_name|%v%|<player>|%name%'
+          - queue clear
+          }
+        - adjust server 'delete_file:schematics/dWE/saves/%p%/%name%.schematic'
+        - run s@msgPrefixed 'def:dWE|Deleted %name%'
+
+      - case 'copy':
+        - define name '<def[args].get[2]||null>'
+        - define v '<proc[dWE_SNV].context[%name%|%p%]>'
+        - if '%v%' == '5' {
+          - schematic load 'name:dWE_saves_%p%_%name%' 'filename:dWE/saves/%p%/%name%'
+          }
+          else if '%v%' != '0' {
+          - run instantly delay:1t 's@dWE_Error' 'def:schem_name|%v%|<player>|%name%'
+          - queue clear
+          }
+        - define copy '<def[args].get[3]||null>'
+        - define v '<proc[dWE_SNV].context[%copy%|%p%]>'
+        - if 'li@3|4' !contains '%v%' {
+          - schematic unload 'name:dWE_saves_%p%_%name%'
+          - run instantly delay:1t 's@dWE_Error' 'def:schem_name|%v%|<player>|%copy%'
+          - queue clear
+          }
+        - schematic save 'name:dWE_saves_%p%_%name%' 'filename:dWE/saves/%p%/%copy%'
+        - schematic unload 'name:dWE_saves_%p%_%name%'
+        - run s@msgPrefixed 'def:dWE|Copied %name% to %copy%'
+
+      - case 'rename':
+        - define name '<def[args].get[2]||null>'
+        - define v '<proc[dWE_SNV].context[%name%|%p%]>'
+        - if '%v%' == '5' {
+          - schematic load 'name:dWE_saves_%p%_%name%' 'filename:dWE/saves/%p%/%name%'
+          }
+          else if '%v%' != '0' {
+          - run instantly delay:1t 's@dWE_Error' 'def:schem_name|%v%|<player>|%name%'
+          - queue clear
+          }
+        - define copy '<def[args].get[3]||null>'
+        - define v '<proc[dWE_SNV].context[%copy%|%p%]>'
+        - if 'li@3|4' !contains '%v%' {
+          - schematic unload 'name:dWE_saves_%p%_%name%'
+          - run instantly delay:1t 's@dWE_Error' 'def:schem_name|%v%|<player>|%copy%'
+          - queue clear
+          }
+
+        - schematic save 'name:dWE_saves_%p%_%name%' 'filename:dWE/saves/%p%/%copy%'
+        - schematic unload 'name:dWE_saves_%p%_%name%'
+        - adjust server 'delete_file:schematics/dWE/saves/%p%/%name%.schematic'
+        - run s@msgPrefixed 'def:dWE|Renamed %name% to %copy%'
+
 #
 #  END dWE Command Scripts
 #--------------------------------------
@@ -2341,6 +2551,37 @@ getFacing:
 #
 #--------------------------------------
 #
+#  Validate Schematic Names
+#
+dWE_SNV:
+# Usage: <proc[dWE_SNV].context[%name%|%player%]>
+  type: procedure
+  debug: false
+  definitions: n|p
+
+  script:
+    - if '%n%' == 'null' {
+      - determine 1
+      }
+    - if '<def[n].matches[^[a-zA-Z0-9-_]+$].not>' {
+      - determine 2
+      }
+    - if !<server.has_file[schematics/dWE/saves/%p%/%n%.schematic]> {
+      - if '%p%' == 'public' {
+        - determine 3
+        }
+        else {
+        - determine 4
+        }
+      }
+    - if !<schematic[dWE_saves_%p%_%n%].exists> {
+      - determine 5
+      }
+    - determine 0
+#
+#  END dWM_Validate_World
+#--------------------------------------
+#
 #  selectionSize Procedure script
 #  - Returns the size of the players selection
 #
@@ -2354,6 +2595,49 @@ selectionSize:
     - define y '<def[pos1].as_location.y.sub[<def[pos2].as_location.y||0>].abs.add[1]||1>'
     - define z '<def[pos1].as_location.z.sub[<def[pos2].as_location.z||0>].abs.add[1]||1>'
     - determine '<def[x].mul[%y%].mul[%z%].as_int||0>'
+#
+#  END dWE_selectionSize
+#--------------------------------------
+#
+#  dWorldEditor Error Messages
+#
+dWE_Error:
+  type: task
+  debug: false
+  msgs:
+    schem_name:
+      0:
+        - '<&a><&o><def[4]><&a> is currently loaded.'
+        - '<&a>Maybe you want to <proc[msgHint].context[<&b>unload|.schem unload <def[4]>|<&c>Click to unload <def[4]>]> <&a>it?'
+      1:
+        - '<&c>You didn<&sq>t enter a schematic name.'
+        - '<&a>Maybe you want to see the <proc[msgCommand].context[<&b>list|.schem list|<&c>Click to list schematics]> <&a>of schematics?'
+      2:
+        - '<&c>Schematic name may only contain letters, numbers, hyphen, and underscore!'
+      3:
+        - '<&c>The public schematic <&o><def[4]> <&c>does not exist!'
+        - '<&a>Maybe you want to see the <proc[msgCommand].context[<&b>list|.schem list -p|<&c>Click to list public schematics]> <&a>of schematics?'
+      4:
+        - '<&c><&o><def[4]> <&c>does not exist!'
+        - '<&a>Maybe you want to see the <proc[msgCommand].context[<&b>list|.schem list|<&c>Click to list schematics]> <&a>of schematics?'
+      5:
+        - '<&c><&o><def[4]> <&c>is not loaded!'
+        - '<&a>Maybe you want to <proc[msgHint].context[<&b>load|.schem load <def[4]>|<&c>Click to load <def[4]>]> <&a>it?'
+
+  script:
+    - if '%3%' == 'server' {
+      - announce to_console '<&4><&lb><&6>dWE<&4><&rb>  <script.yaml_key[msgs.%1%.%2%].get[1]>'
+      }
+      else {
+      - define prefix '<proc[msgCommand].context[<&4><&lb><&6>dWE<&4><&rb>|.help|<&6>      dWE<&nl> <&nl><&d>Click for help]>   '
+      - foreach '<script.yaml_key[msgs.%1%.%2%]>' {
+        - narrate '%prefix%<parse:<def[value]>>'
+        }
+      }
+#
+#
+#  END dWM_Error
+#--------------------------------------
 #
 #  END dWE Other Utilities
 #--------------------------------------
