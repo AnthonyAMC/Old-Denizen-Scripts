@@ -4,7 +4,7 @@
 #
 #
 #   Authors: |Anthony|
-#   Version: 0.33
+#   Version: 0.34
 #   dScript Version: 0.9.8-DEV_b579
 #
 #
@@ -30,6 +30,10 @@
 #      - All the commands for dRegions. It is bundled in the repo releases.
 #      - https://github.com/AnthonyAMC/Public-Denizen-Scripts/blob/master/dRegions/commands.yml
 #
+#   Has my work helped you in some way? Show your support by clicking the
+#    Like button.
+#   Feeling generous? Get me a coffee :D
+#    https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=NPXKHCNMTGSUG
 #_______________________________________________________________________________
 #
 #--- About dRegions
@@ -125,7 +129,7 @@ dRegions_Version:
   type: version
   author: Anthony
   name: dRegions
-  version: 0.33
+  version: 0.34
   description: Denizen Region Management and Protection
   id: 23
 #
@@ -1373,9 +1377,34 @@ dRegions_Events_Fallingblock_Change_Block:
     - foreach '<def[eLoc].cuboids.filter[starts_with[cu@dregions_%world%]].parse[after[cu@dregions_%world%_]]>':
       - define orderedRegions '%orderedRegions%|<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%'
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
+
+    - flag <c.entity> 'pl:<c.location.simple>'
+    - flag <c.entity> 'pr:<def[orderedRegions].get[1]>'
+    - run locally delay:1t instantly track 'def:<c.entity>|<def[orderedRegions].get[1]>|%world%|%mat%'
+
     - foreach '<yaml[dRegions_eventmap].read[falling_%mat%]||li@>':
       - define flag '%value%'
       - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+
+  track:
+    - define or 'li@<yaml[dRegions_%3%_regions].read[regions.__global__.priority]||0>/__global__'
+    - while '<def[1].is_spawned||false>':
+      - if '<def[1].flag[pl]>' == '<def[1].location.simple>' {
+        - wait 1t
+        - while next
+        }
+      - define orderedRegions '%or%'
+      - foreach '<def[1].location.cuboids.filter[starts_with[cu@dregions_%3%]].parse[after[cu@dregions_%3%_]]>':
+        - define orderedRegions '%orderedRegions%|<yaml[dRegions_%3%_regions].read[regions.%value%.priority]||0>/%value%'
+      - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
+      - if '<def[1].flag[pr]>' != '<def[orderedRegions].get[1]>' {
+        - modifyblock <def[1].flag[pl]> %4% no_physics
+        - remove %1%
+        - queue clear
+        }
+      - flag %1% 'pl:<def[1].location.simple>'
+      - wait 1t
+
 
 dRegions_Events_Entity_Form_Block:
   type: world
@@ -2148,7 +2177,7 @@ dRegions_CloneWord:
     - define clone <c.blueprint_world>
     - define world <c.instance>
     - if !<server.has_file[dRegions/worlds/%clone%]> {
-      - run s@msgPrefixed instantly delayed:1t 'def:dRegions|<&c>%clone% is an unknown world!'
+      - run s@msgPrefixed instantly delay:1t 'def:dRegions|<&c>%clone% is an unknown world!'
       - queue clear
       }
     - foreach 'li@config|regions|inventories|cache':
