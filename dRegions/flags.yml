@@ -1458,6 +1458,42 @@ dRegions_Flag_Exit:
     - ^adjust %1% 'velocity:l@0,0,0,<def[1].world>'
     - ^teleport %1% '<t[<def[1].is_living>]:<def[player].location>||<def[2].above>>'
 
+dRegions_Flag_Exit-Via-Teleport:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Exit-Via-Teleport<&4>]"
+  lore:
+  - <&5>Who can exit a region via teleport
+  event_hooks: player_teleports_fromRegion
+  event_priority: 0
+  region_highestOnly: true
+  flag_type: sg
+  flag_name: Exit-Via-Teleport
+  flag_takeGroup: true
+  flag_regionDefault: allow/all
+  flag_globalDefault: allow/all
+  flag_help: State flag controlling whether players will be able to teleport out of a region. Defaults to allow all. Takes the -g group switch.
+  msg_cancelled: 'You can not teleport from this region!'
+
+dRegions_Flag_Enter-Via-Teleport:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Enter-Via-Teleport<&4>]"
+  lore:
+  - <&5>Who can exit a region via teleport
+  event_hooks: player_teleports_toRegion
+  event_priority: 0
+  region_highestOnly: true
+  flag_type: sg
+  flag_name: Enter-Via-Teleport
+  flag_takeGroup: true
+  flag_regionDefault: allow/all
+  flag_globalDefault: allow/all
+  flag_help: State flag controlling whether players will be able to teleport out of a region. Defaults to allow all. Takes the -g group switch.
+  msg_cancelled: 'You can not teleport to this region!'
+
 dRegions_Flag_Build:
   type: item
   debug: false
@@ -1794,14 +1830,14 @@ dRegions_Flag_Chorusfruit:
   type: item
   debug: false
   material: i@paper
-  display name: "<&4>[<&6>Chorus-Fruit<&4>]"
+  display name: "<&4>[<&6>Chorusfruit<&4>]"
   lore:
-  - <&5>Who can use Chorus-Fruit
+  - <&5>Who can use Chorusfruit
   event_hooks: player_teleport_via_chorusfruit
   event_priority: 0
   region_highestOnly: true
   flag_type: sg
-  flag_name: Chorus-Fruit
+  flag_name: Chorusfruit
   flag_takeGroup: true
   flag_regionDefault: allow/all
   flag_globalDefault: allow/all
