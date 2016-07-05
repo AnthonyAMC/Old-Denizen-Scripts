@@ -49,29 +49,26 @@ dRegions_Flags_Processors_stg:
         }
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>/all'
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%listflag%].split_by[, ]>'
-      - if <def[flagObj].starts_with[none]> {
-        - if '%thisRegion%' == '__global__' {
-          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_globalDefault]||none>/all'
-          }
-          else {
-          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_regionDefault]||none>/all'
-          }
-        }
-      - if '%targetList%' == 'li@none' {
-        - if '%thisRegion%' == '__global__' {
-          - define targetList '<s@dRegions_Flag_%listflag%.yaml_key[flag_globalDefault].split_by[, ]||none>'
-          }
-          else {
-          - define targetList '<s@dRegions_Flag_%listflag%.yaml_key[flag_regionDefault].split_by[, ]||none>'
-          }
-        }
-#      - define c '<def[targetList].contains_any[none|all|%target%].and[<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].after[/].before[/]>|%thisRegion%|%world%|%player%]>]>'
-      - if '<def[targetList].contains_any[none|all|%target%]>' && '<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].after[/].before[/]>|%thisRegion%|%world%|%player%]>' {
-        - define c 'true'
+#      - define default '<tern[<def[thisRegion].is[==].to[__global__]>]:globalDefault||regionDefault>'
+      - if '%thisRegion%' == '__global__' {
+        - define default 'globalDefault'
         }
         else {
-        - define c 'false'
+        - define default 'regionDefault'
         }
+      - if <def[flagObj].starts_with[none]> {
+        - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_%default%]||none>/all'
+        }
+      - if '%targetList%' == 'li@none' {
+        - define targetList '<s@dRegions_Flag_%listflag%.yaml_key[flag_%default%].split_by[, ]||none>'
+        }
+      - define c '<def[targetList].contains_any[none|all|%target%].and[<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].after[/].before[/]>|%thisRegion%|%world%|%player%]>]>'
+#      - if '<def[targetList].contains_any[none|all|%target%]>' && '<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].after[/].before[/]>|%thisRegion%|%world%|%player%]>' {
+#        - define c 'true'
+#        }
+#        else {
+#        - define c 'false'
+#        }
 #      - define a '<t[<def[flagObj].starts_with[deny]>]:<def[c].not>||%c%>'
       - if <def[flagObj].starts_with[deny]> {
         - define a '<def[c].not>'
@@ -108,29 +105,26 @@ dRegions_Flags_Processors_stg:
           - foreach next
           }
         }
-      - if <def[flagObj].starts_with[none]> {
-        - if '%thisRegion%' == '__global__' {
-          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_globalDefault]||none>/all'
-          }
-          else {
-          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_regionDefault]||none>/all'
-          }
-        }
-      - if '%targetList%' == 'li@none' {
-        - if '%thisRegion%' == '__global__' {
-          - define targetList '<s@dRegions_Flag_%listflag%.yaml_key[flag_globalDefault].split_by[, ]||none>'
-          }
-          else {
-          - define targetList '<s@dRegions_Flag_%listflag%.yaml_key[flag_regionDefault].split_by[, ]||none>'
-          }
-        }
-#      - define c '<def[targetList].contains_any[none|all|%target%].and[<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].after[/].before[/]>|%thisRegion%|%world%|%player%]>]>'
-      - if '<def[targetList].contains_any[none|all|%target%]>' && '<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].after[/].before[/]>|%thisRegion%|%world%|%player%]>' {
-        - define c 'true'
+#      - define default '<tern[<def[thisRegion].is[==].to[__global__]>]:globalDefault||regionDefault>'
+      - if '%thisRegion%' == '__global__' {
+        - define default 'globalDefault'
         }
         else {
-        - define c 'false'
+        - define default 'regionDefault'
         }
+      - if <def[flagObj].starts_with[none]> {
+        - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_%default%]||none>/all'
+        }
+      - if '%targetList%' == 'li@none' {
+        - define targetList '<s@dRegions_Flag_%listflag%.yaml_key[flag_%default%].split_by[, ]||none>'
+        }
+      - define c '<def[targetList].contains_any[none|all|%target%].and[<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].after[/].before[/]>|%thisRegion%|%world%|%player%]>]>'
+#      - if '<def[targetList].contains_any[none|all|%target%]>' && '<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].after[/].before[/]>|%thisRegion%|%world%|%player%]>' {
+#        - define c 'true'
+#        }
+#        else {
+#        - define c 'false'
+#        }
 #      - define a '<t[<def[flagObj].starts_with[deny]>]:<def[c].not>||%c%>'
       - if <def[flagObj].starts_with[deny]> {
         - define a '<def[c].not>'
@@ -148,10 +142,11 @@ dRegions_Flags_Processors_stg:
       }
     # Process determinations
     - mark 'b'
-    - if '%a%' {
+    - if '%a%' || <def[overRide].exists> {
       - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'event-allowed' {
         - inject 's@dRegions_Flag_%flag%' 'p:event-allowed'
         }
+      - define overRide:!
       - foreach next
       - queue clear
       }
@@ -188,21 +183,18 @@ dRegions_Flags_Processors_st:
         }
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>'
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%listflag%].split_by[, ]>'
-      - if '%flagObj%' == 'none' {
-        - if '%thisRegion%' == '__global__' {
-          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_globalDefault]||none>'
-          }
-          else {
-          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_regionDefault]||none>'
-          }
+#      - define default '<tern[<def[thisRegion].is[==].to[__global__]>]:globalDefault||regionDefault>'
+      - if '%thisRegion%' == '__global__' {
+        - define default 'globalDefault'
+        }
+        else {
+        - define default 'regionDefault'
+        }
+      - if <def[flagObj].starts_with[none]> {
+        - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_%default%]||none>/all'
         }
       - if '%targetList%' == 'li@none' {
-        - if '%thisRegion%' == '__global__' {
-          - define targetList '<s@dRegions_Flag_%listflag%.yaml_key[flag_globalDefault].split_by[, ]||none>'
-          }
-          else {
-          - define targetList '<s@dRegions_Flag_%listflag%.yaml_key[flag_regionDefault].split_by[, ]||none>'
-          }
+        - define targetList '<s@dRegions_Flag_%listflag%.yaml_key[flag_%default%].split_by[, ]||none>'
         }
       - define c '<def[targetList].contains_any[none|all|%target%]>'
       - if '%flagObj%' == 'deny' {
@@ -237,21 +229,18 @@ dRegions_Flags_Processors_st:
           - foreach next
           }
         }
-      - if '%flagObj%' == 'none' {
-        - if '%thisRegion%' == '__global__' {
-          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_globalDefault]||none>'
-          }
-          else {
-          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_regionDefault]||none>'
-          }
+#      - define default '<tern[<def[thisRegion].is[==].to[__global__]>]:globalDefault||regionDefault>'
+      - if '%thisRegion%' == '__global__' {
+        - define default 'globalDefault'
+        }
+        else {
+        - define default 'regionDefault'
+        }
+      - if <def[flagObj].starts_with[none]> {
+        - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_%default%]||none>/all'
         }
       - if '%targetList%' == 'li@none' {
-        - if '%thisRegion%' == '__global__' {
-          - define targetList '<s@dRegions_Flag_%listflag%.yaml_key[flag_globalDefault].split_by[, ]||none>'
-          }
-          else {
-          - define targetList '<s@dRegions_Flag_%listflag%.yaml_key[flag_regionDefault].split_by[, ]||none>'
-          }
+        - define targetList '<s@dRegions_Flag_%listflag%.yaml_key[flag_%default%].split_by[, ]||none>'
         }
       - define c '<def[targetList].contains_any[none|all|%target%]>'
       - if '%flagObj%' == 'deny' {
@@ -264,10 +253,11 @@ dRegions_Flags_Processors_st:
       - foreach stop
 
     - mark 'a'
-    - if '%a%' {
+    - if '%a%' || <def[overRide].exists> {
       - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'event-allowed' {
         - inject 's@dRegions_Flag_%flag%' 'p:event-allowed'
         }
+      - define overRide:!
       - foreach next
       - queue clear
       }
@@ -376,10 +366,11 @@ dRegions_Flags_Processors_sg:
       - flag %player% 'dRegions.rateLimit.%flag%:%a%'
       }
     - mark 'b'
-    - if '%a%' {
+    - if '%a%' || <def[overRide].exists> {
       - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'event-allowed' {
         - inject 's@dRegions_Flag_%flag%' 'p:event-allowed'
         }
+      - define overRide:!
       - foreach next
       - queue clear
       }
@@ -428,28 +419,20 @@ dRegions_Flags_Processors_stsg:
         }
       - define flagObj '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>/all'
       - define targetList '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%listflag%].split_by[<def[delimiter]||, >]>'
-      - if <def[flagObj].starts_with[none]> {
-        - if '%thisRegion%' == '__global__' {
-          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_globalDefault]||none>/all'
-          }
-          else {
-          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_regionDefault]||none>/all'
-          }
-        }
-      - if '%targetList%' == 'li@none' {
-        - if '%thisRegion%' == '__global__' {
-          - define targetList '<s@dRegions_Flag_%listflag%.yaml_key[flag_globalDefault].split_by[<def[delimiter]||, >]||none>'
-          }
-          else {
-          - define targetList '<s@dRegions_Flag_%listflag%.yaml_key[flag_regionDefault].split_by[<def[delimiter]||, >]||none>'
-          }
-        }
-      - if '<def[targetList].contains_any[none|all|%target%]>' && '<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].after[/].before[/]>|%thisRegion%|%world%|%player%]>' {
-        - define c 'true'
+#      - define default '<tern[<def[thisRegion].is[==].to[__global__]>]:globalDefault||regionDefault>'
+      - if '%thisRegion%' == '__global__' {
+        - define default 'globalDefault'
         }
         else {
-        - define c 'false'
+        - define default 'regionDefault'
         }
+      - if <def[flagObj].starts_with[none]> {
+        - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_%default%]||none>/all'
+        }
+      - if '%targetList%' == 'li@none' {
+        - define targetList '<s@dRegions_Flag_%listflag%.yaml_key[flag_%default%].split_by[<def[delimiter]||, >]||none>'
+        }
+      - define c '<def[targetList].contains_any[none|all|%target%].and[<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].after[/].before[/]>|%thisRegion%|%world%|%player%]>]>'
       - if <def[flagObj].starts_with[deny]> {
         - define a '<def[c].not>'
         }
@@ -482,28 +465,20 @@ dRegions_Flags_Processors_stsg:
           - foreach next
           }
         }
-      - if <def[flagObj].starts_with[none]> {
-        - if '%thisRegion%' == '__global__' {
-          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_globalDefault]||none>/all'
-          }
-          else {
-          - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_regionDefault]||none>/all'
-          }
-        }
-      - if '%targetList%' == 'li@none' {
-        - if '%thisRegion%' == '__global__' {
-          - define targetList '<s@dRegions_Flag_%listflag%.yaml_key[flag_globalDefault].split_by[<def[delimiter]||, >]||none>'
-          }
-          else {
-          - define targetList '<s@dRegions_Flag_%listflag%.yaml_key[flag_regionDefault].split_by[<def[delimiter]||, >]||none>'
-          }
-        }
-      - if '<def[targetList].contains_any[none|all|%target%]>' && '<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].after[/].before[/]>|%thisRegion%|%world%|%player%]>' {
-        - define c 'true'
+#      - define default '<tern[<def[thisRegion].is[==].to[__global__]>]:globalDefault||regionDefault>'
+      - if '%thisRegion%' == '__global__' {
+        - define default 'globalDefault'
         }
         else {
-        - define c 'false'
+        - define default 'regionDefault'
         }
+      - if <def[flagObj].starts_with[none]> {
+        - define flagObj '<s@dRegions_Flag_%flag%.yaml_key[flag_%default%]||none>/all'
+        }
+      - if '%targetList%' == 'li@none' {
+        - define targetList '<s@dRegions_Flag_%listflag%.yaml_key[flag_%default%].split_by[<def[delimiter]||, >]||none>'
+        }
+      - define c '<def[targetList].contains_any[none|all|%target%].and[<proc[dRegions_PlayerMatchRegionGroup].context[<def[flagObj].after[/].before[/]>|%thisRegion%|%world%|%player%]>]>'
       - if <def[flagObj].starts_with[deny]> {
         - define a '<def[c].not>'
         }
@@ -517,10 +492,11 @@ dRegions_Flags_Processors_stsg:
       - flag %player% 'dRegions.rateLimit.%flag%.%target%:%a%'
       }
     - mark 'b'
-    - if '%a%' {
+    - if '%a%' || <def[overRide].exists> {
       - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'event-allowed' {
         - inject 's@dRegions_Flag_%flag%' 'p:event-allowed'
         }
+      - define overRide:!
       - foreach next
       - queue clear
       }
@@ -716,6 +692,10 @@ dRegions_Flags_Processors_b:
       - goto '%a%'
 
     - mark 'false'
+    - if <def[overRide].exists> {
+      - define overRide:!
+      - goto 'true'
+      }
     - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'msg_cancelled' {
       - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
         - flag %player% dRegions.Message_Cooldown duration:3s
