@@ -2121,9 +2121,10 @@ dRegions_Flag_Falling-Sand:
   flag_globalDefault: true
   flag_help: Boolean flag controlling whether sand will be able to fall in this region. Set to true or false. Defaults to true.
   event-allowed:
-  - flag <c.entity> 'dRegions.EntityGrief:true' d:5s
+  - flag <c.entity> 'dRegions.EntityGrief:true' d:1s
   event-cancelled:
-  - flag <c.entity> 'dRegions.EntityGrief:false' d:5s
+  - modifyblock %eLoc% sand no_physics
+  - remove <c.entity>
 
 dRegions_Flag_Falling-Gravel:
   type: item
@@ -2142,9 +2143,10 @@ dRegions_Flag_Falling-Gravel:
   flag_globalDefault: true
   flag_help: Boolean flag controlling whether gravel will be able to fall in this region. Set to true or false. Defaults to true.
   event-allowed:
-  - flag <c.entity> 'dRegions.EntityGrief:true' d:5s
+  - flag <c.entity> 'dRegions.EntityGrief:true' d:1s
   event-cancelled:
-  - flag <c.entity> 'dRegions.EntityGrief:false' d:5s
+  - modifyblock %eLoc% gravel no_physics
+  - remove <c.entity>
 
 dRegions_Flag_Pistons:
   type: item
