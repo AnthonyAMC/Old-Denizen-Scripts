@@ -1779,7 +1779,7 @@ dRegions_Flag_Enderpearl:
   display name: "<&4>[<&6>Enderpearl<&4>]"
   lore:
   - <&5>Who can use enderpearls
-  event_hooks: player_use_enderpearl
+  event_hooks: player_teleport_via_enderpearl
   event_priority: 0
   region_highestOnly: true
   flag_type: sg
@@ -1789,6 +1789,24 @@ dRegions_Flag_Enderpearl:
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to teleport with enderpearls in this region. Defaults to allow. Takes the -g group switch.
   msg_cancelled: 'You can not use enderpearls here!'
+
+dRegions_Flag_Chorusfruit:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Chorus-Fruit<&4>]"
+  lore:
+  - <&5>Who can use Chorus-Fruit
+  event_hooks: player_teleport_via_chorusfruit
+  event_priority: 0
+  region_highestOnly: true
+  flag_type: sg
+  flag_name: Chorus-Fruit
+  flag_takeGroup: true
+  flag_regionDefault: allow/all
+  flag_globalDefault: allow/all
+  flag_help: State flag controlling whether players will be able to teleport with chorus_fruit in this region. Defaults to allow. Takes the -g group switch.
+  msg_cancelled: 'You can not use chorus fruit here!'
 
 dRegions_Flag_Vehicle-Place:
   type: item
