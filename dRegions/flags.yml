@@ -14,6 +14,7 @@ dRegions_Flags_Processors_stg:
   type: task
   debug: false
   script:
+    - define thisRegion '<def[orderedRegions].get[1]>'
     # This is a rate limiter implemented BEFORE caching. The idea here is that if the player and event are in
     # the same region (even Global) we can safely expect that the values will be consistent (because we clear
     # rateLimit values on region enter/exit). Normal processing will follow if the rateLimit value is stale.
@@ -42,7 +43,6 @@ dRegions_Flags_Processors_stg:
     - define listflag '<s@dRegions_Flag_%flag%.yaml_key[flag_targetList]||null>'
     # First we check the flag if it only wants the highest priority region.
     - if '<s@dRegions_Flag_%flag%.yaml_key[region_highestOnly]||false>' {
-      - define thisRegion '<def[orderedRegions].get[1]>'
       - if <yaml[dRegions_%world%_cache].contains[cache.stg.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]> {
         - define a '<yaml[dRegions_%world%_cache].read[cache.stg.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]>'
         - goto 'a'
@@ -146,7 +146,6 @@ dRegions_Flags_Processors_stg:
       - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'event-allowed' {
         - inject 's@dRegions_Flag_%flag%' 'p:event-allowed'
         }
-      - define overRide:!
       - foreach next
       - queue clear
       }
@@ -174,9 +173,9 @@ dRegions_Flags_Processors_st:
   type: task
   debug: false
   script:
+    - define thisRegion '<def[orderedRegions].get[1]>'
     - define listflag '<s@dRegions_Flag_%flag%.yaml_key[flag_targetList]||null>'
     - if '<s@dRegions_Flag_%flag%.yaml_key[region_highestOnly]||false>' {
-      - define thisRegion '<def[orderedRegions].get[1]>'
       - if <yaml[dRegions_%world%_cache].contains[cache.st.%thisRegion%.%flag%.%target%]> {
         - define a '<yaml[dRegions_%world%_cache].read[cache.st.%thisRegion%.%flag%.%target%]>'
         - goto 'a'
@@ -257,7 +256,6 @@ dRegions_Flags_Processors_st:
       - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'event-allowed' {
         - inject 's@dRegions_Flag_%flag%' 'p:event-allowed'
         }
-      - define overRide:!
       - foreach next
       - queue clear
       }
@@ -285,6 +283,7 @@ dRegions_Flags_Processors_sg:
   type: task
   debug: false
   script:
+    - define thisRegion '<def[orderedRegions].get[1]>'
     - if '<def[eLoc].cuboids>' == '<def[player].location.cuboids>' {
       - define sameRegion 'true'
       - if <def[player].has_flag[dRegions.rateLimit.%flag%]> {
@@ -298,7 +297,6 @@ dRegions_Flags_Processors_sg:
     - define uuid '<def[player].uuid>'
     - define prefix '<def[uuid].substring[1,2]>'
     - if '<s@dRegions_Flag_%flag%.yaml_key[region_highestOnly]||false>' {
-      - define thisRegion '<def[orderedRegions].get[1]>'
       - if <yaml[dRegions_%world%_cache].contains[cache.sg.%thisRegion%.%flag%.%prefix%.%uuid%]> {
         - define a '<yaml[dRegions_%world%_cache].read[cache.sg.%thisRegion%.%flag%.%prefix%.%uuid%]>'
         - goto 'a'
@@ -370,7 +368,6 @@ dRegions_Flags_Processors_sg:
       - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'event-allowed' {
         - inject 's@dRegions_Flag_%flag%' 'p:event-allowed'
         }
-      - define overRide:!
       - foreach next
       - queue clear
       }
@@ -398,6 +395,7 @@ dRegions_Flags_Processors_stsg:
   type: task
   debug: false
   script:
+    - define thisRegion '<def[orderedRegions].get[1]>'
     - if '<def[eLoc].cuboids>' == '<def[player].location.cuboids>' {
       - define sameRegion 'true'
       - if <def[player].has_flag[dRegions.rateLimit.%flag%.%target%]> {
@@ -412,7 +410,6 @@ dRegions_Flags_Processors_stsg:
     - define prefix '<def[uuid].substring[1,2]>'
     - define listflag '<s@dRegions_Flag_%flag%.yaml_key[flag_targetList]||null>'
     - if '<s@dRegions_Flag_%flag%.yaml_key[region_highestOnly]||false>' {
-      - define thisRegion '<def[orderedRegions].get[1]>'
       - if <yaml[dRegions_%world%_cache].contains[cache.stsg.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]> {
         - define a '<yaml[dRegions_%world%_cache].read[cache.stsg.%thisRegion%.%flag%.%target%.%prefix%.%uuid%]>'
         - goto 'a'
@@ -496,7 +493,6 @@ dRegions_Flags_Processors_stsg:
       - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'event-allowed' {
         - inject 's@dRegions_Flag_%flag%' 'p:event-allowed'
         }
-      - define overRide:!
       - foreach next
       - queue clear
       }
@@ -640,8 +636,8 @@ dRegions_Flags_Processors_b:
   type: task
   debug: false
   script:
+    - define thisRegion '<def[orderedRegions].get[1]>'
     - if '<s@dRegions_Flag_%flag%.yaml_key[region_highestOnly]||false>' {
-      - define thisRegion '<def[orderedRegions].get[1]>'
       - define a '<yaml[dRegions_%world%_cache].read[cache.b.%thisRegion%.%flag%]||a>'
       - goto '%a%'
       - mark 'a'
@@ -693,7 +689,6 @@ dRegions_Flags_Processors_b:
 
     - mark 'false'
     - if <def[overRide].exists> {
-      - define overRide:!
       - goto 'true'
       }
     - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'msg_cancelled' {
@@ -723,8 +718,8 @@ dRegions_Flags_Processors_string:
   debug: false
   script:
   # It is possible to send messages for /any/ dRegions event. Just make a new string flag.
+    - define thisRegion '<def[orderedRegions].get[1]>'
     - if '<s@dRegions_Flag_%flag%.yaml_key[region_highestOnly]||false>' {
-      - define thisRegion '<def[orderedRegions].get[1]>'
       - define val '<proc[dRegions_GetInheritedFlag].context[%world%|%thisRegion%|%flag%]>'
       - if '%val%' != 'none' {
         - goto 'DISPLAY'
@@ -1403,7 +1398,8 @@ dRegions_Flag_Entry:
   msg_cancelled: 'You may not enter this area!'
 
   event-allowed:
-    - flag %player% dRegions.rateLimit:!
+    - flag %player% 'dRegions.rateLimit:!'
+    - flag %player% 'dRegions.%world%.%thisRegion%.entry-overRide:!'
 
   event-cancelled:
     - if <def[player].is_inside_vehicle> {
@@ -1440,7 +1436,8 @@ dRegions_Flag_Exit:
   msg_cancelled: 'You may not exit this area!'
 
   event-allowed:
-    - flag %player% dRegions.rateLimit:!
+    - flag %player% 'dRegions.rateLimit:!'
+    - flag %player% 'dRegions.%world%.%thisRegion%.exit-overRide:!'
 
   event-cancelled:
     - if <def[player].is_inside_vehicle> {
@@ -1493,6 +1490,58 @@ dRegions_Flag_Enter-Via-Teleport:
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to teleport out of a region. Defaults to allow all. Takes the -g group switch.
   msg_cancelled: 'You can not teleport to this region!'
+
+dRegions_Flag_Exit-Override:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Exit-Override<&4>]"
+  lore:
+  - <&5>
+  event_hooks: player_exits_region
+  event_priority: -1
+  region_highestOnly: true
+  flag_type: sg
+  flag_name: Exit-Override
+  flag_takeGroup: true
+  flag_regionDefault: deny/all
+  flag_globalDefault: deny/all
+  flag_help: Control who can override exit deny. Takes the -g group switch.
+
+  event-allowed:
+    - if !<def[player].has_flag[dRegions.%world%.%thisRegion%.exit-overRide]> {
+      - flag %player% 'dRegions.%world%.%thisRegion%.exit-overRide'
+      }
+
+  event-cancelled:
+    - foreach next
+    - queue clear
+
+dRegions_Flag_Entry-Override:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Entry-Override<&4>]"
+  lore:
+  - <&5>
+  event_hooks: player_enters_region
+  event_priority: -1
+  region_highestOnly: true
+  flag_type: sg
+  flag_name: Entry-Override
+  flag_takeGroup: true
+  flag_regionDefault: deny/all
+  flag_globalDefault: deny/all
+  flag_help: Control who can override entry deny. Takes the -g group switch.
+
+  event-allowed:
+    - if !<def[player].has_flag[dRegions.%world%.%thisRegion%.entry-overRide]> {
+      - flag %player% 'dRegions.%world%.%thisRegion%.entry-overRide' d:2s
+      }
+
+  event-cancelled:
+    - foreach next
+    - queue clear
 
 dRegions_Flag_Build:
   type: item
