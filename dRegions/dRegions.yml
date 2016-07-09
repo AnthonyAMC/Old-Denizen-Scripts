@@ -339,7 +339,6 @@ dRegions:
     - yaml unload 'id:%readID%'
     - yaml 'savefile:dRegions/%file%.yml' 'id:%writeID%'
 
-
   createInventoriesFile:
     - define readID 'dRegions_Configurations'
     - define writeID 'dRegions_%world%_inventories'
@@ -398,7 +397,30 @@ dRegions:
     - ^define children '<yaml[dRegions_%world%_regions].read[regions.%region%.children]||li@>'
     - ^foreach '<def[children].include[%region%]>':
       - yaml set 'cache.%type%.%value%.%flag%:!' 'id:dRegions_%world%_cache'
+      - if <def[flag].ends_with[-overRide]> {
+        - yaml set 'cache.%type%.%value%.<def[flag].before[-overRide]>:!' 'id:dRegions_%world%_cache'
+        }
+        else {
+        - yaml set 'cache.%type%.%value%.%flag%-overRide:!' 'id:dRegions_%world%_cache'
+        }
     - ^yaml 'savefile:dRegions/worlds/%world%/cache.yml' 'id:dRegions_%world%_cache'
+    - ^if '%region%' == '__global__' {
+      - define plist '<def[world].as_world.players>'
+      }
+      else {
+      - define plist '<def[region].replace[regex:^].with[cu@dregions_%world%_].as_cuboid.list_players>'
+      }
+    - ^foreach '%plist%':
+      - flag %value% 'dRegions.%world%.%region%.%flag%:!'
+      - flag %value% 'dRegions.rateLimit.%flag%:!'
+      - if <def[flag].ends_with[-overRide]> {
+        - flag %value% 'dRegions.%world%.%region%.<def[flag].before[-overRide]>:!'
+        - flag %value% 'dRegions.rateLimit.<def[flag].before[-overRide]>:!'
+        }
+        else {
+        - flag %value% 'dRegions.%world%.%region%.%flag%-overRide:!'
+        - flag %value% 'dRegions.rateLimit.%flag%-overRide:!'
+        }
 
   saveCache:
     - while 'true':
@@ -524,36 +546,46 @@ dRegions_Events_Player_Interact_NPC:
 dRegions_Events_Player_Enters_Region:
   type: world
   debug: false
-  eventHooks: player_enters_region
+  eventHooks: player_teleports_toRegion|player_enters_region
   events:
     on player enters notable cuboid:
     - if <player.permission[dRegions.admin]||false> || <player.is_op> {
-      - define noCancel ''
+      - define overRide ''
       }
     - define player '<player>'
-    # Should we fire an event when the player exits the global region?
-    - if <c.from.cuboids.is_empty> {
-      - event 'player exits notable cuboid' 'player:%player%' 'context:cuboids|<c.from.cuboids.escaped>|from|<c.from>|to|<c.to>' save:exit
-      - if <entry[exit].determinations.get[1]||null> == cancelled {
-        - determine cancelled
-        }
-      }
     - define eLoc '<c.to>'
     - define world '<def[eLoc].world.name>'
     - define orderedRegions 'li@<yaml[dRegions_%world%_regions].read[regions.__global__.priority]||0>/__global__'
     - foreach '<def[eLoc].cuboids.filter[starts_with[cu@dregions_%world%]].parse[after[cu@dregions_%world%_]]>':
       - define orderedRegions '%orderedRegions%|<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%'
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
-    # Ignore crossing into lower priority region and non-dRegion cuboids
     - define oldRegions 'li@<yaml[dRegions_%world%_regions].read[regions.__global__.priority]||0>/__global__'
     - foreach '<c.from.cuboids.filter[starts_with[cu@dregions_%world%]].parse[after[cu@dregions_%world%_]]>':
       - define oldRegions '%oldRegions%|<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%'
-    - if '<def[orderedRegions].get[1]>' == '<def[oldRegions].alphanumeric.reverse.parse[after[/]].get[1]>' {
+    - define oldRegions '<def[oldRegions].alphanumeric.reverse.parse[after[/]]>'
+    # Ignore crossing into lower priority region and non-dRegion cuboids
+    - if '<def[orderedRegions].get[1]>' == '<def[oldRegions].get[1]>' {
       - queue clear
       }
-    - foreach '<yaml[dRegions_eventmap].read[player_enters_region]||li@>':
+    # Should we fire an event when the player exits the global region?
+    - if '<def[oldRegions].get[1]>' == '__global__' {
+      - event 'player exits notable cuboid' 'player:%player%' 'context:cuboids|<c.from.cuboids.escaped>|from|<c.from>|to|<c.to>|cause|<c.cause>' save:exit
+      - if <entry[exit].determinations.get[1]||null> == cancelled {
+        - determine cancelled
+        }
+      }
+    - define events 'li@'
+    - if '<c.cause>' == 'TELEPORT' {
+      - define events '<def[events].include[<yaml[dRegions_eventmap].read[player_teleports_toRegion]||li@>]>'
+      }
+    - define events '<def[events].include[<yaml[dRegions_eventmap].read[player_enters_region]||li@>]>'
+    - foreach '%events%':
       - define flag '%value%'
+      - if <def[player].has_flag[dRegions.%world%.<def[orderedRegions].get[1]>.%flag%-override]> {
+        - define overRide ''
+        }
       - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - define overRide:!
     - event 'player entered dregion' 'player:%player%' 'context:orderedregions|<def[orderedRegions].separated_by[/]>|to|<c.to>|from|<c.from>'
 
 dRegions_Events_Player_Entered_dRegion:
@@ -575,11 +607,11 @@ dRegions_Events_Player_Entered_dRegion:
 dRegions_Events_Player_Exits_Region:
   type: world
   debug: false
-  eventHooks: player_exits_region
+  eventHooks: player_teleports_fromRegion|player_exits_region
   events:
     on player exits notable cuboid:
     - if <player.permission[dRegions.admin]||false> || <player.is_op> {
-      - define noCancel ''
+      - define overRide ''
       }
     - define player '<player>'
     - define eLoc '<c.from>'
@@ -588,25 +620,35 @@ dRegions_Events_Player_Exits_Region:
     - foreach '<def[eLoc].cuboids.filter[starts_with[cu@dregions_%world%]].parse[after[cu@dregions_%world%_]]>':
       - define orderedRegions '%orderedRegions%|<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%'
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
-    # Ignore crossing into lower priority region and non-dRegion cuboids
     - define newRegions 'li@<yaml[dRegions_%world%_regions].read[regions.__global__.priority]||0>/__global__'
     - foreach '<c.to.cuboids.filter[starts_with[cu@dregions_%world%]].parse[after[cu@dregions_%world%_]]>':
       - define newRegions '%newRegions%|<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%'
-    - if '<def[orderedRegions].get[1]>' == '<def[newRegions].alphanumeric.reverse.parse[after[/]].get[1]>' {
+    - define newRegions '<def[newRegions].alphanumeric.reverse.parse[after[/]]>'
+    # Ignore crossing into lower priority region and non-dRegion cuboids
+    - if '<def[orderedRegions].get[1]>' == '<def[newRegions].get[1]>' {
       - queue clear
       }
-    - foreach '<yaml[dRegions_eventmap].read[player_exits_region]||li@>':
+    - define events 'li@'
+    - if '<c.cause>' == 'TELEPORT' {
+      - define events '<def[events].include[<yaml[dRegions_eventmap].read[player_teleports_fromRegion]||li@>]>'
+      }
+    - define events '<def[events].include[<yaml[dRegions_eventmap].read[player_exits_region]||li@>]>'
+    - foreach '%events%':
       - define flag '%value%'
+      - if <def[player].has_flag[dRegions.%world%.<def[orderedRegions].get[1]>.%flag%-overRide]> {
+        - define overRide ''
+        }
       - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+      - define overRide:!
     # Should we fire an event when the player enters the global region?
-    - if <c.to.cuboids.is_empty> {
-      - event 'player enters notable cuboid' 'player:%player%' 'context:cuboids|<c.to.cuboids.escaped>|from|<c.from>|to|<c.to>' save:enter
+    - if '<def[newRegions].get[1]>' == '__global__' {
+      - event 'player enters notable cuboid' 'player:%player%' 'context:cuboids|<c.to.cuboids.escaped>|from|<c.from>|to|<c.to>|cause|<c.cause>' save:enter
       - if <entry[enter].determinations.get[1]||null> == cancelled {
         - determine cancelled
         }
       }
     # Should exiting a region trigger entering another one. This can happen when regions overlap
-#    - event 'player enters notable cuboid' 'context:cuboids|<c.to.cuboids.escaped>|from|<c.from>|to|<c.to>' save:enter
+#    - event 'player enters notable cuboid' 'context:cuboids|<c.to.cuboids.escaped>|from|<c.from>|to|<c.to>|cause|<c.cause>' save:enter
 #    - if <entry[enter].determinations.get[1].equal_case_sensitive[cancelled]||false> {
 #      - determine cancelled
 #      }
@@ -1166,10 +1208,13 @@ dRegions_Events_Player_Changes_Foodlevel:
       - define flag '%value%'
       - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
+
 dRegions_Events_Player_Teleports:
+# %cause% can be any of the known bukkit causes. Be sure to remove the '_'.
+# CHORUSFRUIT|COMMAND|ENDGATEWAY|ENDPORTAL|ENDERPEARL|NETHERPORTAL|PLUGIN|SPECTATE|UNKNOWN
   type: world
   debug: false
-  eventHooks: player_teleports|player_use_enderpearl
+  eventHooks: player_teleports|player_teleport_via_%cause%
   events:
     on player teleports:
     - if <player.permission[dRegions.admin]||false> || <player.is_op> {
@@ -1178,13 +1223,12 @@ dRegions_Events_Player_Teleports:
     # This is here to catch teleports between global regions as there's no other event for it. Maybe it should be in its own container idk.
     - if '<c.origin.world>' != '<c.destination.world>' {
       - if <c.origin.cuboids.is_empty> && <c.destination.cuboids.is_empty> {
-        - event 'player enters notable cuboid' 'context:cuboids|<c.origin.cuboids.escaped>|from|<c.origin>|to|<c.destination>' save:enter
+        - event 'player enters notable cuboid' 'context:cuboids|<c.origin.cuboids.escaped>|from|<c.origin>|to|<c.destination>|cause|teleport' save:enter
         - if <entry[enter].determinations.get[1]||null> == cancelled {
           - determine cancelled
           }
         }
       }
-    - if <c.cause> != ender_pearl queue clear
     - define player '<player>'
     - define eLoc '<def[player].location>'
     - define world '<def[eLoc].world.name>'
@@ -1193,7 +1237,9 @@ dRegions_Events_Player_Teleports:
     - foreach '<def[cuboids].filter[starts_with[cu@dregions_%world%]].parse[after[cu@dregions_%world%_]]>':
       - define orderedRegions '%orderedRegions%|<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%'
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
-    - foreach '<yaml[dRegions_eventmap].read[player_use_enderpearl]||li@>':
+    - define events '<yaml[dRegions_eventmap].read[player_teleports]||li@>'
+    - define events '<def[events].include[<yaml[dRegions_eventmap].read[player_teleport_via_<c.cause.replace[_]>]||li@>]>'
+    - foreach '%events%':
       - define flag '%value%'
       - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
@@ -1368,7 +1414,7 @@ dRegions_Events_Fallingblock_Change_Block:
       - determine cancelled
       }
     - define mat '<c.entity.fallingblock_material.bukkit_enum>'
-    - if li@sand|gravel !contains %mat% queue clear
+#    - if li@sand|gravel !contains %mat% queue clear
     - define eLoc '<c.location>'
     - define world '<def[eLoc].world.name>'
     - define readPath 'physics.%mat%'
@@ -1752,29 +1798,6 @@ dRegions_Events_Leaf_Decay:
     - foreach '<yaml[dRegions_eventmap].read[blockfade_leaves]||li@>':
       - define flag '%value%'
       - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
-# Was testing an alternate method. It took an average of 1ms longer :/
-#      - define ftype '<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
-#      - define cache '<parse:<def[orderedRegions].parse[replace[regex:^].with[<&lt>yaml<&lb>dRegions_%world%_cache<&rb>.read<&lb>cache.%ftype%.]].parse[replace[regex:$].with[.%flag%<&rb>||null<&gt>]]>>'
-#      - define cache '<def[cache].filter[is[!=].to[null]]>'
-#      - if <def[cache].size> == '0' {
-#        - inject 's@dRegions_Flags_Processors' 'p:%ftype%'
-#        - foreach next
-#        }
-#      - define cache '<def[cache].filter[is[!=].to[none]].get[1]||true>'
-#      - if '%cache%' {
-#        - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'event-allowed' {
-#          - inject 's@dRegions_Flag_%flag%' 'p:event-allowed'
-#          }
-#        - foreach next
-#        }
-#      - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'event-cancelled' {
-#        - inject 's@dRegions_Flag_%flag%' 'p:event-cancelled'
-#        }
-#      - if <def[noCancel].exists> {
-#        - foreach next
-#        - queue clear
-#        }
-#      - determine cancelled
 
 dRegions_Events_Potion_Splash:
   type: world
@@ -1787,7 +1810,7 @@ dRegions_Events_Potion_Splash:
     - define cuboids '<c.entities.parse[location.cuboids].deduplicate>'
     - define world '<def[eLoc].world.name>'
     - define orderedRegions 'li@<yaml[dRegions_%world%_regions].read[regions.__global__.priority]||0>/__global__'
-    - foreach '<c.entities.parse[location.cuboids].deduplicate.filter[starts_with[cu@dregions_%world%]].parse[after[cu@dregions_%world%_]]>':
+    - foreach '<c.entities.parse[location.cuboids.separated_by[|]].as_list.deduplicate.filter[starts_with[cu@dregions_%world%_]].parse[after[cu@dregions_%world%_]]>':
       - define orderedRegions '%orderedRegions%|<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%'
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     - foreach '<yaml[dRegions_eventmap].read[potion_splash]||li@>':
@@ -1814,7 +1837,7 @@ dRegions_Events_Pistons:
       - define originRegions '%originRegions%|<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%'
     - define originRegions '<def[originRegions].alphanumeric.reverse.parse[after[/]]>'
     - define orderedRegions 'li@<yaml[dRegions_%world%_regions].read[regions.__global__.priority]||0>/__global__'
-    - foreach '<c.blocks.include[%lastBlock%].parse[cuboids.separated_by[|]].deduplicate.filter[starts_with[cu@dregions_%world%]].parse[after[cu@dregions_%world%_]]>':
+    - foreach '<c.blocks.include[%lastBlock%].parse[cuboids.separated_by[|]].as_list.deduplicate.filter[starts_with[cu@dregions_%world%_]].parse[after[cu@dregions_%world%_]]>':
       - define orderedRegions '%orderedRegions%|<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%'
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     # Block piston blocks from crossing region borders
@@ -1840,7 +1863,7 @@ dRegions_Events_Pistons:
       - define originRegions '%originRegions%|<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%'
     - define originRegions '<def[originRegions].alphanumeric.reverse.parse[after[/]]>'
     - define orderedRegions 'li@<yaml[dRegions_%world%_regions].read[regions.__global__.priority]||0>/__global__'
-    - foreach '<c.blocks.include[%lastBlock%].parse[cuboids.separated_by[|]].deduplicate.filter[starts_with[cu@dregions_%world%]].parse[after[cu@dregions_%world%_]]>':
+    - foreach '<c.blocks.include[%lastBlock%].parse[cuboids.separated_by[|]].as_list.deduplicate.filter[starts_with[cu@dregions_%world%_]].parse[after[cu@dregions_%world%_]]>':
       - define orderedRegions '%orderedRegions%|<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%'
     - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
     # Block piston blocks from crossing region borders
