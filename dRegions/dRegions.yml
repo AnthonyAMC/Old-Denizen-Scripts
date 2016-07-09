@@ -2039,7 +2039,7 @@ dRegions_PlayerMatchRegionGroup:
         - if <yaml[dRegions_%world%_regions].read[regions.%region%.members.players].contains[%playerUUID%]||false> || <yaml[dRegions_%world%_regions].read[regions.%region%.members.groups].contains_any[%playerGroups%]||false> {
           - determine 'true'
           }
-        - while '<yaml[dRegions_%world%_regions].contains[regions.%region%.parent]>':
+        - while '<yaml[dRegions_<def[world]>_regions].contains[regions.<def[region]>.parent]>':
           - define region '<yaml[dRegions_%world%_regions].read[regions.%region%.parent]>'
           - if <yaml[dRegions_%world%_regions].read[regions.%region%.members.players].contains[%playerUUID%]||false> || <yaml[dRegions_%world%_regions].read[regions.%region%.members.groups].contains_any[%playerGroups%]||false> {
             - determine 'true'
@@ -2051,7 +2051,7 @@ dRegions_PlayerMatchRegionGroup:
         - if <yaml[dRegions_%world%_regions].read[regions.%region%.members.players].contains[%playerUUID%]||false> || <yaml[dRegions_%world%_regions].read[regions.%region%.members.groups].contains_any[%playerGroups%]||false> || <yaml[dRegions_%world%_regions].read[regions.%region%.owners.players].contains[%playerUUID%]||false> || <yaml[dRegions_%world%_regions].read[regions.%region%.owners.groups].contains_any[%playerGroups%]||false> {
           - determine 'false'
           }
-        - while '<yaml[dRegions_%world%_regions].contains[regions.%region%.parent]>':
+        - while '<yaml[dRegions_<def[world]>_regions].contains[regions.<def[region]>.parent]>':
           - define region '<yaml[dRegions_%world%_regions].read[regions.%region%.parent]>'
           - if <yaml[dRegions_%world%_regions].read[regions.%region%.members.players].contains[%playerUUID%]||false> || <yaml[dRegions_%world%_regions].read[regions.%region%.members.groups].contains_any[%playerGroups%]||false> || <yaml[dRegions_%world%_regions].read[regions.%region%.owners.players].contains[%playerUUID%]||false> || <yaml[dRegions_%world%_regions].read[regions.%region%.owners.groups].contains_any[%playerGroups%]||false> {
             - determine 'false'
@@ -2063,7 +2063,7 @@ dRegions_PlayerMatchRegionGroup:
         - if <yaml[dRegions_%world%_regions].read[regions.%region%.owners.players].contains[%playerUUID%]||false> || <yaml[dRegions_%world%_regions].read[regions.%region%.owners.groups].contains_any[%playerGroups%]||false> {
           - determine 'true'
           }
-        - while '<yaml[dRegions_%world%_regions].contains[regions.%region%.parent]>':
+        - while '<yaml[dRegions_<def[world]>_regions].contains[regions.<def[region]>.parent]>':
           - define region '<yaml[dRegions_%world%_regions].read[regions.%region%.parent]>'
           - if <yaml[dRegions_%world%_regions].read[regions.%region%.owners.players].contains[%playerUUID%]||false> || <yaml[dRegions_%world%_regions].read[regions.%region%.owners.groups].contains_any[%playerGroups%]||false> {
             - determine 'true'
@@ -2075,7 +2075,7 @@ dRegions_PlayerMatchRegionGroup:
         - if <yaml[dRegions_%world%_regions].read[regions.%region%.owners.players].contains[%playerUUID%]||false> || <yaml[dRegions_%world%_regions].read[regions.%region%.owners.groups].contains_any[%playerGroups%]||false> {
           - determine 'false'
           }
-        - while '<yaml[dRegions_%world%_regions].contains[regions.%region%.parent]>':
+        - while '<yaml[dRegions_<def[world]>_regions].contains[regions.<def[region]>.parent]>':
           - define region '<yaml[dRegions_%world%_regions].read[regions.%region%.parent]>'
           - if <yaml[dRegions_%world%_regions].read[regions.%region%.owners.players].contains[%playerUUID%]||false> || <yaml[dRegions_%world%_regions].read[regions.%region%.owners.groups].contains_any[%playerGroups%]||false> {
             - determine 'false'
@@ -2098,7 +2098,7 @@ dRegions_IsOwner:
       - determine 'true'
       }
     # Regions inherit members and owners.
-    - while '<yaml[dRegions_%world%_regions].contains[regions.%region%.parent]>':
+    - while '<yaml[dRegions_<def[world]>_regions].contains[regions.<def[region]>.parent]>':
       - define region '<yaml[dRegions_%world%_regions].read[regions.%region%.parent]>'
       - if <yaml[dRegions_%world%_regions].read[regions.%region%.owners.players].contains[%playerUUID%]||false> || <yaml[dRegions_%world%_regions].read[regions.%region%.owners.groups].contains_any[%playerGroups%]||false> {
         - determine 'true'
@@ -2121,7 +2121,7 @@ dRegions_IsMember:
       - determine 'true'
       }
     # Regions inherit members and owners.
-    - while '<yaml[dRegions_%world%_regions].contains[regions.%region%.parent]>':
+    - while '<yaml[dRegions_<def[world]>_regions].contains[regions.<def[region]>.parent]>':
       - define region '<yaml[dRegions_%world%_regions].read[regions.%region%.parent]>'
       - if <yaml[dRegions_%world%_regions].read[regions.%region%.members.players].contains[%playerUUID%]||false> || <yaml[dRegions_%world%_regions].read[regions.%region%.members.groups].contains_any[%playerGroups%]||false> {
         - determine 'true'
