@@ -1,4 +1,3 @@
-
 ################################################################################
 #
 #  dRegions Command Script Container
@@ -16,7 +15,6 @@
 #
 dRegions_Commands:
   type: command
-  speed: 0
   debug: false
   name: dregions
   description: Denizen Regions Manager
@@ -1677,24 +1675,6 @@ dRegions_Commands:
       - define entries '<def[entries].include[%entry%]>'
     - run s@msgBoxed 'def:dRegions|<proc[msgCommand].context[<&6>dRegions|drg help|<&a>Go back to main help]>|<&e>Region List|drg list|%page%|52|10|<def[entries].separated_by[|]>'
 
-#    - if <def[page].is[MATCHES].to[number].not> {
-#      - define page '1'
-#      }
-#    - define pages '<def[regions].size.div[14].round_up||1>'
-#    - if <def[page].is[MORE].than[%pages%]> {
-#      - define page '%pages%'
-#      }
-#    - define highNumber '<def[page].mul[14].as_int>'
-#    - define lowNumber '<def[highNumber].sub[13].as_int>'
-#    - define msgsHeaderTitle '<&e>Region List   <el@val[<&7><&o>Page <&f><&o>%page% <&7><&o>of %pages%].pad_left[30]>'
-#    - inject locally msgsHeader instantly
-#    - foreach <def[regions].get[%lowNumber%].to[%highNumber%]||li@> {
-#      - define color '<t[<def[value].split[/].get[3].is[==].to[owner]>]:&6||<t[<def[value].split[/].get[3].is[==].to[member]>]:&e||&f>>'
-#      - narrate "<&5>|<&sp><&7><el@val[<el@val[<def[lowNumber].add[<def[loop_index].sub[1]>].as_int>.].pad_left[4].with[<&sp>]>].pad_right[5].with[<&sp>]> <%color%><def[value].split[/].get[2]>"
-#      }
-#    - narrate "<&5>|"
-#    - inject locally msgsFooter instantly
-
   flag:
   # /drg flag [ID] [flag] [value] -g group -w world
 
@@ -1769,7 +1749,7 @@ dRegions_Commands:
 
     # By this point, we know the flag is being set or cleared, so let's clear the flag
     # cache for this region, any child regions, and any overlapping regions including __global__
-    - run s@dRegions p:clearCache delay:1t 'def:%region%|%world%|%flag%'
+    - run instantly delay:1t s@dRegions p:clearCache 'def:%region%|%world%|%flag%'
 
     # Check the specified flag value and set or clear it.
     - define flagValue '<def[args].get[3].to[<def[args].size>].space_separated.escaped||null>'
@@ -1788,7 +1768,7 @@ dRegions_Commands:
           }
         - queue clear
         }
-      - if <def[type].starts_with[state]||false>
+      - if <li@st|sg|stg|stsg.contains[%type%]||false>
         && <def[flagValue].is[==].to[none]||false> {
         - inject s@dRegions_Flag_%flag% p:command_handler
         - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
@@ -1798,13 +1778,8 @@ dRegions_Commands:
         - queue clear
         }
       - inject s@dRegions_Flag_%flag% p:command_handler
-      - if <s@dRegions_Flag_%flag%.yaml_key[flag_takeGroup]||false> {
-        - if <def[group].exists> {
-          - yaml set 'regions.%region%.flags.%flag%:<def[flagValue].unescaped>/%group%' 'id:dRegions_%world%_regions'
-          }
-          else {
-          - yaml set 'regions.%region%.flags.%flag%:<def[flagValue].unescaped>' 'id:dRegions_%world%_regions'
-          }
+      - if <s@dRegions_Flag_%flag%.yaml_key[flag_takeGroup]||false> && <def[group].exists> {
+        - yaml set 'regions.%region%.flags.%flag%:<def[flagValue].unescaped>/%group%' 'id:dRegions_%world%_regions'
         }
         else {
         - yaml set 'regions.%region%.flags.%flag%:<def[flagValue].unescaped>' 'id:dRegions_%world%_regions'
@@ -2175,9 +2150,6 @@ dRegions_Commands:
       - if !<player.permission[dregions.%value%]||<player.is_op||<c.server||false>>> {
         - define commands '<def[commands].exclude[%value%]>'
         }
-        else {
-        - foreach next
-        }
       }
 
     # Display the list
@@ -2224,7 +2196,6 @@ dRegions_Commands:
 #
 dRegions_Flags_CommandProcessors:
   type: task
-  speed: 0
   debug: false
 
   command_verifiedList:
