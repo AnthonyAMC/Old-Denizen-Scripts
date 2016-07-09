@@ -4,8 +4,8 @@
 #
 #
 #   Authors: |Anthony|
-#   Version: 0.34
-#   dScript Version: 0.9.8-DEV_b579
+#   Version: 0.35
+#   dScript Version: 0.9.8-DEV_b607
 #
 #
 #   Dependencies:
@@ -129,7 +129,7 @@ dRegions_Version:
   type: version
   author: Anthony
   name: dRegions
-  version: 0.34
+  version: 0.35
   description: Denizen Region Management and Protection
   id: 23
 #
@@ -2191,6 +2191,16 @@ dRegions_HasPerm_Command:
 #
 #---------------------------------------
 #
+# Instance Handlers
+#
+#  Support for simple instancing API by BlackCoyote
+#   - http://mcmonkey.org/denizen/repo/entry/94
+#
+#  Instanced worlds will be an exact replica of the blueprint world.
+#  Completely configure your blueprint world with any world configs, regions,
+#  and flags, and every instance cloned from the blueprint will have all of the
+#  same settings. dRegions data will be removed when the instance is destroyed.
+#
 dRegions_CloneWord:
   type: world
   debug: true
@@ -2228,6 +2238,26 @@ dRegions_CloneWord:
     - foreach '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__]>':
       - note 'cu@<yaml[dRegions_%world%_regions].read[regions.%value%.min]>|<yaml[dRegions_%world%_regions].read[regions.%value%.max]>' 'as:dregions_%world%_%value%'
 
+    on instance closed:
+    - define world <c.instance>
+    - if !<server.has_file[dRegions/worlds/%world%]> {
+      - run s@msgPrefixed instantly delay:1t 'def:dRegions|<&c>%world% is an unknown world!'
+      - queue clear
+      }
+    # Remove notables
+    - foreach '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__]>':
+      - note remove 'as:dregions_%world%_%value%'
+    # Remove files
+    - foreach 'li@config|regions|inventories|cache':
+      - define this '%value%'
+      - define file 'dRegions/worlds/%world%/%this%'
+      - define readID 'dRegions_%world%_%this%'
+      - if <yaml.list.contains[%readID%]> {
+        - yaml unload 'id:%readID%'
+        }
+      - if <server.has_file[%file%.yml]> {
+        - adjust server 'delete_file:%file%.yml'
+        }
 
 #
 #---------------------------------------
