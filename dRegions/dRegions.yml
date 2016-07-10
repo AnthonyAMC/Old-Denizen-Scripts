@@ -354,7 +354,7 @@ dRegions:
 
   createRegionEntry:
     - if !<yaml.list.contains[dRegions_%world%_regions]> {
-      yaml 'load:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
+      - yaml 'load:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
       }
     - yaml set 'regions.%name%.type:cuboid' 'id:dRegions_%world%_regions'
     - yaml set 'regions.%name%.min:<def[selectedCuboid].min.simple>' 'id:dRegions_%world%_regions'
@@ -2211,7 +2211,7 @@ dRegions_HasPerm_Command:
 #
 #---------------------------------------
 #
-# Instance Handlers
+# Simple Instancing API Hook
 #
 #  Support for simple instancing API by BlackCoyote
 #   - http://mcmonkey.org/denizen/repo/entry/94
@@ -2221,23 +2221,39 @@ dRegions_HasPerm_Command:
 #  and flags, and every instance cloned from the blueprint will have all of the
 #  same settings. dRegions data will be removed when the instance is destroyed.
 #
-dRegions_CloneWord:
+dRegions_SIAPI_Hook:
   type: world
-  debug: true
+  debug: false
 
   events:
     on instance created:
-    - define clone <c.blueprint_world>
-    - define world <c.instance>
-    - if !<server.has_file[dRegions/worlds/%clone%]> {
-      - run s@msgPrefixed instantly delay:1t 'def:dRegions|<&c>%clone% is an unknown world!'
+    - run instantly s@dRegions_CopyWorld 'def:<c.blueprint_world>|<c.instance>'
+
+    on instance closed:
+    - run instantly s@dRegions_DestroyWorld 'def:<c.instance>'
+#
+#---------------------------------------
+#
+# Copy all dRG world data from one world to another and create notable cuboids.
+#
+#  Usage:
+#    - run instantly s@dRegions_CopyWorld 'def:original|copy'
+#
+dRegions_CopyWorld:
+  type: task
+  debug: false
+  definitions: orig|world
+
+  script:
+    - if !<server.has_file[dRegions/worlds/%orig%]> {
+      - run s@msgPrefixed instantly delay:1t 'def:dRegions|<&c>%orig% is an unknown world!'
       - queue clear
       }
     - foreach 'li@config|regions|inventories|cache':
       - define this '%value%'
-      - define file 'worlds/%clone%/%this%'
+      - define file 'worlds/%orig%/%this%'
       - if <server.has_file[dRegions/%file%.yml]> {
-        - define readID 'dRegions_%clone%_%this%'
+        - define readID 'dRegions_%orig%_%this%'
         - if !<yaml.list.contains[%readID%]> {
           - yaml 'load:dRegions/%file%.yml' 'id:%readID%'
           }
@@ -2257,17 +2273,26 @@ dRegions_CloneWord:
       - yaml 'load:dRegions/worlds/%world%/%this%.yml' 'id:%writeID%'
     - foreach '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__]>':
       - note 'cu@<yaml[dRegions_%world%_regions].read[regions.%value%.min]>|<yaml[dRegions_%world%_regions].read[regions.%value%.max]>' 'as:dregions_%world%_%value%'
+#
+#---------------------------------------
+#
+# Destroy all dRG data for a world
+#
+#  Usage:
+#    - run instantly s@dRegions_DestroyWorld 'def:world'
+#
+dRegions_DestroyWorld:
+  type: task
+  debug: false
+  definitions: world
 
-    on instance closed:
-    - define world <c.instance>
+  script:
     - if !<server.has_file[dRegions/worlds/%world%]> {
       - run s@msgPrefixed instantly delay:1t 'def:dRegions|<&c>%world% is an unknown world!'
       - queue clear
       }
-    # Remove notables
     - foreach '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__]>':
       - note remove 'as:dregions_%world%_%value%'
-    # Remove files
     - foreach 'li@config|regions|inventories|cache':
       - define this '%value%'
       - define file 'dRegions/worlds/%world%/%this%'
