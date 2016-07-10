@@ -1799,6 +1799,26 @@ dRegions_Events_Leaf_Decay:
       - define flag '%value%'
       - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
 
+dRegions_Events_Item_Spawn:
+  type: world
+  debug: false
+  eventHooks: '%item%_spawn'
+  events:
+    on item spawns:
+    - define eLoc '<c.location>'
+    - define world '<def[eLoc].world.name>'
+    - define target '<c.item.material.bukkit_enum>'
+    - define object '<c.entity>'
+    - define orderedRegions 'li@<yaml[dRegions_%world%_regions].read[regions.__global__.priority]||0>/__global__'
+    - foreach '<def[eLoc].cuboids.filter[starts_with[cu@dregions_%world%]].parse[after[cu@dregions_%world%_]]>':
+      - define orderedRegions '%orderedRegions%|<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%'
+    - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
+    - define events '<yaml[dRegions_eventmap].read[item_spawn]||li@>'
+    - define events '<def[events].include[<yaml[dRegions_eventmap].read[%target%_spawn]||li@>]>'
+    - foreach '%events%':
+      - define flag '%value%'
+      - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+
 dRegions_Events_Potion_Splash:
   type: world
   debug: false
