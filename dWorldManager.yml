@@ -109,10 +109,25 @@ dWM_Events:
     on server shutdown:
       - yaml 'savefile:dWorldManager/config.yml' 'id:dWM_Config'
 
+    on player quits:
+      - define w '<player.location.world.name>'
+      - define loc '<player.location.before[,%w%].after[l@]>'
+      - run instantly delay:1t s@dWM_SetLL 'def:quit|<player>|%w%|%loc%'
+
     on player teleports:
       - define w '<c.origin.world.name>'
       - define loc '<c.origin.before[,%w%].after[l@]>'
-      - run instantly delay:1t s@dWM_SetLL 'def:<player>|%w%|%loc%'
+      - run instantly delay:1t s@dWM_SetLL 'def:teleport|<player>|%w%|%loc%'
+
+    on player dies:
+      - define w '<player.location.world.name>'
+      - define loc '<player.location.before[,%w%].after[l@]>'
+      - run instantly delay:1t s@dWM_SetLL 'def:death|<player>|%w%|%loc%'
+
+    on player enters bed priority:1000 ignorecancelled:false:
+      - define w '<c.location.world.name>'
+      - define loc '<c.location.before[,%w%].after[l@]>'
+      - run instantly delay:1t s@dWM_SetLL 'def:bed|<player>|%w%|%loc%'
 
 
     on world loads:
@@ -876,21 +891,22 @@ dWM_Commands_Tp:
         - define w <player.world.name>
         }
         else {
-        - define w <def[worlds].get[1]>
+        - define w '<def[worlds].get[1]>'
         - define v '<proc[dWM_VW].context[%w%]>'
         - if '%v%' != '0' {
           - run instantly delay:1t 's@dWM_Error' 'def:world|%v%|%sender%|%w%'
           - queue clear
           }
         }
-      - define lastLoc '<proc[dWM_LL].context[<player>|%w%]>'
+      - define t 'teleport'
+      - define lastLoc '<proc[dWM_LL].context[<player>|%w%|%t%]>'
       - if '%lastLoc%' == '1' {
         - run instantly delay:1t 's@dWM_Error' 'def:ll|1|%sender%|%w%'
         - teleport <player> '<def[w].as_world.spawn_location>'
         - queue clear
         }
         else {
-        - teleport <player> '<el@val[<def[lastLoc]>,%w%].as_location>'
+        - teleport <player> '<el@val[%lastLoc%,%w%].as_location>'
         }
       }
 
@@ -1362,10 +1378,10 @@ dWM_VW:
 #  Get a players last location in a world
 #
 dWM_LL:
-# Usage: <proc[dWM_LL].context[%player%|%world%]>
+# Usage: <proc[dWM_LL].context[%player%|%world%|%type%]>
   type: procedure
   debug: false
-  definitions: p|w
+  definitions: p|w|t
 
   script:
     - define u '<def[p].uuid>'
@@ -1377,7 +1393,7 @@ dWM_LL:
       - yaml unload 'id:dWM_pd_%u%'
       }
     - yaml 'load:dWorldManager/playerdata/%u%.yml' 'id:dWM_pd_%u%'
-    - define l '<yaml[dWM_pd_%u%].read[%w%.lastLoc]||null>'
+    - define l '<yaml[dWM_pd_%u%].read[%w%.lastLoc.%t%]||null>'
     - yaml unload 'id:dWM_pd_%u%'
     - if '%l%' == 'null' {
       - determine 1
@@ -1387,13 +1403,13 @@ dWM_LL:
 #  END dWM_LL
 #--------------------------------------
 #
-#  Get a players last location in a world
+#  Set a players last location in a world
 #
 dWM_SetLL:
-# Usage: run instantly delay:1t s@dWM_SetLL 'def:<player>|%world%|%location%'
+# Usage: run instantly delay:1t s@dWM_SetLL 'def:%type%|<player>|%world%|%location%'
   type: task
   debug: false
-  definitions: p|w|l
+  definitions: t|p|w|l
 
   script:
     - define u '<def[p].uuid>'
@@ -1405,11 +1421,11 @@ dWM_SetLL:
       - yaml unload 'id:dWM_pd_%u%'
       }
     - yaml 'load:dWorldManager/playerdata/%u%.yml' 'id:dWM_pd_%u%'
-    - yaml set '%w%.lastLoc:%l%' 'id:dWM_pd_%u%'
+    - yaml set '%w%.lastLoc.%t%:%l%' 'id:dWM_pd_%u%'
     - yaml 'savefile:dWorldManager/playerdata/%u%.yml' 'id:dWM_pd_%u%'
     - yaml unload 'id:dWM_pd_%u%'
 #
-#  END dWM_LL
+#  END dWM_SetLL
 #--------------------------------------
 #
 #  dWorldManager Arg Parser
@@ -1441,13 +1457,13 @@ dWM_ParseArgs:
         - define args '<def[args].remove[%loop_index%]>'
         - define '<def[a].before[<&co>]>' '<def[a].after[<&co>]>'
         }
-        else if <server.match_player[%a%]||false> {
+        else if <server.match_player[%a%].name.is[==].to[%a%]||false> {
         - define args '<def[args].remove[%loop_index%]>'
         - if '%players%' !contains '%a%' {
           - define players '<def[players].include[<server.match_player[%a%]>]>'
           }
         }
-        else if <server.match_offline_player[%a%]||false> {
+        else if <server.match_offline_player[%a%].name.is[==].to[%a%]||false> {
         - define args '<def[args].remove[%loop_index%]>'
         - if '%offline%' !contains '%a%' {
           - define offline '<def[offline].include[<server.match_offline_player[%a%]>]>'
@@ -1455,7 +1471,7 @@ dWM_ParseArgs:
         }
         else if %a% matches entity {
         - define args '<def[args].remove[%loop_index%]>'
-        - if '%offline%' !contains '%a%' {
+        - if '%entities%' !contains '%a%' {
           - define entities '<def[entities].include[%a%]>'
           }
         }
@@ -1543,8 +1559,7 @@ dWM_Error:
 
   script:
     - if '%3%' == 'server' {
-      - announce to_console '<&4><&lb><&6>dWM<&4><&rb>  '
-      - define prefix '<&4><&lb><&6>dWM<&4><&rb>  <script.yaml_key[msgs.%1%.%2%].get[1]>'
+      - announce to_console '<&4><&lb><&6>dWM<&4><&rb>  <script.yaml_key[msgs.%1%.%2%].get[1]>'
       }
       else {
       - define prefix '<proc[msgCommand].context[<&4><&lb><&6>dWM<&4><&rb>|dwm help|<&6>      dWM<&nl><&d>Click for help]>   '
