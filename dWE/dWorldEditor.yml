@@ -4,8 +4,8 @@
 #
 #
 #   Authors: |Anthony|, mcmonkey
-#   Version: 0.30
-#   dScript Version: 0.9.8-DEV-b602
+#   Version: 0.31
+#   dScript Version: 0.9.8-DEV-b611
 #
 #
 #
@@ -141,7 +141,7 @@
 #                                             dwe.undo
 #
 #  /dwe schem [list/load/unload/save/delete   dwe.admin               Manage and use schematics.
-#             /copy/rename] (-p)              dwe.schematic
+#             /copy/rename/bind/paste] (-p)              dwe.schematic
 #
 #-------------------------------------------------------------------------------
 #
@@ -181,6 +181,8 @@
 #    - Undo history size
 #    - async-blockedit
 #    - hpos max distance
+#  - TAB Completion
+#    - There is only sparse implementation and it's bugging me m(._.)m
 #  - Drag command
 #    - Turning on drag displays a selection outline and updates (on player move
 #      or every second). Selection area stays in the same relative location to
@@ -197,7 +199,7 @@ dWE_Version:
   type: version
   author: Anthony
   name: dWorldEditor
-  version: 0.30
+  version: 0.31
   description: Denizen World Editor
   id: 22
 #
@@ -228,9 +230,35 @@ dWE_Events:
     on reload scripts:
       - run locally load delay:1t
 
+    on system time hourly:
+    - wait 1t
+#    - if !<yaml[dWE_config].read[config.stats.useStats]||true> {
+#      - queue clear
+#      }
+    - run locally updateCheck
+    - announce to_console '<&b>dWE<&co><&3> Sending usage metrics...'
+    - webget "http://morphanone.space/webizen.aspx/tracker?script=<s@dWE_Version.yaml_key[id]>&version=<s@dWE_Version.yaml_key[version]>&players=<server.list_online_players.size>&denizen_version=<server.denizen_version.replace[-SNAPSHOT].before[ ]>&jenkins_build=<server.denizen_version.after[(build ].before[)]>&bukkit_version=<server.bukkit_version>"
+
   load:
+    - run locally updateCheck
     - flag server 'dWE.Command_List:!'
     - flag server 'dWE.Command_List:|:<server.list_scripts.filter[starts_with[s@dWE_Commands_]].parse[name].parse[after[dWE_Commands_]].alphanumeric.to_lowercase||li@>'
+
+  updateCheck:
+    - ^define repoVersion '<proc[dWE_VersionCheck]||unknown>'
+    - ^define currentVersion '<s@dWE_Version.yaml_key[version]>'
+    - ^if '%repoVersion%' == 'unknown' {
+      - run s@msgPrefixed instantly 'def:dWE|<&7>Unable to check for update! <&7><&o>%currentVersion%<&7> is installed!'
+      }
+      else if '%repoVersion%' == '%currentVersion%' {
+      - run s@msgPrefixed instantly 'def:dWE|<&7>You are up-to-date with version <&o>%repoVersion%<&7>!'
+      }
+      else if '%repoVersion%' > '%currentVersion%' {
+      - run s@msgPrefixed instantly 'def:dWE|<&7>Update from version <&o>%currentVersion%<&7> to <&o>%repoVersion%<&7>!'
+      }
+      else {
+      - run s@msgPrefixed instantly 'def:dWE|<&7>What happened? You are on version <&o>%currentVersion%<&7> and the repo says <&o>%repoVersion%<&7>!'
+      }
 #
 #  END dWorldEditor Events
 #--------------------------------------
@@ -2223,7 +2251,7 @@ dWE_Commands_Redo:
     - run s@msgPrefixed 'def:dWE|<&7><&o>Redo entry %entry% complete!'
 
 
-dWE_Commands_Schematic:
+dWE_Commands_Schem:
   type: command
   debug: false
   speed: 0
@@ -2234,7 +2262,7 @@ dWE_Commands_Schematic:
 
   data:
     description: 'Do what you need to with schematics'
-    usage: '/dwe schem <&lb>list/load/unload/save/delete/copy/rename/paste/bind<&rb> (-p)'
+    usage: '/dwe schem list, load, unload, save, delete, copy, rename, paste, bind (-p)'
     examples:
       - 'List the second page of schematics.'
       - '  <&e>/dwe schem list 2'
@@ -2256,6 +2284,14 @@ dWE_Commands_Schematic:
       - ' '
       - 'Rename the dirt_shack schematic to my_mansion'
       - '  <&e>/dwe schem rename dirt_shack my_mansion'
+      - ' '
+      - 'Paste the public schematic named tank at the location you are looking'
+      - '  <&e>/dwe schem paste tank -p -l'
+      - ' '
+      - 'Bind the schematic named barn to the tool in your hand'
+      - ' - The -d switch will prevent server lag when the tool is used'
+      - ' - The -a switch will ignore pasting air blocks'
+      - '  <&e>/dwe schem bind barn -d -a'
       - ' '
     args:
       - list
@@ -2703,7 +2739,26 @@ dWE_dRegionCheck:
     - determine true
 #
 #  END dWE_dRegionCheck
-#--------------------------------------
+#---------------------------------------
+#
+dWE_VersionCheck:
+  # Return the most recent repo version of dWE
+  type: procedure
+  debug: false
+
+  script:
+    - if !<server.has_flag[dWE.Version.Update]> && <queue.list> !contains 'q@dWE_VersionCheck' {
+      - run locally path:update id:dWE_VersionCheck
+      }
+    - determine '<server.flag[dWE.Version.Repo]||unknown>'
+
+  update:
+    - ~webget "http://www.mcmonkey.org/denizen/repo/version/<s@dWE_Version.yaml_key[id]>" save:page
+    - ^flag server "dWE.Version.Repo:<entry[page].result||<server.flag[dWE.Version.Repo]||unknown>>"
+    - ^flag server dWE.Version.Update d:1h
+#
+#  END dWE_VersionCheck
+#---------------------------------------
 #
 #  dWorldEditor Error Messages
 #
