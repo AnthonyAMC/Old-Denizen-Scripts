@@ -6,7 +6,7 @@
 #     A set of utilities to make displaying text pretty, uniform, and easy     #
 #                                                                              #
 #   Authors: |Anthony|                                                         #
-#   Version: 0.35                                                              #
+#   Version: 0.36                                                              #
 #   dScript Version: 0.9.8-DEV_b548                                            #
 #                                                                              #
 #   For bleeding-edge code, bug reports, code contributions, and feature       #
@@ -44,13 +44,63 @@ MSG_Version:
   type: version
   author: Anthony
   name: MessageConstructorLibrary
-  version: 0.35
+  version: 0.36
   description: A Library for Message Construction
   id: 90
 #
-#  END MCL Version
-#--------------------------------------
+#---------------------------------------
 #
+MCL_Events:
+  type: world
+  debug: false
+  events:
+    on system time hourly:
+#    - if !<yaml[MCL_config].read[config.stats.useStats]||true> {
+#      - queue clear
+#      }
+    - run locally updateCheck
+    - announce to_console '<&b>MCL<&co><&3> Sending usage metrics...'
+    - webget "http://morphanone.space/webizen.aspx/tracker?script=<s@MSG_Version.yaml_key[id]>&version=<s@MSG_Version.yaml_key[version]>&players=<server.list_online_players.size>&denizen_version=<server.denizen_version.replace[-SNAPSHOT].before[ ]>&jenkins_build=<server.denizen_version.after[(build ].before[)]>&bukkit_version=<server.bukkit_version>"
+
+    on server start:
+    - run delay:1t locally updateCheck
+
+  updateCheck:
+    - ^define repoVersion '<proc[MCL_VersionCheck]||unknown>'
+    - ^define currentVersion '<s@MSG_Version.yaml_key[version]>'
+    - ^if '%repoVersion%' == 'unknown' {
+      - run s@msgPrefixed instantly 'def:MCL|<&7>Unable to check for update! <&7><&o>%currentVersion%<&7> is installed!'
+      }
+      else if '%repoVersion%' == '%currentVersion%' {
+      - run s@msgPrefixed instantly 'def:MCL|<&7>You are up-to-date with version <&o>%repoVersion%<&7>!'
+      }
+      else if '%repoVersion%' > '%currentVersion%' {
+      - run s@msgPrefixed instantly 'def:MCL|<&7>Update from version <&o>%currentVersion%<&7> to <&o>%repoVersion%<&7>!'
+      }
+      else {
+      - run s@msgPrefixed instantly 'def:MCL|<&7>What happened? You are on version <&o>%currentVersion%<&7> and the repo says <&o>%repoVersion%<&7>!'
+      }
+#
+#---------------------------------------
+#
+MCL_VersionCheck:
+  # Return the most recent repo version of MCL
+  type: procedure
+  debug: false
+
+  script:
+    - if !<server.has_flag[MCL.Version.Update]> && <queue.list> !contains 'q@MCL_VersionCheck' {
+      - run locally path:update id:MCL_VersionCheck
+      }
+    - determine '<server.flag[MCL.Version.Repo]||unknown>'
+
+  update:
+    - ~webget "http://www.mcmonkey.org/denizen/repo/version/<s@MSG_Version.yaml_key[id]>" save:page
+    - ^flag server "MCL.Version.Repo:<entry[page].result||<server.flag[MCL.Version.Repo]||unknown>>"
+    - ^flag server MCL.Version.Update d:1h
+#
+#  END MCL_VersionCheck
+#---------------------------------------
 #
 ################################################################################
 #
@@ -456,7 +506,7 @@ lineWrap:
 #
 #  Pagination utility
 #
-#  - Retrun a list of entries for display on a specific page
+#  - Return a list of entries for display on a specific page
 #    Pagination simply takes a list of entries, and the desired page length and
 #    returns only the entries for the desired page number.
 #
