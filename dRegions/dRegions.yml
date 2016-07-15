@@ -4,8 +4,8 @@
 #
 #
 #   Authors: |Anthony|
-#   Version: 0.35
-#   dScript Version: 0.9.8-DEV_b607
+#   Version: 0.36
+#   dScript Version: 0.9.8-DEV_b611
 #
 #
 #   Dependencies:
@@ -129,7 +129,7 @@ dRegions_Version:
   type: version
   author: Anthony
   name: dRegions
-  version: 0.35
+  version: 0.36
   description: Denizen Region Management and Protection
   id: 23
 #
@@ -196,9 +196,18 @@ dRegions:
     - define readPath 'portal.create'
     - inject s@dRegions p:event_PreProc_Config-NoTarget
 
+    on system time hourly:
+    - wait 1t
+    - if !<yaml[dRegions_global_config].read[config.stats.useStats]||true> {
+      - queue clear
+      }
+    - run locally updateCheck
+    - announce to_console '<&b>dRegions<&co><&3> Sending usage metrics...'
+    - webget "http://morphanone.space/webizen.aspx/tracker?script=<s@dRegions_Version.yaml_key[id]>&version=<s@dRegions_Version.yaml_key[version]>&players=<server.list_online_players.size>&denizen_version=<server.denizen_version.replace[-SNAPSHOT].before[ ]>&jenkins_build=<server.denizen_version.after[(build ].before[)]>&bukkit_version=<server.bukkit_version>"
 
   start:
     - inject locally loadYaml
+    - run locally updateCheck
     - foreach '<server.list_flags[dRegions]>' {
       - flag server '%value%:!'
       }
@@ -224,6 +233,22 @@ dRegions:
       - queue q@dRegions_saveCache stop
       }
     - run locally saveCache delay:5s id:dRegions_saveCache
+
+  updateCheck:
+    - ^define repoVersion '<proc[dRegions_VersionCheck]||unknown>'
+    - ^define currentVersion '<s@dRegions_Version.yaml_key[version]>'
+    - ^if '%repoVersion%' == 'unknown' {
+      - run s@msgPrefixed instantly 'def:dRegions|<&7>Unable to check for update! <&7><&o>%currentVersion%<&7> is installed!'
+      }
+      else if '%repoVersion%' == '%currentVersion%' {
+      - run s@msgPrefixed instantly 'def:dRegions|<&7>You are up-to-date with version <&o>%repoVersion%<&7>!'
+      }
+      else if '%repoVersion%' > '%currentVersion%' {
+      - run s@msgPrefixed instantly 'def:dRegions|<&7>Update from version <&o>%currentVersion%<&7> to <&o>%repoVersion%<&7>!'
+      }
+      else {
+      - run s@msgPrefixed instantly 'def:dRegions|<&7>What happened? You are on version <&o>%currentVersion%<&7> and the repo says <&o>%repoVersion%<&7>!'
+      }
 
   loadYaml:
   # Reloads the yaml files and generates default files if they don't exist.
@@ -2596,6 +2621,27 @@ dRegions_LineWrap:
       else {
       - determine '<def[string].as_list>'
       }
+
+
+
+#
+#---------------------------------------
+#
+dRegions_VersionCheck:
+  # Return the most recent repo version of dRegions
+  type: procedure
+  debug: false
+
+  script:
+    - if !<server.has_flag[dRegions.Version.Update]> && <queue.list> !contains 'q@dRegions_VersionCheck' {
+      - run locally path:update id:dRegions_VersionCheck
+      }
+    - determine '<server.flag[dRegions.Version.Repo]||unknown>'
+
+  update:
+    - ~webget "http://www.mcmonkey.org/denizen/repo/version/<s@dRegions_Version.yaml_key[id]>" save:page
+    - ^flag server "dRegions.Version.Repo:<entry[page].result||<server.flag[dRegions.Version.Repo]||unknown>>"
+    - ^flag server dRegions.Version.Update d:1h
 #
 #  END other utilities
 #--------------------------------------
@@ -2741,8 +2787,11 @@ dRegions_Configurations:
   type: yaml data
 
   config:
-    version: 0.28
+    version: 0.29
     clear_cache_on_restart: false
+    stats:
+      About: This allows sending basic dRegions usage info to the Script Tracker system created by BlackCoyote. Doing this helps me focus my development efforts. Please enable webget in the Denizen config.yml file and here to participate.
+      useStats: true
     regions:
       enable: true
       invincibility-removes-mobs: false
