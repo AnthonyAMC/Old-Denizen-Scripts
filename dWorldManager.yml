@@ -4,7 +4,7 @@
 #                                                                              #
 #                                                                              #
 #   Authors: |Anthony|                                                         #
-#   Version: 0.22                                                              #
+#   Version: 0.23                                                              #
 #   dScript Version: 0.9.8-DEV-b554                                            #
 #                                                                              #
 #   For bleeding-edge code, bug reports, code contributions, and feature       #
@@ -64,7 +64,7 @@ dWM_Version:
   type: version
   author: Anthony
   name: dWorldManager
-  version: 0.22
+  version: 0.23
   description: Denizen World Manager
   id: 93
 #
@@ -81,6 +81,13 @@ dWM_Events:
   type: world
   debug: false
   events:
+    on system time hourly:
+#      - if !<yaml[dWM_config].read[config.stats.useStats]||true> {
+#        - queue clear
+#        }
+      - run locally updateCheck
+      - announce to_console '<&b>MCL<&co><&3> Sending usage metrics...'
+      - webget "http://morphanone.space/webizen.aspx/tracker?script=<s@dWM_Version.yaml_key[id]>&version=<s@dWM_Version.yaml_key[version]>&players=<server.list_online_players.size>&denizen_version=<server.denizen_version.replace[-SNAPSHOT].before[ ]>&jenkins_build=<server.denizen_version.after[(build ].before[)]>&bukkit_version=<server.bukkit_version>"
 
     on server prestart:
       - inject locally loadYaml
@@ -106,6 +113,9 @@ dWM_Events:
         }
       - run locally instantly load_command_list delay:1t
 
+    on server start:
+      - run delay:1t locally updateCheck
+
     on server shutdown:
       - yaml 'savefile:dWorldManager/config.yml' 'id:dWM_Config'
 
@@ -129,7 +139,6 @@ dWM_Events:
       - define loc '<c.location.before[,%w%].after[l@]>'
       - run instantly delay:1t s@dWM_SetLL 'def:bed|<player>|%w%|%loc%'
 
-
     on world loads:
       - if !<yaml[dWM_Config].list_keys[worlds].contains[<context.world.name>]||false> {
         - run s@msgPrefixed 'def:dWM|<&3>Adding <context.world.name> to the config file...'
@@ -145,7 +154,9 @@ dWM_Events:
         }
 
     on reload scripts:
-      - run locally instantly load_command_list delay:1t
+      - run locally instantly reloadYaml
+      - run delay:1t locally updateCheck
+      - run delay:1t locally instantly load_command_list
 
   load_command_list:
     - flag server 'dWM.Command_List:!'
@@ -174,6 +185,21 @@ dWM_Events:
       }
     - run s@msgPrefixed 'def:dWM|<&a>System config files Loaded!'
 
+  updateCheck:
+    - ^define repoVersion '<proc[dWM_VersionCheck]||unknown>'
+    - ^define currentVersion '<s@dWM_Version.yaml_key[version]>'
+    - ^if '%repoVersion%' == 'unknown' {
+      - run s@msgPrefixed instantly 'def:dWM|<&7>Unable to check for update! <&7><&o>%currentVersion%<&7> is installed!'
+      }
+      else if '%repoVersion%' == '%currentVersion%' {
+      - run s@msgPrefixed instantly 'def:dWM|<&7>You are up-to-date with version <&o>%repoVersion%<&7>!'
+      }
+      else if '%repoVersion%' > '%currentVersion%' {
+      - run s@msgPrefixed instantly 'def:dWM|<&7>Update from version <&o>%currentVersion%<&7> to <&o>%repoVersion%<&7>!'
+      }
+      else {
+      - run s@msgPrefixed instantly 'def:dWM|<&7>What happened? You are on version <&o>%currentVersion%<&7> and the repo says <&o>%repoVersion%<&7>!'
+      }
 
   reloadYaml:
   # A simpler reload
@@ -183,7 +209,6 @@ dWM_Events:
       }
     - yaml 'load:dWorldManager/config.yml' 'id:dWM_Config'
     - run s@msgPrefixed 'def:dWM|<&7><&o>System config files Loaded!'
-
 
   createConfigFile:
     - define readID 'dWM_Configurations'
@@ -1570,7 +1595,26 @@ dWM_Error:
 #
 #
 #  END dWM_Error
-#--------------------------------------
+#---------------------------------------
+#
+dWM_VersionCheck:
+  # Return the most recent repo version of dWM
+  type: procedure
+  debug: false
+
+  script:
+    - if !<server.has_flag[dWM.Version.Update]> && <queue.list> !contains 'q@dWM_VersionCheck' {
+      - run locally path:update id:dWM_VersionCheck
+      }
+    - determine '<server.flag[dWM.Version.Repo]||unknown>'
+
+  update:
+    - ~webget "http://www.mcmonkey.org/denizen/repo/version/<s@dWM_Version.yaml_key[id]>" save:page
+    - ^flag server "dWM.Version.Repo:<entry[page].result||<server.flag[dWM.Version.Repo]||unknown>>"
+    - ^flag server dWM.Version.Update d:1h
+#
+#  END dWM_VersionCheck
+#---------------------------------------
 #
 #  dWorldManager Enums
 #
