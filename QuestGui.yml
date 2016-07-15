@@ -5,7 +5,7 @@
 #
 #
 #   Authors: |Anthony|
-#   Version: 0.31
+#   Version: 0.32
 #   dScript Version: 0.9.8-DEV_b548
 #
 #
@@ -75,12 +75,31 @@ QuestGUI_Version:
   type: version
   author: Anthony
   name: QuestGUI
-  version: 0.31
+  version: 0.32
   description: QuestGUI - An advanced menu for displaying and managing player quest data
   id: 91
 #
 #  END QuestGUI Version
-#--------------------------------------
+#---------------------------------------
+#
+QuestGUI_VersionCheck:
+  # Return the most recent repo version of QuestGUI
+  type: procedure
+  debug: false
+
+  script:
+    - if !<server.has_flag[QuestGUI.Version.Update]> && <queue.list> !contains 'q@QuestGUI_VersionCheck' {
+      - run locally path:update id:QuestGUI_VersionCheck
+      }
+    - determine '<server.flag[QuestGUI.Version.Repo]||unknown>'
+
+  update:
+    - ~webget "http://www.mcmonkey.org/denizen/repo/version/<s@QuestGUI_Version.yaml_key[id]>" save:page
+    - ^flag server "QuestGUI.Version.Repo:<entry[page].result||<server.flag[QuestGUI.Version.Repo]||unknown>>"
+    - ^flag server QuestGUI.Version.Update d:1h
+#
+#  END QuestGUI_VersionCheck
+#---------------------------------------
 #
 #
 ################################################################################
@@ -223,12 +242,39 @@ QuestGUI_World:
       - determine passively cancelled
       - inject locally 'p:inventoryClick_<c.inventory.notable_name.split[_].get[2]>'
 
+    on system time hourly:
+#    - if !<yaml[QuestGUI_config].read[config.stats.useStats]||true> {
+#      - queue clear
+#      }
+    - run locally updateCheck
+    - announce to_console '<&b>QuestGUI<&co><&3> Sending usage metrics...'
+    - webget "http://morphanone.space/webizen.aspx/tracker?script=<s@QuestGUI_Version.yaml_key[id]>&version=<s@QuestGUI_Version.yaml_key[version]>&players=<server.list_online_players.size>&denizen_version=<server.denizen_version.replace[-SNAPSHOT].before[ ]>&jenkins_build=<server.denizen_version.after[(build ].before[)]>&bukkit_version=<server.bukkit_version>"
+
+    on server start:
+    - run delay:1t locally updateCheck
+
   resetAllQuests:
     - define player '%1%'
     - define quests '<s@QuestGUI_Config.yaml_key[quests].as_list>'
     - foreach '%quests%' {
       - define iconScript '<el@val[%value%_Icon].as_script||null>'
       - inject '%iconScript%' p:reset
+      }
+
+  updateCheck:
+    - ^define repoVersion '<proc[QuestGUI_VersionCheck]||unknown>'
+    - ^define currentVersion '<s@QuestGUI_Version.yaml_key[version]>'
+    - ^if '%repoVersion%' == 'unknown' {
+      - run s@msgPrefixed instantly 'def:QuestGUI|<&7>Unable to check for update! <&7><&o>%currentVersion%<&7> is installed!'
+      }
+      else if '%repoVersion%' == '%currentVersion%' {
+      - run s@msgPrefixed instantly 'def:QuestGUI|<&7>You are up-to-date with version <&o>%repoVersion%<&7>!'
+      }
+      else if '%repoVersion%' > '%currentVersion%' {
+      - run s@msgPrefixed instantly 'def:QuestGUI|<&7>Update from version <&o>%currentVersion%<&7> to <&o>%repoVersion%<&7>!'
+      }
+      else {
+      - run s@msgPrefixed instantly 'def:QuestGUI|<&7>What happened? You are on version <&o>%currentVersion%<&7> and the repo says <&o>%repoVersion%<&7>!'
       }
 #
 #  END QuestGUI Event Handlers
