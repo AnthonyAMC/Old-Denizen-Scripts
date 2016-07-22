@@ -1488,7 +1488,7 @@ dRegions_Flag_Enter-Via-Teleport:
   flag_takeGroup: true
   flag_regionDefault: allow/all
   flag_globalDefault: allow/all
-  flag_help: State flag controlling whether players will be able to teleport out of a region. Defaults to allow all. Takes the -g group switch.
+  flag_help: State flag controlling whether players will be able to teleport into a region. Defaults to allow all. Takes the -g group switch.
   msg_cancelled: 'You can not teleport to this region!'
 
 dRegions_Flag_Exit-Override:
@@ -1506,7 +1506,7 @@ dRegions_Flag_Exit-Override:
   flag_takeGroup: true
   flag_regionDefault: deny/all
   flag_globalDefault: deny/all
-  flag_help: Control who can override exit deny. Takes the -g group switch.
+  flag_help: State flag controling who can override exit deny. Defaults to deny all. Takes the -g group switch.
 
   event-allowed:
     - if !<def[player].has_flag[dRegions.%world%.%thisRegion%.exit-overRide]> {
@@ -1532,7 +1532,7 @@ dRegions_Flag_Entry-Override:
   flag_takeGroup: true
   flag_regionDefault: deny/all
   flag_globalDefault: deny/all
-  flag_help: Control who can override entry deny. Takes the -g group switch.
+  flag_help: State flag controling who can override entry deny. Defaults to deny all. Takes the -g group switch.
 
   event-allowed:
     - if !<def[player].has_flag[dRegions.%world%.%thisRegion%.entry-overRide]> {
