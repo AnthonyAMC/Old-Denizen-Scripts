@@ -7,7 +7,7 @@
 #                                                                              #
 #   Authors: |Anthony|                                                         #
 #   Version: 0.36                                                              #
-#   dScript Version: 0.9.8-DEV_b548                                            #
+#   dScript Version: 0.9.8-DEV_b611                                            #
 #                                                                              #
 #   For bleeding-edge code, bug reports, code contributions, and feature       #
 #    requests, visit the GitHub project:                                       #
@@ -55,12 +55,16 @@ MCL_Events:
   debug: false
   events:
     on system time hourly:
+    - wait 1t
 #    - if !<yaml[MCL_config].read[config.stats.useStats]||true> {
 #      - queue clear
 #      }
     - run locally updateCheck
-    - announce to_console '<&b>MCL<&co><&3> Sending usage metrics...'
-    - webget "http://morphanone.space/webizen.aspx/tracker?script=<s@MSG_Version.yaml_key[id]>&version=<s@MSG_Version.yaml_key[version]>&players=<server.list_online_players.size>&denizen_version=<server.denizen_version.replace[-SNAPSHOT].before[ ]>&jenkins_build=<server.denizen_version.after[(build ].before[)]>&bukkit_version=<server.bukkit_version>"
+    - run s@msgPrefixed instantly 'def:MCL|<&3>Sending usage metrics...'
+    - ~webget "http://morphanone.space/webizen.aspx/tracker?script=<s@MSG_Version.yaml_key[id]>&version=<s@MSG_Version.yaml_key[version]>&players=<server.list_online_players.size>&denizen_version=<server.denizen_version.replace[-SNAPSHOT].before[ ]>&jenkins_build=<server.denizen_version.after[(build ].before[)]>&bukkit_version=<server.bukkit_version>" 'save:send'
+    - if !<entry[send].result.starts_with[SUCCESS]||false> {
+      - run s@msgPrefixed instantly 'def:MCL|<&c>Metrics failed!'
+      }
 
     on server start:
     - run delay:1t locally updateCheck
@@ -71,13 +75,10 @@ MCL_Events:
     - ^if '%repoVersion%' == 'unknown' {
       - run s@msgPrefixed instantly 'def:MCL|<&7>Unable to check for update! <&7><&o>%currentVersion%<&7> is installed!'
       }
-      else if '%repoVersion%' == '%currentVersion%' {
-      - run s@msgPrefixed instantly 'def:MCL|<&7>You are up-to-date with version <&o>%repoVersion%<&7>!'
-      }
       else if '%repoVersion%' > '%currentVersion%' {
       - run s@msgPrefixed instantly 'def:MCL|<&7>Update from version <&o>%currentVersion%<&7> to <&o>%repoVersion%<&7>!'
       }
-      else {
+      else if '%repoVersion%' != '%currentVersion%' {
       - run s@msgPrefixed instantly 'def:MCL|<&7>What happened? You are on version <&o>%currentVersion%<&7> and the repo says <&o>%repoVersion%<&7>!'
       }
 #
@@ -137,7 +138,7 @@ msgPrefixed:
     - ^define click '/%title% help'
     - ^define button '"text":"%text%","clickEvent":{"action":"run_command","value":"%click%"},"hoverEvent":{"action":"show_item","value":"%hover%"}'
     - ^define spacer '"text":"  "'
-    - ^foreach '<proc[lineWrap].context[<parse:<def[msg]>>|58]>' {
+    - ^foreach '<proc[lineWrap].context[<parse:<def[msg]>>|<el@val[70].sub[<def[text].length>]>]>' {
       - ^execute as_server 'tellraw <player.name> {"text":"","extra":[{%button%},{%spacer%},{"text":"<def[value].unescaped>"}]}'
       }
     - mark 'end'
