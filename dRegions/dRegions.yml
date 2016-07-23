@@ -148,7 +148,7 @@ dRegions:
     - foreach <server.list_worlds.parse[name.to_lowercase]> {
       - if %globalCache% || '<yaml[dRegions_%value%_config].read[config.clear_cache_on_restart]>' {
         - if <server.has_file[dRegions/worlds/%value%/cache.yml]> {
-          - announce to_console "<&b>dRegions<&co><&3> Removing %value% cache.yml"
+          - run instantly s@msgPrefixed 'dRegions|<&3>Removing %value% cache.yml'
           - adjust server 'delete_file:dRegions/worlds/%value%/cache.yml'
           }
         }
@@ -202,8 +202,11 @@ dRegions:
       - queue clear
       }
     - run locally updateCheck
-    - announce to_console '<&b>dRegions<&co><&3> Sending usage metrics...'
-    - webget "http://morphanone.space/webizen.aspx/tracker?script=<s@dRegions_Version.yaml_key[id]>&version=<s@dRegions_Version.yaml_key[version]>&players=<server.list_online_players.size>&denizen_version=<server.denizen_version.replace[-SNAPSHOT].before[ ]>&jenkins_build=<server.denizen_version.after[(build ].before[)]>&bukkit_version=<server.bukkit_version>"
+    - run s@msgPrefixed 'def:dRegions|<&3>Sending usage metrics...'
+    - ~webget "http://morphanone.space/webizen.aspx/tracker?script=<s@dRegions_Version.yaml_key[id]>&version=<s@dRegions_Version.yaml_key[version]>&players=<server.list_online_players.size>&denizen_version=<server.denizen_version.replace[-SNAPSHOT].before[ ]>&jenkins_build=<server.denizen_version.after[(build ].before[)]>&bukkit_version=<server.bukkit_version>" 'save:send'
+    - if !<entry[send].result.starts_with[SUCCESS]||false> {
+      - run s@msgPrefixed instantly 'def:dRegions|<&c>Metrics failed!'
+      }
 
   start:
     - inject locally loadYaml
@@ -240,20 +243,17 @@ dRegions:
     - ^if '%repoVersion%' == 'unknown' {
       - run s@msgPrefixed instantly 'def:dRegions|<&7>Unable to check for update! <&7><&o>%currentVersion%<&7> is installed!'
       }
-      else if '%repoVersion%' == '%currentVersion%' {
-      - run s@msgPrefixed instantly 'def:dRegions|<&7>You are up-to-date with version <&o>%repoVersion%<&7>!'
-      }
       else if '%repoVersion%' > '%currentVersion%' {
       - run s@msgPrefixed instantly 'def:dRegions|<&7>Update from version <&o>%currentVersion%<&7> to <&o>%repoVersion%<&7>!'
       }
-      else {
+      else if '%repoVersion%' != '%currentVersion%' {
       - run s@msgPrefixed instantly 'def:dRegions|<&7>What happened? You are on version <&o>%currentVersion%<&7> and the repo says <&o>%repoVersion%<&7>!'
       }
 
   loadYaml:
   # Reloads the yaml files and generates default files if they don't exist.
   # Rewrites config files that do not match internal version number!
-    - announce "<&b>dRegions<&co><&3> Loading system config files..." to_console
+    - run s@msgPrefixed instantly 'def:dRegions|<&3>Loading system config files...'
     - define version '<s@dRegions_Configurations.yaml_key[config.version]>'
     - define world 'global'
     - define file 'config'
@@ -270,12 +270,12 @@ dRegions:
         - flag <player> ConfigFileGeneratorNotify:true
         - inject locally createConfigFile instantly
         - flag <player> ConfigFileGeneratorNotify:!
-        - run s@msgPrefixed player:<player> 'def:dRegions|<&7><&o><t[%isUpdate%]:Updated||Created> <&f><&o>%world%<&7><&o> config file!'
+        - run s@msgPrefixed instantly 'def:dRegions|<&7><&o><t[%isUpdate%]:Updated||Created> <&f><&o>%world%<&7><&o> config file!'
         }
         else {
         - inject locally createConfigFile
         }
-      - announce "<&b>dRegions<&co> <&7><&o><t[%isUpdate%]:Updated||Created> <&f><&o>%world%<&7><&o> config file!" to_console
+      - run s@msgPrefixed instantly 'def:dRegions|<&7><&o><t[%isUpdate%]:Updated||Created> <&f><&o>%world%<&7><&o> config file!'
       }
     - if <yaml.list.contains[dRegions_global_config]> {
       - yaml unload 'id:dRegions_global_config'
@@ -300,12 +300,12 @@ dRegions:
             - flag <player> ConfigFileGeneratorNotify:true
             - inject locally create%this%File
             - flag <player> ConfigFileGeneratorNotify:!
-            - run s@msgPrefixed player:<player> 'def:dRegions|<&7><&o><t[%isUpdate%]:Updated||Created> <&f><&o>%world%<&7><&o> %this% file!'
+            - run s@msgPrefixed 'def:dRegions|<&7><&o><t[%isUpdate%]:Updated||Created> <&f><&o>%world%<&7><&o> %this% file!'
             }
             else {
             - inject locally create%this%File
             }
-          - announce "<&b>dRegions<&co> <&7><&o>Created <&f><&o>%world%<&7><&o> %this% file!" to_console
+          - run s@msgPrefixed instantly 'def:dRegions|<&7><&o>Created <&f><&o>%world%<&7><&o> %this% file!'
           }
         - if <yaml.list.contains[dRegions_%world%_%this%]> {
           - yaml unload 'id:dRegions_%world%_%this%'
@@ -313,12 +313,11 @@ dRegions:
         - yaml 'load:dRegions/worlds/%world%/%this%.yml' 'id:dRegions_%world%_%this%'
         }
       }
-    - announce "<&b>dRegions<&co><&a> System config files Loaded!" to_console
+    - run s@msgPrefixed instantly 'def:dRegions|<&a>System config files Loaded!'
 
   reloadYaml:
   # A simpler reload
-    - announce "<&b>dRegions<&co><&3> Reloading system config files..." to_console
-    - run s@msgPrefixed player:<player> 'def:dRegions|<&7><&o>Reloading system config files...'
+    - run s@msgPrefixed instantly 'def:dRegions|<&7><&o>Reloading system config files...'
     - if <yaml.list.contains[dRegions_global_config]> {
       - yaml unload 'id:dRegions_global_config'
       }
@@ -332,17 +331,13 @@ dRegions:
         - yaml 'load:dRegions/worlds/%world%/%value%.yml' 'id:dRegions_%world%_%value%'
         }
       }
-    - announce "<&b>dRegions<&co><&a> System config files reloaded!" to_console
-    - run s@msgPrefixed player:<player> 'def:dRegions|<&7><&o>System config files reloaded!'
+    - run s@msgPrefixed instantly 'def:dRegions|<&7><&o>System config files reloaded!'
 
   createConfigFile:
     - define readID 'dRegions_Configurations'
     - define writeID 'dRegions_%world%_config'
     - if !<yaml.list.contains[%readID%]> {
       - yaml fix_formatting 'load:<script.relative_filename>' 'id:%readID%'
-      }
-    - if !<yaml.list.contains[%readID%]> {
-      - announce to_console "Loaded <script.relative_filename>"
       }
     - yaml create 'id:%writeID%'
     - define readPath '%readID%.config'
