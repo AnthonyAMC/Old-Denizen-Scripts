@@ -218,7 +218,7 @@ dWE_Events:
   debug: false
   events:
     on player clicks block:
-      - if !<c.item.scriptname.starts_with[dWE_]||> {
+      - if !<c.item.scriptname.starts_with[dWE_]||false> {
         - queue clear
         }
       - determine passively CANCELLED
@@ -236,8 +236,11 @@ dWE_Events:
 #      - queue clear
 #      }
     - run locally updateCheck
-    - announce to_console '<&b>dWE<&co><&3> Sending usage metrics...'
-    - webget "http://morphanone.space/webizen.aspx/tracker?script=<s@dWE_Version.yaml_key[id]>&version=<s@dWE_Version.yaml_key[version]>&players=<server.list_online_players.size>&denizen_version=<server.denizen_version.replace[-SNAPSHOT].before[ ]>&jenkins_build=<server.denizen_version.after[(build ].before[)]>&bukkit_version=<server.bukkit_version>"
+    - run s@msgPrefixed instantly 'def:dWE|<&3>Sending usage metrics...'
+    - ~webget "http://morphanone.space/webizen.aspx/tracker?script=<s@dWE_Version.yaml_key[id]>&version=<s@dWE_Version.yaml_key[version]>&players=<server.list_online_players.size>&denizen_version=<server.denizen_version.replace[-SNAPSHOT].before[ ]>&jenkins_build=<server.denizen_version.after[(build ].before[)]>&bukkit_version=<server.bukkit_version>" 'save:send'
+    - if !<entry[send].result.starts_with[SUCCESS]||false> {
+      - run s@msgPrefixed instantly 'def:dWE|<&c>Metrics failed!'
+      }
 
   load:
     - run locally updateCheck
@@ -250,13 +253,10 @@ dWE_Events:
     - ^if '%repoVersion%' == 'unknown' {
       - run s@msgPrefixed instantly 'def:dWE|<&7>Unable to check for update! <&7><&o>%currentVersion%<&7> is installed!'
       }
-      else if '%repoVersion%' == '%currentVersion%' {
-      - run s@msgPrefixed instantly 'def:dWE|<&7>You are up-to-date with version <&o>%repoVersion%<&7>!'
-      }
       else if '%repoVersion%' > '%currentVersion%' {
       - run s@msgPrefixed instantly 'def:dWE|<&7>Update from version <&o>%currentVersion%<&7> to <&o>%repoVersion%<&7>!'
       }
-      else {
+      else if '%repoVersion%' != '%currentVersion%' {
       - run s@msgPrefixed instantly 'def:dWE|<&7>What happened? You are on version <&o>%currentVersion%<&7> and the repo says <&o>%repoVersion%<&7>!'
       }
 #
@@ -405,7 +405,7 @@ dWE_Tools:
   events:
 
     on player clicks:
-      - if !<c.item.has_nbt[dWE_Tool]> {
+      - if !<c.item.has_nbt[dWE_Tool]||false> {
         - queue clear
         }
       - determine passively CANCELLED
