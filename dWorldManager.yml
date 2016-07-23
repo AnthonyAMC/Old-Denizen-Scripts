@@ -5,7 +5,7 @@
 #                                                                              #
 #   Authors: |Anthony|                                                         #
 #   Version: 0.23                                                              #
-#   dScript Version: 0.9.8-DEV-b554                                            #
+#   dScript Version: 0.9.8-DEV-b611                                            #
 #                                                                              #
 #   For bleeding-edge code, bug reports, code contributions, and feature       #
 #    requests, visit the GitHub project:                                       #
@@ -82,12 +82,16 @@ dWM_Events:
   debug: false
   events:
     on system time hourly:
+      - wait 1t
 #      - if !<yaml[dWM_config].read[config.stats.useStats]||true> {
 #        - queue clear
 #        }
       - run locally updateCheck
-      - announce to_console '<&b>MCL<&co><&3> Sending usage metrics...'
-      - webget "http://morphanone.space/webizen.aspx/tracker?script=<s@dWM_Version.yaml_key[id]>&version=<s@dWM_Version.yaml_key[version]>&players=<server.list_online_players.size>&denizen_version=<server.denizen_version.replace[-SNAPSHOT].before[ ]>&jenkins_build=<server.denizen_version.after[(build ].before[)]>&bukkit_version=<server.bukkit_version>"
+      - run s@msgPrefixed 'def:dWM|<&3>Sending usage metrics...'
+      - ~webget "http://morphanone.space/webizen.aspx/tracker?script=<s@dWM_Version.yaml_key[id]>&version=<s@dWM_Version.yaml_key[version]>&players=<server.list_online_players.size>&denizen_version=<server.denizen_version.replace[-SNAPSHOT].before[ ]>&jenkins_build=<server.denizen_version.after[(build ].before[)]>&bukkit_version=<server.bukkit_version>" 'save:send'
+      - if !<entry[send].result.starts_with[SUCCESS]||false> {
+        - run s@msgPrefixed instantly 'def:dWM|<&c>Metrics failed!'
+        }
 
     on server prestart:
       - inject locally loadYaml
@@ -111,10 +115,10 @@ dWM_Events:
           - yaml 'savefile:dWorldManager/config.yml' 'id:dWM_Config'
           }
         }
-      - run locally instantly load_command_list delay:1t
 
     on server start:
       - run delay:1t locally updateCheck
+      - run locally instantly load_command_list delay:1t
 
     on server shutdown:
       - yaml 'savefile:dWorldManager/config.yml' 'id:dWM_Config'
@@ -153,7 +157,7 @@ dWM_Events:
         - yaml 'savefile:dWorldManager/config.yml' 'id:dWM_Config'
         }
 
-    on reload scripts:
+    on script reload:
       - run locally instantly reloadYaml
       - run delay:1t locally updateCheck
       - run delay:1t locally instantly load_command_list
@@ -191,13 +195,10 @@ dWM_Events:
     - ^if '%repoVersion%' == 'unknown' {
       - run s@msgPrefixed instantly 'def:dWM|<&7>Unable to check for update! <&7><&o>%currentVersion%<&7> is installed!'
       }
-      else if '%repoVersion%' == '%currentVersion%' {
-      - run s@msgPrefixed instantly 'def:dWM|<&7>You are up-to-date with version <&o>%repoVersion%<&7>!'
-      }
       else if '%repoVersion%' > '%currentVersion%' {
       - run s@msgPrefixed instantly 'def:dWM|<&7>Update from version <&o>%currentVersion%<&7> to <&o>%repoVersion%<&7>!'
       }
-      else {
+      else if '%repoVersion%' != '%currentVersion%' {
       - run s@msgPrefixed instantly 'def:dWM|<&7>What happened? You are on version <&o>%currentVersion%<&7> and the repo says <&o>%repoVersion%<&7>!'
       }
 
