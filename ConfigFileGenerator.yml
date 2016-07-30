@@ -8,7 +8,7 @@
 #                                                                              |
 #   Author: |Anthony|                                                          |
 #   Version: 0.5                                                               |
-#   dScript Version: 0.9.8-DEV-575                                             |
+#   dScript Version: 0.9.8-DEV-b611                                            |
 #                                                                              |
 # ---------------------------------------------------------------------------- #
 #                                                                              |
@@ -43,6 +43,10 @@
 #     - run s@ConfigFileGenerator def:%readID%|%writeID%|%readPath%|%writePath%|%dryrun%|%verbose%|%forcewrite% instantly
 #
 #                                                                              |
+#   Has my work helped you in some way? Show your support by clicking the      |
+#    Like button.                                                              |
+#   Feeling generous? Get me a coffee :D                                       |
+#    https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=NPXKHCNMTGSUG
 #                                                                              |
 #--- Example:                                                                  |
 #                                                                              |
@@ -366,12 +370,16 @@ ConfigFileGeneratorCommand:
   events:
 
     on system time hourly:
+    - wait 1t
 #    - if !<yaml[ConfigFileGenerator_config].read[config.stats.useStats]||true> {
 #      - queue clear
 #      }
-    - run locally updateCheck
-    - announce to_console '<&b>ConfigFileGenerator<&co><&3> Sending usage metrics...'
-    - webget "http://morphanone.space/webizen.aspx/tracker?script=<s@ConfigFileGenerator_Version.yaml_key[id]>&version=<s@ConfigFileGenerator_Version.yaml_key[version]>&players=<server.list_online_players.size>&denizen_version=<server.denizen_version.replace[-SNAPSHOT].before[ ]>&jenkins_build=<server.denizen_version.after[(build ].before[)]>&bukkit_version=<server.bukkit_version>"
+    - if <queue.list> !contains 'q@ConfigFileGenerator_UpdateCheck' {
+      - run locally delay:1t updateCheck 'id:ConfigFileGenerator_UpdateCheck'
+      }
+    - if <queue.list> !contains 'q@ConfigFileGenerator_SendMetrics' {
+      - run locally delay:1t sendMetrics 'id:ConfigFileGenerator_SendMetrics'
+      }
 
     on cfg command:
     - if !<player.has_permission[denizen.cfg]||false> {
@@ -385,41 +393,30 @@ ConfigFileGeneratorCommand:
     - run s@ConfigFileGeneratorHelper def:ConfigFileGeneratorTest|Configurations|%dryrun%|%verbose%|%forcewrite% instantly
     - flag <player> ConfigFileGeneratorNotify:!
 
+  sendMetrics:
+#    - run s@msgPrefixed instantly 'def:ConfigFileGenerator|<&3>Sending usage metrics...'
+    - ~webget "http://morphanone.space/webizen.aspx/tracker?script=<s@ConfigFileGenerator_Version.yaml_key[id]>&version=<s@ConfigFileGenerator_Version.yaml_key[version]>&players=<server.list_online_players.size>&denizen_version=<server.denizen_version.replace[-SNAPSHOT].before[ ]>&jenkins_build=<server.denizen_version.after[(build ].before[)]>&bukkit_version=<server.bukkit_version>" 'save:send'
+    - if !<entry[send].result.starts_with[SUCCESS]||false> {
+      - run s@msgPrefixed instantly 'def:ConfigFileGenerator|<&c>Metrics failed!'
+      }
+
   updateCheck:
-    - ^define repoVersion '<proc[ConfigFileGenerator_VersionCheck]||unknown>'
+    - ^if !<server.has_flag[ConfigFileGenerator.Version.Repo]> {
+      - ~webget "http://www.mcmonkey.org/denizen/repo/version/<s@ConfigFileGenerator_Version.yaml_key[id]>" save:page
+      - ^flag server "ConfigFileGenerator.Version.Repo:<entry[page].result||<server.flag[ConfigFileGenerator.Version.Repo]||unknown>>" d:1h
+      }
+    - ^define repoVersion '<server.flag[ConfigFileGenerator.Version.Repo]||unknown>'
     - ^define currentVersion '<s@ConfigFileGenerator_Version.yaml_key[version]>'
     - ^if '%repoVersion%' == 'unknown' {
       - run s@msgPrefixed instantly 'def:ConfigFileGenerator|<&7>Unable to check for update! <&7><&o>%currentVersion%<&7> is installed!'
       }
-      else if '%repoVersion%' == '%currentVersion%' {
-      - run s@msgPrefixed instantly 'def:ConfigFileGenerator|<&7>You are up-to-date with version <&o>%repoVersion%<&7>!'
-      }
       else if '%repoVersion%' > '%currentVersion%' {
       - run s@msgPrefixed instantly 'def:ConfigFileGenerator|<&7>Update from version <&o>%currentVersion%<&7> to <&o>%repoVersion%<&7>!'
       }
-      else {
+      else if '%repoVersion%' != '%currentVersion%' {
       - run s@msgPrefixed instantly 'def:ConfigFileGenerator|<&7>What happened? You are on version <&o>%currentVersion%<&7> and the repo says <&o>%repoVersion%<&7>!'
       }
 #
-#---------------------------------------
-#
-ConfigFileGenerator_VersionCheck:
-  # Return the most recent repo version of ConfigFileGenerator
-  type: procedure
-  debug: false
-
-  script:
-    - if !<server.has_flag[ConfigFileGenerator.Version.Update]> && <queue.list> !contains 'q@ConfigFileGenerator_VersionCheck' {
-      - run locally path:update id:ConfigFileGenerator_VersionCheck
-      }
-    - determine '<server.flag[ConfigFileGenerator.Version.Repo]||unknown>'
-
-  update:
-    - ~webget "http://www.mcmonkey.org/denizen/repo/version/<s@ConfigFileGenerator_Version.yaml_key[id]>" save:page
-    - ^flag server "ConfigFileGenerator.Version.Repo:<entry[page].result||<server.flag[ConfigFileGenerator.Version.Repo]||unknown>>"
-    - ^flag server ConfigFileGenerator.Version.Update d:1h
-#
-#  END ConfigFileGenerator_VersionCheck
 #---------------------------------------
 #
 #
