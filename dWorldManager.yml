@@ -82,15 +82,14 @@ dWM_Events:
   debug: false
   events:
     on system time hourly:
-      - wait 1t
 #      - if !<yaml[dWM_config].read[config.stats.useStats]||true> {
 #        - queue clear
 #        }
-      - run locally updateCheck
-      - run s@msgPrefixed 'def:dWM|<&3>Sending usage metrics...'
-      - ~webget "http://morphanone.space/webizen.aspx/tracker?script=<s@dWM_Version.yaml_key[id]>&version=<s@dWM_Version.yaml_key[version]>&players=<server.list_online_players.size>&denizen_version=<server.denizen_version.replace[-SNAPSHOT].before[ ]>&jenkins_build=<server.denizen_version.after[(build ].before[)]>&bukkit_version=<server.bukkit_version>" 'save:send'
-      - if !<entry[send].result.starts_with[SUCCESS]||false> {
-        - run s@msgPrefixed instantly 'def:dWM|<&c>Metrics failed!'
+      - if <queue.list> !contains 'q@dWM_UpdateCheck' {
+        - run locally delay:1t updateCheck 'id:dWM_UpdateCheck'
+        }
+      - if <queue.list> !contains 'q@dWM_SendMetrics' {
+        - run locally delay:1t sendMetrics 'id:dWM_SendMetrics'
         }
 
     on server prestart:
@@ -117,7 +116,9 @@ dWM_Events:
         }
 
     on server start:
-      - run delay:1t locally updateCheck
+    - if <queue.list> !contains 'q@dWM_UpdateCheck' {
+      - run locally delay:1t updateCheck 'id:dWM_UpdateCheck'
+      }
       - run locally instantly load_command_list delay:1t
 
     on server shutdown:
@@ -159,7 +160,9 @@ dWM_Events:
 
     on script reload:
       - run locally instantly reloadYaml
-      - run delay:1t locally updateCheck
+      - if <queue.list> !contains 'q@dWM_UpdateCheck' {
+        - run locally delay:1t updateCheck 'id:dWM_UpdateCheck'
+        }
       - run delay:1t locally instantly load_command_list
 
   load_command_list:
@@ -190,7 +193,11 @@ dWM_Events:
     - run s@msgPrefixed 'def:dWM|<&a>System config files Loaded!'
 
   updateCheck:
-    - ^define repoVersion '<proc[dWM_VersionCheck]||unknown>'
+    - ^if !<server.has_flag[dWM.Version.Repo]> {
+      - ~webget "http://www.mcmonkey.org/denizen/repo/version/<s@dWM_Version.yaml_key[id]>" save:page
+      - ^flag server "dWM.Version.Repo:<entry[page].result||<server.flag[dWM.Version.Repo]||unknown>>" d:1h
+      }
+    - ^define repoVersion '<server.flag[dWM.Version.Repo]||unknown>'
     - ^define currentVersion '<s@dWM_Version.yaml_key[version]>'
     - ^if '%repoVersion%' == 'unknown' {
       - run s@msgPrefixed instantly 'def:dWM|<&7>Unable to check for update! <&7><&o>%currentVersion%<&7> is installed!'
@@ -200,6 +207,13 @@ dWM_Events:
       }
       else if '%repoVersion%' != '%currentVersion%' {
       - run s@msgPrefixed instantly 'def:dWM|<&7>What happened? You are on version <&o>%currentVersion%<&7> and the repo says <&o>%repoVersion%<&7>!'
+      }
+
+  sendMetrics:
+#    - run s@msgPrefixed 'def:dWM|<&3>Sending usage metrics...'
+    - ~webget "http://morphanone.space/webizen.aspx/tracker?script=<s@dWM_Version.yaml_key[id]>&version=<s@dWM_Version.yaml_key[version]>&players=<server.list_online_players.size>&denizen_version=<server.denizen_version.replace[-SNAPSHOT].before[ ]>&jenkins_build=<server.denizen_version.after[(build ].before[)]>&bukkit_version=<server.bukkit_version>" 'save:send'
+    - if !<entry[send].result.starts_with[SUCCESS]||false> {
+      - run s@msgPrefixed instantly 'def:dWM|<&c>Metrics failed!'
       }
 
   reloadYaml:
@@ -429,7 +443,7 @@ dWM_Commands_About:
       - ' dWM is fairly feature rich, providing all the familiar commands you would expect from a world manager.'
       - ' '
       - ' Future development will bring more advanced world configuration options. Maybe dWM will even provide world instancing support if that sort of thing is useful to people.'
-    usage: '/dwe about'
+    usage: '/dwm about'
     examples:
       - 'You<&sq>ve got to be kidding me...'
       - '  <proc[msgUrl].context[<&e>/dwm|data.whicdn.com/images/129295787/large.jpg|If you click this...<&nl>I just don<&sq>t even know...]> <proc[msgUrl].context[<&e>about|data.whicdn.com/images/129295787/large.jpg|If you click this...<&nl>I just don<&sq>t even know...]>'
@@ -463,7 +477,7 @@ dWM_Commands_List:
       - ' Green worlds are loaded'
       - ' Gray worlds are unloaded'
       - ' Dark gray worlds are not registered'
-    usage: '/dwe list'
+    usage: '/dwm list'
     examples:
       - 'You<&sq>ve got to be kidding me...'
       - '  <proc[msgUrl].context[<&e>/dwm|data.whicdn.com/images/129295787/large.jpg|If you click this...<&nl>I just don<&sq>t even know...]> <proc[msgUrl].context[<&e>list|data.whicdn.com/images/129295787/large.jpg|If you click this...<&nl>I just don<&sq>t even know...]>'
@@ -1596,26 +1610,6 @@ dWM_Error:
 #
 #
 #  END dWM_Error
-#---------------------------------------
-#
-dWM_VersionCheck:
-  # Return the most recent repo version of dWM
-  type: procedure
-  debug: false
-
-  script:
-    - if !<server.has_flag[dWM.Version.Update]> && <queue.list> !contains 'q@dWM_VersionCheck' {
-      - run locally path:update id:dWM_VersionCheck
-      }
-    - determine '<server.flag[dWM.Version.Repo]||unknown>'
-
-  update:
-    - ~webget "http://www.mcmonkey.org/denizen/repo/version/<s@dWM_Version.yaml_key[id]>" save:page
-    - ^flag server "dWM.Version.Repo:<entry[page].result||<server.flag[dWM.Version.Repo]||unknown>>"
-    - ^flag server dWM.Version.Update d:1h
-#
-#  END dWM_VersionCheck
-#---------------------------------------
 #
 #  dWorldManager Enums
 #
