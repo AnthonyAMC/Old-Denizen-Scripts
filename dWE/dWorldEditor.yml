@@ -28,9 +28,6 @@
 #    - define pos2 '<player.flag[dWEWand].as_list.get[2]||null>'
 #    - define cuboid 'cu@%pos1%|%pos2%'
 #
-#  * This is a BETA release of dWE and should only be used for the selection
-#    wand which is required by dRegions.
-#
 #   Has my work helped you in some way? Show your support by clicking the
 #    Like button.
 #   Feeling generous? Get me a coffee :D
@@ -141,7 +138,7 @@
 #                                             dwe.undo
 #
 #  /dwe schem [list/load/unload/save/delete   dwe.admin               Manage and use schematics.
-#             /copy/rename/bind/paste] (-p)              dwe.schematic
+#             /copy/rename/bind/paste] (-p)   dwe.schematic
 #
 #-------------------------------------------------------------------------------
 #
@@ -231,24 +228,29 @@ dWE_Events:
       - run locally load delay:1t
 
     on system time hourly:
-    - wait 1t
 #    - if !<yaml[dWE_config].read[config.stats.useStats]||true> {
 #      - queue clear
 #      }
-    - run locally updateCheck
-    - run s@msgPrefixed instantly 'def:dWE|<&3>Sending usage metrics...'
-    - ~webget "http://morphanone.space/webizen.aspx/tracker?script=<s@dWE_Version.yaml_key[id]>&version=<s@dWE_Version.yaml_key[version]>&players=<server.list_online_players.size>&denizen_version=<server.denizen_version.replace[-SNAPSHOT].before[ ]>&jenkins_build=<server.denizen_version.after[(build ].before[)]>&bukkit_version=<server.bukkit_version>" 'save:send'
-    - if !<entry[send].result.starts_with[SUCCESS]||false> {
-      - run s@msgPrefixed instantly 'def:dWE|<&c>Metrics failed!'
+    - if <queue.list> !contains 'q@dWE_UpdateCheck' {
+      - run locally delay:1t updateCheck 'id:dWE_UpdateCheck'
+      }
+    - if <queue.list> !contains 'q@dWE_SendMetrics' {
+      - run locally delay:1t sendMetrics 'id:dWE_SendMetrics'
       }
 
   load:
-    - run locally updateCheck
+    - if <queue.list> !contains 'q@dWE_UpdateCheck' {
+      - run locally delay:1t updateCheck 'id:dWE_UpdateCheck'
+      }
     - flag server 'dWE.Command_List:!'
     - flag server 'dWE.Command_List:|:<server.list_scripts.filter[starts_with[s@dWE_Commands_]].parse[name].parse[after[dWE_Commands_]].alphanumeric.to_lowercase||li@>'
 
   updateCheck:
-    - ^define repoVersion '<proc[dWE_VersionCheck]||unknown>'
+    - ^if !<server.has_flag[dWE.Version.Repo]> {
+      - ~webget "http://www.mcmonkey.org/denizen/repo/version/<s@dWE_Version.yaml_key[id]>" save:page
+      - ^flag server "dWE.Version.Repo:<entry[page].result||<server.flag[dWE.Version.Repo]||unknown>>" d:1h
+      }
+    - ^define repoVersion '<server.flag[dWE.Version.Repo]||unknown>'
     - ^define currentVersion '<s@dWE_Version.yaml_key[version]>'
     - ^if '%repoVersion%' == 'unknown' {
       - run s@msgPrefixed instantly 'def:dWE|<&7>Unable to check for update! <&7><&o>%currentVersion%<&7> is installed!'
@@ -258,6 +260,13 @@ dWE_Events:
       }
       else if '%repoVersion%' != '%currentVersion%' {
       - run s@msgPrefixed instantly 'def:dWE|<&7>What happened? You are on version <&o>%currentVersion%<&7> and the repo says <&o>%repoVersion%<&7>!'
+      }
+
+  sendMetrics:
+#    - run s@msgPrefixed instantly 'def:dWE|<&3>Sending usage metrics...'
+    - ~webget "http://morphanone.space/webizen.aspx/tracker?script=<s@dWE_Version.yaml_key[id]>&version=<s@dWE_Version.yaml_key[version]>&players=<server.list_online_players.size>&denizen_version=<server.denizen_version.replace[-SNAPSHOT].before[ ]>&jenkins_build=<server.denizen_version.after[(build ].before[)]>&bukkit_version=<server.bukkit_version>" 'save:send'
+    - if !<entry[send].result.starts_with[SUCCESS]||false> {
+      - run s@msgPrefixed instantly 'def:dWE|<&c>Metrics failed!'
       }
 #
 #  END dWorldEditor Events
@@ -2741,25 +2750,6 @@ dWE_dRegionCheck:
 #  END dWE_dRegionCheck
 #---------------------------------------
 #
-dWE_VersionCheck:
-  # Return the most recent repo version of dWE
-  type: procedure
-  debug: false
-
-  script:
-    - if !<server.has_flag[dWE.Version.Update]> && <queue.list> !contains 'q@dWE_VersionCheck' {
-      - run locally path:update id:dWE_VersionCheck
-      }
-    - determine '<server.flag[dWE.Version.Repo]||unknown>'
-
-  update:
-    - ~webget "http://www.mcmonkey.org/denizen/repo/version/<s@dWE_Version.yaml_key[id]>" save:page
-    - ^flag server "dWE.Version.Repo:<entry[page].result||<server.flag[dWE.Version.Repo]||unknown>>"
-    - ^flag server dWE.Version.Update d:1h
-#
-#  END dWE_VersionCheck
-#---------------------------------------
-#
 #  dWorldEditor Error Messages
 #
 dWE_Error:
@@ -2859,7 +2849,7 @@ dwe_Author_Anthony:
   type: item
   debug: false
   material: i@human_skull
-  display name: "<&f>             <&pipe>Anthony<&pipe>"
+  display name: "<&f>             &pipeAnthony&pipe"
   text_name: '|Anthony|'
   url: 'http://mineconomy.org'
   lore:
