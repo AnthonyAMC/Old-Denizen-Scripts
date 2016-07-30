@@ -2685,16 +2685,16 @@ dRegions_Flag_Heal-Amount:
       - if <def[player].world.name.equals_case_sensitive[%1%].not> {
         - while stop
         }
-      - if <def[player].gamemode.id.equals_case_sensitive[1]> {
-        - wait 1s
-        - while next
-        }
       - define regionPri 'li@'
       - foreach <def[player].location.cuboids.filter[notable_name.starts_with[dRegions_]].parse[after[cu@dregions_%world%_]].include[__global__]> {
         - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
         }
       - if <def[regionPri].alphanumeric.reverse.parse[after[/]].get[1].equals_case_sensitive[%2%].not> {
         - while stop
+        }
+      - if <def[player].gamemode.id.equals_case_sensitive[1]> {
+        - wait 1s
+        - while next
         }
       # Instant heal/harm setting
       - if %healDelay% == 0 {
@@ -2842,16 +2842,16 @@ dRegions_Flag_Feed-Amount:
       - if <def[player].world.name.equals_case_sensitive[%1%].not> {
         - while stop
         }
-      - if <def[player].gamemode.id.equals_case_sensitive[1]> {
-        - wait 1s
-        - while next
-        }
       - define regionPri 'li@'
       - foreach <def[player].location.cuboids.filter[notable_name.starts_with[dRegions_]].parse[after[cu@dregions_%world%_]].include[__global__]> {
         - define regionPri '%regionPri%<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%|'
         }
       - if <def[regionPri].alphanumeric.reverse.parse[after[/]].get[1].equals_case_sensitive[%2%].not> {
         - while stop
+        }
+      - if <def[player].gamemode.id.equals_case_sensitive[1]> {
+        - wait 1s
+        - while next
         }
       # Instant feed/starve setting
       - if %feedDelay% == 0 {
