@@ -55,22 +55,27 @@ MCL_Events:
   debug: false
   events:
     on system time hourly:
-    - wait 1t
 #    - if !<yaml[MCL_config].read[config.stats.useStats]||true> {
 #      - queue clear
 #      }
-    - run locally updateCheck
-    - run s@msgPrefixed instantly 'def:MCL|<&3>Sending usage metrics...'
-    - ~webget "http://morphanone.space/webizen.aspx/tracker?script=<s@MSG_Version.yaml_key[id]>&version=<s@MSG_Version.yaml_key[version]>&players=<server.list_online_players.size>&denizen_version=<server.denizen_version.replace[-SNAPSHOT].before[ ]>&jenkins_build=<server.denizen_version.after[(build ].before[)]>&bukkit_version=<server.bukkit_version>" 'save:send'
-    - if !<entry[send].result.starts_with[SUCCESS]||false> {
-      - run s@msgPrefixed instantly 'def:MCL|<&c>Metrics failed!'
+    - if <queue.list> !contains 'q@MCL_UpdateCheck' {
+      - run locally delay:1t updateCheck 'id:MCL_UpdateCheck'
+      }
+    - if <queue.list> !contains 'q@MCL_SendMetrics' {
+      - run locally delay:1t sendMetrics 'id:MCL_SendMetrics'
       }
 
     on server start:
-    - run delay:1t locally updateCheck
+    - if <queue.list> !contains 'q@MCL_UpdateCheck' {
+      - run locally delay:1t updateCheck 'id:MCL_UpdateCheck'
+      }
 
   updateCheck:
-    - ^define repoVersion '<proc[MCL_VersionCheck]||unknown>'
+    - ^if !<server.has_flag[MCL.Version.Repo]> {
+      - ~webget "http://www.mcmonkey.org/denizen/repo/version/<s@MSG_Version.yaml_key[id]>" save:page
+      - ^flag server "MCL.Version.Repo:<entry[page].result||<server.flag[MCL.Version.Repo]||unknown>>" d:1h
+      }
+    - ^define repoVersion '<server.flag[MCL.Version.Repo]||unknown>'
     - ^define currentVersion '<s@MSG_Version.yaml_key[version]>'
     - ^if '%repoVersion%' == 'unknown' {
       - run s@msgPrefixed instantly 'def:MCL|<&7>Unable to check for update! <&7><&o>%currentVersion%<&7> is installed!'
@@ -81,26 +86,14 @@ MCL_Events:
       else if '%repoVersion%' != '%currentVersion%' {
       - run s@msgPrefixed instantly 'def:MCL|<&7>What happened? You are on version <&o>%currentVersion%<&7> and the repo says <&o>%repoVersion%<&7>!'
       }
-#
-#---------------------------------------
-#
-MCL_VersionCheck:
-  # Return the most recent repo version of MCL
-  type: procedure
-  debug: false
 
-  script:
-    - if !<server.has_flag[MCL.Version.Update]> && <queue.list> !contains 'q@MCL_VersionCheck' {
-      - run locally path:update id:MCL_VersionCheck
+  sendMetrics:
+#    - run s@msgPrefixed instantly 'def:MCL|<&3>Sending usage metrics...'
+    - ~webget "http://morphanone.space/webizen.aspx/tracker?script=<s@MSG_Version.yaml_key[id]>&version=<s@MSG_Version.yaml_key[version]>&players=<server.list_online_players.size>&denizen_version=<server.denizen_version.replace[-SNAPSHOT].before[ ]>&jenkins_build=<server.denizen_version.after[(build ].before[)]>&bukkit_version=<server.bukkit_version>" 'save:send'
+    - if !<entry[send].result.starts_with[SUCCESS]||false> {
+      - run s@msgPrefixed instantly 'def:MCL|<&c>Metrics failed!'
       }
-    - determine '<server.flag[MCL.Version.Repo]||unknown>'
-
-  update:
-    - ~webget "http://www.mcmonkey.org/denizen/repo/version/<s@MSG_Version.yaml_key[id]>" save:page
-    - ^flag server "MCL.Version.Repo:<entry[page].result||<server.flag[MCL.Version.Repo]||unknown>>"
-    - ^flag server MCL.Version.Update d:1h
 #
-#  END MCL_VersionCheck
 #---------------------------------------
 #
 ################################################################################
