@@ -201,16 +201,18 @@ dRegions:
     - if !<yaml[dRegions_global_config].read[config.stats.useStats]||true> {
       - queue clear
       }
-    - run locally updateCheck
-    - run s@msgPrefixed 'def:dRegions|<&3>Sending usage metrics...'
-    - ~webget "http://morphanone.space/webizen.aspx/tracker?script=<s@dRegions_Version.yaml_key[id]>&version=<s@dRegions_Version.yaml_key[version]>&players=<server.list_online_players.size>&denizen_version=<server.denizen_version.replace[-SNAPSHOT].before[ ]>&jenkins_build=<server.denizen_version.after[(build ].before[)]>&bukkit_version=<server.bukkit_version>" 'save:send'
-    - if !<entry[send].result.starts_with[SUCCESS]||false> {
-      - run s@msgPrefixed instantly 'def:dRegions|<&c>Metrics failed!'
+    - if <queue.list> !contains 'q@dRegions_UpdateCheck' {
+      - run locally delay:1t updateCheck 'id:dRegions_UpdateCheck'
+      }
+    - if <queue.list> !contains 'q@dRegions_SendMetrics' {
+      - run locally delay:1t sendMetrics 'id:dRegions_SendMetrics'
       }
 
   start:
     - inject locally loadYaml
-    - run locally updateCheck
+    - if <queue.list> !contains 'q@dRegions_UpdateCheck' {
+      - run locally delay:1t updateCheck 'id:dRegions_UpdateCheck'
+      }
     - foreach '<server.list_flags[dRegions]>' {
       - flag server '%value%:!'
       }
@@ -238,7 +240,11 @@ dRegions:
     - run locally saveCache delay:5s id:dRegions_saveCache
 
   updateCheck:
-    - ^define repoVersion '<proc[dRegions_VersionCheck]||unknown>'
+    - ^if !<server.has_flag[dRegions.Version.Repo]> {
+      - ~webget "http://www.mcmonkey.org/denizen/repo/version/<s@dRegions_Version.yaml_key[id]>" save:page
+      - ^flag server "dRegions.Version.Repo:<entry[page].result||<server.flag[dRegions.Version.Repo]||unknown>>" d:1h
+      }
+    - ^define repoVersion '<server.flag[dRegions.Version.Repo]||unknown>'
     - ^define currentVersion '<s@dRegions_Version.yaml_key[version]>'
     - ^if '%repoVersion%' == 'unknown' {
       - run s@msgPrefixed instantly 'def:dRegions|<&7>Unable to check for update! <&7><&o>%currentVersion%<&7> is installed!'
@@ -248,6 +254,13 @@ dRegions:
       }
       else if '%repoVersion%' != '%currentVersion%' {
       - run s@msgPrefixed instantly 'def:dRegions|<&7>What happened? You are on version <&o>%currentVersion%<&7> and the repo says <&o>%repoVersion%<&7>!'
+      }
+
+  sendMetrics:
+#    - run s@msgPrefixed 'def:dRegions|<&3>Sending usage metrics...'
+    - ~webget "http://morphanone.space/webizen.aspx/tracker?script=<s@dRegions_Version.yaml_key[id]>&version=<s@dRegions_Version.yaml_key[version]>&players=<server.list_online_players.size>&denizen_version=<server.denizen_version.replace[-SNAPSHOT].before[ ]>&jenkins_build=<server.denizen_version.after[(build ].before[)]>&bukkit_version=<server.bukkit_version>" 'save:send'
+    - if !<entry[send].result.starts_with[SUCCESS]||false> {
+      - run s@msgPrefixed instantly 'def:dRegions|<&c>Metrics failed!'
       }
 
   loadYaml:
@@ -2617,26 +2630,6 @@ dRegions_LineWrap:
       - determine '<def[string].as_list>'
       }
 
-
-
-#
-#---------------------------------------
-#
-dRegions_VersionCheck:
-  # Return the most recent repo version of dRegions
-  type: procedure
-  debug: false
-
-  script:
-    - if !<server.has_flag[dRegions.Version.Update]> && <queue.list> !contains 'q@dRegions_VersionCheck' {
-      - run locally path:update id:dRegions_VersionCheck
-      }
-    - determine '<server.flag[dRegions.Version.Repo]||unknown>'
-
-  update:
-    - ~webget "http://www.mcmonkey.org/denizen/repo/version/<s@dRegions_Version.yaml_key[id]>" save:page
-    - ^flag server "dRegions.Version.Repo:<entry[page].result||<server.flag[dRegions.Version.Repo]||unknown>>"
-    - ^flag server dRegions.Version.Update d:1h
 #
 #  END other utilities
 #--------------------------------------
