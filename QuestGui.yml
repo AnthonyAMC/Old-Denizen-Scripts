@@ -6,10 +6,18 @@
 #
 #   Authors: |Anthony|
 #   Version: 0.32
-#   dScript Version: 0.9.8-DEV_b548
+#   dScript Version: 0.9.8-DEV_b611
 #
 #
 #
+#   For bleeding-edge code, bug reports, code contributions, and feature
+#    requests, visit the GitHub project:
+#    - github.com/AnthonyAMC/Public-Denizen-Scripts/blob/master/dWorldManager.yml
+#
+#   Has my work helped you in some way? Show your support by clicking the
+#    Like button.
+#   Feeling generous? Get me a coffee :D
+#    https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=NPXKHCNMTGSUG
 #_______________________________________________________________________________
 #
 #--- About QuestGUI
@@ -36,6 +44,7 @@
 #--- TODO
 #
 #    - Better Documentation
+#
 #
 #
 ################################################################################
@@ -80,25 +89,6 @@ QuestGUI_Version:
   id: 91
 #
 #  END QuestGUI Version
-#---------------------------------------
-#
-QuestGUI_VersionCheck:
-  # Return the most recent repo version of QuestGUI
-  type: procedure
-  debug: false
-
-  script:
-    - if !<server.has_flag[QuestGUI.Version.Update]> && <queue.list> !contains 'q@QuestGUI_VersionCheck' {
-      - run locally path:update id:QuestGUI_VersionCheck
-      }
-    - determine '<server.flag[QuestGUI.Version.Repo]||unknown>'
-
-  update:
-    - ~webget "http://www.mcmonkey.org/denizen/repo/version/<s@QuestGUI_Version.yaml_key[id]>" save:page
-    - ^flag server "QuestGUI.Version.Repo:<entry[page].result||<server.flag[QuestGUI.Version.Repo]||unknown>>"
-    - ^flag server QuestGUI.Version.Update d:1h
-#
-#  END QuestGUI_VersionCheck
 #---------------------------------------
 #
 #
@@ -246,12 +236,17 @@ QuestGUI_World:
 #    - if !<yaml[QuestGUI_config].read[config.stats.useStats]||true> {
 #      - queue clear
 #      }
-    - run locally updateCheck
-    - announce to_console '<&b>QuestGUI<&co><&3> Sending usage metrics...'
-    - webget "http://morphanone.space/webizen.aspx/tracker?script=<s@QuestGUI_Version.yaml_key[id]>&version=<s@QuestGUI_Version.yaml_key[version]>&players=<server.list_online_players.size>&denizen_version=<server.denizen_version.replace[-SNAPSHOT].before[ ]>&jenkins_build=<server.denizen_version.after[(build ].before[)]>&bukkit_version=<server.bukkit_version>"
+    - if <queue.list> !contains 'q@QuestGUI_UpdateCheck' {
+      - run locally delay:1t updateCheck 'id:QuestGUI_UpdateCheck'
+      }
+    - if <queue.list> !contains 'q@QuestGUI_SendMetrics' {
+      - run locally delay:1t sendMetrics 'id:QuestGUI_SendMetrics'
+      }
 
     on server start:
-    - run delay:1t locally updateCheck
+    - if <queue.list> !contains 'q@QuestGUI_UpdateCheck' {
+      - run locally delay:1t updateCheck 'id:QuestGUI_UpdateCheck'
+      }
 
   resetAllQuests:
     - define player '%1%'
@@ -262,19 +257,27 @@ QuestGUI_World:
       }
 
   updateCheck:
-    - ^define repoVersion '<proc[QuestGUI_VersionCheck]||unknown>'
+    - ^if !<server.has_flag[QuestGUI.Version.Repo]> {
+      - ~webget "http://www.mcmonkey.org/denizen/repo/version/<s@QuestGUI_Version.yaml_key[id]>" save:page
+      - ^flag server "QuestGUI.Version.Repo:<entry[page].result||<server.flag[QuestGUI.Version.Repo]||unknown>>" d:1h
+      }
+    - ^define repoVersion '<server.flag[QuestGUI.Version.Repo]||unknown>'
     - ^define currentVersion '<s@QuestGUI_Version.yaml_key[version]>'
     - ^if '%repoVersion%' == 'unknown' {
       - run s@msgPrefixed instantly 'def:QuestGUI|<&7>Unable to check for update! <&7><&o>%currentVersion%<&7> is installed!'
       }
-      else if '%repoVersion%' == '%currentVersion%' {
-      - run s@msgPrefixed instantly 'def:QuestGUI|<&7>You are up-to-date with version <&o>%repoVersion%<&7>!'
-      }
       else if '%repoVersion%' > '%currentVersion%' {
       - run s@msgPrefixed instantly 'def:QuestGUI|<&7>Update from version <&o>%currentVersion%<&7> to <&o>%repoVersion%<&7>!'
       }
-      else {
+      else if '%repoVersion%' != '%currentVersion%' {
       - run s@msgPrefixed instantly 'def:QuestGUI|<&7>What happened? You are on version <&o>%currentVersion%<&7> and the repo says <&o>%repoVersion%<&7>!'
+      }
+
+  sendMetrics:
+#    - run s@msgPrefixed instantly 'def:QuestGUI|<&3>Sending usage metrics...'
+    - ~webget "http://morphanone.space/webizen.aspx/tracker?script=<s@QuestGUI_Version.yaml_key[id]>&version=<s@QuestGUI_Version.yaml_key[version]>&players=<server.list_online_players.size>&denizen_version=<server.denizen_version.replace[-SNAPSHOT].before[ ]>&jenkins_build=<server.denizen_version.after[(build ].before[)]>&bukkit_version=<server.bukkit_version>" 'save:send'
+    - if !<entry[send].result.starts_with[SUCCESS]||false> {
+      - run s@msgPrefixed instantly 'def:QuestGUI|<&c>Metrics failed!'
       }
 #
 #  END QuestGUI Event Handlers
