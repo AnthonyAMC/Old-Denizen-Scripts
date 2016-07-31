@@ -7,7 +7,7 @@
 #                                                                              |
 #                                                                              |
 #   Author: |Anthony|                                                          |
-#   Version: 0.5                                                               |
+#   Version: 0.51                                                              |
 #   dScript Version: 0.9.8-DEV-b611                                            |
 #                                                                              |
 # ---------------------------------------------------------------------------- #
@@ -79,7 +79,7 @@ ConfigFileGenerator_Version:
   type: version
   author: Anthony
   name: ConfigFileGenerator
-  version: 0.5
+  version: 0.51
   description: Automatically extract and update config files
   id: 7
 #
@@ -403,7 +403,7 @@ ConfigFileGeneratorCommand:
   updateCheck:
     - ^if !<server.has_flag[ConfigFileGenerator.Version.Repo]> {
       - ~webget "http://www.mcmonkey.org/denizen/repo/version/<s@ConfigFileGenerator_Version.yaml_key[id]>" save:page
-      - ^flag server "ConfigFileGenerator.Version.Repo:<entry[page].result||<server.flag[ConfigFileGenerator.Version.Repo]||unknown>>" d:1h
+      - ^flag server "ConfigFileGenerator.Version.Repo:<entry[page].result||unknown>" d:1h
       }
     - ^define repoVersion '<server.flag[ConfigFileGenerator.Version.Repo]||unknown>'
     - ^define currentVersion '<s@ConfigFileGenerator_Version.yaml_key[version]>'
