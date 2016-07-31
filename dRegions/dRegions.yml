@@ -4,7 +4,7 @@
 #
 #
 #   Authors: |Anthony|
-#   Version: 0.36
+#   Version: 0.37
 #   dScript Version: 0.9.8-DEV_b611
 #
 #
@@ -129,7 +129,7 @@ dRegions_Version:
   type: version
   author: Anthony
   name: dRegions
-  version: 0.36
+  version: 0.37
   description: Denizen Region Management and Protection
   id: 23
 #
@@ -242,7 +242,7 @@ dRegions:
   updateCheck:
     - ^if !<server.has_flag[dRegions.Version.Repo]> {
       - ~webget "http://www.mcmonkey.org/denizen/repo/version/<s@dRegions_Version.yaml_key[id]>" save:page
-      - ^flag server "dRegions.Version.Repo:<entry[page].result||<server.flag[dRegions.Version.Repo]||unknown>>" d:1h
+      - ^flag server "dRegions.Version.Repo:<entry[page].result||unknown>" d:1h
       }
     - ^define repoVersion '<server.flag[dRegions.Version.Repo]||unknown>'
     - ^define currentVersion '<s@dRegions_Version.yaml_key[version]>'
