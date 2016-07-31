@@ -4,7 +4,7 @@
 #                                                                              #
 #                                                                              #
 #   Authors: |Anthony|                                                         #
-#   Version: 0.23                                                              #
+#   Version: 0.24                                                              #
 #   dScript Version: 0.9.8-DEV-b611                                            #
 #                                                                              #
 #   For bleeding-edge code, bug reports, code contributions, and feature       #
@@ -64,7 +64,7 @@ dWM_Version:
   type: version
   author: Anthony
   name: dWorldManager
-  version: 0.23
+  version: 0.24
   description: Denizen World Manager
   id: 93
 #
@@ -195,7 +195,7 @@ dWM_Events:
   updateCheck:
     - ^if !<server.has_flag[dWM.Version.Repo]> {
       - ~webget "http://www.mcmonkey.org/denizen/repo/version/<s@dWM_Version.yaml_key[id]>" save:page
-      - ^flag server "dWM.Version.Repo:<entry[page].result||<server.flag[dWM.Version.Repo]||unknown>>" d:1h
+      - ^flag server "dWM.Version.Repo:<entry[page].result||unknown>" d:1h
       }
     - ^define repoVersion '<server.flag[dWM.Version.Repo]||unknown>'
     - ^define currentVersion '<s@dWM_Version.yaml_key[version]>'
@@ -1610,6 +1610,7 @@ dWM_Error:
 #
 #
 #  END dWM_Error
+#--------------------------------------
 #
 #  dWorldManager Enums
 #
