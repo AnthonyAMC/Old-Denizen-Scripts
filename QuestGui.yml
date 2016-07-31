@@ -5,7 +5,7 @@
 #
 #
 #   Authors: |Anthony|
-#   Version: 0.32
+#   Version: 0.33
 #   dScript Version: 0.9.8-DEV_b611
 #
 #
@@ -84,7 +84,7 @@ QuestGUI_Version:
   type: version
   author: Anthony
   name: QuestGUI
-  version: 0.32
+  version: 0.33
   description: QuestGUI - An advanced menu for displaying and managing player quest data
   id: 91
 #
@@ -259,7 +259,7 @@ QuestGUI_World:
   updateCheck:
     - ^if !<server.has_flag[QuestGUI.Version.Repo]> {
       - ~webget "http://www.mcmonkey.org/denizen/repo/version/<s@QuestGUI_Version.yaml_key[id]>" save:page
-      - ^flag server "QuestGUI.Version.Repo:<entry[page].result||<server.flag[QuestGUI.Version.Repo]||unknown>>" d:1h
+      - ^flag server "QuestGUI.Version.Repo:<entry[page].result||unknown>" d:1h
       }
     - ^define repoVersion '<server.flag[QuestGUI.Version.Repo]||unknown>'
     - ^define currentVersion '<s@QuestGUI_Version.yaml_key[version]>'
