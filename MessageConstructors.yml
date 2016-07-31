@@ -6,7 +6,7 @@
 #     A set of utilities to make displaying text pretty, uniform, and easy     #
 #                                                                              #
 #   Authors: |Anthony|                                                         #
-#   Version: 0.36                                                              #
+#   Version: 0.37                                                              #
 #   dScript Version: 0.9.8-DEV_b611                                            #
 #                                                                              #
 #   For bleeding-edge code, bug reports, code contributions, and feature       #
@@ -44,7 +44,7 @@ MSG_Version:
   type: version
   author: Anthony
   name: MessageConstructorLibrary
-  version: 0.36
+  version: 0.37
   description: A Library for Message Construction
   id: 90
 #
@@ -73,7 +73,7 @@ MCL_Events:
   updateCheck:
     - ^if !<server.has_flag[MCL.Version.Repo]> {
       - ~webget "http://www.mcmonkey.org/denizen/repo/version/<s@MSG_Version.yaml_key[id]>" save:page
-      - ^flag server "MCL.Version.Repo:<entry[page].result||<server.flag[MCL.Version.Repo]||unknown>>" d:1h
+      - ^flag server "MCL.Version.Repo:<entry[page].result||unknown>" d:1h
       }
     - ^define repoVersion '<server.flag[MCL.Version.Repo]||unknown>'
     - ^define currentVersion '<s@MSG_Version.yaml_key[version]>'
@@ -304,13 +304,29 @@ msgBoxed:
     - ^define o '"text":"<&7><&o><&sp>of<&sp>"'
     - ^narrate "<&5>|<&pipe.pad_left[<def[pageWidth]>].with[-]>"
     - ^execute as_server 'tellraw <player.name> {"text":"","extra":[{%prefix%},%finalHeading%,{%tpad%},{%p%},{%buttonThis%},{%o%},{%buttonNext%}]}'
-    - ^narrate "<&5>|<&f>"
+    - ^narrate "<&5>|"
 
   msgsBody:
     - ^foreach <def[lines]> {
       - narrate "<&5>|<&f><&sp><&sp><def[value].unescaped>"
       }
-    - ^repeat <def[pageHeight].sub[<def[lines].size>].add[1].as_int> {
+    - ^repeat <def[pageHeight].sub[<def[lines].size>].as_int> {
+      - narrate "<&5>|"
+      }
+    - ^if <server.list_scripts> contains 's@%script%_Version' {
+      - define repoVersion '<server.flag[%script%.Version.Repo]||unknown>'
+      - define currentVersion '<s@%script%_Version.yaml_key[version]>'
+      - define vString '<&7>Version<&co> <&b>%currentVersion%'
+      - define vPad '<def[pageWidth].sub[<def[vString].strip_color.length>].add[1].mul[1.5].round>'
+      - narrate "<&5>|<&f.pad_right[%vPad%]>%vString%"
+      - if '%repoVersion%' != '%currentVersion%' {
+        - define uString '<&c><&o>Repo Version<&co> <&b>%repoVersion%'
+        - define uPad '<def[pageWidth].sub[<def[uString].strip_color.length>].add[1].mul[1.5].round>'
+        - define url 'http://www.mcmonkey.org/denizen/repo/entry/<s@%script%_Version.yaml_key[id]>'
+        - narrate "<&5>|<&f.pad_right[%uPad%]><&c><&o>Repo Version<&co> <proc[msgUrl].context[<&a>%repoVersion%|%url%|Click to go to repo!]>"
+        }
+      }
+      else {
       - narrate "<&5>|"
       }
 
