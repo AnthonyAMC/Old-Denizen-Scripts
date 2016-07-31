@@ -4,7 +4,7 @@
 #
 #
 #   Authors: |Anthony|, mcmonkey
-#   Version: 0.31
+#   Version: 0.32
 #   dScript Version: 0.9.8-DEV-b611
 #
 #
@@ -196,7 +196,7 @@ dWE_Version:
   type: version
   author: Anthony
   name: dWorldEditor
-  version: 0.31
+  version: 0.32
   description: Denizen World Editor
   id: 22
 #
@@ -248,7 +248,7 @@ dWE_Events:
   updateCheck:
     - ^if !<server.has_flag[dWE.Version.Repo]> {
       - ~webget "http://www.mcmonkey.org/denizen/repo/version/<s@dWE_Version.yaml_key[id]>" save:page
-      - ^flag server "dWE.Version.Repo:<entry[page].result||<server.flag[dWE.Version.Repo]||unknown>>" d:1h
+      - ^flag server "dWE.Version.Repo:<entry[page].result||unknown>" d:1h
       }
     - ^define repoVersion '<server.flag[dWE.Version.Repo]||unknown>'
     - ^define currentVersion '<s@dWE_Version.yaml_key[version]>'
