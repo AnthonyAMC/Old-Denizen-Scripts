@@ -149,6 +149,10 @@ dRegions_Commands:
         - dregions.remove.own.%region%
         - dregions.remove.member.*
         - dregions.remove.member.%region%
+    wgimport:
+      usage: '/drg wgimport [world(s)] (-a)'
+      permissions:
+        - dregions.wgimport
 
   tab complete:
     - define args '<script.list_keys[commandArgs].alphanumeric.to_lowercase||li@>'
@@ -919,6 +923,11 @@ dRegions_Commands:
       - define result 'li@'
       }
 
+  tab_wgimport:
+  # TODO
+  # /drg wgimport [world(s)] -a
+    - define result 'li@'
+
 
 #
 #  END dRegions Command TAB Completion
@@ -963,6 +972,31 @@ dRegions_Commands:
       }
     - run s@dRegions p:start instantly
 
+  wgimport:
+    - if <c.server> {
+      - if <c.args.size> == 0 {
+        - run s@msgPrefixed 'def:dRegions|<&c>Must specify world(s) to import!'
+        - queue clear
+        }
+      }
+      else {
+      - if !<player.permission[dregions.admin]||false> && !<player.is_op> {
+        - queue clear
+        }
+      }
+    - if <c.args.size> > 0 {
+      - if <c.args> contains '-a' {
+        - define worlds '<server.list_worlds.parse[name]>'
+        }
+        else {
+        - define worlds '<c.args.escape_contents>'
+        }
+      }
+      else {
+      - define worlds '<def[worlds].include[<player.world.name>]>' {
+      }
+    - foreach '%worlds%':
+      - run s@dRegions_WG_Importer 'def:%value%'
 
   define:
   # /drg define [ID] (g:group) (player)
