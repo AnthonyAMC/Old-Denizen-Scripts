@@ -4,7 +4,7 @@
 #
 #
 #   Authors: |Anthony|
-#   Version: 0.37
+#   Version: 0.38
 #   dScript Version: 0.9.8-DEV_b611
 #
 #
@@ -129,7 +129,7 @@ dRegions_Version:
   type: version
   author: Anthony
   name: dRegions
-  version: 0.37
+  version: 0.38
   description: Denizen Region Management and Protection
   id: 23
 #
