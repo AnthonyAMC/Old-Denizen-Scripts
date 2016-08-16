@@ -1814,6 +1814,13 @@ dRegions_Flag_Player-KeepItems:
     - run locally returnItems 'player:%player%' 'def:<def[player].inventory.list_contents.escaped>|<def[player].equipment.escaped>' delay:2t
     - determine NO_DROPS_NO_XP
 
+  event-cancelled:
+    # Temporary fix! We should be setting noCancel so the flag processor knows
+    # not to try to determine cancelled, which funny enough in the entity dies
+    # event changes the player death message. WHOOPS!
+    - foreach next
+    - queue clear
+
   returnItems:
     - inventory clear
     - run s@msgPrefixed delay:1t 'def:dRegions|<&9>You died, but your inventory is safe!'
