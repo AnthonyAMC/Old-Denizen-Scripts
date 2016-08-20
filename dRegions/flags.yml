@@ -1935,6 +1935,52 @@ dRegions_Flag_Vehicle-Destroy:
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to break vehicles in this region. Defaults to allow. Takes the -g group switch.
   msg_cancelled: 'You can not break vehicles here!'
+
+
+dRegions_Flag_Fly:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Fly<&4>]"
+  lore:
+  - <&5>Who can can fly
+  event_hooks: player_entered_dregion|player_exited_dregion
+  event_priority: 40
+  region_highestOnly: true
+  flag_type: sg
+  flag_name: Fly
+  flag_takeGroup: true
+  flag_regionDefault: deny/all
+  flag_globalDefault: deny/all
+  flag_help: Enable flight in a region. Takes the -g group switch.
+
+#  entered and exited dregion events are already set to noCancel
+#  event-cancelled:
+#    - foreach next
+#    - queue clear
+
+  event-allowed:
+    - if %isEnter% {
+      - if !<def[player].can_fly> {
+        - flag <def[player]> 'dRegions.%world%.%region%.can_fly'
+        - adjust <def[player]> 'can_fly:true'
+        - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
+          - flag <def[player]> dRegions.Message_Cooldown duration:3s
+          - run s@msgPrefixed instantly 'def:dRegions|<&a>You are able to fly in this region!'
+          }
+        }
+      }
+      else {
+      - if <def[player].has_flag[dRegions.%world%.%region%.can_fly]> {
+        - flag <def[player]> 'dRegions.%world%.%region%.can_fly:!'
+        - flag <def[player]> 'dRegions.fly.noFallDamage'
+        - adjust <def[player]> 'can_fly:false'
+        - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
+          - flag <def[player]> dRegions.Message_Cooldown duration:3s
+          - run s@msgPrefixed instantly 'def:dRegions|<&a>Flight has been disabled!'
+          }
+        }
+      }
 #
 # END sg
 #---------------------------------------
