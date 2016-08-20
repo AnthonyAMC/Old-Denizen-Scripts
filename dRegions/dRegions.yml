@@ -4,8 +4,8 @@
 #
 #
 #   Authors: |Anthony|
-#   Version: 0.38
-#   dScript Version: 0.9.8-DEV_b611
+#   Version: 0.39
+#   dScript Version: 0.9.8-DEV_b636
 #
 #
 #   Dependencies:
@@ -129,7 +129,7 @@ dRegions_Version:
   type: version
   author: Anthony
   name: dRegions
-  version: 0.38
+  version: 0.39
   description: Denizen Region Management and Protection
   id: 23
 #
@@ -786,6 +786,10 @@ dRegions_Events_Player_Damaged:
     on player damaged:
     - if ( <player.permission[dregions.invincible]||false> || <player.permission[dregions.invincible.<c.cause>]||false> ) && !<player.is_op> {
       - adjust <player> 'fire_time:0'
+      - determine cancelled
+      }
+    - if '<c.cause>' == 'FALL' && <player.has_flag[dRegions.fly.noFallDamage]> {
+      - flag <player> 'dRegions.fly.noFallDamage:!'
       - determine cancelled
       }
     - define player '<c.entity>'
