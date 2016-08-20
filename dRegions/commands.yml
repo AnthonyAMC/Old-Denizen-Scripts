@@ -973,8 +973,9 @@ dRegions_Commands:
     - run s@dRegions p:start instantly
 
   wgimport:
+    - define args '<c.args.replace[wgimport]>'
     - if <c.server> {
-      - if <c.args.size> == 0 {
+      - if <def[args].size> == 0 {
         - run s@msgPrefixed 'def:dRegions|<&c>Must specify world(s) to import!'
         - queue clear
         }
@@ -984,12 +985,12 @@ dRegions_Commands:
         - queue clear
         }
       }
-    - if <c.args.size> > 0 {
-      - if <c.args> contains '-a' {
+    - if <def[args].size> > 0 {
+      - if <def[args]> contains '-a' {
         - define worlds '<server.list_worlds.parse[name]>'
         }
         else {
-        - define worlds '<c.args.escape_contents>'
+        - define worlds '<def[args].escape_contents>'
         }
       }
       else {
