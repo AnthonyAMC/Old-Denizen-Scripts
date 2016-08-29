@@ -4,8 +4,8 @@
 #                                                                              #
 #                                                                              #
 #   Authors: |Anthony|                                                         #
-#   Version: 0.24                                                              #
-#   dScript Version: 0.9.8-DEV-b611                                            #
+#   Version: 0.25                                                              #
+#   dScript Version: 0.9.8-DEV-b646                                            #
 #                                                                              #
 #   For bleeding-edge code, bug reports, code contributions, and feature       #
 #    requests, visit the GitHub project:                                       #
@@ -64,7 +64,7 @@ dWM_Version:
   type: version
   author: Anthony
   name: dWorldManager
-  version: 0.24
+  version: 0.25
   description: Denizen World Manager
   id: 93
 #
@@ -82,9 +82,9 @@ dWM_Events:
   debug: false
   events:
     on system time hourly:
-#      - if !<yaml[dWM_config].read[config.stats.useStats]||true> {
-#        - queue clear
-#        }
+      - if !<yaml[dWM_config].read[config.stats.useStats]||true> {
+        - queue clear
+        }
       - if <queue.list> !contains 'q@dWM_UpdateCheck' {
         - run locally delay:1t updateCheck 'id:dWM_UpdateCheck'
         }
@@ -184,7 +184,7 @@ dWM_Events:
       }
     - yaml 'load:dWorldManager/config.yml' 'id:dWM_Config'
 
-    - if <yaml[dWM_Config].read[config.version].is[!=].to[<s@dWM_Configurations.yaml_key[config.version]>]||false> {
+    - if <yaml[dWM_Config].read[config.version].is[!=].to[<s@dWM_Configurations.yaml_key[config.version]>]||true> {
       - define isUpdate ''
       - inject locally createConfigFile
       - define isUpdate:!
@@ -194,7 +194,7 @@ dWM_Events:
 
   updateCheck:
     - ^if !<server.has_flag[dWM.Version.Repo]> {
-      - ~webget "http://www.mcmonkey.org/denizen/repo/version/<s@dWM_Version.yaml_key[id]>" save:page
+      - ~webget "http://old.mcmonkey.org/denizen/repo/version/<s@dWM_Version.yaml_key[id]>" save:page
       - ^flag server "dWM.Version.Repo:<entry[page].result||unknown>" d:1h
       }
     - ^define repoVersion '<server.flag[dWM.Version.Repo]||unknown>'
@@ -231,16 +231,13 @@ dWM_Events:
     - if !<yaml.list.contains[%readID%]> {
       - yaml fix_formatting 'load:<script.relative_filename>' 'id:%readID%'
       }
-    - if !<yaml.list.contains[%readID%]> {
-      - run s@msgPrefixed 'def:dWM|<&7><&o>Loaded <script.relative_filename>'
-      }
-    - yaml create 'id:%writeID%'
     - define readPath '%readID%.config'
     - define writePath 'config'
     - if <def[isUpdate].exists||false> {
       - run s@ConfigFileGenerator 'def:%readID%|%writeID%|%readPath%|%writePath%|false|false|true' instantly
       }
       else {
+      - yaml create 'id:%writeID%'
       - run s@ConfigFileGenerator 'def:%readID%|%writeID%|%readPath%|%writePath%|false|false|false' instantly
       }
     - yaml unload 'id:%readID%'
@@ -808,6 +805,9 @@ dWM_Commands_Import:
     - define vval 'li@4'
     - inject s@dWM_CreateWorldConfigs
     - run s@msgPrefixed 'def:dWM|<&a>Imported <&o>%w%<&a>!'
+    - if <server.list_scripts> contains 's@dRegions_WG_Importer' {
+      - run s@dRegions_WG_Importer 'def:%w%'
+      }
 
 
 dWM_Commands_Clone:
@@ -1195,6 +1195,7 @@ dWM_ImportWorld:
 #
 # Required definitions
 #  w - The name of the world
+#  sender - Either 'server' or '<player>'
 #
 dWM_UnloadWorld:
   type: task
@@ -1215,7 +1216,7 @@ dWM_UnloadWorld:
       - yaml 'savefile:dWorldManager/config.yml' 'id:dWM_Config'
       }
       else {
-      - run instantly delay:1t 's@dWM_Error' 'def:unload|1|%sender%|<entry[return].determinations.parse[after[cancelled/]||li@>'
+      - run instantly delay:1t 's@dWM_Error' 'def:unload|1|%sender%|<def[rval].parse[after[cancelled/]]||li@>'
       }
 #
 #  END dWM_UnloadWorld
@@ -1225,6 +1226,7 @@ dWM_UnloadWorld:
 #
 # Required definitions
 #  w - The name of the world
+#  sender - Either 'server' or '<player>'
 #
 dWM_LoadWorld:
   type: task
@@ -1256,6 +1258,7 @@ dWM_LoadWorld:
 #
 # Required definitions
 #  w - The name of the world
+#  sender - Either 'server' or '<player>'
 #
 dWM_RemoveWorld:
   type: task
@@ -1291,6 +1294,7 @@ dWM_RemoveWorld:
 #
 # Required definitions
 #  w - The name of the world
+#  sender - Either 'server' or '<player>'
 #
 dWM_PurgeWorld:
   type: task
@@ -1340,7 +1344,7 @@ dWM_CreateWorldConfigs:
       - run instantly delay:1t 's@dWM_Error' 'def:world|%v%|%sender%|%w%'
       - queue clear
       }
-    - if <def[g].exists> && '%g%' != 'none' {
+    - if <def[g].exists> && '<def[g]>' != 'none' {
       - if !<s@dWM_Enums.yaml_key[g].contains[%g%]> {
         - run instantly delay:1t 's@dWM_Error' 'def:gen|1|%sender%|%g%'
         - queue clear
@@ -1364,7 +1368,7 @@ dWM_CreateWorldConfigs:
     - yaml set 'worlds.%w%.description:|:A nondescriptive description' 'id:dWM_Config'
     - yaml 'savefile:dWorldManager/config.yml' 'id:dWM_Config'
     - if <def[clone].exists> {
-      - if <def[g].exists> && '%g%' != 'none' {
+      - if <def[g].exists> && '<def[g]>' != 'none' {
         - createworld '%w%' 'worldtype:%t%' 'environment:%e%' 'generator:%g%' 'copy_from:%c%'
         }
         else {
@@ -1372,7 +1376,7 @@ dWM_CreateWorldConfigs:
         }
       }
       else {
-      - if <def[g].exists> && '%g%' != 'none' {
+      - if <def[g].exists> && '<def[g]>' != 'none' {
         - createworld '%w%' 'worldtype:%t%' 'environment:%e%' 'generator:%g%'
         }
         else {
@@ -1599,7 +1603,7 @@ dWM_Error:
 
   script:
     - if '%3%' == 'server' {
-      - announce to_console '<&4><&lb><&6>dWM<&4><&rb>  <script.yaml_key[msgs.%1%.%2%].get[1]>'
+      - announce to_console '<&4><&lb><&6>dWM<&4><&rb>  <parse:<script.yaml_key[msgs.%1%.%2%].get[1]>>'
       }
       else {
       - define prefix '<proc[msgCommand].context[<&4><&lb><&6>dWM<&4><&rb>|dwm help|<&6>      dWM<&nl><&d>Click for help]>   '
@@ -1671,9 +1675,12 @@ dWM_Configurations:
   type: yaml data
 
   config:
-    version: 0.2
+    version: 0.3
     worldpath: '../..'
-    remove_deleted: 'true'
+    remove_deleted: 'false'
+    stats:
+      About: This allows sending basic dWorldManager usage info to the Script Tracker system created by BlackCoyote. Doing this helps me focus my development efforts. Please enable webget in the Denizen config.yml file and here to participate.
+      useStats: true
   worlds:
     world:
       loaded: 'true'
