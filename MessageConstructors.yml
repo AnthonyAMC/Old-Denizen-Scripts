@@ -70,9 +70,14 @@ MCL_Events:
       - run locally delay:1t updateCheck 'id:MCL_UpdateCheck'
       }
 
+    on script reload:
+    - if <queue.list> !contains 'q@MCL_UpdateCheck' {
+      - run locally delay:1t updateCheck 'id:MCL_UpdateCheck'
+      }
+
   updateCheck:
     - ^if !<server.has_flag[MCL.Version.Repo]> {
-      - ~webget "http://www.mcmonkey.org/denizen/repo/version/<s@MSG_Version.yaml_key[id]>" save:page
+      - ~webget "http://old.mcmonkey.org/denizen/repo/version/<s@MSG_Version.yaml_key[id]>" save:page
       - ^flag server "MCL.Version.Repo:<entry[page].result||unknown>" d:1h
       }
     - ^define repoVersion '<server.flag[MCL.Version.Repo]||unknown>'
@@ -322,7 +327,7 @@ msgBoxed:
       - if '%repoVersion%' != '%currentVersion%' {
         - define uString '<&c><&o>Repo Version<&co> <&b>%repoVersion%'
         - define uPad '<def[pageWidth].sub[<def[uString].strip_color.length>].add[1].mul[1.5].round>'
-        - define url 'http://www.mcmonkey.org/denizen/repo/entry/<s@%script%_Version.yaml_key[id]>'
+        - define url 'http://old.mcmonkey.org/denizen/repo/entry/<s@%script%_Version.yaml_key[id]>'
         - narrate "<&5>|<&f.pad_right[%uPad%]><&c><&o>Repo Version<&co> <proc[msgUrl].context[<&a>%repoVersion%|%url%|Click to go to repo!]>"
         }
       }
