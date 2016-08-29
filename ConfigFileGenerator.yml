@@ -7,8 +7,8 @@
 #                                                                              |
 #                                                                              |
 #   Author: |Anthony|                                                          |
-#   Version: 0.51                                                              |
-#   dScript Version: 0.9.8-DEV-b611                                            |
+#   Version: 0.52                                                              |
+#   dScript Version: 0.9.8-DEV-b646                                            |
 #                                                                              |
 # ---------------------------------------------------------------------------- #
 #                                                                              |
@@ -79,7 +79,7 @@ ConfigFileGenerator_Version:
   type: version
   author: Anthony
   name: ConfigFileGenerator
-  version: 0.51
+  version: 0.52
   description: Automatically extract and update config files
   id: 7
 #
@@ -301,9 +301,9 @@ ConfigFileGenerator:
 
   foreachEntrylist:
     # This first yaml command clears the node of any values
-    - if <def[forcewrite]> {
-      - yaml set '%writePath%:|:' 'id:%writeID%'
-      }
+#    - if <def[forcewrite]> {
+#      - yaml set '%writePath%:|:' 'id:%writeID%'
+#      }
     - foreach <def[entry]> {
       - if ( <def[dryrun].not> && <yaml[%writeID%].read[%writePath%].contains[%value%].not||true> ) || <def[forcewrite]> {
         - yaml set '%writePath%:->:%value%' 'id:<def[writeID]>'
@@ -394,6 +394,7 @@ ConfigFileGeneratorCommand:
     - flag <player> ConfigFileGeneratorNotify:!
 
   sendMetrics:
+  # Tracks version, players, denizen_version, jenkins_build, bukkit_version
 #    - run s@msgPrefixed instantly 'def:ConfigFileGenerator|<&3>Sending usage metrics...'
     - ~webget "http://morphanone.space/webizen.aspx/tracker?script=<s@ConfigFileGenerator_Version.yaml_key[id]>&version=<s@ConfigFileGenerator_Version.yaml_key[version]>&players=<server.list_online_players.size>&denizen_version=<server.denizen_version.replace[-SNAPSHOT].before[ ]>&jenkins_build=<server.denizen_version.after[(build ].before[)]>&bukkit_version=<server.bukkit_version>" 'save:send'
     - if !<entry[send].result.starts_with[SUCCESS]||false> {
@@ -402,7 +403,7 @@ ConfigFileGeneratorCommand:
 
   updateCheck:
     - ^if !<server.has_flag[ConfigFileGenerator.Version.Repo]> {
-      - ~webget "http://www.mcmonkey.org/denizen/repo/version/<s@ConfigFileGenerator_Version.yaml_key[id]>" save:page
+      - ~webget "http://old.mcmonkey.org/denizen/repo/version/<s@ConfigFileGenerator_Version.yaml_key[id]>" save:page
       - ^flag server "ConfigFileGenerator.Version.Repo:<entry[page].result||unknown>" d:1h
       }
     - ^define repoVersion '<server.flag[ConfigFileGenerator.Version.Repo]||unknown>'
