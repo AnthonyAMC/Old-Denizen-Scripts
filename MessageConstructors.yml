@@ -6,8 +6,8 @@
 #     A set of utilities to make displaying text pretty, uniform, and easy     #
 #                                                                              #
 #   Authors: |Anthony|                                                         #
-#   Version: 0.37                                                              #
-#   dScript Version: 0.9.8-DEV_b611                                            #
+#   Version: 0.38                                                              #
+#   dScript Version: 0.9.8-DEV_b646                                            #
 #                                                                              #
 #   For bleeding-edge code, bug reports, code contributions, and feature       #
 #    requests, visit the GitHub project:                                       #
@@ -44,7 +44,7 @@ MSG_Version:
   type: version
   author: Anthony
   name: MessageConstructorLibrary
-  version: 0.37
+  version: 0.38
   description: A Library for Message Construction
   id: 90
 #
@@ -174,10 +174,9 @@ msgBoxed:
   debug: false
   definitions: script|title|subTitle|command|page|pageWidth|pageHeight
   script:
-    - ^define entries 'li@'
-    - ^foreach '<queue.definitions.exclude[script|title|subTitle|command|page|pageWidth|pageHeight|entries].alphanumeric>' {
-      - define entries '<def[entries].include[<def[%value%]>]>'
-      }
+    - ^define entries '<def[raw_context].split_by[|].remove[1|2|3|4|5|6|7]>'
+    - ^foreach 'li@script|title|subTitle|command|page|pageWidth|pageHeight':
+      - define %value% '<def[raw_context].split_by[|].get[%loop_index%]>'
     - ^define paragraphs '<proc[paragraph].context[%pageWidth%|<def[entries].separated_by[|]>]>'
     - ^if %page% < 1 {
       - define page '1'
@@ -533,10 +532,9 @@ pagination:
   debug: false
 
   script:
-    - define entries 'li@'
-    - foreach '<queue.definitions.exclude[entries|page|pageSize].alphanumeric>' {
-      - define entries '<def[entries].include[<def[%value%]>]>'
-      }
+    - define entries '<def[raw_context].split_by[|].remove[1|2]>'
+    - foreach 'li@page|pageSize':
+      - define %value% '<def[raw_context].split_by[|].get[%loop_index%]>'
     - if <def[page].is[MATCHES].to[number].not> {
       - define page '1'
       }
@@ -567,10 +565,8 @@ paragraph:
   debug: false
 
   script:
-    - define paragraphs 'li@'
-    - foreach '<queue.definitions.exclude[paragraphs|lineLen].alphanumeric>' {
-      - define paragraphs '<def[paragraphs].include[<def[%value%]>]>'
-      }
+    - define paragraphs '<def[raw_context].split_by[|].remove[1]>'
+    - define lineLen '<def[raw_context].split_by[|].get[1]>'
     - define lineLen '<t[<def[lineLen].is[matches].to[number].and[<def[lineLen].is[MORE].than[0]>]>]:%lineLen%||44>'
     - define result 'li@'
     - foreach '<def[paragraphs]>' {
