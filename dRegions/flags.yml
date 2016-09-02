@@ -2048,7 +2048,7 @@ dRegions_Flag_Notify-Exit:
   flag_name: Notify-Exit
   flag_takeGroup: false
   flag_regionDefault: false
-  flag_globalDefault: none
+  flag_globalDefault: false
   flag_help: Boolean flag controlling whether notifications are sent for exiting this region. Set to true or false. Defaults to false.
 
   event-allowed:

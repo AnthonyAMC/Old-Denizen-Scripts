@@ -73,7 +73,7 @@ dRegions_WG_Importer:
       - note 'cu@<def[cuboid].min.simple>|<def[cuboid].max.simple>' 'as:dregions_<def[world].to_lowercase>_%region%'
       }
       else {
-      - log "Unknown region type<&co>%type%" type:warning 'file:/plugins/Denizen/dRegions/worlds/<def[world].to_lowercase>/import.txt'
+      - log "Unknown region type<&co> %type%" type:warning 'file:/plugins/Denizen/dRegions/worlds/<def[world].to_lowercase>/import.txt'
       }
 
   # Set priority
