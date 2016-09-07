@@ -30,6 +30,10 @@
 #      - All the commands for dRegions. It is bundled in the repo releases.
 #      - https://github.com/AnthonyAMC/Public-Denizen-Scripts/blob/master/dRegions/commands.yml
 #
+#    - WorldGuard Importer
+#      - Allows for importing worldguard regions
+#      - https://github.com/AnthonyAMC/Public-Denizen-Scripts/blob/master/dRegions/wg_importer.yml
+#
 #   Has my work helped you in some way? Show your support by clicking the
 #    Like button.
 #   Feeling generous? Get me a coffee :D
@@ -47,8 +51,8 @@
 #
 #--- Installation & Setup
 #
-#  Install Flags, ConfigFileGenerator, dWorldEditor, and dRegions to your scripts
-# folder and reload scripts. /denizen reload scripts
+#  Install everything listed in the dependencies section and reload your scripts
+#    /denizen reload scripts
 #
 #  All config and data storage files will be automatically generated in your
 # Denizen plugin folder. /plugins/Denizen/dRegions
