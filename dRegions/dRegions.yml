@@ -1628,9 +1628,11 @@ dRegions_Events_Block_Ignites:
           }
         - inject s@dRegions p:event_PreProc_Config-NoTarget
       - case 'LAVA':
-        - inject s@dRegions p:event_PreProc_Config
+        - inject s@dRegions p:event_PreProc_Config-NoTarget
       - case 'SPREAD':
         - inject s@dRegions p:event_PreProc_Config
+      - case 'LIGHTNING':
+        - inject s@dRegions p:event_PreProc_Config-NoTarget
 
     - define orderedRegions 'li@<yaml[dRegions_%world%_regions].read[regions.__global__.priority]||0>/__global__'
     - foreach '<def[eLoc].cuboids.filter[starts_with[cu@dregions_%world%]].parse[after[cu@dregions_%world%_]]>':
@@ -2787,7 +2789,7 @@ dRegions_Configurations:
   type: yaml data
 
   config:
-    version: 0.29
+    version: 0.30
     clear_cache_on_restart: false
     stats:
       About: This allows sending basic dRegions usage info to the Script Tracker system created by BlackCoyote. Doing this helps me focus my development efforts. Please enable webget in the Denizen config.yml file and here to participate.
@@ -2826,6 +2828,7 @@ dRegions_Configurations:
       flint_and_steel: true
       lava: true
       spread: true
+      lightning: true
       spread-list: []
       destroyBlocks: true
       destroyBlocks-list: []
