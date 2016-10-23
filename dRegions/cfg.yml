@@ -1,0 +1,65 @@
+
+################################################################################
+#                                                                              #
+#                                                                              #
+#                 W H A T   A R E   Y O U   L O O K I N G   A T                #
+#                                                                              #
+#                                                                              #
+################################################################################
+#
+# Config File Generator
+#
+#
+#   This new script differs from the original in that it maintains the readPath
+# and writePath seperately! This allows you to extract ALL data from %readPath%
+# in your already loaded %readID% yaml file and insert it at any %writePath% in
+# the already loaded %writeID% yaml file.
+#
+#  example:
+#    - define readID 'YourScript'
+#    - define writeID 'YourYamlFile'
+#    - yaml 'load:Input/FilePath.yml' 'id:%readID%'
+#    - yaml 'load:Output/FilePath.yml' 'id:%writeID%'
+#    - define readPath 'Some.Yaml.Node.To.Read'
+#    - define writePath 'Some.Yaml.Node.To.Write'
+#    - run s@ConfigFileGenerator def:%readID%|%writeID%|%readPath%|%writePath%|false instantly
+#    - yaml unload 'id:%readID%'
+#    - yaml 'savefile:Output/FilePath.yml' 'id:%writeID%'
+#
+#__________
+#
+dRegions_ConfigFileGenerator:
+  type: task
+  debug: false
+  definitions: readID|writeID|readPath|writePath|update
+  script:
+    - ^define keylist '<yaml[%readID%].list_keys[%readPath%]||null>'
+    - ^if '%keylist%' != 'null' {
+      - if '%keylist%' == 'li@' {
+        - yaml set '%writePath%:|:' 'id:%writeID%'
+        }
+        else {
+        - inject locally p:foreachKeylist instantly
+        }
+      }
+      else {
+      - define entry '<yaml[%readID%].read[%readPath%]>'
+      - if <yaml[%readID%].is_list[%readPath%]> {
+        - foreach '%entry%' {
+          - if <yaml[%writeID%].read[%writePath%].contains[%value%].not||true> || %update% {
+            - yaml set '%writePath%:->:%value%' 'id:%writeID%'
+            }
+          }
+        }
+        else {
+        - if '<yaml[%writeID%].contains[%writePath%].not>' || '%update%' {
+          - yaml set '%writePath%:%entry%' 'id:%writeID%'
+          }
+        }
+      }
+
+  foreachKeylist:
+    - foreach '%keylist%' {
+      - run s@dRegions_ConfigFileGenerator 'def:%readID%|%writeID%|%readPath%.%value%|%writePath%.%value%|%update%' instantly
+      }
+#

@@ -4,7 +4,7 @@
 #
 #
 #   Authors: |Anthony|
-#   Version: 0.40
+#   Version: 0.41
 #   dScript Version: 0.9.8-DEV_b646
 #
 #
@@ -20,7 +20,7 @@
 #
 #    - ConfigFileGenerator
 #      - Used to build default config files and data storage.
-#      - https://github.com/AnthonyAMC/Public-Denizen-Scripts/blob/master/ConfigFileGenerator.yml
+#      - https://github.com/AnthonyAMC/Public-Denizen-Scripts/blob/master/dRegions/cfg.yml
 #
 #    - Flags
 #      - All the flags for dRegions. It is bundled in the repo releases.
@@ -133,7 +133,7 @@ dRegions_Version:
   type: version
   author: Anthony
   name: dRegions
-  version: 0.40
+  version: 0.41
   description: Denizen Region Management and Protection
   id: 23
 #
@@ -348,7 +348,7 @@ dRegions:
     - yaml create 'id:%writeID%'
     - define readPath '%readID%.config'
     - define writePath 'config'
-    - run s@ConfigFileGenerator def:%readID%|%writeID%|%readPath%|%writePath%|false|false|<def[isUpdate]||false> instantly
+    - run s@dRegions_ConfigFileGenerator def:%readID%|%writeID%|%readPath%|%writePath%|<def[isUpdate]||false> instantly
     - yaml unload 'id:%readID%'
     - yaml 'savefile:dRegions/%file%.yml' 'id:%writeID%'
 
@@ -361,7 +361,7 @@ dRegions:
     - yaml create 'id:%writeID%'
     - define readPath '%readID%.regions.__global__'
     - define writePath 'regions.<def[region]||__global__>'
-    - run s@ConfigFileGenerator def:%readID%|%writeID%|%readPath%|%writePath%|false|false|false instantly
+    - run s@dRegions_ConfigFileGenerator def:%readID%|%writeID%|%readPath%|%writePath%|<def[isUpdate]||false> instantly
     - yaml unload 'id:%readID%'
     - yaml 'savefile:dRegions/%file%.yml' 'id:%writeID%'
 
@@ -374,7 +374,7 @@ dRegions:
     - yaml create 'id:%writeID%'
     - define readPath '%readID%.inventories'
     - define writePath 'inventories'
-    - run s@ConfigFileGenerator def:%readID%|%writeID%|%readPath%|%writePath%|false|false|false instantly
+    - run s@dRegions_ConfigFileGenerator def:%readID%|%writeID%|%readPath%|%writePath%|<def[isUpdate]||false> instantly
     - yaml unload 'id:%readID%'
     - yaml 'savefile:dRegions/%file%.yml' 'id:%writeID%'
 
@@ -407,7 +407,7 @@ dRegions:
     - yaml create 'id:%writeID%'
     - define readPath '%readID%.cache'
     - define writePath 'cache'
-    - run s@ConfigFileGenerator def:%readID%|%writeID%|%readPath%|%writePath%|false|false|<def[isReset].exists||false> instantly
+    - run s@dRegions_ConfigFileGenerator def:%readID%|%writeID%|%readPath%|%writePath%|<def[isReset].exists||false> instantly
     - yaml unload 'id:%readID%'
     - yaml 'savefile:dRegions/%file%.yml' 'id:%writeID%'
 
@@ -2298,26 +2298,16 @@ dRegions_CopyWorld:
       }
     - foreach 'li@config|regions|inventories|cache':
       - define this '%value%'
-      - define file 'worlds/%orig%/%this%'
-      - if <server.has_file[dRegions/%file%.yml]> {
-        - define readID 'dRegions_%orig%_%this%'
-        - if !<yaml.list.contains[%readID%]> {
-          - yaml 'load:dRegions/%file%.yml' 'id:%readID%'
-          }
-        - define writeID 'dRegions_%world%_%this%'
-        - define readPath '%this%'
-        - define writePath '%this%'
-        - yaml create 'id:%writeID%'
-        - run s@ConfigFileGenerator instantly 'def:%readID%|%writeID%|%readPath%|%writePath%|false|false|false'
-        - yaml 'savefile:dRegions/worlds/%world%/%this%.yml' 'id:%writeID%'
+      - if <yaml.list.contains[dRegions_%world%_%this%]> {
+        - yaml unload 'id:dRegions_%world%_%this%'
+        }
+      - if <server.has_file[dRegions/worlds/%orig%/%this%.yml]> {
+        - filecopy o:dRegions/worlds/%orig%/%this%.yml d:dRegions/worlds/%world%/%this%.yml overwrite
         }
         else {
         - inject s@dRegions create%this%File
         }
-      - if <yaml.list.contains[%writeID%]> {
-        - yaml unload 'id:%writeID%'
-        }
-      - yaml 'load:dRegions/worlds/%world%/%this%.yml' 'id:%writeID%'
+      - yaml 'load:dRegions/worlds/%world%/%this%.yml' 'id:dRegions_%world%_%this%'
     - foreach '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__]>':
       - note 'cu@<yaml[dRegions_%world%_regions].read[regions.%value%.min]>|<yaml[dRegions_%world%_regions].read[regions.%value%.max]>' 'as:dregions_%world%_%value%'
 #
