@@ -1295,7 +1295,7 @@ dRegions_Flag_Fire-Destroy:
   flag_name: Fire-Destroy
   flag_targetList: Fire-DestroyBlocks
   flag_takeGroup: false
-  flag_regionDefault: none
+  flag_regionDefault: allow
   flag_globalDefault: allow
   flag_help: State flag controlling whether fire will be able to spread to and destroy blocks in this region. Defaults to allow all. Use fire-destroyblocks flag to specify blocks to check when spreading.
 
@@ -2026,7 +2026,8 @@ dRegions_Flag_Notify-Enter:
   event_priority: 5
   flag_type: b
   flag_takeGroup: false
-  flag_defaultValue: false
+  flag_regionDefault: false
+  flag_globalDefault: false
   flag_help: Boolean flag controlling whether notifications are sent for entering this region. Set to true or false. Defaults to false.
 
   event-allowed:
@@ -2089,6 +2090,74 @@ dRegions_Flag_Lava-Fire:
   flag_regionDefault: true
   flag_globalDefault: true
   flag_help: Boolean flag controlling whether lava can cause fires in this region. Set to true or false. Defaults to true.
+
+dRegions_Flag_Lightning-Fire:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Lightning-Fire<&4>]"
+  lore:
+  - <&5>Can lightning cause fires
+  event_hooks: firefrom_lightning
+  event_priority: 5
+  region_highestOnly: false
+  flag_type: b
+  flag_name: Lightning-Fire
+  flag_takeGroup: false
+  flag_regionDefault: true
+  flag_globalDefault: true
+  flag_help: Boolean flag controlling whether lightning can cause fires in this region. Set to true or false. Defaults to true.
+
+dRegions_Flag_Explosion-Fire:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Explosion-Fire<&4>]"
+  lore:
+  - <&5>Can explosions cause fires
+  event_hooks: firefrom_explosion
+  event_priority: 5
+  region_highestOnly: false
+  flag_type: b
+  flag_name: Explosion-Fire
+  flag_takeGroup: false
+  flag_regionDefault: true
+  flag_globalDefault: true
+  flag_help: Boolean flag controlling whether explosions can cause fires in this region. Set to true or false. Defaults to true.
+
+dRegions_Flag_Endercrystal-Fire:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Endercrystal-Fire<&4>]"
+  lore:
+  - <&5>Can ender crystals cause fires
+  event_hooks: firefrom_endercrystal
+  event_priority: 5
+  region_highestOnly: false
+  flag_type: b
+  flag_name: Endercrystal-Fire
+  flag_takeGroup: false
+  flag_regionDefault: true
+  flag_globalDefault: true
+  flag_help: Boolean flag controlling whether ender crystals can cause fires in this region. Set to true or false. Defaults to true.
+
+dRegions_Flag_Fireball-Fire:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Fireball-Fire<&4>]"
+  lore:
+  - <&5>Can Fireballs cause fires
+  event_hooks: firefrom_Fireball
+  event_priority: 5
+  region_highestOnly: false
+  flag_type: b
+  flag_name: Fireball-Fire
+  flag_takeGroup: false
+  flag_regionDefault: true
+  flag_globalDefault: true
+  flag_help: Boolean flag controlling whether fireballs can cause fires in this region. Set to true or false. Defaults to true.
 
 dRegions_Flag_Ice-Melt:
   type: item
