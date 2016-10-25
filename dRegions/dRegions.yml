@@ -588,6 +588,52 @@ dRegions_Tools:
     - inventory set 'd:<player.inventory>' 'o:<c.item>[display_name=dRegions<&sp>Wand;lore=%lore%;nbt=dRegions_Tool/wand;nbt=dRegions_Owner/<player>;nbt=dRegions_Pos1/%pos1%;nbt=dRegions_Pos2/%pos2%;nbt=dRegions_WandType/%type%;flags=HIDE_ATTRIBUTES|HIDE_DESTROYS|HIDE_ENCHANTS|HIDE_PLACED_ON|HIDE_POTION_EFFECTS|HIDE_UNBREAKABLE]' 'slot:<player.inventory.find[<c.item>]>'
 #
 #  END dRegions Tools
+#---------------------------------------
+#
+#  dRegions Message Handler
+#
+#  - run instantly delay:1t s@dRegions_Msg 'def:path.to.message|[<player>/server]|additional|data'
+#
+dRegions_Msg:
+  type: task
+  debug: false
+  msgs:
+    wand:
+      setpos:
+        0:
+          - '<&f>POS<def[3]><&co>  <&3><&o><def[pos<def[4]>].replace[,].with[<&7>, <&3><&o>]>'
+        1:
+          - '<&f>Selection started at <&3><&o><def[3].simple.replace[,].with[<&7>,<&3><&o>]>'
+        2:
+          - '<&f>Selection expanded to include<&co> <&3><&o><def[4].simple.replace[,].with[<&7>,<&3><&o>]>'
+      error:
+        0:
+          - '<&c>You must begin a selection before you can expand it.'
+        1:
+          - '<&c>That position is already included.'
+        2:
+          - '<&c>pos<def[3]> is already set'
+    tools:
+      error:
+        0:
+          - '<&4><&l>ERROR<&co> <&a>You should not have this!'
+
+  script:
+    - if '%2%' == 'server' {
+      - announce to_console '<&4><&lb><&6>dRegions<&4><&rb>  <script.yaml_key[msgs.%1%].get[1]>'
+      - goto end
+      }
+    - if <server.list_scripts> !contains 's@MSG_Version' {
+      - narrate '<&4><&lb><&6>dRegions<&4><&rb>  <script.yaml_key[msgs.%1%].get[1]>'
+      - goto end
+      }
+    - define prefix '<proc[msgCommand].context[<&4><&lb><&6>dRegions<&4><&rb>|drg help|<&6>   dRegions<&nl> <&nl><&d>Click for help]>'
+    - foreach '<script.yaml_key[msgs.%1%]>':
+      - narrate "%prefix%   <parse:<def[value]>>"
+    - mark 'end'
+
+#
+#  END dRegions Messages
 #--------------------------------------
 #
 ################################################################################
