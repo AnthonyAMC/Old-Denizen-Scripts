@@ -475,7 +475,7 @@ dRegions:
   #
   # Whitelist mode.
   # When an event is set to 'true' and no blocks are specified in the blocklist,
-  # it will always allow the event. If there are blocks specifed, it will only
+  # it will always allow the event. If there are blocks specified, it will only
   # allow events involving those blocks listed.
   #
   event_PreProc_Config:
@@ -516,6 +516,79 @@ dRegions:
 #
 #
 #
+#--------------------------------------
+#
+#  dRegions Tools
+#
+#  All dRegions tools should be housed here. Players can bind any action to any tool.
+#
+dRegions_Tools:
+  type: world
+  debug: false
+  events:
+    on player clicks:
+      - if !<c.item.has_nbt[dRegions_Tool]||false> {
+        - queue clear
+        }
+      - determine passively CANCELLED
+      - wait 1t
+      - define tool '<c.item.nbt[dRegions_Tool]>'
+      - if ( !<player.has_permission[dRegions.admin]||false> && !<player.has_permission[dRegions.tool.%tool%]||false> && !<player.is_op> ) || '<player.uuid>' != '<c.item.nbt[dRegions_Owner]>' {
+        - inventory set 'd:<player.inventory>' 'o:<c.item.simple>' 'slot:<player.inventory.find[<c.item>]>'
+        - run instantly delay:1t s@dRegions_Msg 'def:tools.error.0|<player>'
+        - queue clear
+        }
+      - inject locally %tool%
+
+  wand:
+    - if '<yaml[dRegions_global_config].read[config.regions.wand]>' != 'drg_wand' {
+      - inventory set 'd:<player.inventory>' 'o:<c.item.simple>' 'slot:<player.inventory.find[<c.item>]>'
+      - run instantly delay:1t s@dRegions_Msg 'def:tools.error.0|<player>'
+      - queue clear
+      }
+    - choose '<c.click_type>':
+      - case 'LEFT_CLICK_BLOCK':
+        - define pos '1'
+      - case 'RIGHT_CLICK_BLOCK':
+        - define pos '2'
+      - default:
+        - queue clear
+    - define pos1 '<c.item.nbt[dRegions_Pos1]||null>'
+    - define pos2 '<c.item.nbt[dRegions_Pos2]||null>'
+    - define type '<c.item.nbt[dRegions_WandType]||cuboid>'
+    - choose '%type%':
+      - case 'extender':
+        - define cuboid 'cu@%pos1%|%pos2%'
+        - if '%pos%' == '1' {
+          - define cuboid 'cu@<context.location.simple>|<context.location.simple>'
+          }
+          else {
+          - if '%pos1%' == 'null' {
+            - run instantly delay:1t s@dRegions_Msg 'def:wand.error.0|<player>'
+            - queue clear
+            }
+          - define cuboid_old '%cuboid%'
+          - define cuboid '<def[cuboid].include[<context.location.simple>]>'
+          - if '<def[cuboid_old]>' == '<def[cuboid]>' {
+            - run instantly delay:1t s@dRegions_Msg 'def:wand.error.1|<player>'
+            - queue clear
+            }
+          }
+        - define pos1 '<def[cuboid].min>'
+        - define pos2 '<def[cuboid].max>'
+        - run instantly delay:1t s@dRegions_Msg 'def:wand.setpos.%pos%|<player>|%pos1%|%pos2%'
+      - default:
+        - if <context.location.simple.is[==].to[<def[pos%pos%]>]||false> {
+          - run instantly delay:1t s@dRegions_Msg 'def:wand.error.2|<player>|%pos%'
+          - queue clear
+          }
+        - define pos%pos% '<context.location.simple>'
+        - run instantly delay:1t s@dRegions_Msg 'def:wand.setpos.0|<player>|%pos%|%pos1%|%pos2%'
+    - define lore 'li@dRegions Wand|<def[type].to_titlecase>|<&sp>|Pos1<&co>|<Pos2><&co>|LxWxH<&co>|Volume<&co>'
+    - inventory set 'd:<player.inventory>' 'o:<c.item>[display_name=dRegions<&sp>Wand;lore=%lore%;nbt=dRegions_Tool/wand;nbt=dRegions_Owner/<player>;nbt=dRegions_Pos1/%pos1%;nbt=dRegions_Pos2/%pos2%;nbt=dRegions_WandType/%type%;flags=HIDE_ATTRIBUTES|HIDE_DESTROYS|HIDE_ENCHANTS|HIDE_PLACED_ON|HIDE_POTION_EFFECTS|HIDE_UNBREAKABLE]' 'slot:<player.inventory.find[<c.item>]>'
+#
+#  END dRegions Tools
+#--------------------------------------
 #
 ################################################################################
 #
