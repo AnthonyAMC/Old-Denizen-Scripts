@@ -153,6 +153,11 @@ dRegions_Commands:
       usage: '/drg wgimport [world(s)] (-a)'
       permissions:
         - dregions.wgimport
+    tool:
+      usage: '/drg tool [type]'
+      permissions:
+        - dregions.tool.*
+        - dregions.tool.%tool%
 
   tab complete:
     - define args '<script.list_keys[commandArgs].alphanumeric.to_lowercase||li@>'
@@ -928,6 +933,11 @@ dRegions_Commands:
   # /drg wgimport [world(s)] -a
     - define result 'li@'
 
+  tab_tool:
+  # TODO
+  # /drg tool [type]
+    - define result 'li@'
+
 
 #
 #  END dRegions Command TAB Completion
@@ -998,6 +1008,36 @@ dRegions_Commands:
       }
     - foreach '%worlds%':
       - run s@dRegions_WG_Importer 'def:%value%'
+
+  tool:
+    - define args '<c.args.replace[tool]>'
+    - define tool '<def[args].get[1]||null>'
+    - if <c.server> {
+      - run instantly delay:1t s@dRegions_Msg 'def:command.error.0|server'
+      - queue clear
+      }
+    - if 'li@wand' !contains '%tool%' {
+      - run instantly delay:1t s@dRegions_Msg 'def:tools.error.1|<player>'
+      - queue clear
+      }
+    - if !<player.permission[dregions.admin]||false> && !<player.permission[dregions.tools.*]||false> && !<player.permission[dregions.tools.%tool%]||false> && !<player.is_op> {
+      - run instantly delay:1t s@dRegions_Msg 'def:command.error.1|<player>'
+      }
+    - if <player.item_in_hand.material.is_block> {
+      - run instantly delay:1t s@dRegions_Msg 'def:tools.error.2|<player>|<player.item_in_hand.material.name.replace[_].with[ ]>'
+      - queue clear
+      }
+    - choose '%tool%':
+      - case 'wand':
+        - define type '<def[args].get[2]||cuboid>'
+        - if 'li@extender|cuboid' !contains '%type%' {
+          - define type 'cuboid'
+          }
+        - define pad '<el@val[25].sub[<def[type].length>].div[1.5].round>'
+        - define lore 'li@<&r.pad_right[%pad%].with[<&sp>]><&6><def[type].to_titlecase><&r.pad_left[%pad%].with[<&sp>]>|<&sp>|<&sp><&sp><&7>Pos1<&co> <&c>unset|<&sp><&sp><&7>Pos2<&co> <&c>unset|<&sp><&sp><&7>LxHxW<&co> <&c>0x0x0|<&sp><&sp><&7>Volume<&co> <&c>0'
+        - inventory set 'd:<player.inventory>' 'o:<player.item_in_hand.simple>[display_name=<&r.pad_right[<el@25.sub[13].div[1.5].round>]><&c><&l><&n>dRegions<&sp>Wand<&r.pad_right[<el@25.sub[13].div[1.5].round_down>]>;lore=%lore%;nbt=dRegions_Tool/wand;nbt=dRegions_Owner/<player.uuid>;nbt=dRegions_WandType/%type%;flags=HIDE_ATTRIBUTES|HIDE_DESTROYS|HIDE_ENCHANTS|HIDE_PLACED_ON|HIDE_POTION_EFFECTS|HIDE_UNBREAKABLE]' 'slot:<player.inventory.find[<player.item_in_hand>]>'
+        - run instantly delay:1t s@dRegions_Msg 'def:wand.bind.0|<player>|<player.item_in_hand.material.name.replace[_].with[<&sp>]>|%type%'
+
 
   define:
   # /drg define [ID] (g:group) (player)
