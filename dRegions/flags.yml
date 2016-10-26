@@ -2699,7 +2699,7 @@ dRegions_Flag_Spawn:
   command_handler:
     - if !<player.permission[dregions.admin]||<player.is_op||false>> {
       - if <proc[dRegions_RegionOverlaps].context[<def[flagValue]>/<def[flagValue]>|%world%|<player>]> {
-        - run s@dRegions_Msg delay:1t 'def:<&c>You can not use that location!'
+        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>You can not use that location!'
         - queue clear
         }
       }

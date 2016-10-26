@@ -1038,7 +1038,6 @@ dRegions_Commands:
         - inventory set 'd:<player.inventory>' 'o:<player.item_in_hand.simple>[display_name=<&r.pad_right[<el@25.sub[13].div[1.5].round>]><&c><&l><&n>dRegions<&sp>Wand<&r.pad_right[<el@25.sub[13].div[1.5].round_down>]>;lore=%lore%;nbt=dRegions_Tool/wand;nbt=dRegions_Owner/<player.uuid>;nbt=dRegions_WandType/%type%;flags=HIDE_ATTRIBUTES|HIDE_DESTROYS|HIDE_ENCHANTS|HIDE_PLACED_ON|HIDE_POTION_EFFECTS|HIDE_UNBREAKABLE]' 'slot:<player.inventory.find[<player.item_in_hand>]>'
         - run instantly delay:1t s@dRegions_Msg 'def:wand.bind.0|<player>|<player.item_in_hand.material.name.replace[_].with[<&sp>]>|%type%'
 
-
   define:
   # /drg define [ID] (g:group) (player)
     - inject locally prerun instantly
@@ -1172,7 +1171,8 @@ dRegions_Commands:
       }
     # Check selection volume
     - define globalClaimVol '<yaml[dregions_global_config].read[config.regions.claim.max-volume]||0>'
-    - inject s@dWE_Commands p:selection_Size instantly
+    - define size '<cu@%pos1%|%pos2%.size>'
+    - define size '<def[size].x.mul[<def[size].y>].mul[<def[size].z>]>'
     - if <def[globalClaimVol].is[MORE].than[0]> {
       - if <def[size].is[MORE].than[%globalClaimVol%]> {
         - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Your selection exceeds the global limit!'
@@ -1293,9 +1293,28 @@ dRegions_Commands:
       }
     - define min '<yaml[dRegions_%world%_regions].read[regions.%name%.min].as_location.simple||null>'
     - define max '<yaml[dRegions_%world%_regions].read[regions.%name%.max].as_location.simple||null>'
-    - flag <player> 'dWEWand_Type:cuboid'
-    - flag <player> dWEWand:!
-    - flag <player> dWEWand:|:%min%|%max%
+    - if '<yaml[dRegions_global_config].read[config.regions.wand]||unset>' == 'dwe_wand' {
+      - flag <player> 'dWEWand_Type:cuboid'
+      - flag <player> dWEWand:!
+      - flag <player> dWEWand:|:%min%|%max%
+      }
+      else {
+      - define item '<player.item_in_hand>'
+      - if !<def[item].has_nbt[dRegions_Tool]||false>  || '<def[item].nbt[dRegions_Tool]||null>' != 'wand' {
+        - run instantly delay:1t s@dRegions_Msg 'def:command.error.2|<player>'
+        - queue clear
+        }
+      - define tool '<def[item].nbt[dRegions_Tool]||null>'
+      - if ( !<player.has_permission[dRegions.admin]||false> && !<player.has_permission[dRegions.tool.%tool%]||false> && !<player.is_op> ) || '<player.uuid>' != '<def[item].nbt[dRegions_Owner]||null>' {
+        - inventory set 'd:<player.inventory>' 'o:<def[item].simple>' 'slot:<player.item_in_hand.slot>'
+        - run instantly delay:1t s@dRegions_Msg 'def:tools.error.0|<player>'
+        - queue clear
+        }
+      - define type '<def[item].nbt[dRegions_WandType]||cuboid>'
+      - define pad '<el@val[25].sub[<def[type].length>].div[1.5].round>'
+      - define lore 'li@<&r.pad_right[%pad%].with[<&sp>]><&6><def[type].to_titlecase><&r.pad_right[%pad%].with[<&sp>]>|<&sp>|<&sp><&sp><&7>Region<&co> <&f>%name%|<&sp><&sp><&7>Pos1<&co> <&b><def[min]||unset>|<&sp><&sp><&7>Pos2<&co> <&b><def[max]||unset>|<&sp><&sp><&7>LxHxW<&co> <&b><cu@%min%|%max%.size.after[l@].before_last[,].split_by[,].parse[round].separated_by[x]||<&c>unset>|<&sp><&sp><&7>Volume<&co> <&b><el@val[<math:<cu@%min%|%max%.size.after[l@].before_last[,].replace[,].with[*]||0>>].round>'
+      - inventory set 'd:<player.inventory>' 'o:<def[item].simple>[display_name=<&r.pad_right[<el@25.sub[13].div[1.5].round>]><&c><&l><&n>dRegions<&sp>Wand<&r.pad_right[<el@25.sub[13].div[1.5].round_down>]>;lore=%lore%;nbt=dRegions_Tool/wand;nbt=dRegions_Owner/<player.uuid>;nbt=dRegions_Pos1/<def[min]>;nbt=dRegions_Pos2/<def[max]>;nbt=dRegions_WandType/%type%;flags=HIDE_ATTRIBUTES|HIDE_DESTROYS|HIDE_ENCHANTS|HIDE_PLACED_ON|HIDE_POTION_EFFECTS|HIDE_UNBREAKABLE]' 'slot:<player.item_in_hand.slot>'
+      }
     - run s@msgPrefixed delay:1t 'def:dRegions|<&7><&o>Selected <&f><&o>%name%'
 
   info:
@@ -2068,8 +2087,7 @@ dRegions_Commands:
     - if <c.args.find[-w].is[OR_MORE].than[0]||false> {
       - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name.to_lowercase||null>'
       - if <def[world].is[==].to[null]||true> {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Invalid world specfied!'
-        - run s@msgPrefixed delay:1t 'def:dRegions|<script.yaml_key[commandArgs.%command%.usage]>'
+        - run instantly delay:1t s@dRegions_Msg 'def:command.error.3|<player>|<script.yaml_key[commandArgs.%command%.usage]>'
         - queue clear
         }
       - define args '<c.args.remove[<c.args.find[-w].add[1].as_int>].exclude[-w]>'
@@ -2079,24 +2097,33 @@ dRegions_Commands:
       - define world '<player.world.name.to_lowercase>'
       }
     - if <li@define|redefine|claim.contains[%command%]> {
-      - define wandType '<player.flag[dWEWand_Type]||cuboid>'
+      - if '<yaml[dRegions_global_config].read[config.regions.wand]||unset>' == 'dwe_wand' {
+        - define wandType '<player.flag[dWEWand_Type]||cuboid>'
+        - define pos1 '<player.flag[dWEWand].get[1].as_location||null>'
+        - define pos2 '<player.flag[dWEWand].get[2].as_location||null>'
+        }
+        else {
+        - define item '<player.item_in_hand>'
+        - if !<def[item].has_nbt[dRegions_Tool]||false> {
+          - run instantly delay:1t s@dRegions_Msg 'def:command.error.2|<player>'
+          - queue clear
+          }
+        - define wandType '<def[item].nbt[dRegions_WandType]||cuboid>'
+        - define pos1 '<def[item].nbt[dRegions_Pos1].as_location||null>'
+        - define pos2 '<def[item].nbt[dRegions_Pos2].as_location||null>'
+        }
       - if <li@cuboid|extender.contains[%wandType%].not||true> {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>You must select a cuboid type region!'
-        - run s@msgPrefixed delay:1t 'def:dRegions|<script.yaml_key[commandArgs.%command%.usage]>'
+        - run instantly delay:1t s@dRegions_Msg 'def:command.error.4|<player>|<script.yaml_key[commandArgs.%command%.usage]>'
         - queue clear
         }
-      - define pos1 '<player.flag[dWEWand].get[1].as_location||null>'
-      - define pos2 '<player.flag[dWEWand].get[2].as_location||null>'
       - if <def[pos1].is[==].to[null]>
         || <def[pos2].is[==].to[null]> {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>No region selected!'
-        - run s@msgPrefixed delay:1t 'def:dRegions|<script.yaml_key[commandArgs.%command%.usage]>'
+        - run instantly delay:1t s@dRegions_Msg 'def:command.error.5|<player>|<script.yaml_key[commandArgs.%command%.usage]>'
         - queue clear
         }
       - if <def[pos1].world.name.is[!=].to[%world%]>
         || <def[pos2].world.name.is[!=].to[%world%]> {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Selected region not within specified world!'
-        - run s@msgPrefixed delay:1t 'def:dRegions|<script.yaml_key[commandArgs.%command%.usage]>'
+        - run instantly delay:1t s@dRegions_Msg 'def:command.error.6|<player>|<script.yaml_key[commandArgs.%command%.usage]>'
         - queue clear
         }
       - define selectedCuboid '<cu@%pos1%|%pos2%>'

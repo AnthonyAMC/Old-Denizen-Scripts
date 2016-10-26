@@ -4,14 +4,14 @@
 #
 #
 #   Authors: |Anthony|
-#   Version: 0.41
+#   Version: 0.42
 #   dScript Version: 0.9.8-DEV_b646
 #
 #
 #   Dependencies:
 #
-#    - dWorldEditor
-#      - Integrates with region selection wand
+#    - dWorldEditor (Soft dependency)
+#      - More advanced than the built in region selection wand.
 #      - https://github.com/AnthonyAMC/Public-Denizen-Scripts/blob/master/dWE/dWorldEditor.yml
 #
 #    - MessageConstructorLibrary
@@ -78,6 +78,7 @@
 #  /drg remove            dregions.remove              Remove a region
 #  /drg list              dregions.list                List regions
 #  /drg info              dregions.info                See info on a region
+#  /drg tool              dregions.tool              Bind a dRegions tool to your currently held item
 #  /drg addowner          dregions.addowner            Add a player or perm group as a region owner
 #  /drg removeowner       dregions.removeowner         Remove a player or perm group from region owner
 #  /drg addmember         dregions.addmember           Add a player or perm group as a region member
@@ -88,6 +89,7 @@
 #  /drg teleport          dregions.teleport            Teleport to region
 #  /drg reload            dregions.reload              Reload all config files
 #  /drg restart           dregions.restart             Restart dRegions for whatever reason
+#  /drg wgimport          dregions.wgimport            Import existing WorldGuard regions to dRegions
 #                         dregions.admin               Override permission for all things dRegions
 #
 #                         dregions.invincible          Makes the player totally invincible
@@ -96,7 +98,7 @@
 #--- Basic Usage Tutorial
 #
 #  After you've gotten installed, setup, and permissions assigned (op-only mode
-# is fine too), you will need to give yourself a region wand. /dwe wand
+# is fine too), you will need to give yourself a region wand. /drg tool wand
 #
 #  Mark your region selection using the wand as directed.
 #
@@ -601,11 +603,12 @@ dRegions_Tools:
             }
           }
         - run instantly delay:1t s@dRegions_Msg 'def:wand.setpos.0|<player>|%pos%|<def[pos%pos%]>'
-
     - define pad '<el@val[25].sub[<def[type].length>].div[1.5].round>'
-
-    - define lore 'li@<&r.pad_right[%pad%].with[<&sp>]><&6><def[type].to_titlecase><&r.pad_left[%pad%].with[<&sp>]>|<&sp>|<&sp><&sp><&7>Pos1<&co> <&b><def[pos1]||unset>|<&sp><&sp><&7>Pos2<&co> <&b><def[pos2]||unset>|<&sp><&sp><&7>LxHxW<&co> <&b><cu@%pos1%|%pos2%.size.after[l@].before_last[,].split_by[,].parse[round].separated_by[x]||<&c>unset>|<&sp><&sp><&7>Volume<&co> <&b><el@val[<math:<cu@%pos1%|%pos2%.size.after[l@].before_last[,].replace[,].with[*]||0>>].round>'
+    - define lore 'li@<&r.pad_right[%pad%].with[<&sp>]><&6><def[type].to_titlecase><&r.pad_right[%pad%].with[<&sp>]>|<&sp>|<&sp><&sp><&7>Pos1<&co> <&b><def[pos1]||unset>|<&sp><&sp><&7>Pos2<&co> <&b><def[pos2]||unset>|<&sp><&sp><&7>LxHxW<&co> <&b><cu@%pos1%|%pos2%.size.after[l@].before_last[,].split_by[,].parse[round].separated_by[x]||<&c>unset>|<&sp><&sp><&7>Volume<&co> <&b><el@val[<math:<cu@%pos1%|%pos2%.size.after[l@].before_last[,].replace[,].with[*]||0>>].round>'
     - inventory set 'd:<player.inventory>' 'o:<c.item.simple>[display_name=<&r.pad_right[<el@25.sub[13].div[1.5].round>]><&c><&l><&n>dRegions<&sp>Wand<&r.pad_right[<el@25.sub[13].div[1.5].round_down>]>;lore=%lore%;nbt=dRegions_Tool/wand;nbt=dRegions_Owner/<player.uuid>;nbt=dRegions_Pos1/<def[pos1]>;nbt=dRegions_Pos2/<def[pos2]>;nbt=dRegions_WandType/%type%;flags=HIDE_ATTRIBUTES|HIDE_DESTROYS|HIDE_ENCHANTS|HIDE_PLACED_ON|HIDE_POTION_EFFECTS|HIDE_UNBREAKABLE]' 'slot:<player.inventory.find[<c.item>]>'
+
+  info:
+    - ''
 #
 #  END dRegions Tools
 #---------------------------------------
@@ -653,6 +656,20 @@ dRegions_Msg:
           - '<&4><&l>ERROR<&co> <&a>Must be run as a player!'
         1:
           - '<&c>Insufficient permissions!'
+        2:
+          - '<&c>Not holding a dRegions tool!'
+        3:
+          - '<&c>Invalid world specfied!'
+          - '<def[3]>'
+        4:
+          - '<&c>You must select a cuboid type region!'
+          - '<def[3]>'
+        5:
+          - '<&c>No region selected!'
+          - '<def[3]>'
+        6:
+          - '<&c>Selected region not within specified world!'
+          - '<def[3]>'
 
   script:
     - if '%2%' == 'server' {
@@ -660,10 +677,11 @@ dRegions_Msg:
       - goto end
       }
     - if <server.list_scripts> !contains 's@MSG_Version' {
-      - narrate '<&4><&lb><&6>dRegions<&4><&rb>  <script.yaml_key[msgs.%1%].get[1]>'
-      - goto end
+      - define prefix '<&4><&lb><&6>dRegions<&4><&rb>'
       }
-    - define prefix '<proc[msgCommand].context[<&4><&lb><&6>dRegions<&4><&rb>|drg help|<&6>   dRegions<&nl> <&nl><&d>Click for help]>'
+      else {
+      - define prefix '<proc[msgCommand].context[<&4><&lb><&6>dRegions<&4><&rb>|drg help|<&6>   dRegions<&nl> <&nl><&d>Click for help]>'
+      }
     - foreach '<script.yaml_key[msgs.%1%]>':
       - narrate "%prefix%  <parse:<def[value]>>"
     - mark 'end'
