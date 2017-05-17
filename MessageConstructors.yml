@@ -6,7 +6,7 @@
 #     A set of utilities to make displaying text pretty, uniform, and easy     #
 #                                                                              #
 #   Authors: |Anthony|                                                         #
-#   Version: 0.38                                                              #
+#   Version: 0.39                                                              #
 #   dScript Version: 0.9.8-DEV_b646                                            #
 #                                                                              #
 #   For bleeding-edge code, bug reports, code contributions, and feature       #
@@ -44,7 +44,7 @@ MSG_Version:
   type: version
   author: Anthony
   name: MessageConstructorLibrary
-  version: 0.38
+  version: 0.39
   description: A Library for Message Construction
   id: 90
 #
@@ -77,7 +77,7 @@ MCL_Events:
 
   updateCheck:
     - ^if !<server.has_flag[MCL.Version.Repo]> {
-      - ~webget "http://old.mcmonkey.org/denizen/repo/version/<s@MSG_Version.yaml_key[id]>" save:page
+      - ~webget "http://one.denizenscript.com/denizen/repo/version/<s@MSG_Version.yaml_key[id]>" save:page
       - ^flag server "MCL.Version.Repo:<entry[page].result||unknown>" d:1h
       }
     - ^define repoVersion '<server.flag[MCL.Version.Repo]||unknown>'
@@ -326,7 +326,7 @@ msgBoxed:
       - if '%repoVersion%' != '%currentVersion%' {
         - define uString '<&c><&o>Repo Version<&co> <&b>%repoVersion%'
         - define uPad '<def[pageWidth].sub[<def[uString].strip_color.length>].add[1].mul[1.5].round>'
-        - define url 'http://old.mcmonkey.org/denizen/repo/entry/<s@%script%_Version.yaml_key[id]>'
+        - define url 'http://one.denizenscript.com/denizen/repo/entry/<s@%script%_Version.yaml_key[id]>'
         - narrate "<&5>|<&f.pad_right[%uPad%]><&c><&o>Repo Version<&co> <proc[msgUrl].context[<&a>%repoVersion%|%url%|Click to go to repo!]>"
         }
       }
@@ -388,7 +388,7 @@ msgParser:
     - define message '<context.raw_json.after[<&lb>].before_last[<&rb>]>'
     - foreach '<def[message].after[<&lc>].before_last[<&rc>].split_by[<&rc>,<&lc>]>':
       - define element '<def[value]>'
-      - foreach '<def[element].split_by[,]>':
+      - foreach '<def[element].split_by[<&dq>,<&dq>]>':
         - define node '<def[value]>'
         - define attribute '<def[node].before[<&co>]>'
         - define aValue '<def[node].after[<&co>]>'
