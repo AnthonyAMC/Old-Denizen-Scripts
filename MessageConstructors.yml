@@ -425,7 +425,7 @@ msgParser:
           - case 'hover':
             - define hover '<def[split].get[3].before_last[<&dq>].replace[\u0026].with[&].unescaped>'
             - define button '"text":"%text%","hoverEvent":{"action":"show_text","value":"%hover%"}'
-        - define message '<def[message].replace[%node%].with[%button%]>'
+        - define message '<def[message].before[%node%]>%button%<def[message].after[%node%]>'
     - determine 'RAW_JSON:{"extra":[<def[message]>],"text":""}'
 #
 #  END URL Parser
