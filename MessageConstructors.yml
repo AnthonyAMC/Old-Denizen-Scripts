@@ -6,7 +6,7 @@
 #     A set of utilities to make displaying text pretty, uniform, and easy     #
 #                                                                              #
 #   Authors: |Anthony|                                                         #
-#   Version: 0.39                                                              #
+#   Version: 0.40                                                              #
 #   dScript Version: 0.9.8-DEV_b646                                            #
 #                                                                              #
 #   For bleeding-edge code, bug reports, code contributions, and feature       #
@@ -44,7 +44,7 @@ MSG_Version:
   type: version
   author: Anthony
   name: MessageConstructorLibrary
-  version: 0.39
+  version: 0.40
   description: A Library for Message Construction
   id: 90
 #
@@ -77,9 +77,10 @@ MCL_Events:
 
   updateCheck:
     - ^if !<server.has_flag[MCL.Version.Repo]> {
+#      - ~webget "https://raw.githubusercontent.com/AnthonyAMC/Public-Denizen-Scripts/master/versions/MCL.txt" save:page
       - ~webget "http://one.denizenscript.com/denizen/repo/version/<s@MSG_Version.yaml_key[id]>" save:page
       - ^define result '<entry[page].result||unknown>'
-      - ^if !<def[result].matches[number]> {
+      - ^if !<def[result].is[matches].to[number]> {
         - define result 'unknown'
         }
       - ^flag server "MCL.Version.Repo:<def[result]>" d:1h
