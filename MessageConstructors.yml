@@ -78,7 +78,7 @@ MCL_Events:
   updateCheck:
     - ^if !<server.has_flag[MCL.Version.Repo]> {
 #      - ~webget "https://raw.githubusercontent.com/AnthonyAMC/Public-Denizen-Scripts/master/versions/MCL.txt" save:page
-      - ~webget "http://one.denizenscript.com/denizen/repo/version/<s@MSG_Version.yaml_key[id]>" save:page
+      - ~webget "https://one.denizenscript.com/denizen/repo/version/<s@MSG_Version.yaml_key[id]>" save:page
       - ^define result '<entry[page].result||unknown>'
       - ^if !<def[result].is[matches].to[number]> {
         - define result 'unknown'
