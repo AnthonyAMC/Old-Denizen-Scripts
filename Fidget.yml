@@ -1,6 +1,6 @@
 ################################################################################
 #
-#                           F i d g e t i n g   N P C 
+#                           F i d g e t i n g   N P C
 #
 #   Author: |Anthony|
 #   Version: 0.9
@@ -24,6 +24,9 @@
 # Set the fidget speed
 #   /ex flag npc Pathfind.FidgetSpeed:[someNumber]
 #   Default fidget speed is 0.8
+# Set the pathing material
+#   /ex flag npc Pathfind.FidgetPathMaterial:[someMaterial]
+#   Default pathfinding material is what the NPC is standing on when you assing it
 # Set the assignment script
 #   /npc assignment --set 'FidgetingNPC'
 # Now that the NPC is already set up you can adjust the NPC type
@@ -31,89 +34,85 @@
 #
 ################################################################################
 #
-#'FidgetingNPC':
-#  type: assignment
-#
-#  default constants:
-#    npctype: "FidgetingNPC"
-#
-#  actions:
-#    on assignment:
-#      - run s@FidgetingInit instantly
-#    on spawn:
-#      - run s@FidgetingInit instantly
-#    on despawn:
-#      - run s@FidgetStop instantly
-#    on exit proximity:
-#      - run s@Fidget id:<npc.name>_fidgetQueue
-#    on enter proximity:
-#      - run s@FidgetStop instantly
-#      - walk <player.location> radius:2
-#    on unavailable:
-#      - narrate 'You tap <npc.name> on the shoulder.'
-#
-#'FidgetingInit':
-#  type: task
-#  script:
-#    - ^trigger name:chat state:true radius:5
-#    - ^trigger name:click state:true radius:5
-#    - ^trigger name:proximity state:true radius:5
-#    - ^trigger name:damage state:false
-#    - ^lookclose true range:4 realistic
-#    - ^if !<npc.flag[Pathfind.FidgetLocation]> {
-#      - ^flag npc Pathfind.FidgetLocation:<npc.location>
-#      }
-#      else walk <npc.flag[Pathfind.FidgetLocation]> speed:0.8
-#    - run s@Fidget id:<npc.name>_fidgetQueue
-#
+FidgetingNPC:
+  type: assignment
+  debug: false
+
+  default constants:
+    npctype: "FidgetingNPC"
+
+  actions:
+    on assignment:
+      - run s@FidgetingInit instantly
+    on spawn:
+      - run s@FidgetingInit instantly
+    on despawn:
+      - queue <npc.id>_fidgetQueue clear
+    on exit proximity:
+      - run s@Fidget id:<npc.id>_fidgetQueue
+    on enter proximity:
+      - queue <npc.id>_fidgetQueue clear
+      - walk <player.location> radius:2
+    on unavailable:
+      - narrate 'You tap <npc.name> on the shoulder.'
+
+FidgetingInit:
+  type: task
+  debug: false
+  script:
+    - ^trigger name:chat state:true radius:5
+    - ^trigger name:click state:true radius:5
+    - ^trigger name:proximity state:true radius:5
+    - ^trigger name:damage state:false
+    - ^lookclose true range:4 realistic
+    - ^if !<npc.flag[Pathfind.FidgetLocation]> {
+      - ^flag npc Pathfind.FidgetLocation:<npc.location>
+      }
+    - ^if !<npc.flag[Pathfind.FidgetPathMaterial]> {
+      - ^flag npc Pathfind.FidgetPathMaterial:<npc.standing_on.material.name>
+      }
+    - run s@Fidget id:<npc.id>_fidgetQueue
+
 ################################################################################
 
 
-'Fidget':
+Fidget:
 #
 # Directly pass info to the fidget script for one time uses
 #
-# - ^run s@Fidget def:radius|speed|wait|location|height|pathmat id:<npc.id>_YourQueueID
+# - ^run s@Fidget def:radius|speed|wait|location|height|pathmat id:<npc.id>_fidgetQueue
 #
     type: task
     debug: false
     script:
       - ^if !<npc.is_spawned> queue clear
-      - ^define radius '<def[1] || <npc.flag[Pathfind.FidgetRadius] || 5>>'
-      - ^define speed '<def[2] || <npc.flag[Pathfind.FidgetSpeed] || 0.6>>'
-      - ^define wait '<def[3] || <npc.flag[Pathfind.FidgetWait] || 10>>'
-      - ^define FidgetLocation '<def[4] || <npc.flag[Pathfind.FidgetLocation] || npc.location>>'
-      - ^define FidgetHeight '<def[5] || <npc.flag[Pathfind.FidgetHeight] || 4>>'
-      - ^define pathMaterial '<def[6] || <npc.flag[Pathfind.FidgetPathMaterial] || cobblestone|coal_block|cobblestone_stairs>>'
+      - ^define radius '<def[1]||<npc.flag[Pathfind.FidgetRadius]||5>>'
+      - ^define speed '<def[2]||<npc.flag[Pathfind.FidgetSpeed]||0.6>>'
+      - ^define wait '<def[3]||<npc.flag[Pathfind.FidgetWait]||10>>'
+      - ^define FidgetLocation '<def[4]||<npc.flag[Pathfind.FidgetLocation]||npc.location>>'
+      - ^define FidgetHeight '<def[5]||<npc.flag[Pathfind.FidgetHeight]||4>>'
+      - ^define pathMaterial '<def[6]||<npc.flag[Pathfind.FidgetPathMaterial]||cobblestone|coal_block|cobblestone_stairs>>'
       - ^define counter 0
       - inject s@FidgetChooseLocation instantly
       - wait <util.random.int[<def[wait].mul[0.5].as_int>].to[<def[wait].mul[1.5].as_int>]>s
-#      - wait <util.random.int[<util.random.int[0].to[5]>].to[<util.random.int[5].to[20]>]>s
       - inject s@Fidget
 
 
-'FidgetChooseLocation':
+FidgetChooseLocation:
     type: task
-    debug: true
+    debug: false
     script:
       - define target '<def[FidgetLocation].as_location.find.surface_blocks[<def[pathMaterial]>].within[<def[radius]>].random>'
-#      - define target <%FidgetLocation%.as_location.add[<util.random.int[-%radius%].to[%radius%]>,0,<util.random.int[-%radius%].to[%radius%]>]>
-      - define counter '<def[counter] || 0>'
+      - define counter '<def[counter]||0>'
       - if <def[counter].is[LESS].than[5]> {
         - if <def[target].distance[%FidgetLocation%].vertical.is[OR_LESS].than[%fidgetHeight%]> {
           - walkto %target% speed:%speed%
           }
           else {
-          - define counter <math:%counter%+1>
+          - define counter <def[counter].add[1]>
           - inject s@FidgetChooseLocation instantly
           }
         }
-
-
-'FidgetStop':
-# Phasing this out. Doesn't make sense to make a task for one queue command
-    type: task
-    debug: false
-    script:
-      - ^queue <npc.name>_fidgetQueue stop
-      - ^queue <npc.id>_fidgetQueue stop
+        else {
+        - announce "<npc.name> HELP! I got confused!"
+        }
