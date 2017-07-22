@@ -6,7 +6,7 @@
 #     A set of utilities to make displaying text pretty, uniform, and easy     #
 #                                                                              #
 #   Authors: |Anthony|                                                         #
-#   Version: 0.41                                                              #
+#   Version: 0.42                                                              #
 #   dScript Version: 1.0.2-DEV_b196                                            #
 #                                                                              #
 #   For bleeding-edge code, bug reports, code contributions, and feature       #
@@ -44,7 +44,7 @@ MSG_Version:
   type: version
   author: Anthony
   name: MessageConstructorLibrary
-  version: 0.41
+  version: 0.42
   description: A Library for Message Construction
   id: 90
 #
@@ -405,26 +405,26 @@ msgParser:
           }
         - define split '<def[aValue].after[<&dq><&ss>@<&ss><&chr[260f]>].split_by[_-_]>'
         - define type '<def[split].get[1].unescaped>'
-        - define text '<def[split].get[2].replace[\\u0026].with[&].unescaped>'
+        - define text '<def[split].get[2].replace[\\u0026].with[&].replace[\u0026].with[&].unescaped>'
         - choose '<def[split].get[1].unescaped>':
           - case 'URL':
-            - define url 'http<&co>//<def[split].get[3].replace[\\u0026].with[&].unescaped>'
-            - define hover '<def[split].get[4].before_last[<&dq>].replace[\\u0026].with[&].unescaped>'
+            - define url 'http<&co>//<def[split].get[3].replace[\\u0026].with[&].replace[\u0026].with[&].unescaped>'
+            - define hover '<def[split].get[4].before_last[<&dq>].replace[\\u0026].with[&].replace[\u0026].with[&].unescaped>'
             - define button '"text":"%text%","clickEvent":{"action":"open_url","value":"%url%"},"hoverEvent":{"action":"show_text","value":"%hover%"}'
           - case 'command':
-            - define command '/<def[split].get[3].replace[\\u0026].with[&].unescaped>'
-            - define hover '<def[split].get[4].before_last[<&dq>].replace[\\u0026].with[&].unescaped>'
+            - define command '/<def[split].get[3].replace[\\u0026].with[&].replace[\u0026].with[&].unescaped>'
+            - define hover '<def[split].get[4].before_last[<&dq>].replace[\\u0026].with[&].replace[\u0026].with[&].unescaped>'
             - define button '"text":"%text%","clickEvent":{"action":"run_command","value":"%command%"},"hoverEvent":{"action":"show_text","value":"%hover%"}'
           - case 'hint':
-            - define command '/<def[split].get[3].replace[\\u0026].with[&].unescaped>'
-            - define hover '<def[split].get[4].before_last[<&dq>].replace[\\u0026].with[&].unescaped>'
+            - define command '/<def[split].get[3].replace[\\u0026].with[&].replace[\u0026].with[&].unescaped>'
+            - define hover '<def[split].get[4].before_last[<&dq>].replace[\\u0026].with[&].replace[\u0026].with[&].unescaped>'
             - define button '"text":"%text%","clickEvent":{"action":"suggest_command","value":"%command%"},"hoverEvent":{"action":"show_text","value":"%hover%"}'
           - case 'chat':
-            - define chat '<def[split].get[3].replace[\\u0026].with[&].unescaped>'
-            - define hover '<def[split].get[4].before_last[<&dq>].replace[\\u0026].with[&].unescaped>'
+            - define chat '<def[split].get[3].replace[\\u0026].with[&].replace[\u0026].with[&].unescaped>'
+            - define hover '<def[split].get[4].before_last[<&dq>].replace[\\u0026].with[&].replace[\u0026].with[&].unescaped>'
             - define button '"text":"%text%","clickEvent":{"action":"run_command","value":"%chat%"},"hoverEvent":{"action":"show_text","value":"%hover%"}'
           - case 'hover':
-            - define hover '<def[split].get[3].before_last[<&dq>].replace[\\u0026].with[&].unescaped>'
+            - define hover '<def[split].get[3].before_last[<&dq>].replace[\\u0026].with[&].replace[\u0026].with[&].unescaped>'
             - define button '"text":"%text%","hoverEvent":{"action":"show_text","value":"%hover%"}'
         - define message '<def[message].before[%node%]>%button%<def[message].after[%node%]>'
     - determine 'RAW_JSON:{"extra":[<def[message]>],"text":""}'
