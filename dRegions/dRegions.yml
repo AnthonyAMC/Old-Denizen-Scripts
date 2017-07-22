@@ -247,7 +247,7 @@ dRegions:
 
   updateCheck:
     - ^if !<server.has_flag[dRegions.Version.Repo]> {
-      - ~webget "http://one.denizenscript.com/denizen/repo/version/<s@dRegions_Version.yaml_key[id]>" save:page
+      - ~webget "https://one.denizenscript.com/denizen/repo/version/<s@dRegions_Version.yaml_key[id]>" save:page
       - ^flag server "dRegions.Version.Repo:<entry[page].result||unknown>" d:1h
       }
     - ^define repoVersion '<server.flag[dRegions.Version.Repo]||unknown>'
