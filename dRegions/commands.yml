@@ -950,7 +950,7 @@ dRegions_Commands:
   help:
     - define arg '<c.args.get[2].escaped||null>'
     - if <def[args].contains[%arg%]||false> {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<parse:<script.yaml_key[commandArgs.%arg%.usage]||No help for you!>>'
+      - run instantly delay:1t s@dRegions_Msg 'def:command.help.syntax|<player||server>|<script.yaml_key[commandArgs.%arg%.usage]||No help for you!>'
       - queue clear
       }
     - if <player.permission[dRegions.admin]||<player.is_op||<context.server||false>>> {
@@ -973,7 +973,6 @@ dRegions_Commands:
       - queue clear
       }
     - inject s@dRegions p:reloadYaml instantly
-#    - run s@msgPrefixed delay:1t 'def:dRegions|<&7><&o>System files loaded!'
 
   restart:
     - if !<player.permission[dRegions.restart]||<player.is_op||<context.server||false>>> {
@@ -986,7 +985,7 @@ dRegions_Commands:
     - define args '<c.args.replace[wgimport]>'
     - if <c.server> {
       - if <def[args].size> == 0 {
-        - run s@msgPrefixed 'def:dRegions|<&c>Must specify world(s) to import!'
+        - run instantly delay:1t s@dRegions_Msg 'def:command.wgimport.error|<player||server>'
         - queue clear
         }
       }
@@ -1044,18 +1043,17 @@ dRegions_Commands:
     # Check for existing region
     - define exists '<proc[dRegions_RegionExists].context[%name%|%world%]||true>'
     - if <def[exists].is[==].to[orphan]> {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>There is an orphaned region by this name!'
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Please notify an admin!'
+      - run instantly delay:1t s@dRegions_Msg 'def:region.orphan|<player||server>'
       - queue clear
       }
       else if <def[exists]> {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>There is already a region by this name!'
+      - run instantly delay:1t s@dRegions_Msg 'def:region.existingRegion|<player||server>'
       - queue clear
       }
     # Check for overlapping regions
     - if !<player.permission[dregions.admin]||<player.is_op||false>> {
       - if <proc[dRegions_RegionOverlaps].context[<def[selectedCuboid].separated_by[/].replace[cu@]>|%world%|<player>]> {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Region selection contains unowned regions!'
+        - run instantly delay:1t s@dRegions_Msg 'def:region.otherRegions|<player||server>'
         - queue clear
         }
       }
@@ -1085,7 +1083,7 @@ dRegions_Commands:
       }
     # Create the region
     - inject s@dRegions p:createRegionEntry instantly
-    - run s@msgPrefixed delay:1t 'def:dRegions|<&7><&o>Created %name% in %world%'
+    - run instantly delay:1t s@dRegions_Msg 'def:command.define.create|<player||server>|%name%|%world%'
 
   redefine:
   # /drg redefine [ID]
@@ -1093,30 +1091,29 @@ dRegions_Commands:
     # Check if region exists
     - define exists '<proc[dRegions_RegionExists].context[%name%|%world%]>'
     - if <def[exists].is[==].to[orphan]> {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>There is an orphaned region by this name!'
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Please notify an admin!'
+      - run instantly delay:1t s@dRegions_Msg 'def:region.orphan|<player||server>'
       - queue clear
       }
       else if <def[exists].not> {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>There is no region by this name!'
+      - run instantly delay:1t s@dRegions_Msg 'def:region.noRegion|<player||server>'
       - queue clear
       }
     # Don't redefine global type regions
     - if <yaml[dRegions_%world%_regions].read[regions.%name%.type].is[==].to[global]||false> {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>You can not redefine global regions!'
+      - run instantly delay:1t s@dRegions_Msg 'def:command.redefine.error.1|<player||server>'
       - queue clear
       }
     # Check if is owner
     - if !<player.permission[dregions.admin]||<player.is_op||false>> {
       - if <proc[dRegions_IsOwner].context[%name%|%world%|<player>].not> {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>You are not an owner of this region!'
+        - run instantly delay:1t s@dRegions_Msg 'def:region.notOwner|<player||server>'
         - queue clear
         }
       }
     # Check for overlapping regions
     - if !<player.permission[dregions.admin]||<player.is_op||false>> {
       - if <proc[dRegions_RegionOverlaps].context[<def[selectedCuboid].separated_by[/].replace[cu@]>|%world%|<player>]> {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Region selection contains unowned regions!'
+        - run instantly delay:1t s@dRegions_Msg 'def:regions.otherRegions|<player||server>'
         - queue clear
         }
       }
@@ -1125,7 +1122,7 @@ dRegions_Commands:
     - yaml set 'regions.%name%.max:<def[selectedCuboid].max.simple>' 'id:dRegions_%world%_regions'
     - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
     - note cu@<def[selectedCuboid].min.simple>|<def[selectedCuboid].max.simple> 'as:dregions_%world%_%name%'
-    - run s@msgPrefixed delay:1t 'def:dRegions|<&f><&o>%name%<&7><&o> updated to selection'
+    - run instantly delay:1t s@dRegions_Msg 'def:command.redefine.update|<player||server>|%name%'
 
   claim:
   # /drg claim [ID]
@@ -1144,11 +1141,11 @@ dRegions_Commands:
           }
         }
       - if <def[playerGlobalRegions].size.is[OR_MORE].than[%globalRegionLimit%]> {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>You already have <def[playerGlobalRegions].size> total regions!'
+        - run instantly delay:1t s@dRegions_Msg 'def:command.claim.error.0|<player||server>|<def[playerGlobalRegions].size>'
         - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
           - queue clear
           }
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>But you are an admin so it is ok!'
+        - run instantly delay:1t s@dRegions_Msg 'def:admin.override.0|<player||server>'
         }
       }
     # Check World region limits
@@ -1162,11 +1159,11 @@ dRegions_Commands:
           }
         }
       - if <def[playerWorldRegions].size.is[OR_MORE].than[%worldRegionLimit%]> {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>You already have <def[playerWorldRegions].size> regions in this world!'
+        - run instantly delay:1t s@dRegions_Msg 'def:command.claim.error.1|<player||server>|<def[playerWorldRegions].size>'
         - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
           - queue clear
           }
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>But you are an admin so it is ok!'
+        - run instantly delay:1t s@dRegions_Msg 'def:admin.override.0|<player||server>'
         }
       }
     # Check selection volume
@@ -1175,23 +1172,21 @@ dRegions_Commands:
     - define size '<def[size].x.mul[<def[size].y>].mul[<def[size].z>]>'
     - if <def[globalClaimVol].is[MORE].than[0]> {
       - if <def[size].is[MORE].than[%globalClaimVol%]> {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Your selection exceeds the global limit!'
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&7><&o>Selected <&8>(<&7><&o>%size%<&8>) <&7><&o>Limit <&8>(<&7><&o>%globalClaimVol%<&8>) <&7><&o>Over <&8>(<&7><&o><def[size].sub[%globalClaimVol%].as_int><&8>)'
+        - run instantly delay:1t s@dRegions_Msg 'def:command.claim.error.2|<player||server>|%size%|%globalClaimVol%|<def[size].sub[%globalClaimVol%].round>'
         - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
           - queue clear
           }
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>But you are an admin so it is ok!'
+        - run instantly delay:1t s@dRegions_Msg 'def:admin.override.0|<player||server>'
         }
       }
     - define worldClaimVol '<yaml[dregions_%world%_config].read[config.regions.claim.max-volume]||0>'
     - if <def[worldClaimVol].is[MORE].than[0]> {
       - if <def[size].is[MORE].than[%worldClaimVol%]> {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Your selection exceeds the world limit!'
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&7><&o>Selected <&8>(<&7><&o>%size%<&8>) <&7><&o>Limit <&8>(<&7><&o>%worldClaimVol%<&8>) <&7><&o>Over <&8>(<&7><&o><def[size].sub[%worldClaimVol%].as_int><&8>)'
+        - run instantly delay:1t s@dRegions_Msg 'def:command.claim.error.3|<player||server>|%size%|%worldClaimVol%|<def[size].sub[%worldClaimVol%].round>'
         - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
           - queue clear
           }
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>But you are an admin so it is ok!'
+        - run instantly delay:1t s@dRegions_Msg 'def:admin.override.0|<player||server>'
         }
       }
     # Check inside existing/owned region
@@ -1213,42 +1208,41 @@ dRegions_Commands:
           }
         }
       - if <def[isWithin].exists.not> {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>You may only claim regions within land you own'
+        - run instantly delay:1t s@dRegions_Msg 'def:command.claim.error.4|<player||server>'
         - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
           - queue clear
           }
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>But you are an admin so it is ok!'
+        - run instantly delay:1t s@dRegions_Msg 'def:admin.override.0|<player||server>'
         }
       }
     # Check if region exists
     - define exists '<proc[dRegions_RegionExists].context[%name%|%world%]>'
     - if <def[exists].is[==].to[orphan]> {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>There is an orphaned region by this name!'
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Please notify an admin!'
+      - run instantly delay:1t s@dRegions_Msg 'def:region.orphan|<player||server>'
       - queue clear
       }
       else if <def[exists]> {
       - if <proc[dRegions_IsOwner].context[%name%|%world%|<player>].not> {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>You are not an owner of this region!'
+        - run instantly delay:1t s@dRegions_Msg 'def:region.notOwner|<player||server>'
         - queue clear
         }
       - if <yaml[dRegions_%world%_regions].read[regions.%name%.type].is[==].to[global]||false> {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>You can not redefine global regions!'
+        - run instantly delay:1t s@dRegions_Msg 'def:redefine.error.1|<player||server>'
         - queue clear
         }
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Region already exists!'
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&7>You must want to update the region'
+      - run instantly delay:1t s@dRegions_Msg 'def:region.existingRegion|<player||server>'
+      - run instantly delay:1t s@dRegions_Msg 'def:claim.error.5|<player||server>'
       - define update ''
       }
     # Check for overlapping regions
     # The perm check here is redundant
     - if !<player.permission[dregions.admin]||<player.is_op||false>> {
       - if <proc[dRegions_RegionOverlaps].context[<def[selectedCuboid].separated_by[/].replace[cu@]>|%world%|<player>]> {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Region selection contains unowned regions!'
+        - run instantly delay:1t s@dRegions_Msg 'def:region.otherRegions|<player||server>'
         - if !<player.permission[dRegions.admin]||<player.is_op||false>> {
           - queue clear
           }
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>But you are an admin so it is ok!'
+        - run instantly delay:1t s@dRegions_Msg 'def:admin.override.0|<player||server>'
         }
       }
     # Update the region
@@ -1257,12 +1251,12 @@ dRegions_Commands:
       - yaml set 'regions.%name%.max:<def[selectedCuboid].max.simple>' 'id:dRegions_%world%_regions'
       - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
       - note cu@<def[selectedCuboid].min.simple>|<def[selectedCuboid].max.simple> 'as:dregions_%world%_%name%'
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&f><&o>%name%<&7><&o> updated to selection'
+      - run instantly delay:1t s@dRegions_Msg 'def:claim.update|<player||server>|%name%'
       }
       else {
       - define ownerPlayers 'li@<player.uuid>'
       - inject s@dRegions p:createRegionEntry instantly
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&7><&o>Created %name% in %world%'
+      - run instantly delay:1t s@dRegions_Msg 'def:claim.create|<player||server>|%name%|%world%'
       }
 
   select:
@@ -1271,23 +1265,22 @@ dRegions_Commands:
     # Check if region exists
     - define exists '<proc[dRegions_RegionExists].context[%name%|%world%]>'
     - if <def[exists].is[==].to[orphan]> {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>There is an orphaned region by this name!'
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Please notify an admin!'
+      - run instantly delay:1t s@dRegions_Msg 'def:region.orphan|<player||server>'
       - queue clear
       }
       else if <def[exists].not> {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>There is no region by this name!'
+      - run instantly delay:1t s@dRegions_Msg 'def:region.noRegion|<player||server>'
       - queue clear
       }
     # Don't select global type regions
     - if <yaml[dRegions_%world%_regions].read[regions.%name%.type].is[==].to[global]||false> {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>You can not select global regions!'
+      - run instantly delay:1t s@dRegions_Msg 'def:command.select.0|<player||server>'
       - queue clear
       }
     # Check if is owner
     - if !<player.permission[dregions.admin]||<player.is_op||false>> {
       - if <proc[dRegions_IsOwner].context[%name%|%world%|<player>].not> {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>You are not an owner of this region!'
+        - run instantly delay:1t s@dRegions_Msg 'def:region.notOwner|<player||server>'
         - queue clear
         }
       }
@@ -1315,7 +1308,7 @@ dRegions_Commands:
       - define lore 'li@<&r.pad_right[%pad%].with[<&sp>]><&6><def[type].to_titlecase><&r.pad_right[%pad%].with[<&sp>]>|<&sp>|<&sp><&sp><&7>Region<&co> <&f>%name%|<&sp><&sp><&7>Pos1<&co> <&b><def[min]||unset>|<&sp><&sp><&7>Pos2<&co> <&b><def[max]||unset>|<&sp><&sp><&7>LxHxW<&co> <&b><cu@%min%|%max%.size.after[l@].before_last[,].split_by[,].parse[round].separated_by[x]||<&c>unset>|<&sp><&sp><&7>Volume<&co> <&b><el@val[<math:<cu@%min%|%max%.size.after[l@].before_last[,].replace[,].with[*]||0>>].round>'
       - inventory set 'd:<player.inventory>' 'o:<def[item].simple>[display_name=<&r.pad_right[<el@25.sub[13].div[1.5].round>]><&c><&l><&n>dRegions<&sp>Wand<&r.pad_right[<el@25.sub[13].div[1.5].round_down>]>;lore=%lore%;nbt=dRegions_Tool/wand;nbt=dRegions_Owner/<player.uuid>;nbt=dRegions_Pos1/<def[min]>;nbt=dRegions_Pos2/<def[max]>;nbt=dRegions_WandType/%type%;flags=HIDE_ATTRIBUTES|HIDE_DESTROYS|HIDE_ENCHANTS|HIDE_PLACED_ON|HIDE_POTION_EFFECTS|HIDE_UNBREAKABLE]' 'slot:<player.item_in_hand.slot>'
       }
-    - run s@msgPrefixed delay:1t 'def:dRegions|<&7><&o>Selected <&f><&o>%name%'
+    - run instantly delay:1t s@dRegions_Msg 'def:command.select.select|<player||server>|%name%'
 
   info:
   # /drg info [ID] -w world
@@ -1323,18 +1316,17 @@ dRegions_Commands:
     # Check if region exists
     - define exists '<proc[dRegions_RegionExists].context[%name%|%world%]>'
     - if <def[exists].is[==].to[orphan]> {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>There is an orphaned region named %name%!'
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Please notify an admin!'
+      - run instantly delay:1t s@dRegions_Msg 'def:region.orphan|<player||server>'
       - queue clear
       }
       else if <def[exists].not> {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>There is no region by this name!'
+      - run instantly delay:1t s@dRegions_Msg 'def:region.noRegion|<player||server>'
       - queue clear
       }
     # Check if is owner
     - if !<player.permission[dregions.admin]||<player.is_op||false>> {
       - if <proc[dRegions_IsOwner].context[%name%|%world%|<player>].not> {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>You are not an owner of this region!'
+        - run instantly delay:1t s@dRegions_Msg 'def:region.notOwner|<player||server>'
         - queue clear
         }
       }
@@ -1379,18 +1371,17 @@ dRegions_Commands:
     # Check if region exists
     - define exists '<proc[dRegions_RegionExists].context[%name%|%world%]>'
     - if <def[exists].is[==].to[orphan]> {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>There is an orphaned region by this name!'
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Please notify an admin!'
+      - run instantly delay:1t s@dRegions_Msg 'def:region.orphan|<player||server>'
       - queue clear
       }
       else if <def[exists].not> {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>There is no region by this name!'
+      - run instantly delay:1t s@dRegions_Msg 'def:region.noRegion|<player||server>'
       - queue clear
       }
     # Check if is owner
     - if !<player.permission[dregions.admin]||<player.is_op||false>> {
       - if <proc[dRegions_IsOwner].context[%name%|%world%|<player>].not> {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>You are not an owner of this region!'
+        - run instantly delay:1t s@dRegions_Msg 'def:region.notOwner|<player||server>'
         - queue clear
         }
       }
@@ -1403,19 +1394,19 @@ dRegions_Commands:
       - define owners '<c.args.get[3].to[<c.args.size>].replace[:].with[;]||null>'
       }
     - if <def[owners].is_empty||true> {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Must specify at least one owner'
+      - run instantly delay:1t s@dRegions_Msg 'def:command.addowner.error.0|<player||server>'
       - queue clear
       }
     - foreach %owners% {
       - if <def[value].starts_with[g;]||false> {
         - define group '<def[value].replace[g;]>'
         - if <server.list_permission_groups> !contains %group% {
-          - run s@msgPrefixed delay:1t 'def:dRegions|<&c>%group% is not a valid group'
+          - run instantly delay:1t s@dRegions_Msg 'def:command.addowner.error.1|<player||server>|%group%'
           - foreach next
           }
         - define groups '<yaml[dRegions_%world%_regions].read[regions.%name%.owners.groups]||li@>'
         - if <def[groups].contains[%group%]||false> {
-          - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Group %group% is already an owner'
+          - run instantly delay:1t s@dRegions_Msg 'def:command.addowner.error.2|<player||server>|%group%'
           - foreach next
           }
         - define pass true
@@ -1427,7 +1418,7 @@ dRegions_Commands:
           }
         - define players '<yaml[dRegions_%world%_regions].read[regions.%name%.owners.players]||li@>'
         - if <def[players].contains[<def[value].as_player.uuid>]||false> {
-          - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Player %value% is already an owner'
+          - run instantly delay:1t s@dRegions_Msg 'def:command.addowner.error.3|<player||server>|%value%'
           - foreach next
           }
         - define pass true
@@ -1437,7 +1428,10 @@ dRegions_Commands:
       }
     - if <def[pass].exists||false> {
       - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&f><&o>%name%<&7><&o> owners updated'
+      - run instantly delay:1t s@dRegions_Msg 'def:command.addowner.update|<player||server>|%name%'
+      }
+      else {
+      - run instantly delay:1t s@dRegions_Msg 'def:command.addowner.error.4|<player||server>|%name%'
       }
 
   removeowner:
@@ -1446,18 +1440,17 @@ dRegions_Commands:
     # Check if region exists
     - define exists '<proc[dRegions_RegionExists].context[%name%|%world%]>'
     - if <def[exists].is[==].to[orphan]> {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>There is an orphaned region by this name!'
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Please notify an admin!'
+      - run instantly delay:1t s@dRegions_Msg 'def:region.orphan|<player||server>'
       - queue clear
       }
       else if <def[exists].not> {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>There is no region by this name!'
+      - run instantly delay:1t s@dRegions_Msg 'def:region.noRegion|<player||server>'
       - queue clear
       }
     # Check if is owner
     - if !<player.permission[dregions.admin]||<player.is_op||false>> {
       - if <proc[dRegions_IsOwner].context[%name%|%world%|<player>].not> {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>You are not an owner of this region!'
+        - run instantly delay:1t s@dRegions_Msg 'def:region.notOwner|<player||server>'
         - queue clear
         }
       }
@@ -1470,19 +1463,19 @@ dRegions_Commands:
       - define owners '<c.args.get[3].to[<c.args.size>].replace[:].with[;]||null>'
       }
     - if <def[owners].is_empty||true> {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Must specify at least one owner'
+      - run instantly delay:1t s@dRegions_Msg 'def:command.removeowner.error.0|<player||server>'
       - queue clear
       }
     - foreach %owners% {
       - if <def[value].starts_with[g;]||false> {
         - define group '<def[value].replace[g;]>'
         - if <server.list_permission_groups> !contains %group% {
-          - run s@msgPrefixed delay:1t 'def:dRegions|<&c>%group% is not a valid group'
+          - run instantly delay:1t s@dRegions_Msg 'def:command.removeowner.error.1|<player||server>|%group%'
           - foreach next
           }
         - define groups '<yaml[dRegions_%world%_regions].read[regions.%name%.owners.groups]||li@>'
         - if <def[groups].contains[%group%].not||true> {
-          - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Group %group% is not an owner'
+          - run instantly delay:1t s@dRegions_Msg 'def:command.removeowner.error.2|<player||server>|%group%'
           - foreach next
           }
         - define pass true
@@ -1494,7 +1487,7 @@ dRegions_Commands:
           }
         - define players '<yaml[dRegions_%world%_regions].read[regions.%name%.owners.players]||li@>'
         - if <def[players].contains[<def[value].as_player.uuid>].not||true> {
-          - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Player %value% is not an owner'
+          - run instantly delay:1t s@dRegions_Msg 'def:command.removeowner.error.3|<player||server>|%value%'
           - foreach next
           }
         - define pass true
@@ -1504,10 +1497,10 @@ dRegions_Commands:
       }
     - if <def[pass].exists||false> {
       - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&f><&o>%name%<&7><&o> owners updated'
+      - run instantly delay:1t s@dRegions_Msg 'def:command.removeowner.update|<player||server>|%name%'
       }
       else {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&6><&o>%name%<&c><&o> owners not updated!'
+      - run instantly delay:1t s@dRegions_Msg 'def:command.removeowner.error.4|<player||server>|%name%'
       }
 
   addmember:
@@ -1516,18 +1509,17 @@ dRegions_Commands:
     # Check if region exists
     - define exists '<proc[dRegions_RegionExists].context[%name%|%world%]>'
     - if <def[exists].is[==].to[orphan]> {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>There is an orphaned region by this name!'
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Please notify an admin!'
+      - run instantly delay:1t s@dRegions_Msg 'def:region.orphan|<player||server>'
       - queue clear
       }
       else if <def[exists].not> {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>There is no region by this name!'
+      - run instantly delay:1t s@dRegions_Msg 'def:region.noRegion|<player||server>'
       - queue clear
       }
     # Check if is owner
     - if !<player.permission[dregions.admin]||<player.is_op||false>> {
       - if <proc[dRegions_IsOwner].context[%name%|%world%|<player>].not> {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>You are not an owner of this region!'
+        - run instantly delay:1t s@dRegions_Msg 'def:region.notOwner|<player||server>'
         - queue clear
         }
       }
@@ -1540,19 +1532,19 @@ dRegions_Commands:
       - define members '<c.args.get[3].to[<c.args.size>].replace[:].with[;]||null>'
       }
     - if <def[members].is_empty||true> {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Must specify at least one member'
+      - run instantly delay:1t s@dRegions_Msg 'def:command.addmember.error.0|<player||server>'
       - queue clear
       }
     - foreach %members% {
       - if <def[value].starts_with[g;]||false> {
         - define group '<def[value].replace[g;]>'
         - if <server.list_permission_groups> !contains %group% {
-          - run s@msgPrefixed delay:1t 'def:dRegions|<&c>%group% is not a valid group'
+          - run instantly delay:1t s@dRegions_Msg 'def:command.addmember.error.1|<player||server>|%group%'
           - foreach next
           }
         - define groups '<yaml[dRegions_%world%_regions].read[regions.%name%.members.groups]||li@>'
         - if <def[groups].contains[%group%]||false> {
-          - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Group %group% is already a member'
+          - run instantly delay:1t s@dRegions_Msg 'def:command.addmember.error.2|<player||server>|%group%'
           - foreach next
           }
         - define pass true
@@ -1564,7 +1556,7 @@ dRegions_Commands:
           }
         - define players '<yaml[dRegions_%world%_regions].read[regions.%name%.members.players]||li@>'
         - if <def[players].contains[<def[value].as_player.uuid>]||false> {
-          - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Player %value% is already a member'
+          - run instantly delay:1t s@dRegions_Msg 'def:command.addmember.error.3|<player||server>|%value%'
           - foreach next
           }
         - define pass true
@@ -1574,10 +1566,10 @@ dRegions_Commands:
       }
     - if <def[pass].exists||false> {
       - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&f><&o>%name%<&7><&o> members updated'
+      - run instantly delay:1t s@dRegions_Msg 'def:command.addmember.update|<player||server>|%name%'
       }
       else {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&6><&o>%name%<&c><&o> members not updated!'
+      - run instantly delay:1t s@dRegions_Msg 'def:command.addmember.error.4|<player||server>|%name%'
       }
 
   removemember:
@@ -1586,18 +1578,17 @@ dRegions_Commands:
     # Check if region exists
     - define exists '<proc[dRegions_RegionExists].context[%name%|%world%]>'
     - if <def[exists].is[==].to[orphan]> {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>There is an orphaned region by this name!'
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Please notify an admin!'
+      - run instantly delay:1t s@dRegions_Msg 'def:region.orphan|<player||server>'
       - queue clear
       }
       else if <def[exists].not> {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>There is no region by this name!'
+      - run instantly delay:1t s@dRegions_Msg 'def:region.noRegion|<player||server>'
       - queue clear
       }
     # Check if is owner
     - if !<player.permission[dregions.admin]||<player.is_op||false>> {
       - if <proc[dRegions_IsOwner].context[%name%|%world%|<player>].not> {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>You are not an owner of this region!'
+        - run instantly delay:1t s@dRegions_Msg 'def:region.notOwner|<player||server>'
         - queue clear
         }
       }
@@ -1610,19 +1601,19 @@ dRegions_Commands:
       - define members '<c.args.get[3].to[<c.args.size>].replace[:].with[;]||null>'
       }
     - if <def[members].is_empty||true> {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Must specify at least one member'
+      - run instantly delay:1t s@dRegions_Msg 'def:command.removemember.error.0|<player||server>'
       - queue clear
       }
     - foreach %members% {
       - if <def[value].starts_with[g;]||false> {
         - define group '<def[value].replace[g;]>'
         - if <server.list_permission_groups> !contains %group% {
-          - run s@msgPrefixed delay:1t 'def:dRegions|<&c>%group% is not a valid group'
+          - run instantly delay:1t s@dRegions_Msg 'def:command.removemember.error.1|<player||server>|%group%'
           - foreach next
           }
         - define groups '<yaml[dRegions_%world%_regions].read[regions.%name%.members.groups]||li@>'
         - if <def[groups].contains[%group%].not||true> {
-          - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Group %group% is not a member'
+          - run instantly delay:1t s@dRegions_Msg 'def:command.removemember.error.2|<player||server>|%group%'
           - foreach next
           }
         - define pass true
@@ -1634,7 +1625,7 @@ dRegions_Commands:
           }
         - define players '<yaml[dRegions_%world%_regions].read[regions.%name%.members.players]||li@>'
         - if <def[players].contains[<def[value].as_player.uuid>].not||true> {
-          - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Player %value% is not a member'
+          - run instantly delay:1t s@dRegions_Msg 'def:command.removemember.error.3|<player||server>|%value%'
           - foreach next
           }
         - define pass true
@@ -1644,10 +1635,10 @@ dRegions_Commands:
       }
     - if <def[pass].exists||false> {
       - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&f><&o>%name%<&7><&o> members updated'
+      - run instantly delay:1t s@dRegions_Msg 'def:command.removemember.update|<player||server>|%name%'
       }
       else {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&6><&o>%name%<&c><&o> members not updated!'
+      - run instantly delay:1t s@dRegions_Msg 'def:command.removemember.error.4|<player||server>|%name%'
       }
 
   list:
@@ -1657,12 +1648,12 @@ dRegions_Commands:
     # Check the specified player
     - if <def[args].find[-p].is[OR_MORE].than[0]||false> {
       - if !<player.permission[dregions.admin]||<player.is_op||false>> {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>You may not list other players regions!'
+        - run instantly delay:1t s@dRegions_Msg 'def:command.list.error.0|<player||server>'
         - queue clear
         }
       - define player '<def[args].get[<def[args].find[-p].add[1].as_int>].escaped||null>'
       - if !<def[player].as_player.is[!=].to[null]||false> {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Invalid player specfied!'
+        - run instantly delay:1t s@dRegions_Msg 'def:command.list.error.1|<player||server>'
         - queue clear
         }
       - define filterPlayer ''
@@ -1681,7 +1672,8 @@ dRegions_Commands:
     - if <def[args].find[-w].is[OR_MORE].than[0]||false> {
       - define world '<def[args].get[<def[args].find[-w].add[1].as_int>].as_world.name.to_lowercase.escaped||null>'
       - if <def[world].is[==].to[null]||true> {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Invalid world specfied!'
+        - run instantly delay:1t s@dRegions_Msg 'def:command.error.3|<player||server>|<script.yaml_key[commandArgs.list.usage]||No help for you!>'
+#        - run instantly delay:1t s@dRegions_Msg 'def:command.list.error.2|<player||server>'
         - queue clear
         }
       - define filterWorld ''
@@ -1715,23 +1707,22 @@ dRegions_Commands:
       - if <def[region].is[!=].to[null]||true> {
         - define exists '<proc[dRegions_RegionExists].context[<def[region]>|<def[world]>]>'
         - if <def[exists].is[==].to[orphan]> {
-          - run s@msgPrefixed delay:1t 'def:dRegions|<&c>There is an orphaned region by this name!'
-          - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Please notify an admin!'
+          - run instantly delay:1t s@dRegions_Msg 'def:region.orphan|<player||server>'
           - queue clear
           }
           else if <def[exists].not> {
-          - run s@msgPrefixed delay:1t 'def:dRegions|<&c>There is no region by this name!'
+          - run instantly delay:1t s@dRegions_Msg 'def:region.noRegion|<player||server>'
           - queue clear
           }
         - if !<player.permission[dregions.admin]||<player.is_op||false>> {
           - if <proc[dRegions_IsOwner].context[<def[region]>|<def[world]>|<player>].not> {
-            - run s@msgPrefixed delay:1t 'def:dRegions|<&c>You are not an owner of this region!'
+            - run instantly delay:1t s@dRegions_Msg 'def:region.notOwner|<player||server>'
             - queue clear
             }
           }
         }
         else {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>You must specify a valid region ID!'
+        - run instantly delay:1t s@dRegions_Msg 'def:region.empty|<player||server>'
         - queue clear
         }
       - define filterRegion ''
@@ -1778,7 +1769,7 @@ dRegions_Commands:
     - if <def[args].find[-w].is[OR_MORE].than[0]||false> {
       - define world '<def[args].get[<def[args].find[-w].add[1].as_int>].as_world.name.escaped.to_lowercase||null>'
       - if <def[world].is[==].to[null]||true> {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Invalid world specfied!'
+        - run instantly delay:1t s@dRegions_Msg 'def:command.error.3|<player||server>|<script.yaml_key[commandArgs.flag.usage]||No help for you!>'
         - queue clear
         }
       - define args '<def[args].remove[<def[args].find_all[-w].parse[add[1].as_int]>].exclude[-w]||li@>'
@@ -1796,7 +1787,7 @@ dRegions_Commands:
     - if <def[args].find[-g].is[OR_MORE].than[0]||false> {
       - define group '<def[args].get[<def[args].find[-g].add[1].as_int>].escaped.to_lowercase||null>'
       - if !<el@val[members|nonmembers|owners|nonowners|all].as_list.contains[%group%]||false> {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c><def[group].unescaped> is an invalid group!'
+        - run instantly delay:1t s@dRegions_Msg 'def:command.flag.error.0|<player||server>|<def[group].unescaped>'
         - queue clear
         }
       - define args '<def[args].remove[<def[args].find_all[-g].parse[add[1].as_int]>].exclude[-g]||li@>'
@@ -1807,23 +1798,22 @@ dRegions_Commands:
     - if <def[region].is[!=].to[null]||true> {
       - define exists '<proc[dRegions_RegionExists].context[<def[region]>|<def[world]>]>'
       - if <def[exists].is[==].to[orphan]> {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>There is an orphaned region by this name!'
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Please notify an admin!'
+        - run instantly delay:1t s@dRegions_Msg 'def:region.orphan|<player||server>'
         - queue clear
         }
         else if <def[exists].not> {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>There is no region by this name!'
+        - run instantly delay:1t s@dRegions_Msg 'def:region.noRegion|<player||server>'
         - queue clear
         }
       - if !<player.permission[dregions.admin]||<player.is_op||false>> {
         - if <proc[dRegions_IsOwner].context[<def[region]>|<def[world]>|<player>].not> {
-          - run s@msgPrefixed delay:1t 'def:dRegions|<&c>You are not an owner of this region!'
+          - run instantly delay:1t s@dRegions_Msg 'def:region.notOwner|<player||server>'
           - queue clear
           }
         }
       }
       else {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>You must specify a valid region ID!'
+      - run instantly delay:1t s@dRegions_Msg 'def:region.empty|<player||server>'
       - queue clear
       }
 
@@ -1832,12 +1822,12 @@ dRegions_Commands:
     - if <def[flag].is[!=].to[null]||true> {
       - define flags '<server.list_scripts.filter[starts_with[s@dRegions_Flag_]].parse[name.split[_].get[3]]||li@>'
       - if !<def[flags].contains[%flag%]||false> {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>You must specify a valid region flag!'
+        - run instantly delay:1t s@dRegions_Msg 'def:command.flag.error.1|<player||server>'
         - queue clear
         }
       }
       else {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>You must specify a valid region flag!'
+      - run instantly delay:1t s@dRegions_Msg 'def:command.flag.error.1|<player||server>'
       - queue clear
       }
 
@@ -1858,7 +1848,7 @@ dRegions_Commands:
       - if !<def[TypeMatch]> {
         - define lines '<proc[dRegions_LineWrap].context[<s@dRegions_Flag_%Flag%.yaml_key[flag_help]||<&c>%flag% flag requires a %type% value!>|45]>'
         - foreach <def[lines]> {
-          - run s@msgPrefixed delay:1t 'def:dRegions|<&c><def[value]>'
+          - run instantly delay:1t s@dRegions_Msg 'def:command.help.syntax|<player||server>|<&c><def[value]>'
           }
         - queue clear
         }
@@ -1868,7 +1858,7 @@ dRegions_Commands:
         - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
         - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
         - yaml 'savefile:dRegions/worlds/%world%/cache.yml' 'id:dRegions_%world%_cache'
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Cleared %flag% flag for region %region%'
+        - run instantly delay:1t s@dRegions_Msg 'def:command.flag.clear|<player||server>|%flag%|%region%'
         - queue clear
         }
       - inject s@dRegions_Flag_%flag% p:command_handler
@@ -1882,14 +1872,14 @@ dRegions_Commands:
       - define string "<&f><&o>%region%<&7><&o> set %flag% flag to <&f><&o>%flagValue%"
       - define lines '<proc[dRegions_LineWrap].context[<def[string]>|45]>'
       - foreach <def[lines]> {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&f><&o><def[value].unescaped>'
+        - run instantly delay:1t s@dRegions_Msg 'def:command.help.syntax|<player||server>|<&f><&o><def[value].unescaped>'
         }
       }
       else {
       - inject s@dRegions_Flag_%flag% p:command_handler
       - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
       - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Cleared %flag% flag for region %region%'
+      - run instantly delay:1t s@dRegions_Msg 'def:command.flag.clear|<player||server>|%flag%|%region%'
       - queue clear
       }
 
@@ -1899,18 +1889,17 @@ dRegions_Commands:
     # Check if region exists
     - define exists '<proc[dRegions_RegionExists].context[%name%|%world%]>'
     - if <def[exists].is[==].to[orphan]> {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>There is an orphaned region by this name!'
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Please notify an admin!'
+      - run instantly delay:1t s@dRegions_Msg 'def:region.orphan|<player||server>'
       - queue clear
       }
       else if <def[exists].not> {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>There is no region by this name!'
+      - run instantly delay:1t s@dRegions_Msg 'def:region.noRegion|<player||server>'
       - queue clear
       }
     # Check if is owner
     - if !<player.permission[dregions.admin]||<player.is_op||false>> {
       - if <proc[dRegions_IsOwner].context[%name%|%world%|<player>].not> {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>You are not an owner of this region!'
+        - run instantly delay:1t s@dRegions_Msg 'def:region.notOwner|<player||server>'
         - queue clear
         }
       }
@@ -1923,13 +1912,13 @@ dRegions_Commands:
       - define priority '<c.args.get[3].escaped||null>'
       }
     - if <def[priority].is[matches].to[number].not||true> {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Must specify a numeric value for priority'
+      - run instantly delay:1t s@dRegions_Msg 'def:command.setpriority.error.0|<player||server>'
       - queue clear
       }
     # Update region
     - yaml set 'regions.%name%.priority:%priority%' 'id:dRegions_%world%_regions'
     - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-    - run s@msgPrefixed delay:1t 'def:dRegions|<&f><&o>%name%<&7><&o> set priority to <&f><&o>%priority%'
+    - run instantly delay:1t s@dRegions_Msg 'def:command.setpriority.set|<player||server>|%name%|%priority%'
 
   setparent:
   # /drg setparent [ID] [parent]
@@ -1937,18 +1926,17 @@ dRegions_Commands:
     # Check if child region exists
     - define exists '<proc[dRegions_RegionExists].context[%name%|%world%]>'
     - if <def[exists].is[==].to[orphan]> {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>There is an orphaned region by this name!'
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Please notify an admin!'
+      - run instantly delay:1t s@dRegions_Msg 'def:region.orphan|<player||server>'
       - queue clear
       }
       else if <def[exists].not> {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>There is no region by this name!'
+      - run instantly delay:1t s@dRegions_Msg 'def:region.noRegion|<player||server>'
       - queue clear
       }
     # Check if is owner
     - if !<player.permission[dregions.admin]||<player.is_op||false>> {
       - if <proc[dRegions_IsOwner].context[%name%|%world%|<player>].not> {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>You are not an owner of this region!'
+        - run instantly delay:1t s@dRegions_Msg 'def:region.notOwner|<player||server>'
         - queue clear
         }
       }
@@ -1967,24 +1955,23 @@ dRegions_Commands:
         }
       - yaml set 'regions.%name%.parent:!' 'id:dRegions_%world%_regions'
       - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&7><&o>Unset parent for <&f><&o>%name%'
+      - run instantly delay:1t s@dRegions_Msg 'def:command.setparent.unset|<player||server>|%name%'
       - queue clear
       }
     # Check if parent region exists
     - define exists '<proc[dRegions_RegionExists].context[%parent%|%world%]>'
     - if <def[exists].is[==].to[orphan]> {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>There is an orphaned region by this name!'
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Please notify an admin!'
+      - run instantly delay:1t s@dRegions_Msg 'def:region.orphan|<player||server>'
       - queue clear
       }
       else if <def[exists].not> {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>There is no region by this name!'
+      - run instantly delay:1t s@dRegions_Msg 'def:region.noRegion|<player||server>'
       - queue clear
       }
     # Check if player owns parent
     - if !<player.permission[dregions.admin]||<player.is_op||false>> {
       - if <proc[dRegions_IsOwner].context[%parent%|%world%|<player>].not> {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>You are not an owner of this region!'
+        - run instantly delay:1t s@dRegions_Msg 'def:region.notOwner|<player||server>'
         - queue clear
         }
       }
@@ -1997,7 +1984,7 @@ dRegions_Commands:
       - yaml set 'regions.%parent%.children:->:%name%' 'id:dRegions_%world%_regions'
       }
     - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-    - run s@msgPrefixed delay:1t 'def:dRegions|<&f><&o>%name%<&7><&o> set parent to <&f><&o>%parent%'
+    - run instantly delay:1t s@dRegions_Msg 'def:command.setparent.set|<player||server>|%name%|%parent%'
 
   teleport:
   # /drg teleport [ID] -w world
@@ -2006,24 +1993,23 @@ dRegions_Commands:
     # Check if region exists
     - define exists '<proc[dRegions_RegionExists].context[%name%|%world%]>'
     - if <def[exists]> == orphan {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>There is an orphaned region by this name!'
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Please notify an admin!'
+      - run instantly delay:1t s@dRegions_Msg 'def:region.orphan|<player||server>'
       - queue clear
       }
       else if !%exists% {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>There is no region by this name!'
+      - run instantly delay:1t s@dRegions_Msg 'def:region.noRegion|<player||server>'
       - queue clear
       }
     # Check if is owner
     - if !<player.permission[dregions.admin]||false> && !<player.is_op> {
       - if <proc[dRegions_IsOwner].context[%name%|%world%|<player>].not> {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>You are not an owner of this region!'
+        - run instantly delay:1t s@dRegions_Msg 'def:region.notOwner|<player||server>'
         - queue clear
         }
       }
     # Check for teleport perms
     - if !<player.permission[dregions.teleport]||false> && !<player.permission[dregions.teleport.own]||false> && !<player.permission[dregions.teleport.own.%name%]||false> {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>You do not have permission!'
+      - run instantly delay:1t s@dRegions_Msg 'def:command.error.1|<player||server>'
       - queue clear
       }
 
@@ -2033,23 +2019,22 @@ dRegions_Commands:
     # Check if region exists
     - define exists '<proc[dRegions_RegionExists].context[%name%|%world%]>'
     - if <def[exists].is[==].to[orphan]> {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>There is an orphaned region by this name!'
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Please notify an admin!'
+      - run instantly delay:1t s@dRegions_Msg 'def:region.orphan|<player||server>'
       - queue clear
       }
       else if <def[exists].not> {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>There is no region by this name!'
+      - run instantly delay:1t s@dRegions_Msg 'def:region.noRegion|<player||server>'
       - queue clear
       }
     # Don't remove the __global__ region
     - if <def[name].is[==].to[__global__]> {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>You can not remove the __global__ region!'
+      - run instantly delay:1t s@dRegions_Msg 'def:command.remove.error.0|<player||server>'
       - queue clear
       }
     # Check if is owner
     - if !<player.permission[dregions.admin]||<player.is_op||false>> {
       - if <proc[dRegions_IsOwner].context[%name%|%world%|<player>].not> {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>You are not an owner of this region!'
+        - run instantly delay:1t s@dRegions_Msg 'def:region.notOwner|<player||server>'
         - queue clear
         }
       }
@@ -2068,7 +2053,7 @@ dRegions_Commands:
     - yaml set 'regions.%name%:!' 'id:dRegions_%world%_regions'
     - note remove 'as:dregions_%world%_%name%'
     - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-    - run s@msgPrefixed delay:1t 'def:dRegions|<&f><&o>%name%<&7><&o> has been removed from <&f><&o>%world%'
+    - run instantly delay:1t s@dRegions_Msg 'def:remove.remove|<player||server>|%name%|%world%'
 
 #
 #  END dRegions Command Arguments
@@ -2113,17 +2098,17 @@ dRegions_Commands:
         - define pos2 '<def[item].nbt[dRegions_Pos2].as_location||null>'
         }
       - if <li@cuboid|extender.contains[%wandType%].not||true> {
-        - run instantly delay:1t s@dRegions_Msg 'def:command.error.4|<player>|<script.yaml_key[commandArgs.%command%.usage]>'
+        - run instantly delay:1t s@dRegions_Msg 'def:command.error.4|<player||server>|<script.yaml_key[commandArgs.%command%.usage]>'
         - queue clear
         }
       - if <def[pos1].is[==].to[null]>
         || <def[pos2].is[==].to[null]> {
-        - run instantly delay:1t s@dRegions_Msg 'def:command.error.5|<player>|<script.yaml_key[commandArgs.%command%.usage]>'
+        - run instantly delay:1t s@dRegions_Msg 'def:command.error.5|<player||server>|<script.yaml_key[commandArgs.%command%.usage]>'
         - queue clear
         }
       - if <def[pos1].world.name.is[!=].to[%world%]>
         || <def[pos2].world.name.is[!=].to[%world%]> {
-        - run instantly delay:1t s@dRegions_Msg 'def:command.error.6|<player>|<script.yaml_key[commandArgs.%command%.usage]>'
+        - run instantly delay:1t s@dRegions_Msg 'def:command.error.6|<player||server>|<script.yaml_key[commandArgs.%command%.usage]>'
         - queue clear
         }
       - define selectedCuboid '<cu@%pos1%|%pos2%>'
@@ -2139,21 +2124,20 @@ dRegions_Commands:
           else {
           - define name '<def[orderedRegions].get[1]>'
           - if <def[orderedRegions].size.is[MORE].than[1]> {
-            - run s@msgPrefixed delay:1t 'def:dRegions|<&c><&o>There are multiple regions at this location!'
-            - run s@msgPrefixed delay:1t 'def:dRegions|<&7><&o>Getting highest priority region info.'
+            - run instantly delay:1t s@dRegions_Msg 'def:region.multiRegions|<player||server>|info'
             }
           }
         }
         else {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>You must specify a region ID!'
-        - run s@msgPrefixed delay:1t 'def:dRegions|<script.yaml_key[commandArgs.%command%.usage]>'
+        - run instantly delay:1t s@dRegions_Msg 'def:region.empty|<player||server>'
+        - run instantly delay:1t s@dRegions_Msg 'def:command.help.syntax|<player||server>|<&f><script.yaml_key[commandArgs.%command%.usage]>'
         - queue stop
         }
       }
     - if '<def[name].matches[^[a-z0-9-_]+$].not>' {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Region ID may only contain letters, numbers,'
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>hyphen, and underscore!'
-      - run s@msgPrefixed delay:1t 'def:dRegions|<script.yaml_key[commandArgs.%command%.usage]>'
+      - run instantly delay:1t s@dRegions_Msg 'def:region.invalidName|<player||server>'
+      - run instantly delay:1t s@dRegions_Msg 'def:command.help.syntax|<player||server>|<&f><script.yaml_key[commandArgs.%command%.usage]>'
+
       - queue stop
       }
     - define page "<t[<c.args.filter[is[matches].to[number]].is_empty.not>]:<c.args.filter[is[matches].to[number]].get[1]>||1>"
@@ -2202,8 +2186,7 @@ dRegions_Commands:
       - define size 'infinite'
       }
       else {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>This region is misconfigured!'
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Notify an Admin!'
+      - run instantly delay:1t s@dRegions_Msg 'def:region.misconfigured|<player||server>'
       - queue clear
       }
     - define priority '<yaml[dRegions_%world%_regions].read[regions.%name%.priority]||0>'
@@ -2247,7 +2230,7 @@ dRegions_Commands:
 
   msgsHelpAdmin:
     # Filter the list of commands this player can use
-    - define commands '<script.list_keys[commandArgs].alphanumeric.to_lowercase||li@>'
+    - define commands '<s@dRegions_Commands.list_keys[commandArgs].alphanumeric.to_lowercase||li@>'
     - foreach %commands% {
       - if !<player.permission[dregions.%value%]||<player.is_op||<c.server||false>>> {
         - define commands '<def[commands].exclude[%value%]>'
@@ -2304,7 +2287,7 @@ dRegions_Flags_CommandProcessors:
     - if <def[flagValue].is[==].to[null]||false> {
       - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
       - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Cleared %flag% list for region %region%'
+      - run instantly delay:1t s@dRegions_Msg 'def:flag.clear|<player||server>|%flag%|%region%'
       - queue clear
       }
       else {
@@ -2313,27 +2296,27 @@ dRegions_Flags_CommandProcessors:
         - if '<def[flagValue].split[ ].get[1].is[==].to[-a]||false>' {
           - yaml set 'regions.%region%.flags.%flag%:all' 'id:dRegions_%world%_regions'
           - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-          - run s@msgPrefixed delay:1t 'def:dRegions|<&f><&o>%region%<&7><&o> set %flag% flag to <&f><&o>%flagValue%'
+          - run instantly delay:1t s@dRegions_Msg 'def:flag.set|<player||server>|%region%|%flag%|%flagValue%'
           - queue clear
           }
         - if '<def[flagValue].split[ ].get[1].is[==].to[-r]||false>' {
           - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
           - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-          - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Cleared %flag% list for region %region%'
+          - run instantly delay:1t s@dRegions_Msg 'def:flag.clearlist|<player||server>|%flag%|%region%'
           - queue clear
           }
         }
       - foreach %entries% {
         - if <parse:<s@dRegions_Flag_%Flag%.yaml_key[command_verifyEntry]||false>> {
           - define entries '<def[entries].exclude[%value%]||li@>'
-          - run s@msgPrefixed delay:1t 'def:dRegions|<&c><&o>%value% is not a valid <s@dRegions_Flag_%Flag%.yaml_key[command_entryType]>!'
+          - run instantly delay:1t s@dRegions_Msg 'def:flag.error.2|<player||server>|%value%|<s@dRegions_Flag_%Flag%.yaml_key[command_entryType]>'
           }
         }
       - if <def[entries].is_empty||true> {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c><&o>No valid <s@dRegions_Flag_%Flag%.yaml_key[command_entryType]>s specified!'
+        - run instantly delay:1t s@dRegions_Msg 'def:flag.error.3|<player||server>|<s@dRegions_Flag_%Flag%.yaml_key[command_entryType]>'
         - define lines '<proc[dRegions_LineWrap].context[<s@dRegions_Flag_%Flag%.yaml_key[flag_help]||<&c>%flag% flag requires a %type% value!>|45]>'
         - foreach <def[lines]> {
-          - run s@msgPrefixed delay:1t 'def:dRegions|<&c><def[value]>'
+          - run instantly delay:1t s@dRegions_Msg 'def:command.help.syntax|<player||server>|<&c><def[value]>'
           }
         - queue clear
         }
@@ -2348,7 +2331,7 @@ dRegions_Flags_CommandProcessors:
       - if <def[flagValue].is_empty||true> {
         - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
         - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Cleared %flag% list for region %region%'
+        - run instantly delay:1t s@dRegions_Msg 'def:flag.clearlist|<player||server>|%flag%|%region%'
         - queue clear
         }
       - define flagValue '<def[flagValue].comma_separated>'
@@ -2359,7 +2342,7 @@ dRegions_Flags_CommandProcessors:
     - if <def[flagValue].is[==].to[null]||false> {
       - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
       - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Cleared %flag% list for region %region%'
+      - run instantly delay:1t s@dRegions_Msg 'def:flag.clearlist|<player||server>|%flag%|%region%'
       - queue clear
       }
     - define action '<def[flagValue].split[ ].get[1]>'
@@ -2369,21 +2352,21 @@ dRegions_Flags_CommandProcessors:
       - if <def[action].is[==].to[-a]||false> {
         - yaml set 'regions.%region%.flags.%flag%:all' 'id:dRegions_%world%_regions'
         - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&f><&o>%region%<&7><&o> set %flag% flag to <&f><&o>%flagValue%'
+        - run instantly delay:1t s@dRegions_Msg 'def:flag.set|<player||server>|%region%|%flag%|%flagValue%'
         - queue clear
         }
       - if <def[action].is[==].to[-r]||false> {
         - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
         - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Cleared %flag% list for region %region%'
+        - run instantly delay:1t s@dRegions_Msg 'def:flag.clearlist|<player||server>|%flag%|%region%'
         - queue clear
         }
       }
     - if <def[string].length.is[==].to[0]||true> {
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c><&o>No valid <s@dRegions_Flag_%Flag%.yaml_key[command_entryType]>s specified!'
+      - run instantly delay:1t s@dRegions_Msg 'def:flag.error.3|<player||server>|<s@dRegions_Flag_%Flag%.yaml_key[command_entryType]>'
       - define lines '<proc[dRegions_LineWrap].context[<s@dRegions_Flag_%Flag%.yaml_key[flag_help]||<&c>%flag% flag requires a %type% value!>|45]>'
       - foreach <def[lines]> {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c><def[value]>'
+        - run instantly delay:1t s@dRegions_Msg 'def:command.help.syntax|<player||server>|<&c><def[value]>'
         }
       - queue clear
       }
@@ -2398,12 +2381,12 @@ dRegions_Flags_CommandProcessors:
     - if <def[flagValue].is_empty||true> {
       - yaml set 'regions.%region%.flags.%flag%:!' 'id:dRegions_%world%_regions'
       - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-      - run s@msgPrefixed delay:1t 'def:dRegions|<&c>Cleared %flag% list for region %region%'
+      - run instantly delay:1t s@dRegions_Msg 'def:flag.clearlist|<player||server>|%flag%|%region%'
       - queue clear
       }
     - define flagValue '<def[flagValue].replace[|].with[ ; ].replace[li@]>'
 
-
+#
 ################################################################################
 #
 #  FlagTypeMatch Procedure script
@@ -2433,10 +2416,10 @@ dRegion_FlagTypeMatch:
 
   script:
     - choose '<s@dRegions_Flag_%Flag%.yaml_key[flag_type]||null>':
-      - case 'number':
-        - determine '<def[YourValue].is[MATCHES].to[number]>'
       - case 'decimal':
-        - determine '<def[YourValue].is[MATCHES].to[number]>.and[<def[YourValue].as_int.is[==].to[%YourValue%]>]>'
+        - determine '<def[YourValue].is[MATCHES].to[number]>'
+      - case 'number':
+        - determine '<def[YourValue].is[MATCHES].to[number].and[<def[YourValue].as_int.is[==].to[%YourValue%]>]>'
       - case 'b':
         - determine '<def[YourValue].is[MATCHES].to[boolean]>'
       - case 'location':
