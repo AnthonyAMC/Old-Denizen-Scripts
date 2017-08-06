@@ -25,6 +25,24 @@ dRegions_Msg:
       - narrate "%prefix%  <parse:<def[value]>>"
     - mark 'end'
 #
+#  - inject s@dRegions_Msg_Flags 'def:flagname|path.to.message'
+dRegions_Msg_Flags:
+  type: task
+  debug: false
+  script:
+    - define lng '<yaml[dRegions_global_config].read[config.language]||<s@dRegions_Languages_Default.yaml_key[default]>>'
+    - if <player.has_flag[dRegions.language]> {
+      - define lng '<player.flag[dRegions.language]>'
+      }
+    - if <server.list_scripts> !contains 's@MSG_Version' {
+      - define prefix '<&4><&lb><&6>dRegions<&4><&rb>'
+      }
+      else {
+      - define prefix '<proc[msgCommand].context[<&4><&lb><&6>dRegions<&4><&rb>|drg help|<&6>   dRegions<&nl> <&nl><&d>Click for help]>'
+      }
+    - foreach '<proc[dRegions_LineWrap].context[<parse:<yaml[dRegions_Languages_%lng%].read[flags.%flag%.%path%]||<s@dRegions_Flag_%flag%.yaml_key[msgs.%path%]>>|54>]>':
+      - narrate "%prefix%  <def[value]>"
+#
 #  END dRegions Messages
 #
 #---------------------------------------
@@ -175,7 +193,7 @@ dRegions_Msg_Boxed:
 #
 dRegions_Languages_Default:
   type: yaml data
-  version: 0.1
+  version: 0.2
   default: us
   msgs:
     admin:

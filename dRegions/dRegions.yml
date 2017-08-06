@@ -251,8 +251,9 @@ dRegions:
     - yaml create 'id:dRegions_eventmap'
     - foreach '%flags%':
       - define flag '%value%'
+      - define pri '<s@dRegions_Flag_%flag%.yaml_key[event_priority]||0>'
       - foreach '<s@dRegions_Flag_%flag%.yaml_key[event_hooks].as_list||li@none>':
-        - yaml set '%value%:->:<s@dRegions_Flag_%flag%.yaml_key[event_priority]||0>/%flag%' 'id:dRegions_eventmap'
+        - yaml set '%value%:->:%pri%/%flag%' 'id:dRegions_eventmap'
     - yaml set 'none:!' 'id:dRegions_eventmap'
     - foreach '<yaml[dRegions_eventmap].list_keys[]>':
       - define e '<yaml[dRegions_eventmap].read[%value%].as_list>'
@@ -389,12 +390,27 @@ dRegions:
       - yaml fix_formatting 'load:<s@%readID%.relative_filename>' 'id:%readID%'
       }
     - yaml create 'id:%writeID%'
+    - yaml set 'version:<yaml[%readID%].read[%readID%.version]>' 'id:%writeID%'
     - define readPath '%readID%.msgs'
     - define writePath 'msgs'
     - run s@dRegions_ConfigFileGenerator def:%readID%|%writeID%|%readPath%|%writePath%|<def[isUpdate]||false> instantly
-    - yaml set 'version:<yaml[%readID%].read[%readID%.version]>' 'id:%writeID%'
-    - yaml 'savefile:dRegions/languages/us.yml' 'id:%writeID%'
     - yaml unload 'id:%readID%'
+    - define flags '<server.list_scripts.filter[starts_with[s@dRegions_Flag_]].parse[name.after[dRegions_Flag_].to_lowercase].alphanumeric||li@>'
+    - foreach %flags%:
+      - if '<s@dRegions_Flag_%value%.list_keys>' !contains 'msgs' {
+        - foreach next
+        }
+      - define flag '%value%'
+      - define readID 'dRegions_Flag_%flag%'
+      - define writeID 'dRegions_Languages_US'
+      - define readPath '%readID%.msgs'
+      - define writePath 'flags.%flag%'
+      - if !<yaml.list.contains[%readID%]> {
+        - yaml fix_formatting 'load:<s@%readID%.relative_filename>' 'id:%readID%'
+        }
+      - run s@dRegions_ConfigFileGenerator def:%readID%|%writeID%|%readPath%|%writePath%|<def[isUpdate]||false> instantly
+      - yaml unload 'id:%readID%'
+    - yaml 'savefile:dRegions/languages/us.yml' 'id:%writeID%'
 
   createConfigFile:
     - define readID 'dRegions_Configurations'
