@@ -711,7 +711,7 @@ dRegions_Flags_Processors_b:
       }
     - determine cancelled
     - mark 'true'
-      - if '<s@dRegions_Flag_%flag%.yaml_key[event-runAllowed]||false>' {
+    - if '<s@dRegions_Flag_%flag%.yaml_key[event-runAllowed]||false>' {
       - inject 's@dRegions_Flag_%flag%' 'p:event-allowed'
       }
 #
@@ -745,7 +745,14 @@ dRegions_Flags_Processors_string:
     - define val '<def[val].replace[<&pc>name<&pc>].with[<def[player].name>].parse_color.replace[<&lt>].replace[<&gt>]>'
     - choose '<s@dRegions_Flag_%flag%.yaml_key[string_type]||narrate>':
       - case 'narrate':
-        - run s@msgPrefixed 'def:dRegions|%val%'
+        - if <server.list_scripts> !contains 's@MSG_Version' {
+          - define prefix '<&4><&lb><&6>dRegions<&4><&rb>'
+          }
+          else {
+          - define prefix '<proc[msgCommand].context[<&4><&lb><&6>dRegions<&4><&rb>|drg help|<&6>   dRegions<&nl> <&nl><&d>Click for help]>'
+          }
+        - foreach '<proc[dRegions_LineWrap].context[<def[val]>|54]>':
+          - narrate "%prefix%  <def[value]>"
       - case 'bossbar':
         - adjust %player% 'action_bar:%val%'
       - case 'console':
@@ -1304,11 +1311,11 @@ dRegions_Flag_Entity-Grief:
   msg_cancelled: false
 
   event-allowed:
-  - if <def[object].is_spawned> {
+  - if <def[object].is_spawned||false> {
     - flag %object% 'dRegions.EntityGrief:true' d:5s
     }
   event-cancelled:
-  - if <def[object].is_spawned> {
+  - if <def[object].is_spawned||false> {
     - flag %object% 'dRegions.EntityGrief:false' d:5s
     }
 
@@ -2180,6 +2187,9 @@ dRegions_Flag_Fly:
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: false
+  msgs:
+    enable: '<&a>You are able to fly in this region!'
+    disable: '<&a>Flight has been disabled!'
 
 #  entered and exited dregion events are already set to noCancel
 #  event-cancelled:
@@ -2193,7 +2203,8 @@ dRegions_Flag_Fly:
         - adjust <def[player]> 'can_fly:true'
         - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
           - flag <def[player]> dRegions.Message_Cooldown duration:3s
-          - run s@msgPrefixed instantly 'def:dRegions|<&a>You are able to fly in this region!'
+          - define path 'allowed.enable'
+          - inject s@dRegions_Msg_Flags
           }
         }
       }
@@ -2203,7 +2214,8 @@ dRegions_Flag_Fly:
         - flag <def[player]> 'dRegions.fly.noFallDamage'
         - adjust <def[player]> 'can_fly:false'
         - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
-          - run s@msgPrefixed instantly 'def:dRegions|<&a>Flight has been disabled!'
+          - define path 'allowed.disable'
+          - inject s@dRegions_Msg_Flags
           }
         }
       }
@@ -2264,11 +2276,13 @@ dRegions_Flag_Notify-Enter:
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: false
+  msgs:
+    allowed: '<&5><&o><def[player].name> entered %thisRegion% in %world%'
 
   event-allowed:
-    - foreach <server.list_online_players.filter[permission[dregions.notify]].include[<server.list_online_ops>].deduplicate> {
-      - run s@msgPrefixed player:%value% 'def:dRegions|<&5><&o><def[player].name> entered %thisRegion% in %world%'
-      }
+    - define path 'allowed'
+    - define msgTargets '<server.list_online_players.filter[permission[dregions.notify]].include[<server.list_online_ops>].deduplicate>'
+    - inject s@dRegions_Msg_Flags
 
 dRegions_Flag_Notify-Exit:
   type: item
@@ -2290,11 +2304,13 @@ dRegions_Flag_Notify-Exit:
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: false
+  msgs:
+    allowed: '<&5><&o><def[player].name> exited %thisRegion% in %world%'
 
   event-allowed:
-    - foreach <server.list_online_players.filter[permission[dregions.notify]].include[<server.list_online_ops>].deduplicate> {
-      - run s@msgPrefixed player:%value% 'def:dRegions|<&5><&o><def[player].name> exited %thisRegion% in %world%'
-      }
+    - define path 'allowed'
+    - define msgTargets '<server.list_online_players.filter[permission[dregions.notify]].include[<server.list_online_ops>].deduplicate>'
+    - inject s@dRegions_Msg_Flags
 
 dRegions_Flag_Ice-Form:
   type: item
@@ -2795,13 +2811,16 @@ dRegions_Flag_Potion-Throw:
   event-runCancel: true
   msg_allowed: false
   msg_cancelled: false
+  msgs:
+    cancelled: '<&c><&o>You can not throw potions here!'
 
   event-cancelled:
     # This flag handles players and non-players alike so we need to find out if it is a player before we send a message.
     - if <def[player].equals_case_sensitive[null].not||false> {
       - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
         - flag %player% dRegions.Message_Cooldown duration:3s
-        - run s@msgPrefixed delay:1t player:%player% 'def:dRegions|<&c><&o>You can not throw potions here!'
+        - define path 'cancelled'
+        - inject s@dRegions_Msg_Flags
         }
       }
 #
@@ -2884,6 +2903,8 @@ dRegions_Flag_Inventory:
   flag_help: Inventory flag can be set to unique or kit. Unique inventories start empty. Kit inventories use your current inventory.
   msg_allowed: false
   msg_cancelled: false
+  msgs:
+    allowed: '<&7><&o>Your inventory has been updated.'
 
   command_handler:
     - if <def[flagValue].is[==].to[kit]> {
@@ -2922,7 +2943,8 @@ dRegions_Flag_Inventory:
     - inventory set 'd:<def[player].inventory>' 'o:<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.entry.kit.inv]||li@>'
     - define equipment '<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.entry.kit.equip]||li@>'
     - equip %player% 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>' 'offhand:<def[equipment].get[5]||i@air>'
-    - run s@msgPrefixed delay:1t 'def:dRegions|<&7><&o>Your inventory has been updated.'
+    - define path 'allowed'
+    - inject s@dRegions_Msg_Flags
 
   kit-exit:
     - define equipment '<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.exit.players.<def[player].uuid>.equip]||li@>'
@@ -2931,7 +2953,8 @@ dRegions_Flag_Inventory:
     - equip %player% 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>'
     - yaml set 'inventories.regions.%region%.exit.players.<def[player].uuid>:!' 'id:dRegions_%world%_inventories'
     - yaml 'savefile:dRegions/worlds/%world%/inventories.yml' 'id:dRegions_%world%_inventories'
-    - run s@msgPrefixed delay:1t 'def:dRegions|<&7><&o>Your inventory has been updated.'
+    - define path 'allowed'
+    - inject s@dRegions_Msg_Flags
 
   unique-enter:
     - yaml set 'inventories.regions.%region%.exit.players.<def[player].uuid>.equip:<def[player].equipment.include[<def[player].item_in_offhand>]>' 'id:dRegions_%world%_inventories'
@@ -2941,7 +2964,8 @@ dRegions_Flag_Inventory:
     - inventory set 'd:<def[player].inventory>' 'o:<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.entry.players.<def[player].uuid>.inv]||li@>'
     - define equipment '<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.entry.players.<def[player].uuid>.equip]||li@>'
     - equip %player% 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>' 'offhand:<def[equipment].get[5]||i@air>'
-    - run s@msgPrefixed delay:1t 'def:dRegions|<&7><&o>Your inventory has been updated.'
+    - define path 'allowed'
+    - inject s@dRegions_Msg_Flags
 
   unique-exit:
     - yaml set 'inventories.regions.%region%.entry.players.<def[player].uuid>.equip:<def[player].equipment.include[<def[player].item_in_offhand>]>' 'id:dRegions_%world%_inventories'
@@ -2952,7 +2976,8 @@ dRegions_Flag_Inventory:
     - equip %player% 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>' 'offhand:<def[equipment].get[5]||i@air>'
     - yaml set 'inventories.regions.%region%.exit.players.<def[player].uuid>:!' 'id:dRegions_%world%_inventories'
     - yaml 'savefile:dRegions/worlds/%world%/inventories.yml' 'id:dRegions_%world%_inventories'
-    - run s@msgPrefixed delay:1t 'def:dRegions|<&7><&o>Your inventory has been updated.'
+    - define path 'allowed'
+    - inject s@dRegions_Msg_Flags
 
 dRegions_Flag_Gamemode:
   type: item
@@ -2973,6 +2998,8 @@ dRegions_Flag_Gamemode:
   flag_help: Gamemode flag can be set to creative, survival, adventure, or spectator
   msg_allowed: false
   msg_cancelled: false
+  msgs:
+    allowed: '<&7><&o>Your gamemode has been updated.'
 
   event:
     - define region '<def[orderedRegions].get[1]>'
@@ -2983,13 +3010,15 @@ dRegions_Flag_Gamemode:
         - flag %player% 'dRegions.%world%.%region%.PreviousGamemode:<def[player].gamemode>'
         - if %gm% != <def[player].gamemode> {
           - adjust %player% 'gamemode:%gm%'
-          - run s@msgPrefixed delay:1t 'def:dRegions|<&7><&o>Your gamemode has been updated.'
+          - define path 'allowed'
+          - inject s@dRegions_Msg_Flags
           }
         }
         else {
         - if <def[player].flag[dRegions.%world%.%region%.PreviousGamemode]||null> != <def[player].gamemode> {
           - adjust %player% 'gamemode:<def[player].flag[dRegions.%world%.%region%.PreviousGamemode]||survival>'
-          - run s@msgPrefixed delay:1t 'def:dRegions|<&7><&o>Your gamemode has been updated.'
+          - define path 'allowed'
+          - inject s@dRegions_Msg_Flags
           }
         - flag %player% 'dRegions.%world%.%region%.PreviousGamemode:!'
         }
@@ -3045,11 +3074,15 @@ dRegions_Flag_Spawn:
   flag_help: Set the location players will respawn at if they die in this region. Default is to have no effect so normal respawn mechanics will apply. Takes the -g group switch. Specify the value as `here` to use your current location, or specify a valid location in the `x,y,z,world` format.
   msg_allowed: false
   msg_cancelled: false
+  msgs:
+    command:
+      error: '<&c>You can not use that location!'
 
   command_handler:
     - if !<player.permission[dregions.admin]||<player.is_op||false>> {
       - if <proc[dRegions_RegionOverlaps].context[<def[flagValue]>/<def[flagValue]>|%world%|<player>]> {
-        - run s@msgPrefixed delay:1t 'def:dRegions|<&c>You can not use that location!'
+        - define path 'command.error'
+        - inject s@dRegions_Msg_Flags
         - queue clear
         }
       }
@@ -3092,6 +3125,9 @@ dRegions_Flag_Time-Lock:
   flag_help: Control what players see the time as. Valid range is 0-23999. Use + or - to adjust the time relative to the current world time. Takes the -g group switch.
   msg_allowed: false
   msg_cancelled: false
+  msgs:
+    command:
+      error: '<&c>Valid time range is 0 - 23999!'
 
   command_handler:
     - if <def[flagValue].starts_with[+]> || <def[flagValue].starts_with[-]> {
@@ -3102,7 +3138,8 @@ dRegions_Flag_Time-Lock:
       - define time '%flagValue%'
       }
     - if %time% !matches number || %time% < 0 || %time% > 23999 {
-      - run s@msgPrefixed 'def:dRegions|<&c>Valid time range is 0 - 23999!'
+      - define path 'command.error'
+      - inject s@dRegions_Msg_Flags
       - queue clear
       }
 
@@ -3224,10 +3261,14 @@ dRegions_Flag_Heal-Delay:
   flag_help: Set the time in seconds between heal intervals. Defaults to 5 seconds.
   msg_allowed: false
   msg_cancelled: false
+  msgs:
+    command:
+      error: '<&c>Can not specify negative time!'
 
   command_handler:
     - if <def[flagValue].is[LESS].than[0]> {
-      - run s@msgPrefixed 'def:dRegions|<&c>Can not specify negative time!'
+      - define path 'command.error'
+      - inject s@dRegions_Msg_Flags
       - queue clear
       }
 
@@ -3249,10 +3290,14 @@ dRegions_Flag_Heal-Max:
   flag_help: Set the max health that the heal flag will heal a player to. Defaults to 20.
   msg_allowed: false
   msg_cancelled: false
+  msgs:
+    command:
+      error: '<&c>Must be a value greater than 0!'
 
   command_handler:
     - if !<def[flagValue].is[MORE].than[0]> {
-      - run s@msgPrefixed 'def:dRegions|<&c>Must be a value greater than 0!'
+      - define path 'command.error'
+      - inject s@dRegions_Msg_Flags
       - queue clear
       }
 
@@ -3274,10 +3319,14 @@ dRegions_Flag_Heal-Min:
   flag_help: Set the min health that the heal flag will heal a player to. Defaults to 0.
   msg_allowed: false
   msg_cancelled: false
+  msgs:
+    command:
+      error: '<&c>Can not set to a negative number!'
 
   command_handler:
     - if <def[flagValue].is[LESS].than[0]> {
-      - run s@msgPrefixed 'def:dRegions|<&c>Can not set to a negative number!'
+      - define path 'command.error'
+      - inject s@dRegions_Msg_Flags
       - queue clear
       }
 
@@ -3392,10 +3441,14 @@ dRegions_Flag_Feed-Delay:
   flag_help: Set the time in seconds between feed intervals. Defaults to 5 seconds.
   msg_allowed: false
   msg_cancelled: false
+  msgs:
+    command:
+      error: '<&c>Can not specify negative time!'
 
   command_handler:
     - if <def[flagValue].is[LESS].than[0]> {
-      - run s@msgPrefixed 'def:dRegions|<&c>Can not specify negative time!'
+      - define path 'command.error'
+      - inject s@dRegions_Msg_Flags
       - queue clear
       }
 
@@ -3417,10 +3470,14 @@ dRegions_Flag_Feed-Max:
   flag_help: Set the max food level that the feed-amount flag will bring a player to. Defaults to 20.
   msg_allowed: false
   msg_cancelled: false
+  msgs:
+    command:
+      error: '<&c>Must be a value greater than 0!'
 
   command_handler:
     - if !<def[flagValue].is[MORE].than[0]> {
-      - run s@msgPrefixed 'def:dRegions|<&c>Must be a value greater than 0!'
+      - define path 'command.error'
+      - inject s@dRegions_Msg_Flags
       - queue clear
       }
 
@@ -3442,10 +3499,14 @@ dRegions_Flag_Feed-Min:
   flag_help: Set the min food level that the feed-amount flag will bring a player to. Defaults to 0.
   msg_allowed: false
   msg_cancelled: false
+  msgs:
+    command:
+      error: '<&c>Can not set to a negative number!'
 
   command_handler:
     - if <def[flagValue].is[LESS].than[0]> {
-      - run s@msgPrefixed 'def:dRegions|<&c>Can not set to a negative number!'
+      - define path 'command.error'
+      - inject s@dRegions_Msg_Flags
       - queue clear
       }
 
