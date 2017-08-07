@@ -143,7 +143,7 @@ dRegions_Flags_Processors_stg:
     # Process determinations
     - mark 'b'
     - if '%a%' || <def[overRide].exists> {
-      - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'event-allowed' {
+      - if '<s@dRegions_Flag_%flag%.yaml_key[event-runAllowed]||false>' {
         - inject 's@dRegions_Flag_%flag%' 'p:event-allowed'
         }
       - foreach next
@@ -254,7 +254,7 @@ dRegions_Flags_Processors_st:
 
     - mark 'a'
     - if '%a%' || <def[overRide].exists> {
-      - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'event-allowed' {
+      - if '<s@dRegions_Flag_%flag%.yaml_key[event-runAllowed]||false>' {
         - inject 's@dRegions_Flag_%flag%' 'p:event-allowed'
         }
       - foreach next
@@ -367,7 +367,7 @@ dRegions_Flags_Processors_sg:
       }
     - mark 'b'
     - if '%a%' || <def[overRide].exists> {
-      - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'event-allowed' {
+      - if '<s@dRegions_Flag_%flag%.yaml_key[event-runAllowed]||false>' {
         - inject 's@dRegions_Flag_%flag%' 'p:event-allowed'
         }
       - foreach next
@@ -493,7 +493,7 @@ dRegions_Flags_Processors_stsg:
       }
     - mark 'b'
     - if '%a%' || <def[overRide].exists> {
-      - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'event-allowed' {
+      - if '<s@dRegions_Flag_%flag%.yaml_key[event-runAllowed]||false>' {
         - inject 's@dRegions_Flag_%flag%' 'p:event-allowed'
         }
       - foreach next
@@ -711,7 +711,7 @@ dRegions_Flags_Processors_b:
       }
     - determine cancelled
     - mark 'true'
-    - if '<s@dRegions_Flag_%flag%.list_keys>' contains 'event-allowed' {
+      - if '<s@dRegions_Flag_%flag%.yaml_key[event-runAllowed]||false>' {
       - inject 's@dRegions_Flag_%flag%' 'p:event-allowed'
       }
 #
@@ -1102,6 +1102,7 @@ dRegions_Flag_Player-Damage:
   flag_regionDefault: allow/all
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will take damage in this region. Defaults to allow all. Use player-damage-types flag to specify damage types. Takes the -g group switch.
+  event-runAllowed: false
   event-runCancel: true
   msg_allowed: false
   msg_cancelled: false
@@ -1134,6 +1135,7 @@ dRegions_Flag_Mob-Spawn:
   flag_regionDefault: allow
   flag_globalDefault: allow
   flag_help: State flag controlling whether mobs will be able to spawn in this region. Defaults to allow all. Use mob-spawnlist flag to specify mob types.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: false
@@ -1156,6 +1158,7 @@ dRegions_Flag_EVE:
   flag_regionDefault: allow
   flag_globalDefault: allow
   flag_help: State flag controlling whether mobs can be targeted for attack by other mobs in this region. Defaults to allow. Use eve-moblist flag to specify mob types.
+  event-runAllowed: false
   event-runCancel: true
   msg_allowed: false
   msg_cancelled: false
@@ -1204,6 +1207,7 @@ dRegions_Flag_Mob-Attack:
   flag_regionDefault: allow
   flag_globalDefault: allow
   flag_help: State flag controlling whether mobs can attack other mobs in this region. Defaults to allow. Use mob-attack-moblist flag to specify mob types.
+  event-runAllowed: false
   event-runCancel: true
   msg_allowed: false
   msg_cancelled: false
@@ -1251,6 +1255,7 @@ dRegions_Flag_Entity-Explode:
   flag_regionDefault: allow
   flag_globalDefault: allow
   flag_help: State flag controlling whether entities will be able to explode in this region. Defaults to allow all. Use entity-explodelist flag to specify entities types.
+  event-runAllowed: true
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: false
@@ -1293,6 +1298,7 @@ dRegions_Flag_Entity-Grief:
   flag_regionDefault: deny
   flag_globalDefault: allow
   flag_help: State flag controlling whether entities will be able to alter blocks in this region. Defaults to allow all. Use entity-grieflist flag to specify entities types.
+  event-runAllowed: true
   event-runCancel: true
   msg_allowed: false
   msg_cancelled: false
@@ -1322,6 +1328,7 @@ dRegions_Flag_Entity-Drops-OnDeath:
   flag_takeGroup: false
   flag_regionDefault: allow
   flag_globalDefault: allow
+  event-runAllowed: false
   event-runCancel: true
   msg_allowed: false
   msg_cancelled: false
@@ -1346,6 +1353,7 @@ dRegions_Flag_Fire-Spread:
   flag_regionDefault: none
   flag_globalDefault: allow
   flag_help: State flag controlling whether fire will be able to spread in this region. Defaults to allow all. Use fire-spreadblocks flag to specify blocks to check when spreading.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: false
@@ -1367,6 +1375,7 @@ dRegions_Flag_Fire-Destroy:
   flag_regionDefault: allow
   flag_globalDefault: allow
   flag_help: State flag controlling whether fire will be able to spread to and destroy blocks in this region. Defaults to allow all. Use fire-destroyblocks flag to specify blocks to check when spreading.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: false
@@ -1388,6 +1397,7 @@ dRegions_Flag_Lightning-Strikes:
   flag_regionDefault: allow
   flag_globalDefault: allow
   flag_help: State flag controlling whether lightning will be able to strike in this region. Defaults to allow all. Use lightning-strikeblocks flag to specify blocks to check when striking.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: false
@@ -1409,6 +1419,7 @@ dRegions_Flag_Water-Spread:
   flag_regionDefault: allow
   flag_globalDefault: allow
   flag_help: State flag controlling whether water will be able to spread in this region. Defaults to allow all. Use water-spreadblocks flag to specify blocks to check when spreading.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: false
@@ -1430,6 +1441,7 @@ dRegions_Flag_Lava-Spread:
   flag_regionDefault: allow
   flag_globalDefault: allow
   flag_help: State flag controlling whether lava will be able to spread in this region. Defaults to allow all. Use lava-spreadblocks flag to specify blocks to check when spreading.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: false
@@ -1451,6 +1463,7 @@ dRegions_Flag_Snow-Fall:
   flag_regionDefault: allow
   flag_globalDefault: allow
   flag_help: State flag controlling whether snow will be able to accumulate on the ground in this region. Defaults to allow all. Use snow-fallblocks flag to specify blocks below the snow to check when forming.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: false
@@ -1479,6 +1492,7 @@ dRegions_Flag_Entry:
   flag_takeGroup: true
   flag_regionDefault: allow/all
   flag_globalDefault: allow/all
+  event-runAllowed: true
   event-runCancel: true
   msg_allowed: false
   msg_cancelled: true
@@ -1521,6 +1535,7 @@ dRegions_Flag_Exit:
   flag_takeGroup: true
   flag_regionDefault: allow/all
   flag_globalDefault: allow/all
+  event-runAllowed: true
   event-runCancel: true
   msg_allowed: false
   msg_cancelled: true
@@ -1563,6 +1578,7 @@ dRegions_Flag_Exit-Via-Teleport:
   flag_regionDefault: allow/all
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to teleport out of a region. Defaults to allow all. Takes the -g group switch.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: true
@@ -1585,6 +1601,7 @@ dRegions_Flag_Enter-Via-Teleport:
   flag_regionDefault: allow/all
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to teleport into a region. Defaults to allow all. Takes the -g group switch.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: true
@@ -1607,6 +1624,7 @@ dRegions_Flag_Exit-Override:
   flag_regionDefault: deny/all
   flag_globalDefault: deny/all
   flag_help: State flag controling who can override exit deny. Defaults to deny all. Takes the -g group switch.
+  event-runAllowed: true
   event-runCancel: true
   msg_allowed: false
   msg_cancelled: false
@@ -1636,6 +1654,7 @@ dRegions_Flag_Entry-Override:
   flag_regionDefault: deny/all
   flag_globalDefault: deny/all
   flag_help: State flag controling who can override entry deny. Defaults to deny all. Takes the -g group switch.
+  event-runAllowed: true
   event-runCancel: true
   msg_allowed: false
   msg_cancelled: false
@@ -1667,6 +1686,7 @@ dRegions_Flag_Build:
   flag_regionDefault: deny/nonmembers
   flag_globalDefault: allow/all
   flag_help: By default, all members and owners can build in their regions. Setting this flag can over ride that behavior. Can be set to allow, deny, or none and accepts the -g group switch.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: true
@@ -1689,6 +1709,7 @@ dRegions_Flag_Receive-Chat:
   flag_regionDefault: allow/all
   flag_globalDefault: allow/all
   flag_help: Control who can hear chat in a region. Takes the -g group switch.
+  event-runAllowed: false
   event-runCancel: true
   msg_allowed: false
   msg_cancelled: false
@@ -1719,6 +1740,7 @@ dRegions_Flag_Send-Chat:
   flag_regionDefault: allow/all
   flag_globalDefault: allow/all
   flag_help: Control who can send chat in a region. Takes the -g group switch.
+  event-runAllowed: true
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: true
@@ -1744,6 +1766,7 @@ dRegions_Flag_Hunger:
   flag_regionDefault: allow/all
   flag_globalDefault: allow/all
   flag_help: Control whether players will loose hunger in this region. Takes the -g group switch.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: false
@@ -1764,6 +1787,7 @@ dRegions_Flag_Npc-Interact:
   flag_regionDefault: allow/all
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to interact with NPCs in this region. Defaults to allow. Takes the -g group switch.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: true
@@ -1787,6 +1811,7 @@ dRegions_Flag_Lighter:
   flag_regionDefault: deny/nonmembers
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to use lighters in this region. Defaults to allow. Takes the -g group switch.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: true
@@ -1809,6 +1834,7 @@ dRegions_Flag_Bucket-Fill:
   flag_regionDefault: deny/nonmembers
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to fill buckets in this region. Defaults to allow. Takes the -g group switch.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: true
@@ -1831,6 +1857,7 @@ dRegions_Flag_Bucket-Empty:
   flag_regionDefault: deny/nonmembers
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to empty buckets in this region. Defaults to allow. Takes the -g group switch.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: true
@@ -1853,6 +1880,7 @@ dRegions_Flag_Hanging-Place:
   flag_regionDefault: deny/nonmembers
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to place item frames and paintings in this region. Defaults to allow. Takes the -g group switch.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: true
@@ -1875,6 +1903,7 @@ dRegions_Flag_Hanging-Break:
   flag_regionDefault: deny/nonmembers
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to break item frames and paintings in this region. Defaults to allow. Takes the -g group switch.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: true
@@ -1897,6 +1926,7 @@ dRegions_Flag_Sleep:
   flag_regionDefault: deny/nonmembers
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to enter beds in this region. Defaults to allow. Takes the -g group switch.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: true
@@ -1919,6 +1949,7 @@ dRegions_Flag_Player-Drops:
   flag_regionDefault: allow/all
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to drop items from their inventory in this region. Defaults to allow. Takes the -g group switch.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: true
@@ -1941,6 +1972,7 @@ dRegions_Flag_Player-Drops-OnDeath:
   flag_regionDefault: allow/all
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will drop items when they die in this region. Defaults to allow. Takes the -g group switch.
+  event-runAllowed: false
   event-runCancel: true
   msg_allowed: false
   msg_cancelled: false
@@ -1964,12 +1996,15 @@ dRegions_Flag_Player-KeepItems:
   flag_regionDefault: deny/all
   flag_globalDefault: deny/all
   flag_help: State flag controlling whether players will keep their items when they die in a region. Default is to deny all. Takes the -g group switch.
+  event-runAllowed: true
   event-runCancel: true
   msg_allowed: false
   msg_cancelled: false
+  msgs:
+    allowed: '<&9>You died, but your inventory is safe!'
 
   event-allowed:
-    - run locally returnItems 'player:%player%' 'def:<def[player].inventory.list_contents.escaped>|<def[player].equipment.escaped>' delay:2t
+    - run locally returnItems 'player:%player%' 'def:<def[player].inventory.list_contents.escaped>|<def[player].equipment.include[<def[player].item_in_offhand>].escaped>' delay:2t
     - determine NO_DROPS_NO_XP
 
   event-cancelled:
@@ -1981,10 +2016,11 @@ dRegions_Flag_Player-KeepItems:
 
   returnItems:
     - inventory clear
-    - run s@msgPrefixed delay:1t 'def:dRegions|<&9>You died, but your inventory is safe!'
+    - define path 'allowed'
+    - inject s@dRegions_Msg_Flags
     - inventory set 'd:<player.inventory>' 'o:<def[1].unescaped>'
     - define equipment '<def[2].unescaped>'
-    - equip <player> 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>'
+    - equip <player> 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>' 'offhand:<def[equipment].get[5].unescaped>'
 
 dRegions_Flag_Player-Pickup:
   type: item
@@ -2002,6 +2038,7 @@ dRegions_Flag_Player-Pickup:
   flag_regionDefault: allow/all
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to pickup items in this region. Defaults to allow. Takes the -g group switch.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: true
@@ -2024,6 +2061,7 @@ dRegions_Flag_Potion-Drink:
   flag_regionDefault: allow/all
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to drink potions in this region. Defaults to allow. Takes the -g group switch.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: true
@@ -2046,6 +2084,7 @@ dRegions_Flag_Enderpearl:
   flag_regionDefault: allow/all
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to teleport with enderpearls in this region. Defaults to allow. Takes the -g group switch.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: true
@@ -2068,6 +2107,7 @@ dRegions_Flag_Chorusfruit:
   flag_regionDefault: allow/all
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to teleport with chorus_fruit in this region. Defaults to allow. Takes the -g group switch.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: true
@@ -2090,6 +2130,7 @@ dRegions_Flag_Vehicle-Place:
   flag_regionDefault: deny/nonmembers
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to place vehicles in this region. Defaults to allow. Takes the -g group switch.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: true
@@ -2112,6 +2153,7 @@ dRegions_Flag_Vehicle-Destroy:
   flag_regionDefault: deny/nonmembers
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to break vehicles in this region. Defaults to allow. Takes the -g group switch.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: true
@@ -2134,6 +2176,7 @@ dRegions_Flag_Fly:
   flag_regionDefault: deny/all
   flag_globalDefault: deny/all
   flag_help: Enable flight in a region. Takes the -g group switch.
+  event-runAllowed: true
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: false
@@ -2160,7 +2203,6 @@ dRegions_Flag_Fly:
         - flag <def[player]> 'dRegions.fly.noFallDamage'
         - adjust <def[player]> 'can_fly:false'
         - if <def[player].has_flag[dRegions.Message_Cooldown].not> {
-          - flag <def[player]> dRegions.Message_Cooldown duration:3s
           - run s@msgPrefixed instantly 'def:dRegions|<&a>Flight has been disabled!'
           }
         }
@@ -2190,6 +2232,7 @@ dRegions_Flag_Commands:
   flag_regionDefault: allow/all
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players can use commands in this region. Defaults to allow all. Use commands-list flag to specify commands. Takes the -g group switch.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: true
@@ -2217,6 +2260,7 @@ dRegions_Flag_Notify-Enter:
   flag_regionDefault: false
   flag_globalDefault: false
   flag_help: Boolean flag controlling whether notifications are sent for entering this region. Set to true or false. Defaults to false.
+  event-runAllowed: true
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: false
@@ -2242,6 +2286,7 @@ dRegions_Flag_Notify-Exit:
   flag_regionDefault: false
   flag_globalDefault: false
   flag_help: Boolean flag controlling whether notifications are sent for exiting this region. Set to true or false. Defaults to false.
+  event-runAllowed: true
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: false
@@ -2267,6 +2312,7 @@ dRegions_Flag_Ice-Form:
   flag_regionDefault: true
   flag_globalDefault: true
   flag_help: Boolean flag controlling whether ice can form in this region. Set to true or false. Defaults to true.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: false
@@ -2287,6 +2333,7 @@ dRegions_Flag_Lava-Fire:
   flag_regionDefault: true
   flag_globalDefault: true
   flag_help: Boolean flag controlling whether lava can cause fires in this region. Set to true or false. Defaults to true.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: false
@@ -2307,6 +2354,7 @@ dRegions_Flag_Lightning-Fire:
   flag_regionDefault: true
   flag_globalDefault: true
   flag_help: Boolean flag controlling whether lightning can cause fires in this region. Set to true or false. Defaults to true.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: false
@@ -2327,6 +2375,7 @@ dRegions_Flag_Explosion-Fire:
   flag_regionDefault: true
   flag_globalDefault: true
   flag_help: Boolean flag controlling whether explosions can cause fires in this region. Set to true or false. Defaults to true.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: false
@@ -2347,6 +2396,7 @@ dRegions_Flag_Endercrystal-Fire:
   flag_regionDefault: true
   flag_globalDefault: true
   flag_help: Boolean flag controlling whether ender crystals can cause fires in this region. Set to true or false. Defaults to true.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: false
@@ -2367,6 +2417,7 @@ dRegions_Flag_Fireball-Fire:
   flag_regionDefault: true
   flag_globalDefault: true
   flag_help: Boolean flag controlling whether fireballs can cause fires in this region. Set to true or false. Defaults to true.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: false
@@ -2387,6 +2438,7 @@ dRegions_Flag_Ice-Melt:
   flag_regionDefault: true
   flag_globalDefault: true
   flag_help: Boolean flag controlling whether ice can melt in this region. Set to true or false. Defaults to true.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: false
@@ -2407,6 +2459,7 @@ dRegions_Flag_Snow-Melt:
   flag_regionDefault: true
   flag_globalDefault: true
   flag_help: Boolean flag controlling whether snow can melt in this region. Set to true or false. Defaults to true.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: false
@@ -2427,6 +2480,7 @@ dRegions_Flag_Soil-Dry:
   flag_regionDefault: true
   flag_globalDefault: true
   flag_help: Boolean flag controlling whether soil can dry in this region. Set to true or false. Defaults to true.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: false
@@ -2447,6 +2501,7 @@ dRegions_Flag_Trample-Crops-Player:
   flag_regionDefault: true
   flag_globalDefault: true
   flag_help: Boolean flag controlling whether players can trample crops in this region. Set to true or false. Defaults to true.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: false
@@ -2467,6 +2522,7 @@ dRegions_Flag_Trample-Crops-Entity:
   flag_regionDefault: true
   flag_globalDefault: true
   flag_help: Boolean flag controlling whether entities can trample crops in this region. Set to true or false. Defaults to true.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: false
@@ -2487,6 +2543,7 @@ dRegions_Flag_Mushroom-Spread:
   flag_regionDefault: true
   flag_globalDefault: true
   flag_help: Boolean flag controlling whether mushrooms will be able to spread in this region. Set to true or false. Defaults to true.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: false
@@ -2507,6 +2564,7 @@ dRegions_Flag_Grass-Spread:
   flag_regionDefault: true
   flag_globalDefault: true
   flag_help: Boolean flag controlling whether grass will be able to spread in this region. Set to true or false. Defaults to true.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: false
@@ -2527,6 +2585,7 @@ dRegions_Flag_Mycel-Spread:
   flag_regionDefault: true
   flag_globalDefault: true
   flag_help: Boolean flag controlling whether mycelium will be able to spread in this region. Set to true or false. Defaults to true.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: false
@@ -2547,6 +2606,7 @@ dRegions_Flag_Vines-Spread:
   flag_regionDefault: true
   flag_globalDefault: true
   flag_help: Boolean flag controlling whether vines will be able to grow in this region. Set to true or false. Defaults to true.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: false
@@ -2567,6 +2627,7 @@ dRegions_Flag_Leaf-Decay:
   flag_regionDefault: true
   flag_globalDefault: true
   flag_help: Boolean flag controlling whether leaves will be able to decay in this region. Set to true or false. Defaults to true.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: false
@@ -2587,6 +2648,7 @@ dRegions_Flag_Falling-Sand:
   flag_regionDefault: true
   flag_globalDefault: true
   flag_help: Boolean flag controlling whether sand will be able to fall in this region. Set to true or false. Defaults to true.
+  event-runAllowed: true
   event-runCancel: true
   msg_allowed: false
   msg_cancelled: false
@@ -2613,6 +2675,7 @@ dRegions_Flag_Falling-Gravel:
   flag_regionDefault: true
   flag_globalDefault: true
   flag_help: Boolean flag controlling whether gravel will be able to fall in this region. Set to true or false. Defaults to true.
+  event-runAllowed: true
   event-runCancel: true
   msg_allowed: false
   msg_cancelled: false
@@ -2639,6 +2702,7 @@ dRegions_Flag_Pistons:
   flag_regionDefault: true
   flag_globalDefault: true
   flag_help: Boolean flag controlling whether pistons can be activated in this region. Set to true or false. Defaults to true.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: false
@@ -2659,6 +2723,7 @@ dRegions_Flag_Entity-Break-Painting:
   flag_regionDefault: true
   flag_globalDefault: true
   flag_help: Boolean flag controlling whether mobs will be able to destroy paintings in this region. Set to true or false. Defaults to true.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: false
@@ -2680,6 +2745,7 @@ dRegions_Flag_Entity-Break-ItemFrame:
   flag_regionDefault: true
   flag_globalDefault: true
   flag_help: Boolean flag controlling whether mobs will be able to destroy item frames in this region. Set to true or false. Defaults to true.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: false
@@ -2702,6 +2768,7 @@ dRegions_Flag_PVP:
   flag_regionDefault: true
   flag_globalDefault: true
   flag_help: Boolean flag controlling whether players can attack eachother in this region. Set to true or false. Defaults to true.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: true
@@ -2724,6 +2791,7 @@ dRegions_Flag_Potion-Throw:
   flag_regionDefault: true
   flag_globalDefault: true
   flag_help: Boolean flag controlling whether potions can be thrown and broken in this region. Set to true or false. Defaults to true.
+  event-runAllowed: false
   event-runCancel: true
   msg_allowed: false
   msg_cancelled: false
@@ -2761,6 +2829,7 @@ dRegions_Flag_Greeting:
   flag_regionDefault: none
   flag_globalDefault: none
   flag_help: Set the greeting message for region entry.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: false
@@ -2782,6 +2851,7 @@ dRegions_Flag_Farewell:
   flag_regionDefault: none
   flag_globalDefault: none
   flag_help: Set the farewell message for region exit.
+  event-runAllowed: false
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: false
@@ -2817,7 +2887,7 @@ dRegions_Flag_Inventory:
 
   command_handler:
     - if <def[flagValue].is[==].to[kit]> {
-      - yaml set 'inventories.regions.%region%.entry.kit.equip:<def[player].equipment>' 'id:dRegions_%world%_inventories'
+      - yaml set 'inventories.regions.%region%.entry.kit.equip:<def[player].equipment.include[<def[player].item_in_offhand>]>' 'id:dRegions_%world%_inventories'
       - yaml set 'inventories.regions.%region%.entry.kit.inv:<def[player].inventory.list_contents>' 'id:dRegions_%world%_inventories'
       - yaml set 'inventories.regions.%region%.exit.players:|:' 'id:dRegions_%world%_inventories'
       }
@@ -2845,13 +2915,13 @@ dRegions_Flag_Inventory:
     - mark 'end'
 
   kit-enter:
-    - yaml set 'inventories.regions.%region%.exit.players.<def[player].uuid>.equip:<def[player].equipment>' 'id:dRegions_%world%_inventories'
+    - yaml set 'inventories.regions.%region%.exit.players.<def[player].uuid>.equip:<def[player].equipment.include[<def[player].item_in_offhand>]>' 'id:dRegions_%world%_inventories'
     - yaml set 'inventories.regions.%region%.exit.players.<def[player].uuid>.inv:<def[player].inventory.list_contents>' 'id:dRegions_%world%_inventories'
     - yaml 'savefile:dRegions/worlds/%world%/inventories.yml' 'id:dRegions_%world%_inventories'
     - inventory clear
     - inventory set 'd:<def[player].inventory>' 'o:<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.entry.kit.inv]||li@>'
     - define equipment '<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.entry.kit.equip]||li@>'
-    - equip %player% 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>'
+    - equip %player% 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>' 'offhand:<def[equipment].get[5]||i@air>'
     - run s@msgPrefixed delay:1t 'def:dRegions|<&7><&o>Your inventory has been updated.'
 
   kit-exit:
@@ -2864,22 +2934,22 @@ dRegions_Flag_Inventory:
     - run s@msgPrefixed delay:1t 'def:dRegions|<&7><&o>Your inventory has been updated.'
 
   unique-enter:
-    - yaml set 'inventories.regions.%region%.exit.players.<def[player].uuid>.equip:<def[player].equipment>' 'id:dRegions_%world%_inventories'
+    - yaml set 'inventories.regions.%region%.exit.players.<def[player].uuid>.equip:<def[player].equipment.include[<def[player].item_in_offhand>]>' 'id:dRegions_%world%_inventories'
     - yaml set 'inventories.regions.%region%.exit.players.<def[player].uuid>.inv:<def[player].inventory.list_contents>' 'id:dRegions_%world%_inventories'
     - yaml 'savefile:dRegions/worlds/%world%/inventories.yml' 'id:dRegions_%world%_inventories'
     - inventory clear
     - inventory set 'd:<def[player].inventory>' 'o:<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.entry.players.<def[player].uuid>.inv]||li@>'
     - define equipment '<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.entry.players.<def[player].uuid>.equip]||li@>'
-    - equip %player% 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>'
+    - equip %player% 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>' 'offhand:<def[equipment].get[5]||i@air>'
     - run s@msgPrefixed delay:1t 'def:dRegions|<&7><&o>Your inventory has been updated.'
 
   unique-exit:
-    - yaml set 'inventories.regions.%region%.entry.players.<def[player].uuid>.equip:<def[player].equipment>' 'id:dRegions_%world%_inventories'
+    - yaml set 'inventories.regions.%region%.entry.players.<def[player].uuid>.equip:<def[player].equipment.include[<def[player].item_in_offhand>]>' 'id:dRegions_%world%_inventories'
     - yaml set 'inventories.regions.%region%.entry.players.<def[player].uuid>.inv:<def[player].inventory.list_contents>' 'id:dRegions_%world%_inventories'
     - define equipment '<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.exit.players.<def[player].uuid>.equip]||li@>'
     - inventory clear
     - inventory set 'd:<def[player].inventory>' 'o:<yaml[dRegions_%world%_inventories].read[inventories.regions.%region%.exit.players.<def[player].uuid>.inv]||li@>'
-    - equip %player% 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>'
+    - equip %player% 'boots:<def[equipment].get[1]||i@air>' 'legs:<def[equipment].get[2]||i@air>' 'chest:<def[equipment].get[3]||i@air>' 'head:<def[equipment].get[4]||i@air>' 'offhand:<def[equipment].get[5]||i@air>'
     - yaml set 'inventories.regions.%region%.exit.players.<def[player].uuid>:!' 'id:dRegions_%world%_inventories'
     - yaml 'savefile:dRegions/worlds/%world%/inventories.yml' 'id:dRegions_%world%_inventories'
     - run s@msgPrefixed delay:1t 'def:dRegions|<&7><&o>Your inventory has been updated.'
