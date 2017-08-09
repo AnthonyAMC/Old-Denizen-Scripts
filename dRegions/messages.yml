@@ -24,8 +24,11 @@ dRegions_Msg:
     - foreach '<yaml[dRegions_Languages_%lng%].read[msgs.%1%]||<s@dRegions_Languages_Default.yaml_key[msgs.%1%]>>':
       - narrate "%prefix%  <parse:<def[value]>>"
     - mark 'end'
+
 #
-#  - inject s@dRegions_Msg_Flags 'def:flagname|path.to.message'
+#  - define flag '%flagname%'
+#  - define path 'allowed'
+#  - inject s@dRegions_Msg_Flags
 dRegions_Msg_Flags:
   type: task
   debug: false
@@ -41,7 +44,8 @@ dRegions_Msg_Flags:
       - define prefix '<proc[msgCommand].context[<&4><&lb><&6>dRegions<&4><&rb>|drg help|<&6>   dRegions<&nl> <&nl><&d>Click for help]>'
       }
     - foreach '<proc[dRegions_LineWrap].context[<parse:<yaml[dRegions_Languages_%lng%].read[flags.%flag%.%path%]||<s@dRegions_Flag_%flag%.yaml_key[msgs.%path%]>>|54>]>':
-      - narrate "%prefix%  <def[value]>"
+      - narrate 'targets:<def[msgTargets]||<def[player]>>' "%prefix%  <def[value]>"
+#      - narrate "%prefix%  <def[msgTargets]||<def[player]||<player>>> <def[value]>"
 #
 #  END dRegions Messages
 #
@@ -92,27 +96,52 @@ dRegions_LineWrap:
 dRegions_Msg_Boxed:
   type: task
   debug: false
-  definitions: script|title|subTitle|command|page|pageWidth|pageHeight
+  definitions: title|subTitle|command|page|pageWidth|pageHeight
   script:
-    - ^define entries '<def[raw_context].split_by[|].remove[1|2|3|4|5|6|7]>'
+    - ^define entries '<def[raw_context].split_by[|].remove[1|2|3|4|5|6]>'
+    - ^inject locally msgsHeader instantly
     - ^inject locally msgsBody
     - ^inject locally msgsFooter
 
-
-
-#--------------------------------------
-#
-#  dRegions Command Messages
-#
-# Some messages used by commands. Should probably move to s@dRegions_Msg
-#
   msgsHeader:
+    - if <def[page].is[MATCHES].to[number].not> {
+      - define page '1'
+      }
+    - define pages '<def[entries].size.div[%pageHeight%].round_up||1>'
+    - define page '<def[page].min[%pages%].max[1].round_up>'
+    - define highNumber '<def[page].mul[%pageHeight%].round_up>'
+    - define lowNumber '<def[highNumber].sub[<def[pageHeight].sub[1]>].round_up>'
+    # Previous page button
+    - ^define icon 'i@human_skull[display_name=<&6>  Previous Page  ]'
+    - ^define hover '{<def[icon].json>}'
+    - ^define click '/%command% <def[page].sub[1].max[1].round_up>'
+    - ^if <def[page]> <= 1 {
+      - ^define prevPage '"text":"%page%","color":"gray"'
+      }
+      else {
+      - ^define prevPage '"text":"%page%","color":"white","clickEvent":{"action":"run_command","value":"%click%"},"hoverEvent":{"action":"show_item","value":"%hover%"}'
+      }
+    # Next page button
+    - ^define icon 'i@human_skull[display_name=<&6>  Next Page  ]'
+    - ^define hover '{<def[icon].json>}'
+    - ^define click '/%command% <def[page].add[1].min[%pages%].round_up>'
+    - ^if <def[page]> >= %pages% {
+      - ^define nextPage '"text":"%pages%","color":"gray"'
+      }
+      else {
+      - ^define nextPage '"text":"%pages%","color":"white","clickEvent":{"action":"run_command","value":"%click%"},"hoverEvent":{"action":"show_item","value":"%hover%"}'
+      }
     - define hpad '<def[title].length.max[10].as_int>'
     - define heading '<def[title].pad_right[%hpad%].with[<&sp>]>  <def[subTitle]>'
-    - define pagesInfo '<&7><&o>Page <&f>%page% <&7><&o>of <&f>%pageTotal%'
-    - define pad '<def[pageWidth].sub[<def[heading].strip_color.length>].sub[<def[pagesInfo].strip_color.length>].mul[1.5].round>'
+    - define pad '<def[pageWidth].sub[<def[heading].strip_color.length>].sub[<el@val[Page %page% of %pages%].length>].mul[1.5].round_up>'
+    - define prefix '"text":"|   ","color":"dark_purple"'
+    - define title '"text":"<def[title].pad_right[%hpad%].with[<&sp>]>","color":"gold","clickEvent":{"action":"run_command","value":"/drg about"},"hoverEvent":{"action":"show_text","value":["",{"text":"Click to read<&nl>about the project!","color":"green"}]}'
+    - define subTitle '"text":"  %subTitle%","color":"yellow","clickEvent":{"action":"run_command","value":"/drghelp"},"hoverEvent":{"action":"show_text","value":["",{"text":"Go back to main help","color":"green"}]}'
+    - define pad '"text":"<&f.pad_left[%pad%]>"'
+    - define p '"text":"Page ","color":"gray","italic":true'
+    - define of '"text":" of ","color":"gray","italic":true'
     - narrate "<&5>|<&pipe.pad_left[<def[pageWidth]>].with[-]>"
-    - narrate "<&5>|<&sp><&sp><&sp><&6>%title%   <&7>%subTitle%"
+    - execute as_server 'tellraw <player.name> {"text":"","extra":[{%prefix%},{%title%},{%subtitle%},{%pad%},{%p%},{%prevPage%},{%of%},{%nextPage%}]}'
     - narrate "<&5>|<&f>"
 
   msgsFooter:
@@ -134,50 +163,50 @@ dRegions_Msg_Boxed:
         - define list '<def[list].include[<&lc><def[entry]><&rc>|<&lc><def[spacer]><&rc>]>'
         }
       }
-    - ^if <player.is_player||false> {
-      - execute as_server 'tellraw <player.name> {"text":"","extra":[{%prefix%},<def[list].separated_by[,].unescaped>]}'
-      }
-      else {
-      - announce to_console "<&5>|  <&f>Authors:  <&7><def[authors].parse[.yaml_key[text_name]].split_by[<&sp><&sp><&7>]>"
-      }
+    - execute as_server 'tellraw <player.name> {"text":"","extra":[{%prefix%},<def[list].separated_by[,].unescaped>]}'
     - ^mark 'end'
-    - ^define scroll '<&d>S<&5>-<&d>c<&5>-<&d>r<&5>-<&d>o<&5>-<&d>l<&5>-<&d>l<&5>---<&d>U<&5>-<&d>p<&5>'
-    - ^define pad '<def[pageWidth].sub[<def[scroll].strip_color.length>].div[2].round_up>'
-    - ^narrate "<&5><&pipe.pad_right[%pad%].with[-]>-%scroll%<&pipe.pad_left[%pad%].with[-]>"
+    - narrate "<&5>|<&pipe.pad_left[<def[pageWidth]>].with[-]>"
 
   msgsBody:
-    - define page '<def[arg].replace[-].escaped||1>'
+    - define prefix '"text":"|  ","color":"dark_purple"'
+    - define lines '<def[entries].get[%lowNumber%].to[%highNumber%]||li@>'
+    - foreach '<def[lines]>':
+      - execute as_server 'tellraw <player.name> {"text":"","extra":[{%prefix%},{%value%}]}'
+    - repeat '<def[pageHeight].sub[<def[lines].size>].add[1].as_int>':
+      - narrate "<&5>|"
+#
+#---------------------------------------
+#
+dRegions_Msg_Boxed_Console:
+  type: task
+  debug: false
+  definitions: title|subTitle|page|pageWidth|pageHeight
+  script:
+    - ^define entries '<def[raw_context].split_by[|].remove[1|2|3|4|5]>'
     - if <def[page].is[MATCHES].to[number].not> {
       - define page '1'
       }
-    - define pages '<def[entries].size.div[10].round_up||1>'
-    - if <def[page].is[MORE].than[%pages%]> {
-      - define page '%pages%'
+    - define pages '<def[entries].size.div[%pageHeight%].round_up||1>'
+    - define page '<def[page].min[%pages%].max[1].round_up>'
+    - define highNumber '<def[page].mul[%pageHeight%].round_up>'
+    - define lowNumber '<def[highNumber].sub[<def[pageHeight].sub[1]>].round_up>'
+    - define hpad '<def[title].length.max[10].as_int>'
+    - define heading '<&6>   <def[title].pad_right[%hpad%].with[<&sp>]><&e><def[subTitle]>'
+    - define pad '<def[pageWidth].sub[<def[heading].strip_color.length.add[<el@val[Page %page% of %pages%].length>]>].round_up>'
+    - announce to_console "<&5>|<&pipe.pad_left[<def[pageWidth]>].with[-]>"
+    - announce to_console "<&5>|<def[heading]><&f.pad_left[%pad%]><&7><&o>Page <&f>%page% <&7><&o>of <&f>%pages%"
+    - announce to_console "<&5>|<&f>"
+    - define lines '<def[entries].get[%lowNumber%].to[%highNumber%]||li@>'
+    - foreach '<def[lines]>':
+      - announce to_console '<&5>|  <&f>%value%'
+    - announce to_console "<&5>|"
+    - define authors '<server.list_scripts.filter[starts_with[s@dRegions_Author_]]||li@>'
+    - if <def[authors].is_empty> {
+      - goto 'end'
       }
-    - define highNumber '<def[page].mul[10].as_int>'
-    - define lowNumber '<def[highNumber].sub[9].as_int>'
-    - define msgsHeaderTitle '<&e>%subTitle%   <el@val[<&7><&o>Page <&f><&o>%page% <&7><&o>of %pages%].pad_left[30]>'
-    - inject locally msgsHeader instantly
-    - foreach '<def[entries].get[%lowNumber%].to[%highNumber%]||li@>':
-      - narrate "<&5>|<&sp><&f><def[value].unescaped>"
-    - repeat '<def[pageHeight].sub[<def[lines].size>].as_int>':
-      - narrate "<&5>|"
-
-  msgsHelpUser:
-    - define msgsHeaderTitle 'User Help'
-    - inject locally msgsHeader instantly
-    - define par1 "dRegions is an advanced region management and world protection system written with the Denizen Scripting Engine."
-    - define par2 "Heavily inspired by WorldGuard, the goal is to have an extremely efficient events system supporting an exhaustive set of region flags and configuration options."
-    - define par3 "dRegions offers an intuitive command interface and provides thorough TAB completion."
-    - define strings "<el@val[%par1%|%par2%|%par3%].as_list>"
-    - foreach <def[strings]> {
-      - define string "<&f><&sp><def[value]>"
-      - define lines '<proc[dRegions_LineWrap].context[<def[string]>|44]>'
-      - foreach <def[lines]> {
-        - narrate "<&5>|<&f><&sp><&sp><def[value].unescaped>"
-        }
-      - narrate "<&5>|"
-      }
+    - announce to_console "<&5>|  <&f>Authors:  <&7><def[authors].parse[yaml_key[text_name]].separated_by[<&sp><&sp><&7>]>"
+    - mark 'end'
+    - announce to_console "<&5>|<&pipe.pad_left[<def[pageWidth]>].with[-]>"
 
 #
 #  END dRegions Command Messages
