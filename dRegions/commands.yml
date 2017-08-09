@@ -2288,16 +2288,16 @@ dRegions_Commands_Help:
 
   data:
     description:
-      - 'This is the help for dRegions. The help files are here to help you. Help yourself by reading the help. It<&sq>s helpful. <&c>Seriously!'
+      - ' This is the help for dRegions. The help files are here to help you. Help yourself by reading the help. It<&sq>s helpful. <&c>Seriously!'
       - ' '
-      - 'Thorough TAB completion is available for all dRegions commands, including help. Try it and see!'
+      - ' Thorough TAB completion is available for all dRegions commands, including help. Try it and see!'
     usage: '/drg help <&lt>arg/<&ns><&gt>'
     examples:
-      - '<&f>To show the <&a>second<&f> page of help for the <&2>help<&f> command'
+      - ' <&f>To show the <&a>second<&f> page of help for the <&2>help<&f> command'
       - '<&sp>'
       - '   <&e>/drg help <&2>help <&a>2'
       - ' '
-      - '<&f>To show the <&a>third<&f> page of the help files'
+      - ' <&f>To show the <&a>third<&f> page of the help files'
       - '<&sp>'
       - '   <&e>/drg help <&a>3'
     permissions: []
@@ -2347,7 +2347,6 @@ dRegions_Commands_Help:
 
   helpList:
     # Filter the list of commands this player can use
-    # Build the help documentation
     - define helpDoc 'li@'
     - if !<player.permission[dregions.admin]||<player.is_op||<c.server||false>>> {
       - foreach '%commands%' {
@@ -2356,31 +2355,57 @@ dRegions_Commands_Help:
           }
         }
       }
-    - if <server.list_scripts> contains 's@MSG_Version' {
+    # Build the help documentation
+    - if <c.server||false> {
       - foreach '%commands%' {
-        - define title '<&sp><&f><def[value].to_titlecase><&co>'
-        - define syntax '<parse:<s@dRegions_Commands.yaml_key[commandArgs.%value%.usage]||No usage info available!>>'
-        - define syntax '<proc[dRegions_LineWrap].context[<def[syntax]>|42].parse[pad_left[3]].separated_by[|]>'
-        - define helpDoc '<def[helpDoc].include[<def[title]>|<def[syntax]>]>'
+        - define helpDoc '<def[helpDoc].include[<&f><def[value].to_titlecase><&co>|<&e.pad_right[5]><parse:<s@dRegions_Commands.yaml_key[commandArgs.%value%.usage]||No usage info available!>>]>'
         }
-      - run s@dRegions_Msg_Boxed instantly 'def:dRegions|dRegions|Help Files|drg help|<def[page]||1>|52|10|<def[helpDoc].separated_by[|]>'
+      - run s@dRegions_Msg_Boxed_Console instantly 'def:dRegions|Help Files|<def[page]||1>|52|20|<def[helpDoc].separated_by[|]>'
       - queue clear
       }
     - foreach '%commands%':
-      - define usage '<parse:<s@dRegions_Commands.yaml_key[commandArgs.%value%.usage]||No usage info available!>>'
-      - define usage '<proc[msgTrim].context[40|<def[usage].escaped>]>'
-      - define button '<proc[msgCommand].context[<def[value].to_titlecase><&co>|drg help %value%|<&a>Click for <&b><def[value].to_titlecase> <&a>help]>'
-      - define helpDoc '<def[helpDoc].include[%button%<&sp><&7><parse:<s@dRegions_Commands.yaml_key[commandArgs.%value%.description]||>>|<&e.pad_left[3].with[<&sp>]>%usage%]>'
-    - run s@msgBoxed instantly 'def:dRegions|<proc[msgCommand].context[<&6>dRegions|drg about|<&a>Click to learn<&nl><&a>about the project!]>|<proc[msgCommand].context[<&e>Help|drghelp|<&a>Go back to main help]> Files|drghelp|<def[page]||1>|52|10|<def[helpDoc].separated_by[|]>'
+      - define tButton '"text":"<def[value].to_titlecase><&co>","color":"white","clickEvent":{"action":"run_command","value":"/drghelp %value%"},"hoverEvent":{"action":"show_text","value":["",{"text":"Click for %value% help","color":"green"}]}'
+      - define syntax '<parse:<s@dRegions_Commands.yaml_key[commandArgs.%value%.usage]||No usage info available!>>'
+      - define sButton '"text":"<&e.pad_right[5]><def[syntax].substring[1,52]>","color":"yellow"'
+      - define helpDoc '<def[helpDoc].include[<def[tButton]>|<def[sButton]>]>'
+    - run s@dRegions_Msg_Boxed instantly 'def:dRegions|Help Files|drghelp|<def[page]||1>|52|10|<def[helpDoc].separated_by[|]>'
 
   helpCommand:
     # Help for a specific command
-    - define short '<parse:<s@dRegions_Commands_%command%.yaml_key[description]||A not so useless description should be here!>>'
-    - define desc '<parse:<s@dRegions_Commands_%command%.yaml_key[data.description]||A not so useless description should be here!>>'
-    - define usage '<parse:<s@dRegions_Commands_%command%.yaml_key[data.usage]||No help for you!>>'
-    - define examples '<parse:<s@dRegions_Commands_%command%.yaml_key[data.examples]||No help for you!>>'
-    - define entries '<&7>%short%| |%desc%| |<&b><&n>Usage<&co>| |<&e.pad_left[3].with[ ]>%usage%| |<&3><&n>Examples<&co>| |%examples%'
-    - run s@msgBoxed instantly 'def:dRegions|<proc[msgCommand].context[<&6>dRegions|.about|<&a>Click to learn<&nl><&a>about the project!]>|<proc[msgCommand].context[<&e>Help|drghelp|<&a>Go back to main help]> - <def[arg].to_titlecase>|drghelp %arg%|<def[page]||1>|52|10|%entries%'
+    - if <c.server||false> {
+      - define short '<&7><parse:<s@dRegions_Commands_%command%.yaml_key[description]||A not so useless description should be here!>>'
+      - define desc '<list[]>'
+      - foreach '<parse:<s@dRegions_Commands_%command%.yaml_key[data.description]||A not so useless description should be here!>>' {
+        - foreach '<proc[dRegions_LineWrap].context[%value%|52]>' {
+          - define desc '<def[desc].include[<&f>%value%]>'
+          }
+        }
+      - define usage '   <&e><parse:<s@dRegions_Commands_%command%.yaml_key[data.usage]||No help for you!>>'
+      - define examples '<list[]>'
+      - foreach '<parse:<s@dRegions_Commands_%command%.yaml_key[data.examples]||No help for you!>>' {
+        - foreach '<proc[dRegions_LineWrap].context[%value%|52]>' {
+          - define examples '<def[examples].include[<&e>%value%]>'
+          }
+        }
+      - define entries '%short%| |<def[desc].separated_by[|]>| |<&b><&n>Usage<&co>| |%usage%| |<&3><&n>Examples<&co>| |<def[examples].separated_by[|]>'
+      - run s@dRegions_Msg_Boxed_Console instantly 'def:dRegions|Help Files|<def[page]||1>|52|10|%entries%'
+      - queue clear
+      }
+    - define short '"text":"<parse:<s@dRegions_Commands_%command%.yaml_key[description]||A not so useless description should be here!>>","color":"gray"'
+    - define desc '<list[]>'
+    - foreach '<parse:<s@dRegions_Commands_%command%.yaml_key[data.description]||A not so useless description should be here!>>':
+      - foreach '<proc[dRegions_LineWrap].context[%value%|52]>':
+        - define desc '<def[desc].include["text":"%value%","color":"white"]>'
+    - define usage '"text":"   <parse:<s@dRegions_Commands_%command%.yaml_key[data.usage]||No help for you!>>","color":"yellow"'
+    - define examples '<list[]>'
+    - foreach '<parse:<s@dRegions_Commands_%command%.yaml_key[data.examples]||No help for you!>>':
+      - foreach '<proc[dRegions_LineWrap].context[%value%|52]>':
+        - define examples '<def[examples].include["text":"%value%"]>'
+    - define nl '"text":" "'
+    - define u '"text":"Usage<&co>","color":"aqua","underlined":true'
+    - define e '"text":"Examples<&co>","color":"dark_aqua","underlined":true'
+    - define entries '%short%|%nl%|<def[desc].separated_by[|]>|%nl%|%u%|%nl%|%usage%|%nl%|%e%|%nl%|<def[examples].separated_by[|]>'
+    - run s@dRegions_Msg_Boxed instantly 'def:dRegions|Help - <def[command].to_titlecase>|drghelp %command%|<def[page]||1>|52|10|%entries%'
 #
 #  END dRegions Help Command
 #
