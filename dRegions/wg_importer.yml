@@ -27,7 +27,7 @@ dRegions_WG_Importer:
       }
       else {
       - if <server.list_worlds.parse[name]> !contains '%world%' {
-        - run instantly delay:1t s@dRegions_Msg 'def:wgimport.error.1|<player||server>|%world%'
+        - run instantly delay:1t s@dRegions_Msg 'def:command.wgimport.error.1|<player||server>|%world%'
         - queue clear
         }
       }
@@ -43,11 +43,11 @@ dRegions_WG_Importer:
         }
       }
       else {
-      - run instantly delay:1t s@dRegions_Msg 'def:wgimport.error.2|<player||server>|%world%'
+      - run instantly delay:1t s@dRegions_Msg 'def:command.wgimport.error.2|<player||server>|%world%'
       - queue clear
       }
 
-    - run instantly delay:1t s@dRegions_Msg 'def:wgimport.start|<player||server>|%world%'
+    - run instantly delay:1t s@dRegions_Msg 'def:command.wgimport.start|<player||server>|%world%'
     - log "<&ns.pad_right[80].with[-]>" type:none 'file:/plugins/Denizen/dRegions/worlds/<def[world].to_lowercase>/import.txt'
     - log "STARTING WORLD IMPORT FOR<&co> %world%" type:info 'file:/plugins/Denizen/dRegions/worlds/<def[world].to_lowercase>/import.txt'
     - foreach '<yaml[dRegions_WGImport_%world%].list_keys[regions]||li@>':
@@ -58,7 +58,7 @@ dRegions_WG_Importer:
     - yaml unload 'id:dRegions_WGImport_%world%'
     - log "%world% IMPORT COMPLETE!" type:info 'file:/plugins/Denizen/dRegions/worlds/<def[world].to_lowercase>/import.txt'
     - log "<&ns>" type:none 'file:/plugins/Denizen/dRegions/worlds/<def[world].to_lowercase>/import.txt'
-    - run instantly delay:1t s@dRegions_Msg 'def:wgimport.complete|<player||server>|%world%'
+    - run instantly delay:1t s@dRegions_Msg 'def:command.wgimport.complete|<player||server>|%world%'
 
   importRegion:
   # Set the region type and coordinates and note the cuboid

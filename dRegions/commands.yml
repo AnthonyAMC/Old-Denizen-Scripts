@@ -1003,7 +1003,7 @@ dRegions_Commands:
         }
       }
       else {
-      - define worlds '<def[worlds].include[<player.world.name>]>' {
+      - define worlds '<list[<player.world.name>]>'
       }
     - foreach '%worlds%':
       - run s@dRegions_WG_Importer 'def:%value%'
@@ -2053,7 +2053,7 @@ dRegions_Commands:
     - yaml set 'regions.%name%:!' 'id:dRegions_%world%_regions'
     - note remove 'as:dregions_%world%_%name%'
     - yaml 'savefile:dRegions/worlds/%world%/regions.yml' 'id:dRegions_%world%_regions'
-    - run instantly delay:1t s@dRegions_Msg 'def:remove.remove|<player||server>|%name%|%world%'
+    - run instantly delay:1t s@dRegions_Msg 'def:command.remove.remove|<player||server>|%name%|%world%'
 
 #
 #  END dRegions Command Arguments
