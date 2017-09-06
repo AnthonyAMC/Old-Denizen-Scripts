@@ -2276,6 +2276,87 @@ dRegions_Commands:
 #
 #--------------------------------------
 #
+#--------------------------------------
+#
+#  dRegions Command Script Registrar
+#
+# The root command. Validates minor input and sends to command script.
+#
+dRegions_Command:
+  type: command
+  debug: false
+  name: dreg
+  description: Denizen World Manager
+  usage: /dregions
+  aliases: 'dreg'
+  allowed help: ''
+
+  script:
+    - define command '<c.args.get[1].escaped||help>'
+    - define commands '<server.flag[dRegions.Command_List].as_list||li@>'
+    - define args '<c.args.get[2].to[<c.args.size>].escape_contents||li@>'
+    - if !<def[commands].contains[%command%]> || !<proc[dRegions_HasPerm_Command].context[%command%|<player||server>]> {
+      - inject s@dRegions_Commands_Help
+      }
+    - inject s@dRegions_Commands_%command%
+
+  tab complete:
+    - define command '<c.args.get[1]||>'
+    - define commands '<server.flag[dRegions.Command_List].as_list||li@>'
+    - define args '<c.args.get[2].to[<c.args.size>].escape_contents||li@>'
+    - define spaces '<c.raw_args.to_list.count[ ]||0>'
+    - define sender '<player||server>'
+    - if <def[commands].contains[%command%]> {
+      - if <def[spaces]> <= 0 {
+        - determine '%command% '
+        }
+        else {
+        - define spaces '<def[spaces].sub[1].max[0].round_up||0>'
+        - inject s@dRegions_Commands_%command% 'p:tab complete'
+        }
+      }
+      else {
+      - define commands '<def[commands].filter[starts_with[%command%]]||%commands%>'
+      }
+    - foreach '%commands%':
+      - if !<proc[dRegions_HasPerm_Command].context[%value%|%sender%]> {
+        - define commands '<def[commands].exclude[%value%]||%commands%>'
+        }
+    - determine '<def[commands]||li@>'
+
+# Preprocessors. Does some pre-processing and passes back to the calling command
+  prerun:
+    - define sender '<tern[<c.server||false>]:server||<player>>'
+#    - if <c.server||false> {
+#      - define sender 'server'
+#      }
+#      else {
+#      - define sender '<player>'
+#      }
+    - if <c.alias> == 'drg%command%' {
+      - if !<proc[dRegions_HasPerm_Command].context[%command%|%sender%]> {
+        - inject s@dRegions_Commands_Help p:helpList
+        - queue clear
+        }
+      - define commands '<server.flag[dRegions.Command_List].as_list||li@>'
+      - define args "<c.args.escape_contents>"
+      }
+#
+#  END dRegions Command Registrar
+#--------------------------------------
+#
+#
+################################################################################
+#
+#
+#  dRegions Command Scripts
+#
+# This section holds all of the commands for dRegions. The root command /drg
+# takes many arguments but most of those arguments can also be run as individual
+# commands. This results in dRegions command args having a shorthand version
+# in the form of /drgarg
+#
+
 dRegions_Commands_Help:
   type: command
   debug: false
@@ -2287,6 +2368,8 @@ dRegions_Commands_Help:
   allowed help: ''
 
   data:
+    require_player: 'false'
+    permissions: []
     description:
       - ' This is the help for dRegions. The help files are here to help you. Help yourself by reading the help. It<&sq>s helpful. <&c>Seriously!'
       - ' '
@@ -2300,27 +2383,28 @@ dRegions_Commands_Help:
       - ' <&f>To show the <&a>third<&f> page of the help files'
       - '<&sp>'
       - '   <&e>/drg help <&a>3'
-    permissions: []
 
   tab complete:
     - if !<def[command].exists> {
-      - define commands '<server.flag[drg.Command_List].as_list||li@>'
+      - define commands '<server.flag[dRegions.Command_List].as_list||li@>'
       - define args "<c.args>"
+      - define sender '<player||server>'
+      - define spaces '<c.raw_args.to_list.count[ ]||0>'
       }
     - define command '<def[args].get[1].escaped||>'
     - if <def[commands].contains[%command%]> {
-      - determine 'li@'
+      - determine '<list[]>'
       }
       else {
       - define commands '<def[commands].filter[starts_with[%command%]]||%commands%>'
       }
+    - if <def[spaces]> > 0 {
+      - determine '<list[]>'
+      }
     - foreach %commands% {
-      - if !<proc[dRegions_HasPerm_Command].context[%command%|<player||server>]> {
+      - if !<proc[dRegions_HasPerm_Command].context[%value%|%sender%]> {
         - define commands '<def[commands].exclude[%value%]||%commands%>'
         }
-      }
-    - if <def[commands].is_empty||true> {
-      - determine 'li@'
       }
     - determine '<def[commands]||li@>'
 
@@ -2328,43 +2412,41 @@ dRegions_Commands_Help:
     - if !<def[command].exists> {
       - define command 'help'
       }
-    - define commands '<s@dRegions_Commands.list_keys[commandArgs].alphanumeric.to_lowercase||li@>'
-    - define args "<context.args>"
+    - inject s@dRegions_Command p:prerun
+
     - define arg '<def[args].get[1].escaped||1>'
-    - if <def[arg].is[matches].to[number]> {
-      - define page '<def[arg].abs.round||1>'
-      - inject s@dRegions_Commands_Help p:helpList
-      - queue clear
-      }
     - if <def[commands].contains[%arg%]||false> {
       - define command '%arg%'
       - define page '<tern[<def[args].get[2].is[matches].to[number]||false>]:<def[args].get[2].abs.round>||1>'
       - inject s@dRegions_Commands_Help p:helpCommand
       - queue clear
       }
+    - define page '<tern[<def[arg].is[matches].to[number]||false>]:<def[arg].abs.round>||1>'
     - inject s@dRegions_Commands_Help p:helpList
     - queue clear
 
   helpList:
     # Filter the list of commands this player can use
-    - define helpDoc 'li@'
     - if !<player.permission[dregions.admin]||<player.is_op||<c.server||false>>> {
       - foreach '%commands%' {
-        - if !<player.permission[dregions.%value%]||false> {
+        - if !<proc[dRegions_HasPerm_Command].context[%command%|%sender%]> {
           - define commands '<def[commands].exclude[%value%]>'
           }
         }
       }
+    - define helpDoc 'li@'
     # Build the help documentation
     - if <c.server||false> {
       - foreach '%commands%' {
-        - define helpDoc '<def[helpDoc].include[<&f><def[value].to_titlecase><&co>|<&e.pad_right[5]><parse:<s@dRegions_Commands.yaml_key[commandArgs.%value%.usage]||No usage info available!>>]>'
+        - define title '<&f><def[value].to_titlecase><&co.pad_right[2]><&7><parse:<s@dRegions_Commands_%value%.yaml_key[description]||A not so useless description should be here!>>'
+        - define helpDoc '<def[helpDoc].include[<def[title].substring[1,52]>|<&e.pad_right[5]><parse:<s@dRegions_Commands.yaml_key[commandArgs.%value%.usage]||No usage info available!>>]>'
         }
       - run s@dRegions_Msg_Boxed_Console instantly 'def:dRegions|Help Files|<def[page]||1>|52|20|<def[helpDoc].separated_by[|]>'
       - queue clear
       }
     - foreach '%commands%':
-      - define tButton '"text":"<def[value].to_titlecase><&co>","color":"white","clickEvent":{"action":"run_command","value":"/drghelp %value%"},"hoverEvent":{"action":"show_text","value":["",{"text":"Click for %value% help","color":"green"}]}'
+      - define desc '<parse:<s@dRegions_Commands_%value%.yaml_key[description]||A not so useless description should be here!>>'
+      - define tButton '"text":"<def[value].to_titlecase><&co.pad_right[2]>","color":"white","clickEvent":{"action":"run_command","value":"/drghelp %value%"},"hoverEvent":{"action":"show_text","value":["",{"text":"Click for <&b>%value%<&a> help","color":"green"}]}},{"text":"<def[desc].substring[1,<def[value].strip_color.length.sub[52].abs.sub[3].round_up>]>","color":"gray"'
       - define syntax '<parse:<s@dRegions_Commands.yaml_key[commandArgs.%value%.usage]||No usage info available!>>'
       - define sButton '"text":"<&e.pad_right[5]><def[syntax].substring[1,52]>","color":"yellow"'
       - define helpDoc '<def[helpDoc].include[<def[tButton]>|<def[sButton]>]>'
@@ -2410,6 +2492,424 @@ dRegions_Commands_Help:
 #  END dRegions Help Command
 #
 #-------------------------------------
+#
+dRegions_Commands_Info:
+  type: command
+  debug: false
+  speed: 0
+  name: drginfo
+  description: Show region info
+  usage: /drg info
+  aliases: ''
+  allowed help: ''
+
+  data:
+    require_player: 'false'
+    permissions: []
+    description:
+      - ' Get detailed information about any region.'
+      - ' '
+      - ' <&7>Owner and Member info is color coded to show <&f>player<&7> and <&b>group<&7> associations.'
+    usage: '/drg info (<&lb>ID<&rb>) (-w world)'
+    examples:
+      - ' <&f>To see info about the highest priority region at your location'
+      - '<&sp>'
+      - '   <&e>/drg info'
+      - ' '
+      - ' <&f>To see the <&a>third<&f> info page for the region named <&b>floop<&f> in the world name <&3>narp'
+      - '<&sp>'
+      - '   <&e>/drg info <&b>floop <&3>-w narp <&a>3'
+
+  tab complete:
+    - if !<def[command].exists> {
+      - define command 'info'
+      - define args "<c.args>"
+      - define sender '<player||server>'
+      - define spaces '<c.raw_args.to_list.count[ ]||0>'
+      }
+
+    - if !<proc[dRegions_HasPerm_Command].context[%command%|%sender%]> {
+      - determine '<list[]>'
+      }
+
+    - if <player.permission[dregions.info]||<player.is_op||false>> {
+      - define world '<c.args.get[<c.args.find[-w].add[1].as_int>].escaped.as_world.name.to_lowercase||<player.world.name.to_lowercase||null>>'
+      - define regions '<yaml[dRegions_%world%_regions].list_keys[regions].exclude[__global__].alphanumeric||li@>'
+      - if !<player.permission[dregions.admin]||<player.is_op||false>> {
+        - foreach %regions% {
+          - if <proc[dRegions_IsOwner].context[%value%|%world%|<player>].not> {
+            - define regions '<def[regions].exclude[%value%]||%regions%>'
+            }
+          }
+        }
+      - if <def[spaces].is[==].to[0]> {
+        - define result '<def[regions].parse[replace[regex:^].with[info ]]>'
+        }
+        else if <def[spaces].is[==].to[1]> {
+        - define result '<def[regions].filter[starts_with[<c.args.get[2].escaped||null>]]||li@>'
+        - if <def[result].is_empty||true> {
+          - define result '%regions%'
+          }
+        }
+        else {
+        - define result 'li@'
+        }
+      }
+      else {
+      - define result 'li@'
+      }
+
+  script:
+    - if !<def[command].exists> {
+      - define command 'info'
+      }
+    - inject s@dRegions_Command p:prerun
+
+    # Check page
+    - if <def[args].filter[is[matches].to[number]>].is_empty||true> {
+      - define page '1'
+      }
+      else {
+      - define page '<def[args].filter[is[matches].to[number]].get[1].round_up||1>'
+      - define args '<def[args].remove[<def[args].find[%page%]>]>'
+      }
+
+    - if <context.server||true> {
+      - define world '<def[args].get[<def[args].find[-w].add[1].round_down>].as_world.name.to_lowercase||null>'
+      - if <def[world]> == 'null' {
+        - define world '<server.list_worlds.get[1].name.to_lowercase>'
+        }
+        else {
+        - define args '<def[args].remove[<def[args].find[-w].add[1].round_down>].exclude[-w]>'
+        }
+
+      - define region '<def[args].get[1].to_lowercase||null>'
+      - if '<def[region].is[==].to[null]||true>' || '<def[region].matches[^[a-z0-9-_]+$].not>' {
+        - run instantly delay:1t s@dRegions_Msg 'def:region.invalidName|%sender%'
+        - run instantly delay:1t s@dRegions_Msg 'def:command.help.syntax|%sender%|<&f><script.yaml_key[data.usage]>'
+        - queue stop
+        }
+
+      - define exists '<proc[dRegions_RegionExists].context[%region%|%world%]>'
+      - if <def[exists].is[==].to[orphan]> {
+        - run instantly delay:1t s@dRegions_Msg 'def:region.orphan|%sender%'
+        - queue clear
+        }
+        else if <def[exists].not> {
+        - run instantly delay:1t s@dRegions_Msg 'def:region.noRegion|%sender%'
+        - queue clear
+        }
+      - goto data
+      }
+
+
+    # Check world
+    - if <def[args].find[-w].is[OR_MORE].than[0]||false> {
+      - define world '<def[args].get[<def[args].find[-w].add[1].as_int>].as_world.name.to_lowercase||null>'
+      - if <def[world].is[==].to[null]||true> {
+        - run instantly delay:1t s@dRegions_Msg 'def:command.error.3|%sender%|<script.yaml_key[data.usage]>'
+        - queue clear
+        }
+      - define args '<def[args].remove[<def[args].find[-w].add[1].as_int>].exclude[-w]>'
+      }
+      else if <def[sender]> == 'server' {
+      - define world '<server.list_worlds.get[1].name.to_lowercase>'
+      }
+      else {
+      - define world '<player.world.name.to_lowercase>'
+      }
+
+    # Check regionID
+    - define region '<def[args].get[1].to_lowercase||null>'
+    - if '<def[region].is[==].to[null]||true>' {
+      - if <def[sender]> != 'server' {
+        - define orderedRegions 'li@<yaml[dRegions_%world%_regions].read[regions.__global__.priority]||0>/__global__'
+        - foreach '<def[sender].location.cuboids.filter[starts_with[cu@dregions_%world%]].parse[after[cu@dregions_%world%_]]>' {
+          - define orderedRegions '%orderedRegions%|<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%'
+          }
+        - define orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
+        }
+        else {
+        - run instantly delay:1t s@dRegions_Msg 'def:region.empty|%sender%'
+        - run instantly delay:1t s@dRegions_Msg 'def:command.help.syntax|%sender%|<&f><script.yaml_key[data.usage]>'
+        - queue stop
+        }
+      - if <def[orderedRegions].size.is[MORE].than[1]> {
+        - run instantly delay:1t s@dRegions_Msg 'def:region.multiRegions|%sender%|info'
+        }
+      - define region '<def[orderedRegions].get[1]>'
+      }
+
+    - if '<def[region].matches[^[a-z0-9-_]+$].not>' {
+      - run instantly delay:1t s@dRegions_Msg 'def:region.invalidName|%sender%'
+      - run instantly delay:1t s@dRegions_Msg 'def:command.help.syntax|%sender%|<&f><script.yaml_key[data.usage]>'
+      - queue stop
+      }
+
+    # Check if region exists
+    - define exists '<proc[dRegions_RegionExists].context[%region%|%world%]>'
+    - if <def[exists].is[==].to[orphan]> {
+      - run instantly delay:1t s@dRegions_Msg 'def:region.orphan|%sender%'
+      - queue clear
+      }
+      else if <def[exists].not> {
+      - run instantly delay:1t s@dRegions_Msg 'def:region.noRegion|%sender%'
+      - queue clear
+      }
+    # Check if is owner
+    - if !<player.permission[dregions.admin]||<player.is_op||true>> {
+      - if <proc[dRegions_IsOwner].context[%region%|%world%|<player>].not> {
+        - run instantly delay:1t s@dRegions_Msg 'def:region.notOwner|%sender%'
+        - queue clear
+        }
+      }
+
+    # Build base region info JSON
+    - define type '<yaml[dRegions_%world%_regions].read[regions.%region%.type]||null>'
+    - if <def[type].is[==].to[cuboid]||false> {
+      - define POS1 '<yaml[dRegions_%world%_regions].read[regions.%region%.min].as_location||l@0,0,0,%world%>'
+      - define POS2 '<yaml[dRegions_%world%_regions].read[regions.%region%.max].as_location||l@0,0,0,%world%>'
+      - define x '<def[pos2].x.sub[<def[pos1].x>].abs.add[1]>'
+      - define volume '<def[x].mul[<def[pos2].y.sub[<def[pos1].y>].abs.add[1]>].mul[<def[pos2].z.sub[<def[pos1].z>].abs.add[1]>].round_up||0>'
+      }
+      else if <def[type].is[==].to[global]||false> {
+      - define POS1 'l@0,0,0,%world%'
+      - define POS2 'l@0,0,0,%world%'
+      - define volume 'infinite'
+      }
+      else {
+      - run instantly delay:1t s@dRegions_Msg 'def:region.misconfigured|%sender%'
+      - queue clear
+      }
+    - define name '%region%'
+    - define worldname '%world%'
+    - define area '<def[pos1].simple.before[,%world%]> - <def[pos2].simple.before[,%world%]>'
+    - define priority '<yaml[dRegions_%world%_regions].read[regions.%region%.priority]||0>'
+    - define parent '<yaml[dRegions_%world%_regions].read[regions.%region%.parent]||none>'
+    - define ownerGroups '<yaml[dRegions_%world%_regions].read[regions.%region%.owners.groups]||li@>'
+    - define ownerPlayers '<yaml[dRegions_%world%_regions].read[regions.%region%.owners.players]||li@>'
+    - define memberGroups '<yaml[dRegions_%world%_regions].read[regions.%region%.members.groups]||li@>'
+    - define memberPlayers '<yaml[dRegions_%world%_regions].read[regions.%region%.members.players]||li@>'
+    - define owners '<proc[dRegions_LineWrap].context[<def[ownerPlayers].parse[as_player.name].parse[replace[regex:^].with[<&f>]].include[<def[ownerGroups].parse[replace[regex:^].with[<&b>]]||>].comma_separated>|48]>'
+    - define members '<proc[dRegions_LineWrap].context[<def[memberPlayers].parse[as_player.name].parse[replace[regex:^].with[<&f>]].include[<def[memberGroups].parse[replace[regex:^].with[<&b>]]||>].comma_separated>|48]>'
+
+    - define pad1 '<el@val[12].sub[<def[region].length>]>'
+    - define pad2 '<el@val[11].sub[<def[priority].length>]>'
+    - define pad3 '<el@val[14].sub[<def[type].length>]>'
+
+    - define region '"text":"Region<&co> ","color":"gray"},{"text":"%region%","color":"yellow"'
+    - define world '"text":"World<&co> ","color":"gray"},{"text":"%world%","color":"yellow"'
+    - define priority '"text":"Priority<&co> ","color":"gray"},{"text":"%priority%","color":"yellow"'
+    - define volume '"text":"Volume<&co> ","color":"gray"},{"text":"%volume%","color":"yellow"'
+    - define type '"text":"Type<&co> ","color":"gray"},{"text":"%type%","color":"yellow"'
+    - define area '"text":"Area<&co> ","color":"gray"},{"text":"%area%","color":"yellow"'
+
+    - define parent '<yaml[dRegions_%worldname%_regions].read[regions.%name%.parent]||none>'
+    - if %parent% == 'none' {
+      - define parent '"text":"Parent<&co> ","color":"gray"},{"text":"none","color":"red"'
+      }
+      else {
+      - define parent '"text":"Parent<&co> ","color":"gray"},{"text":"%parent%","color":"yellow","clickEvent":{"action":"run_command","value":"/drginfo %parent% -w %worldname% 1"},"hoverEvent":{"action":"show_text","value":["",{"text":"Click for <&b>%parent%<&a> info","color":"green"}]}'
+      }
+
+#    - define children '"text":"Children<&co> ","color":"gray"},{"text":"%children%","color":"yellow"'
+
+    # Build owners JSON
+    - if <def[owners].is_empty||true> {
+      - define owners '"text":"Owners<&co> ","color":"gray"},{"text":"none","color":"red"'
+      }
+      else if <def[owners].size> == 1 {
+      - define owners '"text":"Owners<&co> ","color":"gray"},{"text":"<def[owners].get[1]>","color":"white"'
+      }
+      else {
+      - define ownersList '"text":"Owners<&co> ","color":"gray"},{"text":"<def[owners].get[1]>","color":"white"'
+      - foreach <def[owners].get[2].to[<def[owners].size>]> {
+        - define ownersList '<def[ownersList>|"text":"   %value%","color":"white"'
+        }
+      - define owners '%ownersList%'
+      }
+
+    # Build members JSON
+    - if <def[members].is_empty||true> {
+      - define members '"text":"Members<&co> ","color":"gray"},{"text":"none","color":"red"'
+      }
+      else if <def[members].size> == 1 {
+      - define members '"text":"Members<&co> ","color":"gray"},{"text":"<def[members].get[1]>","color":"white"'
+      }
+      else {
+      - define membersList '"text":"Members<&co> ","color":"gray"},{"text":"<def[members].get[1]>","color":"white"'
+      - foreach <def[members].get[2].to[<def[members].size>]> {
+        - define membersList '<def[membersList>|"text":"   %value%","color":"white"'
+        }
+      - define members '%membersList%'
+      }
+
+    # Build flags JSON
+    - define flagList '<yaml[dRegions_%worldname%_regions].list_keys[regions.%name%.flags].alphanumeric||li@>'
+    - if <def[flagList].is_empty> {
+      - define flags '"text":"Flags<&co> ","color":"gray"},{"text":"none","color":"red"'
+      }
+      else {
+      - define flags '"text":"Flags<&co> ","color":"gray"'
+      }
+    - foreach %flagList% {
+      - define flag '%value%'
+      - define description '<proc[dRegions_LineWrap].context[<parse:<s@dRegions_Flag_%flag%.yaml_key[flag_help]>>|28]>'
+      - define fButton '"text":"  %flag%<&co.pad_right[2]>","color":"yellow","hoverEvent":{"action":"show_text","value":["",{"text":"<def[description].separated_by[<&nl>]>","color":"green"}]}'
+      - define fval '<proc[dRegions_LineWrap].context[%flag%<&co> <yaml[dRegions_%worldname%_regions].read[regions.%name%.flags.%flag%].as_list.comma_separated||none>|48]>'
+
+      - if <def[fval].is_empty||true> {
+        - define fvalList '%fbutton%},{"text":"none","color":"red"'
+        }
+        else if <def[fval].size> == 1 {
+        - define fvalList '%fbutton%},{"text":"<def[fval].get[1].replace[%flag%<&co> ]>","color":"white"'
+        }
+        else {
+        - define fvalList '%fbutton%},{"text":"<def[fval].get[1].replace[%flag%<&co> ]>","color":"white"'
+        - foreach <def[fval].get[2].to[<def[fval].size>]> {
+          - define fvalList '<def[fvalList]>|"text":"   %value%","color":"white"'
+          }
+        }
+      - define flags '%flags%|%fvalList%'
+      }
+
+    - define line1 '%region%},{"text":"<&f.pad_left[%pad1%]>"},{%world%'
+    - define line2 '%priority%},{"text":"<&f.pad_left[%pad2%]>"},{%volume%'
+    - define line3 '%type%},{"text":"<&f.pad_left[%pad3%]>"},{%area%'
+    - define line4 '%parent%'
+    - define entries '%line1%|%line2%|%line3%|%line4%|%flags%'
+    - run s@dRegions_Msg_Boxed instantly delay:1t 'def:dRegions|Region Info|drginfo %name% -w %worldname%|%page%|52|10|%entries%'
+#
+#  END dRegions Info Command
+#
+#-------------------------------------
+#
+dRegions_Commands_List:
+  type: command
+  debug: false
+  speed: 0
+  name: drglist
+  description: Show list of regions
+  usage: /drg list
+  aliases: ''
+  allowed help: ''
+
+  data:
+    require_player: 'false'
+    permissions: []
+    description:
+      - ' Get detailed information about any region.'
+      - ' '
+      - ' <&7>Owner and Member info is color coded to show <&f>player<&7> and <&b>group<&7> associations.'
+    usage: '/drg info (<&lb>ID<&rb>) (-w world)'
+    examples:
+      - ' <&f>To see info about the highest priority region at your location'
+      - '<&sp>'
+      - '   <&e>/drg info'
+      - ' '
+      - ' <&f>To see the <&a>third<&f> info page for the region named <&b>floop<&f> in the world name <&3>narp'
+      - '<&sp>'
+      - '   <&e>/drg info <&b>floop <&3>-w narp <&a>3'
+
+  tab complete:
+    - if !<def[command].exists> {
+      - define commands '<server.flag[dRegions.Command_List].as_list||li@>'
+      - define args "<c.args>"
+      }
+    - define command '<def[args].get[1].escaped||>'
+    - if <def[commands].contains[%command%]> {
+      - determine 'li@'
+      }
+      else {
+      - define commands '<def[commands].filter[starts_with[%command%]]||%commands%>'
+      }
+    - foreach %commands% {
+      - if !<proc[dRegions_HasPerm_Command].context[%command%|<player||server>]> {
+        - define commands '<def[commands].exclude[%value%]||%commands%>'
+        }
+      }
+    - determine '<def[commands]||li@>'
+
+  script:
+    - if !<def[command].exists> {
+      - define command 'info'
+      }
+    - inject s@dRegions_Command p:prerun
+
+    # Check world
+    - if <def[args].find[-w].is[OR_MORE].than[0]||false> {
+      - define world '<def[args].get[<def[args].find[-w].add[1].as_int>].as_world.name.to_lowercase||null>'
+      - if <def[world].is[==].to[null]||true> {
+        - run instantly delay:1t s@dRegions_Msg 'def:command.error.3|%sender%|<script.yaml_key[commandArgs.%command%.usage]>'
+        - queue clear
+        }
+      - define args '<def[args].remove[<def[args].find[-w].add[1].as_int>].exclude[-w]>'
+      }
+      else if <def[sender]> == 'server' {
+      - define world '<server.list_worlds.get[1].name.to_lowercase>'
+      }
+      else {
+      - define world '<player.world.name.to_lowercase>'
+      }
+
+    # Check page
+    - if !<def[args].filter[is[matches].to[number]>].is_empty||true> {
+      - define page '<def[args].filter[is[matches].to[number]].get[1].abs.round_up||1>'
+      - define args '<def[args].remove[<def[args].find[%page%]>]>'
+      }
+      else {
+      - define page '1'
+      }
+#
+#  END dRegions List Command
+#
+#-------------------------------------
+#
+################################################################################
+#
+#  Region Info Task script
+#
+#    Builds the region info data set
+#
+dRegions_RegionInfo:
+# Used to check if the value supplied when setting a flag is valid for the flag type.
+  type: task
+  debug: false
+
+  script:
+  # Build the data set for region info
+    - define type '<yaml[dRegions_%world%_regions].read[regions.%region%.type]||null>'
+    - if <def[type].is[==].to[cuboid]||false> {
+      - define POS1 '<yaml[dRegions_%world%_regions].read[regions.%region%.min]||null>'
+      - define POS2 '<yaml[dRegions_%world%_regions].read[regions.%region%.max]||null>'
+      - define size '<proc[selectionSize].context[%pos1%|%pos2%]>'
+      }
+      else if <def[type].is[==].to[global]||false> {
+      - define POS1 '0,0,0,%world%'
+      - define POS2 '0,0,0,%world%'
+      - define size 'infinite'
+      }
+      else {
+      - run instantly delay:1t s@dRegions_Msg 'def:region.misconfigured|%sender%'
+      - queue clear
+      }
+    - define priority '<yaml[dRegions_%world%_regions].read[regions.%region%.priority]||0>'
+    - define parent '<yaml[dRegions_%world%_regions].read[regions.%region%.parent]||<&c>none>'
+    - define ownerGroups '<yaml[dRegions_%world%_regions].read[regions.%region%.owners.groups]||li@>'
+    - define ownerPlayers '<yaml[dRegions_%world%_regions].read[regions.%region%.owners.players]||li@>'
+    - define memberGroups '<yaml[dRegions_%world%_regions].read[regions.%region%.members.groups]||li@>'
+    - define memberPlayers '<yaml[dRegions_%world%_regions].read[regions.%region%.members.players]||li@>'
+    - define flagList '<yaml[dRegions_%world%_regions].list_keys[regions.%region%.flags]||li@>'
+    - define flags '<list[]>'
+    - foreach %flagList% {
+      - define flags '<def[flags].include[%value%/<yaml[dRegions_%world%_regions].read[regions.%region%.flags.%value%].as_list.comma_separated||null>]||%flags%>'
+      }
+
+#
+#  END dRegions Info Command
+#
+#-------------------------------------
+#
 #
 # Used to process input for some flags
 #
@@ -2576,5 +3076,9 @@ dRegion_FlagTypeMatch:
         - determine '<def[YourValue].is[!=].to[null]||false>'
       - default:
         - determine 'false'
+
+#
+
+
 
 #

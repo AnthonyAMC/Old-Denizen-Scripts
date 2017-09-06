@@ -119,6 +119,12 @@
 #
 #--- TODO
 #
+#  - Further optimize region lookup by storing the priority in the noted name.
+#    When we create:
+#    - note cu@<def[selectedCuboid].min.simple>|<def[selectedCuboid].max.simple> 'as:dregions_%world%_%priority%-%name%'
+#    And in the event when we look up:
+#    - define orderedRegions '<def[eLoc].cuboids.filter[starts_with[cu@dregions_%world%_]].parse[after[cu@dregions_%world%_]].include[<yaml[dRegions_%world%_regions].read[regions.__global__.priority]||0>-__global__].alphanumeric.reverse.parse[after[-]]>'
+#
 #  - Make sure players can't exit a vehicle if they do not have permission to
 #    get back into it.
 #  - Add vehicle-enter and vehicle-exit flags and respective list flags.
@@ -245,6 +251,7 @@ dRegions:
       - flag server '%value%:!'
     - define flags '<server.list_scripts.filter[starts_with[s@dRegions_Flag_]].parse[name.after[dRegions_Flag_].to_lowercase].alphanumeric||li@>'
     - flag server 'dRegions.Flags:|:%flags%'
+    - flag server 'dRegions.Command_List:|:<server.list_scripts.filter[starts_with[s@dRegions_Commands_]].parse[after[s@dRegions_Commands_]].alphanumeric.to_lowercase||li@>'
     - if <yaml.list.contains[dRegions_eventmap]> {
       - yaml unload 'id:dRegions_eventmap'
       }
@@ -259,6 +266,10 @@ dRegions:
       - define e '<yaml[dRegions_eventmap].read[%value%].as_list>'
       - yaml set '%value%:!' 'id:dRegions_eventmap'
       - yaml set '%value%:|:<def[e].alphanumeric.parse[after[/]]>' 'id:dRegions_eventmap'
+
+  load_command_list:
+    - flag server 'dRegions.Command_List:!'
+    - flag server 'dRegions.Command_List:|:<server.list_scripts.filter[starts_with[s@dRegions_Commands_]].parse[after[s@dRegions_Commands_]].alphanumeric.to_lowercase||li@>'
 
   updateCheck:
     - ^if !<server.has_flag[dRegions.Version.Repo]> {
@@ -2374,7 +2385,7 @@ dRegions_IsMember:
 #  # A procedure script to check if a player has any of the required permissions for a command
 #  # <proc[dRegions_HasPerm_Command].context[command|player|region|option]>
 #
-dRegions_HasPerm_Command:
+dRg_HasPerm_Command:
   type: procedure
   debug: false
   definitions: command|player|region|option
@@ -2424,6 +2435,39 @@ dRegions_HasPerm_Command:
         }
       }
     - determine false
+#--------------------------------------
+#
+#  Command Permission Check Procedure script
+#  - Used to check if a player has permission to use a command.
+#
+dRegions_HasPerm_Command:
+# Usage: <proc[dRegions_HasPerm_Command].context[command|player]>
+  type: procedure
+  debug: false
+  definitions: command|player
+
+  script:
+    - if %player% == 'server' {
+      - if <s@dRegions_Commands_%command%.yaml_key[data.require_player]||true> {
+        - determine false
+        }
+      }
+    - if %player% == 'server' || <def[player].is_op||false> || <def[player].permission[dregions.admin]||false> {
+      - determine true
+      }
+    - define perms "<s@dRegions_Commands_%command%.yaml_key[data.permissions]||li@>"
+    - if <def[perms].is_empty> {
+      - determine true
+      }
+    - foreach '%perms%':
+      - define perm '<parse:%value%>'
+      - if <def[player].permission[dregions.%perm%]> {
+        - determine true
+        }
+    - determine false
+#
+#  END dRegions_HasPerm_Command
+##--------------------------------------
 #
 #---------------------------------------
 #
@@ -2570,6 +2614,11 @@ dRegions_HighestPriority:
   debug: false
 
   script:
+#    - define orderedRegions 'li@<yaml[dRegions_%world%_regions].read[regions.__global__.priority]||0>/__global__'
+#    - foreach '<def[loc].cuboids.filter[starts_with[cu@dregions_%world%]].parse[after[cu@dregions_%world%_]]>':
+#      - define orderedRegions '%orderedRegions%|<yaml[dRegions_%world%_regions].read[regions.%value%.priority]||0>/%value%'
+#    - determine orderedRegions '<def[orderedRegions].alphanumeric.reverse.parse[after[/]]>'
+
     - define regions '<def[regions].split[,]||li@>'
     - define regionPri 'li@'
     - foreach %regions% {
