@@ -2904,7 +2904,7 @@ dRegions_Map_Interactions:
   block_withItem:
 #    jukebox: player_interact_utilityBlocks/air/gold_record|green_record|record_3|record_4|record_5|record_6|record_7|record_8|record_9|record_10|record_11|record_12
     cauldron: player_interact_utilityBlocks/bucket|water_bucket|glass_bottle
-    tnt: player_interact_utilityBlocks/flint_and_steel
+    tnt: player_break_block/flint_and_steel
     activator_rail: player_place_vehicle/minecart|storage_minecart|powered_minecart|explosive_minecart|hopper_minecart|command_minecart
     detector_rail: player_place_vehicle/minecart|storage_minecart|powered_minecart|explosive_minecart|hopper_minecart|command_minecart
     powered_rail: player_place_vehicle/minecart|storage_minecart|powered_minecart|explosive_minecart|hopper_minecart|command_minecart
