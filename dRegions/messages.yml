@@ -116,7 +116,7 @@ dRegions_Msg_Boxed:
     - ^define hover '{<def[icon].json>}'
     - ^define click '/%command% <def[page].sub[1].max[1].round_up>'
     - ^if <def[page]> <= 1 {
-      - ^define prevPage '"text":"%page%","color":"gray"'
+      - ^define prevPage '"text":"%page%","color":"dark_gray"'
       }
       else {
       - ^define prevPage '"text":"%page%","color":"white","clickEvent":{"action":"run_command","value":"%click%"},"hoverEvent":{"action":"show_item","value":"%hover%"}'
@@ -126,7 +126,7 @@ dRegions_Msg_Boxed:
     - ^define hover '{<def[icon].json>}'
     - ^define click '/%command% <def[page].add[1].min[%pages%].round_up>'
     - ^if <def[page]> >= %pages% {
-      - ^define nextPage '"text":"%pages%","color":"gray"'
+      - ^define nextPage '"text":"%pages%","color":"dark_gray"'
       }
       else {
       - ^define nextPage '"text":"%pages%","color":"white","clickEvent":{"action":"run_command","value":"%click%"},"hoverEvent":{"action":"show_item","value":"%hover%"}'
@@ -134,15 +134,15 @@ dRegions_Msg_Boxed:
     - define hpad '<def[title].length.max[10].as_int>'
     - define heading '<def[title].pad_right[%hpad%].with[<&sp>]>  <def[subTitle]>'
     - define pad '<def[pageWidth].sub[<def[heading].strip_color.length>].sub[<el@val[Page %page% of %pages%].length>].mul[1.5].round_up>'
-    - define prefix '"text":"|   ","color":"dark_purple"'
+    - define prefix '"text":"|   ","color":"black"'
     - define title '"text":"<def[title].pad_right[%hpad%].with[<&sp>]>","color":"gold","clickEvent":{"action":"run_command","value":"/drg about"},"hoverEvent":{"action":"show_text","value":["",{"text":"Click to read<&nl>about the project!","color":"green"}]}'
     - define subTitle '"text":"  %subTitle%","color":"yellow","clickEvent":{"action":"run_command","value":"/drghelp"},"hoverEvent":{"action":"show_text","value":["",{"text":"Go back to main help","color":"green"}]}'
     - define pad '"text":"<&f.pad_left[%pad%]>"'
     - define p '"text":"Page ","color":"gray","italic":true'
     - define of '"text":" of ","color":"gray","italic":true'
-    - narrate "<&5>|<&pipe.pad_left[<def[pageWidth]>].with[-]>"
+    - narrate "<&0>|<&pipe.pad_left[<def[pageWidth]>].with[-]>"
     - execute as_server 'tellraw <player.name> {"text":"","extra":[{%prefix%},{%title%},{%subtitle%},{%pad%},{%p%},{%prevPage%},{%of%},{%nextPage%}]}'
-    - narrate "<&5>|<&f>"
+    - narrate "<&0>|<&f>"
 
   msgsFooter:
     - ^define authors '<server.list_scripts.filter[starts_with[s@dRegions_Author_]]||li@>'
@@ -151,7 +151,7 @@ dRegions_Msg_Boxed:
       }
     - ^define list 'li@'
     - ^define spacer '"text":"  "'
-    - ^define prefix '"text":"<&5>|  <&f>Authors<&co>  "'
+    - ^define prefix '"text":"<&0>|  <&f>Authors<&co>  "'
     - ^foreach %authors% {
       - define text '<def[value].yaml_key[text_name].escaped>'
       - define url '<def[value].yaml_key[url].escaped>'
@@ -165,15 +165,15 @@ dRegions_Msg_Boxed:
       }
     - execute as_server 'tellraw <player.name> {"text":"","extra":[{%prefix%},<def[list].separated_by[,].unescaped>]}'
     - ^mark 'end'
-    - narrate "<&5>|<&pipe.pad_left[<def[pageWidth]>].with[-]>"
+    - narrate "<&0><&n>|<&pipe.pad_left[<def[pageWidth]>].with[-]>"
 
   msgsBody:
-    - define prefix '"text":"|  ","color":"dark_purple"'
+    - define prefix '"text":"|  ","color":"black"'
     - define lines '<def[entries].get[%lowNumber%].to[%highNumber%]||li@>'
     - foreach '<def[lines]>':
       - execute as_server 'tellraw <player.name> {"text":"","extra":[{%prefix%},{%value%}]}'
     - repeat '<def[pageHeight].sub[<def[lines].size>].add[1].as_int>':
-      - narrate "<&5>|"
+      - narrate "<&0>|"
 #
 #---------------------------------------
 #
