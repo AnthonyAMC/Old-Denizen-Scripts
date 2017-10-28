@@ -6,8 +6,8 @@
 #     A set of utilities to make displaying text pretty, uniform, and easy     #
 #                                                                              #
 #   Authors: |Anthony|                                                         #
-#   Version: 0.42                                                              #
-#   dScript Version: 1.0.2-DEV_b196                                            #
+#   Version: 0.43                                                              #
+#   dScript Version: 1.0.2-DEV_b261                                            #
 #                                                                              #
 #   For bleeding-edge code, bug reports, code contributions, and feature       #
 #    requests, visit the GitHub project:                                       #
@@ -44,7 +44,7 @@ MSG_Version:
   type: version
   author: Anthony
   name: MessageConstructorLibrary
-  version: 0.42
+  version: 0.43
   description: A Library for Message Construction
   id: 90
 #
@@ -99,7 +99,7 @@ MCL_Events:
 
   sendMetrics:
 #    - run s@msgPrefixed instantly 'def:MCL|<&3>Sending usage metrics...'
-    - ~webget "http://morphanone.space/webizen.aspx/tracker?script=<s@MSG_Version.yaml_key[id]>&version=<s@MSG_Version.yaml_key[version]>&players=<server.list_online_players.size>&denizen_version=<server.denizen_version.replace[-SNAPSHOT].before[ ]>&jenkins_build=<server.denizen_version.after[(build ].before[)]>&bukkit_version=<server.bukkit_version>" 'save:send'
+    - ~webget "http://stats.denizenscript.com/tracker?script=<s@MSG_Version.yaml_key[id]>&version=<s@MSG_Version.yaml_key[version]>&players=<server.list_online_players.size>&denizen_version=<server.denizen_version.replace[-SNAPSHOT].before[ ]>&jenkins_build=<server.denizen_version.after[(build ].before[)]>&bukkit_version=<server.bukkit_version>" 'save:send'
     - if !<entry[send].result.starts_with[SUCCESS]||false> {
       - run s@msgPrefixed instantly 'def:MCL|<&c>Metrics failed!'
       }
@@ -264,6 +264,11 @@ msgBoxed:
           - define hover '<def[split].get[4].before_last[<&dq>].replace[\u0026].with[&].unescaped>'
           - define button '"text":"%text%","clickEvent":{"action":"suggest_command","value":"%hint%"},"hoverEvent":{"action":"show_text","value":"%hover%"}'
           }
+          else if '%type' == 'suggest' {
+          - define suggest '<def[split].get[3].replace[\u0026].with[&].unescaped>'
+          - define hover '<def[split].get[4].before_last[<&dq>].replace[\u0026].with[&].unescaped>'
+          - define button '"text":"%text%","clickEvent":{"action":"suggest_command","value":"%suggest%"},"hoverEvent":{"action":"show_text","value":"%hover%"}'
+          }
           else if '%type%' == 'chat' {
           - define chat '<def[split].get[3].replace[\u0026].with[&].unescaped>'
           - define hover '<def[split].get[4].replace[\u0026].with[&].unescaped>'
@@ -378,8 +383,11 @@ msgBoxed:
 #
 #  Example Usage:
 #    - narrate "click <&e><proc[msgUrl].context[<&e>this|google.com/search|<&9>click]> link"
-#    - narrate "read the <&e><proc[msgcommand].context[<&e>help|help|<&a>click here fool!]> docs"
-#    - narrate "hover your mouse on the <&e><proc[msghover].context[<&e>secret|<&6>gold star!]> message"
+#    - narrate "read the <&e><proc[msgCommand].context[<&e>help|help|<&a>click here fool!]> docs"
+#    - narrate "hover your mouse on the <&e><proc[msgHover].context[<&e>secret|<&6>gold star!]> message"
+#    - narrate "click <&e><proc[msgChat].context[<&e>yes|yes|Click this]> to make your player say yes in chat"
+#    - narrate "Give the player a <&e><proc[msgHint].context[<&e>Command|command|Click this]> hint"
+#    - narrate " <&e><proc[msgSuggest].context[<&e>Suggest|Maybe say this|Click this]> something for your player to type"
 #
 msgParser:
   type: world
@@ -391,8 +399,8 @@ msgParser:
       - queue clear
       }
     - define message '<context.raw_json.after[<&lb>].before_last[<&rb>]>'
-    - foreach '<def[message].after[<&lc>].before_last[<&rc>].split_by[<&rc>,<&lc>]>':
-      - define element '<def[value]>'
+    - foreach '<def[message].after[<&lc>].before_last[<&rc>].split_by[<&rc>,<&lc>].escape_contents>':
+      - define element '<def[value].unescaped>'
       - foreach '<def[element].split_by[<&dq>,<&dq>]>':
         - define node '<def[value]>'
         - define attribute '<def[node].before[<&co>]>'
@@ -417,6 +425,10 @@ msgParser:
             - define button '"text":"%text%","clickEvent":{"action":"run_command","value":"%command%"},"hoverEvent":{"action":"show_text","value":"%hover%"}'
           - case 'hint':
             - define command '/<def[split].get[3].replace[\\u0026].with[&].replace[\u0026].with[&].unescaped>'
+            - define hover '<def[split].get[4].before_last[<&dq>].replace[\\u0026].with[&].replace[\u0026].with[&].unescaped>'
+            - define button '"text":"%text%","clickEvent":{"action":"suggest_command","value":"%command%"},"hoverEvent":{"action":"show_text","value":"%hover%"}'
+          - case 'suggest':
+            - define command '<def[split].get[3].replace[\\u0026].with[&].replace[\u0026].with[&].unescaped>'
             - define hover '<def[split].get[4].before_last[<&dq>].replace[\\u0026].with[&].replace[\u0026].with[&].unescaped>'
             - define button '"text":"%text%","clickEvent":{"action":"suggest_command","value":"%command%"},"hoverEvent":{"action":"show_text","value":"%hover%"}'
           - case 'chat':
@@ -694,6 +706,23 @@ msgHint:
     - determine '<&r><&ss>@<&ss><&chr[260f]>hint_-_<def[display].escaped.replace[ ].with[&sp]>_-_<def[hint].escaped.replace[ ].with[&sp]>_-_<def[hover].escaped.replace[ ].with[&sp]><&r>'
 #
 #  END msgHint
+#--------------------------------------
+#
+#  Suggest Message Formatter
+#
+#  Returns your text formatted for automatic conversion to JSON.
+#
+#  Usage: <proc[msgSuggest].context[%display%|%suggest%|%hover%]>
+#
+msgSuggest:
+  type: procedure
+  definitions: display|suggest|hover
+  debug: false
+
+  script:
+    - determine '<&r><&ss>@<&ss><&chr[260f]>suggest_-_<def[display].escaped.replace[ ].with[&sp]>_-_<def[suggest].escaped.replace[ ].with[&sp]>_-_<def[hover].escaped.replace[ ].with[&sp]><&r>'
+#
+#  END msgSuggest
 #--------------------------------------
 #
 #  Chat Message Formatter
