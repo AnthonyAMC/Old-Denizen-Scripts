@@ -1087,6 +1087,7 @@ dRegions_Flag_Use-Utilities:
   flag_globalDefault: allow/all
   flag_help: State flag controlling whether players will be able to use utility blocks in this region. Defaults to deny nonmembers. Use use-utilities-blocks flag to specify utility blocks. Takes the -g group switch.
   event-runCancel: false
+  event-runAllowed: false
   msg_allowed: false
   msg_cancelled: true
   msgs:
@@ -1474,6 +1475,40 @@ dRegions_Flag_Snow-Fall:
   event-runCancel: false
   msg_allowed: false
   msg_cancelled: false
+
+dRegions_Flag_Regen:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Regen<&4>]"
+  lore:
+  - <&5>Set<&sq>s whether the region will regenerate.
+  event_hooks: player_place_block
+  event_priority: 5
+  region_highestOnly: true
+  flag_type: st
+  flag_name: Regen
+  flag_targetList: Regen-Blocks
+  flag_takeGroup: false
+  flag_regionDefault: allow
+  flag_globalDefault: allow
+  flag_help: State flag controlling whether blocks will regenerate in this region. Defaults to deny. Use regen-blocks flag to specify block types.
+  event-runAllowed: true
+  event-runCancel: true
+  msg_allowed: false
+  msg_cancelled: false
+
+  event-allowed:
+    - if !<server.has_flag[dRegions.Regen.<def[eloc].z>.<def[eloc].x>.<def[eloc].y>]> {
+      - flag server dRegions.Regen.<def[eloc].z>.<def[eloc].x>.<def[eloc].y>.Material:<def[target]>
+      - flag server dRegions.Regen.<def[eloc].z>.<def[eloc].x>.<def[eloc].y>.
+      }
+
+  event-cancelled:
+    # Temporary fix! We should be setting noCancel so the flag processor knows
+    # not to try to determine cancelled!
+    - foreach next
+    - queue clear
 
 #
 # END st
@@ -3819,6 +3854,25 @@ dRegions_Flag_Snow-FallBlocks:
   flag_regionDefault: none
   flag_globalDefault: none
   flag_help: List flag used with snow-fall flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks.
+
+  command_handler:
+    - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList
+
+dRegions_Flag_Regen-Blocks:
+  type: item
+  debug: false
+  material: i@paper
+  display name: "<&4>[<&6>Regen-Blocks<&4>]"
+  lore:
+  - <&5>List of blocks that should regenerate
+  command_entryType: block
+  command_verifyEntry: <def[value].as_material.is_block.not||true>
+  flag_type: list
+  flag_parent: dRegions_Flag_Regen
+  flag_takeGroup: false
+  flag_regionDefault: none
+  flag_globalDefault: none
+  flag_help: List flag used with regen flag. To add to the list, use the -a switch. To remove from list use the -r switch. Provide a space separated list of blocks.
 
   command_handler:
     - inject s@dRegions_Flags_CommandProcessors p:command_verifiedList

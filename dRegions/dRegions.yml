@@ -290,7 +290,7 @@ dRegions:
 
   sendMetrics:
 #    - run instantly delay:1t s@dRegions_Msg 'def:sendMetrics.0|<player||server>'
-    - ~webget "http://morphanone.space/webizen.aspx/tracker?script=<s@dRegions_Version.yaml_key[id]>&version=<s@dRegions_Version.yaml_key[version]>&players=<server.list_online_players.size>&denizen_version=<server.denizen_version.replace[-SNAPSHOT].before[ ]>&jenkins_build=<server.denizen_version.after[(build ].before[)]>&bukkit_version=<server.bukkit_version>" 'save:send'
+    - ~webget "http://stats.denizenscript.com/tracker?script=<s@dRegions_Version.yaml_key[id]>&version=<s@dRegions_Version.yaml_key[version]>&players=<server.list_online_players.size>&denizen_version=<server.denizen_version.replace[-SNAPSHOT].before[ ]>&jenkins_build=<server.denizen_version.after[(build ].before[)]>&bukkit_version=<server.bukkit_version>" 'save:send'
     - if !<entry[send].result.starts_with[SUCCESS]||false> {
       - run instantly delay:1t s@dRegions_Msg 'def:sendMetrics.1|<player||server>'
       }
@@ -2147,6 +2147,33 @@ dRegions_Events_Issue_Command:
     - foreach '<yaml[dRegions_eventmap].read[%type%_command]||li@>':
       - define flag '%value%'
       - inject 's@dRegions_Flags_Processors_<s@dRegions_Flag_%flag%.yaml_key[flag_type]>'
+
+#dRegions_Events_Regen:
+#  type: world
+#  debug: false
+##  eventHooks: player_command|server_command
+#  events:
+##  /ex if true { - repeat 6 { - wait <el@10.sub[<util.date.time.second.mod[10]>].round_down>s - narrate <util.date.time.second> } }
+#    on system time minutely:
+#    - define timestamp <server.current_time_milliseconds.div[1000].as_duration>
+#    - foreach <yaml[dRegions_Regen].list_keys[regen].filter[is[LESS].than[<def[timestamp].in_hours.round_down>]]>:
+#      - define hour <def[value]>
+#      - foreach <yaml[dRegions_Regen].list_keys[regen.<def[hour]>].filter[is[LESS].than[<def[timestamp].in_minutes.round_down>]]>:
+#        - define minute <def[value]>
+#        - foreach <yaml[dRegions_Regen].list_keys[regen.<def[hour]>.<def[minute]>].filter[is[LESS].than[<def[timestamp].in_seconds.round_down>]]>:
+#          - narrate "stub"
+
+
+#    - repeat 5:
+#      - wait <el@10.sub[<util.date.time.second.mod[10]>].round_down>s
+#      - run s@someScript
+
+#    - run s@someScript
+##  /ex if true { - repeat 20 { - wait <el@20.sub[<server.current_time_milliseconds.mod[20]>].round_down>t - narrate <server.current_time_milliseconds.mod[20]> } }
+#    - repeat 19:
+#      - wait <server.current_time_milliseconds.mod[20].round_down>
+#      - run s@someScript
+
 #
 ################################################################################
 #
@@ -3065,6 +3092,15 @@ dRegions_Configurations:
             player:
               equip: []
               inv: []
+
+  regen:
+    hour:
+      minute:
+        second:
+          z:
+            x:
+              y: 'stone'
+
 
   cache:
     b: []
