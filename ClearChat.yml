@@ -1,0 +1,126 @@
+################################################################################
+#                                                                              #
+#                                C l e a r C h a t                             #
+#                                                                              #
+#                                                                              #
+#   Authors: |Anthony|                                                         #
+#   Version: 0.01                                                              #
+#   dScript Version: 1.0.2-DEV_b261                                            #
+#                                                                              #
+#   For bleeding-edge code, bug reports, code contributions, and feature       #
+#    requests, visit the GitHub project:                                       #
+#    - github.com/AnthonyAMC/Public-Denizen-Scripts/blob/master/ClearChat.yml  #
+#                                                                              #
+#   Has my work helped you in some way? Show your support by clicking the      #
+#    Like button.                                                              #
+#   Feeling generous? Get me a coffee :D                                       #
+#    https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=NPXKHCNMTGSUG
+#                                                                              #
+#------------------------------------------------------------------------------#
+#                                                                              #
+#                                                                              #
+#--- About this script                                                         #
+#                                                                              #
+#    A simple clearchat command. OPs, players with clearchat.admin and console #
+#  can specify a space separated list of players for whom chat will be         #
+#  cleared. You can also specify 'all' to clear all players chat.              #
+#                                                                              #
+#______________________________________________________________________________#
+################################################################################
+#
+ClearChat_Version:
+  type: version
+  author: Anthony
+  name: ClearChat
+  version: 0.01
+  description: Clear player chat
+  id: 135
+#
+################################################################################
+#
+ClearChat_Command:
+  type: command
+  debug: false
+  name: ClearChat
+  description: Clear player chat
+  usage: /clearchat
+  aliases: ''
+  allowed help: ''
+
+  script:
+    - if !<context.server> && ( <c.args.is_empty> || !<player.has_permission[clearchat.admin]||<player.is_op||true>> ) {
+      - define players 'li@<player>'
+      }
+      else {
+      - define players '<list[]>'
+      - foreach <context.args> {
+        - if <def[value]> == 'all' {
+          - define players '<server.list_online_players>'
+          - foreach stop
+          }
+        - if <server.match_player[<def[value]>].name.is[==].to[<def[value]>]||false> {
+          - define players '<def[players].include[<def[value].as_player>]>'
+          }
+        }
+      }
+    - narrate 'targets:<def[players]>' "<&nl.pad_right[7750].with[<&sp><&nl>]>"
+
+  tab complete:
+    - if !<context.server> && !<player.has_permission[clearchat.admin]||<player.is_op||true>> {
+      - determine '<list[]>'
+      }
+    - determine <server.list_online_players.parse[name]>
+#
+#  END ClearChat Command
+#--------------------------------------
+#
+ClearChat_Events:
+  type: world
+  debug: false
+  events:
+    on system time hourly:
+    - if <queue.list> !contains 'q@ClearChat_UpdateCheck' {
+      - run locally delay:1t updateCheck 'id:ClearChat_UpdateCheck'
+      }
+    - if <queue.list> !contains 'q@ClearChat_SendMetrics' {
+      - run locally delay:1t sendMetrics 'id:ClearChat_SendMetrics'
+      }
+
+    on server start:
+    - if <queue.list> !contains 'q@ClearChat_UpdateCheck' {
+      - run locally delay:1t updateCheck 'id:ClearChat_UpdateCheck'
+      }
+
+    on script reload:
+    - if <queue.list> !contains 'q@ClearChat_UpdateCheck' {
+      - run locally delay:1t updateCheck 'id:ClearChat_UpdateCheck'
+      }
+
+  updateCheck:
+    - ^if !<server.has_flag[ClearChat.Version.Repo]> {
+      - ~webget "https://one.denizenscript.com/denizen/repo/version/<s@ClearChat_Version.yaml_key[id]>" save:page
+      - ^define result '<entry[page].result||unknown>'
+      - ^if !<def[result].is[matches].to[number]> {
+        - define result 'unknown'
+        }
+      - ^flag server "ClearChat.Version.Repo:<def[result]>" d:1h
+      }
+    - ^define repoVersion '<server.flag[ClearChat.Version.Repo]||unknown>'
+    - ^define currentVersion '<s@ClearChat_Version.yaml_key[version]>'
+    - ^if '%repoVersion%' == 'unknown' {
+      - narrate '<&4>[<&6>ClearChat<&4>]  <&7>Unable to check for update! <&7><&o>%currentVersion%<&7> is installed!'
+      }
+      else if '%repoVersion%' > '%currentVersion%' {
+      - narrate '<&4>[<&6>ClearChat<&4>]  <&7>Update from version <&o>%currentVersion%<&7> to <&o>%repoVersion%<&7>!'
+      }
+      else if '%repoVersion%' != '%currentVersion%' {
+      - narrate '<&4>[<&6>ClearChat<&4>]  <&7>What happened? You are on version <&o>%currentVersion%<&7> and the repo says <&o>%repoVersion%<&7>!'
+      }
+
+  sendMetrics:
+    - ~webget "http://stats.denizenscript.com/tracker?script=<s@ClearChat_Version.yaml_key[id]>&version=<s@ClearChat_Version.yaml_key[version]>&players=<server.list_online_players.size>&denizen_version=<server.denizen_version.replace[-SNAPSHOT].before[ ]>&jenkins_build=<server.denizen_version.after[(build ].before[)]>&bukkit_version=<server.bukkit_version>" 'save:send'
+    - if !<entry[send].result.starts_with[SUCCESS]||false> {
+      - announce to_console '<&4>[<&6>ClearChat<&4>]  <&c>Metrics failed!'
+      }
+#
+################################################################################
