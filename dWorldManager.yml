@@ -4,7 +4,7 @@
 #                                                                              #
 #                                                                              #
 #   Authors: |Anthony|                                                         #
-#   Version: 0.25                                                              #
+#   Version: 0.26                                                              #
 #   dScript Version: 0.9.8-DEV-b646                                            #
 #                                                                              #
 #   For bleeding-edge code, bug reports, code contributions, and feature       #
@@ -53,6 +53,7 @@
 # TODO:
 #
 #  - Better code docs
+#  - level.dat not generated on world creation... must address
 #
 ################################################################################
 #
@@ -64,7 +65,7 @@ dWM_Version:
   type: version
   author: Anthony
   name: dWorldManager
-  version: 0.25
+  version: 0.26
   description: Denizen World Manager
   id: 93
 #
@@ -194,7 +195,7 @@ dWM_Events:
 
   updateCheck:
     - ^if !<server.has_flag[dWM.Version.Repo]> {
-      - ~webget "http://old.mcmonkey.org/denizen/repo/version/<s@dWM_Version.yaml_key[id]>" save:page
+      - ~webget "https://one.denizenscript.com/denizen/repo/version/<s@dWM_Version.yaml_key[id]>" save:page
       - ^flag server "dWM.Version.Repo:<entry[page].result||unknown>" d:1h
       }
     - ^define repoVersion '<server.flag[dWM.Version.Repo]||unknown>'
@@ -211,7 +212,7 @@ dWM_Events:
 
   sendMetrics:
 #    - run s@msgPrefixed 'def:dWM|<&3>Sending usage metrics...'
-    - ~webget "http://morphanone.space/webizen.aspx/tracker?script=<s@dWM_Version.yaml_key[id]>&version=<s@dWM_Version.yaml_key[version]>&players=<server.list_online_players.size>&denizen_version=<server.denizen_version.replace[-SNAPSHOT].before[ ]>&jenkins_build=<server.denizen_version.after[(build ].before[)]>&bukkit_version=<server.bukkit_version>" 'save:send'
+    - ~webget "http://stats.denizenscript.com/tracker?script=<s@dWM_Version.yaml_key[id]>&version=<s@dWM_Version.yaml_key[version]>&players=<server.list_online_players.size>&denizen_version=<server.denizen_version.replace[-SNAPSHOT].before[ ]>&jenkins_build=<server.denizen_version.after[(build ].before[)]>&bukkit_version=<server.bukkit_version>" 'save:send'
     - if !<entry[send].result.starts_with[SUCCESS]||false> {
       - run s@msgPrefixed instantly 'def:dWM|<&c>Metrics failed!'
       }
@@ -469,11 +470,10 @@ dWM_Commands_List:
 
   data:
     description:
-      - ' List all worlds known to dWM.'
-      - ' '
-      - ' Green worlds are loaded'
-      - ' Gray worlds are unloaded'
-      - ' Dark gray worlds are not registered'
+      - ' Lists all worlds known to dWM.'
+      - ' <&a>Green<&f> worlds are loaded'
+      - ' <&7>Gray<&f> worlds are unloaded'
+      - ' <&8>Dark gray<&f> worlds are not registered'
     usage: '/dwm list'
     examples:
       - 'You<&sq>ve got to be kidding me...'
@@ -942,10 +942,16 @@ dWM_Commands_Tp:
       - define lastLoc '<proc[dWM_LL].context[<player>|%w%|%t%]>'
       - if '%lastLoc%' == '1' {
         - run instantly delay:1t 's@dWM_Error' 'def:ll|1|%sender%|%w%'
+        - if <def[w].as_world.spawn_location.chunk.is_loaded.not> {
+          - adjust <def[w].as_world.spawn_location.chunk> load
+          }
         - teleport <player> '<def[w].as_world.spawn_location>'
         - queue clear
         }
         else {
+        - if <el@val[%lastLoc%,%w%].as_location.chunk.is_loaded.not> {
+          - adjust <el@val[%lastLoc%,%w%].as_location.chunk> load
+          }
         - teleport <player> '<el@val[%lastLoc%,%w%].as_location>'
         }
       }
@@ -1245,7 +1251,7 @@ dWM_LoadWorld:
       - createworld '%w%' 'worldtype:%t%' 'environment:%e%'
       }
       else {
-      - createworld '%w%' 'worldtype:%t%' 'environment:%e%' 'generator:%e%'
+      - createworld '%w%' 'worldtype:%t%' 'environment:%e%' 'generator:%g%'
       }
     - yaml set 'worlds.%w%.loaded:true' 'id:dWM_Config'
     - yaml 'savefile:dWorldManager/config.yml' 'id:dWM_Config'
