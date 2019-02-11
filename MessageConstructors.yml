@@ -6,8 +6,8 @@
 #     A set of utilities to make displaying text pretty, uniform, and easy     #
 #                                                                              #
 #   Authors: |Anthony|                                                         #
-#   Version: 0.43                                                              #
-#   dScript Version: 1.0.2-DEV_b261                                            #
+#   Version: 0.5                                                               #
+#   dScript Version: 1.0.3-DEV_b619                                            #
 #                                                                              #
 #   For bleeding-edge code, bug reports, code contributions, and feature       #
 #    requests, visit the GitHub project:                                       #
@@ -44,65 +44,42 @@ MSG_Version:
   type: version
   author: Anthony
   name: MessageConstructorLibrary
-  version: 0.43
+  version: 0.5
   description: A Library for Message Construction
   id: 90
 #
 #---------------------------------------
 #
-MCL_Events:
-  type: world
-  debug: false
-  events:
-    on system time hourly:
-#    - if !<yaml[MCL_config].read[config.stats.useStats]||true> {
-#      - queue clear
-#      }
-    - if <queue.list> !contains 'q@MCL_UpdateCheck' {
-      - run locally delay:1t updateCheck 'id:MCL_UpdateCheck'
-      }
-    - if <queue.list> !contains 'q@MCL_SendMetrics' {
-      - run locally delay:1t sendMetrics 'id:MCL_SendMetrics'
-      }
-
-    on server start:
-    - if <queue.list> !contains 'q@MCL_UpdateCheck' {
-      - run locally delay:1t updateCheck 'id:MCL_UpdateCheck'
-      }
-
-    on script reload:
-    - if <queue.list> !contains 'q@MCL_UpdateCheck' {
-      - run locally delay:1t updateCheck 'id:MCL_UpdateCheck'
-      }
-
-  updateCheck:
-    - ^if !<server.has_flag[MCL.Version.Repo]> {
-#      - ~webget "https://raw.githubusercontent.com/AnthonyAMC/Public-Denizen-Scripts/master/versions/MCL.txt" save:page
-      - ~webget "https://one.denizenscript.com/denizen/repo/version/<s@MSG_Version.yaml_key[id]>" save:page
-      - ^define result '<entry[page].result||unknown>'
-      - ^if !<def[result].is[matches].to[number]> {
-        - define result 'unknown'
-        }
-      - ^flag server "MCL.Version.Repo:<def[result]>" d:1h
-      }
-    - ^define repoVersion '<server.flag[MCL.Version.Repo]||unknown>'
-    - ^define currentVersion '<s@MSG_Version.yaml_key[version]>'
-    - ^if '%repoVersion%' == 'unknown' {
-      - run s@msgPrefixed instantly 'def:MCL|<&7>Unable to check for update! <&7><&o>%currentVersion%<&7> is installed!'
-      }
-      else if '%repoVersion%' > '%currentVersion%' {
-      - run s@msgPrefixed instantly 'def:MCL|<&7>Update from version <&o>%currentVersion%<&7> to <&o>%repoVersion%<&7>!'
-      }
-      else if '%repoVersion%' != '%currentVersion%' {
-      - run s@msgPrefixed instantly 'def:MCL|<&7>What happened? You are on version <&o>%currentVersion%<&7> and the repo says <&o>%repoVersion%<&7>!'
-      }
-
-  sendMetrics:
-#    - run s@msgPrefixed instantly 'def:MCL|<&3>Sending usage metrics...'
-    - ~webget "http://stats.denizenscript.com/tracker?script=<s@MSG_Version.yaml_key[id]>&version=<s@MSG_Version.yaml_key[version]>&players=<server.list_online_players.size>&denizen_version=<server.denizen_version.replace[-SNAPSHOT].before[ ]>&jenkins_build=<server.denizen_version.after[(build ].before[)]>&bukkit_version=<server.bukkit_version>" 'save:send'
-    - if !<entry[send].result.starts_with[SUCCESS]||false> {
-      - run s@msgPrefixed instantly 'def:MCL|<&c>Metrics failed!'
-      }
+################################################################################
+#
+#
+#--------------------------------------
+#
+#  Pagination Command
+#
+# - Accepts starting page number as a required argument.
+# - Requires flags to be set for Headers and Chat Entries.
+# - Can be further customized - see msgBoxed.
+#
+#  Usage:
+#    - flag player "chat_header1:<&l>Heading One"
+#    - flag player "chat_header2:<&o>Heading Two"
+#    - flag player "chat_entries:Line One|Line Two|Line Three"
+#    - execute as_player "paginate 1"
+#
+paginate_command:
+    type: command
+    debug: false
+    name: paginate
+    description: For internal use.  Scrolls text pages.
+    usage: /paginate <&lt>pagenumber<&gt>
+    permission message: You don't have permission.
+    allowed help:
+    - determine <player.is_op||<context.server>>
+    tab complete:
+    - if !<player.is_op||<context.server>> queue clear
+    script:
+    - run s@msgBoxed 'def:Servername|<player.flag[chat_header1]>|<player.flag[chat_header2]>|paginate|<context.args.get[1]>|53|5|<player.flag[chat_entries]>'
 #
 #---------------------------------------
 #
@@ -219,13 +196,13 @@ msgBoxed:
     - ^define pagesInfo '<&7><&o>Page <&f>%page% <&7><&o>of <&f>%pageTotal%'
     - ^define pad '<def[pageWidth].sub[<def[heading].strip_color.length>].sub[<def[pagesInfo].strip_color.length>].mul[1.5].round>'
     - ^if !<player.is_player||false> {
-      - ^announce to_console "<&5>|<&pipe.pad_left[<def[pageWidth]>].with[-]>"
-      - ^announce to_console "<&5>|<&sp><&sp><&sp><&6><def[heading]> <&7.pad_right[%pad%].with[ ]><def[pagesInfo]>"
-      - ^announce to_console "<&5>|<&f>"
+      - ^announce to_console "<&2>|<&pipe.pad_left[<def[pageWidth]>].with[-]>"
+      - ^announce to_console "<&2>|<&sp><&sp><&sp><&6><def[heading]> <&7.pad_right[%pad%].with[ ]><def[pagesInfo]>"
+      - ^announce to_console "<&2>|<&f>"
       - ^foreach <def[lines]> {
-        - announce to_console "<&5>|<&f><&sp><&sp><def[value].unescaped>"
+        - announce to_console "<&2>|<&f><&sp><&sp><def[value].unescaped>"
         }
-      - ^announce to_console "<&5>|"
+      - ^announce to_console "<&2>|"
       - ^inject locally msgsFooter
       - ^queue clear
       }
@@ -298,50 +275,46 @@ msgBoxed:
       - define buttonThis '"text":"1"'
       }
       else {
-      - define iconThis 'i@human_skull[display_name=<proc[msgCentered].context[19|Previous Page]>]'
-      - define hoverThis '{<def[iconThis].json>}'
       - define clickThis '/%command% <def[page].sub[1]>'
-      - define buttonThis '"text":"%page%","clickEvent":{"action":"run_command","value":"%clickThis%"},"hoverEvent":{"action":"show_item","value":"%hoverThis%"}'
+      - define buttonThis '"text":"%page%","clickEvent":{"action":"run_command","value":"%clickThis%"},"hoverEvent":{"action":"show_item","value":"Previous Page"}'
       }
     - ^if %page% == %pageTotal% {
       - define buttonNext '"text":"%pageTotal%"'
       }
       else {
-      - define iconNext 'i@human_skull[display_name=<proc[msgCentered].context[19|Next Page]>]'
-      - define hoverNext '{<def[iconNext].json>}'
       - define clickNext '/%command% <def[page].add[1]>'
-      - define buttonNext '"text":"%pageTotal%","clickEvent":{"action":"run_command","value":"%clickNext%"},"hoverEvent":{"action":"show_item","value":"%hoverNext%"}'
+      - define buttonNext '"text":"%pageTotal%","clickEvent":{"action":"run_command","value":"%clickNext%"},"hoverEvent":{"action":"show_text","value":"Next Page"}'
       }
-    - ^define prefix '"text":"<&5>|<&sp><&sp><&sp><&6>"'
-    - ^define tpad '"text":"<&7.pad_right[%pad%].with[ ]>"'
-    - ^define p '"text":"<&7><&o>Page<&sp>"'
-    - ^define o '"text":"<&7><&o><&sp>of<&sp>"'
-    - ^narrate "<&5>|<&pipe.pad_left[<def[pageWidth]>].with[-]>"
+    - ^define prefix '"text":"<&2>|<&sp><&sp><&sp><&6>"'
+    - ^define tpad '"text":"<&9.pad_right[%pad%].with[ ]>"'
+    - ^define p '"text":"<&9><&o>Page<&sp>"'
+    - ^define o '"text":"<&9><&o><&sp>of<&sp>"'
+    - ^narrate "<&2>|<&pipe.pad_left[<def[pageWidth]>].with[-]>"
     - ^execute as_server 'tellraw <player.name> {"text":"","extra":[{%prefix%},%finalHeading%,{%tpad%},{%p%},{%buttonThis%},{%o%},{%buttonNext%}]}'
-    - ^narrate "<&5>|"
+    - ^narrate "<&2>|"
 
   msgsBody:
     - ^foreach <def[lines]> {
-      - narrate "<&5>|<&f><&sp><&sp><def[value].unescaped>"
+      - narrate "<&2>|<&f><&sp><&sp><def[value].unescaped>"
       }
     - ^repeat <def[pageHeight].sub[<def[lines].size>].as_int> {
-      - narrate "<&5>|"
+      - narrate "<&2>|"
       }
     - ^if <server.list_scripts> contains 's@%script%_Version' {
       - define repoVersion '<server.flag[%script%.Version.Repo]||unknown>'
       - define currentVersion '<s@%script%_Version.yaml_key[version]>'
       - define vString '<&7>Version<&co> <&b>%currentVersion%'
       - define vPad '<def[pageWidth].sub[<def[vString].strip_color.length>].add[1].mul[1.5].round>'
-      - narrate "<&5>|<&f.pad_right[%vPad%]>%vString%"
+      - narrate "<&2>|<&f.pad_right[%vPad%]>%vString%"
       - if '%repoVersion%' != '%currentVersion%' {
         - define uString '<&c><&o>Repo Version<&co> <&b>%repoVersion%'
         - define uPad '<def[pageWidth].sub[<def[uString].strip_color.length>].add[1].mul[1.5].round>'
         - define url 'http://one.denizenscript.com/denizen/repo/entry/<s@%script%_Version.yaml_key[id]>'
-        - narrate "<&5>|<&f.pad_right[%uPad%]><&c><&o>Repo Version<&co> <proc[msgUrl].context[<&a>%repoVersion%|%url%|Click to go to repo!]>"
+        - narrate "<&2>|<&f.pad_right[%uPad%]><&c><&o>Repo Version<&co> <proc[msgUrl].context[<&a>%repoVersion%|%url%|Click to go to repo!]>"
         }
       }
       else {
-      - narrate "<&5>|"
+      - narrate "<&2>|"
       }
 
   msgsFooter:
@@ -351,7 +324,7 @@ msgBoxed:
       }
     - ^define list 'li@'
     - ^define spacer '"text":"  "'
-    - ^define prefix '"text":"<&5>|  <&f>Authors<&co>  "'
+    - ^define prefix '"text":"<&2>|  <&f>Authors<&co>  "'
     - ^foreach %authors% {
       - define text '<def[value].yaml_key[text_name].escaped>'
       - define url '<def[value].yaml_key[url].escaped>'
@@ -367,12 +340,12 @@ msgBoxed:
       - execute as_server 'tellraw <player.name> {"text":"","extra":[{%prefix%},<def[list].separated_by[,].unescaped>]}'
       }
       else {
-      - announce to_console "<&5>|  <&f>Authors:  <&7><def[authors].parse[.yaml_key[text_name]].split_by[<&sp><&sp><&7>]>"
+      - announce to_console "<&2>|  <&f>Authors:  <&7><def[authors].parse[.yaml_key[text_name]].split_by[<&sp><&sp><&7>]>"
       }
     - ^mark 'end'
-    - ^define scroll '<&d>S<&5>-<&d>c<&5>-<&d>r<&5>-<&d>o<&5>-<&d>l<&5>-<&d>l<&5>---<&d>U<&5>-<&d>p<&5>'
+    - ^define scroll '<&2>Click <&9><&o>Page Numbers<&2> and <&9><&l>Responses<&2> to navigate'
     - ^define pad '<def[pageWidth].sub[<def[scroll].strip_color.length>].div[2].round_up>'
-    - ^narrate "<&5><&pipe.pad_right[%pad%].with[-]>-%scroll%<&pipe.pad_left[%pad%].with[-]>"
+    - ^narrate "<&2><&pipe.pad_right[%pad%].with[-]>- %scroll% -<&pipe.pad_left[%pad%].with[-]>"
 #
 #  END msgBoxed
 #--------------------------------------
@@ -504,9 +477,9 @@ lineWrap:
         - while stop
         }
         else {
-        - define brake '<t[<def[pass].contains[<&nl>]>]:<def[pass].index_of[<&nl>]>||<def[pass].last_index_of[<&sp>]>>'
+        - define brake '<tern[<def[pass].contains[<&nl>]>]:<def[pass].index_of[<&nl>]>||<def[pass].last_index_of[<&sp>]>>'
         - define increment '<def[increment].add[%brake%]||%brake%>'
-        - define passtrim '%c%<def[pass].unescaped.substring[1,<t[<def[brake].is[MORE].than[0]>]:%brake%||<def[pass].length>>]>'
+        - define passtrim '%c%<def[pass].unescaped.substring[1,<tern[<def[brake].is[MORE].than[0]>]:%brake%||<def[pass].length>>]>'
         - define lines '<def[lines].include[<def[passtrim].escaped>]||<def[lines]>>'
         - define c '<def[passtrim].last_color||<&f>>'
         - define stringLen '<def[stringLen].sub[%brake%]>'
@@ -584,7 +557,7 @@ paragraph:
   script:
     - define paragraphs '<def[raw_context].split_by[|].remove[1]>'
     - define lineLen '<def[raw_context].split_by[|].get[1]>'
-    - define lineLen '<t[<def[lineLen].is[matches].to[number].and[<def[lineLen].is[MORE].than[0]>]>]:%lineLen%||44>'
+    - define lineLen '<tern[<def[lineLen].is[matches].to[number].and[<def[lineLen].is[MORE].than[0]>]>]:%lineLen%||44>'
     - define result 'li@'
     - foreach '<def[paragraphs]>' {
       - define lines '<proc[lineWrap].context[<def[value]>|<def[lineLen]||44>]>'
@@ -746,3 +719,5 @@ msgChat:
 #
 #
 ################################################################################
+
+
