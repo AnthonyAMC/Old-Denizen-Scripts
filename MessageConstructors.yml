@@ -298,19 +298,14 @@ msgBoxed:
       - define buttonThis '"text":"1"'
       }
       else {
-      - define iconThis 'i@human_skull[display_name=<proc[msgCentered].context[19|Previous Page]>]'
-      - define hoverThis '{<def[iconThis].json>}'
-      - define clickThis '/%command% <def[page].sub[1]>'
-      - define buttonThis '"text":"%page%","clickEvent":{"action":"run_command","value":"%clickThis%"},"hoverEvent":{"action":"show_item","value":"%hoverThis%"}'
-      }
+     - define clickThis '/%command% <def[page].sub[1]>'
+     - define buttonThis '"text":"%page%","clickEvent":{"action":"run_command","value":"%clickThis%"},"hoverEvent":{"action":"show_text","value":"<gold>Previous Page"}'      }
     - ^if %page% == %pageTotal% {
       - define buttonNext '"text":"%pageTotal%"'
       }
       else {
-      - define iconNext 'i@human_skull[display_name=<proc[msgCentered].context[19|Next Page]>]'
-      - define hoverNext '{<def[iconNext].json>}'
       - define clickNext '/%command% <def[page].add[1]>'
-      - define buttonNext '"text":"%pageTotal%","clickEvent":{"action":"run_command","value":"%clickNext%"},"hoverEvent":{"action":"show_item","value":"%hoverNext%"}'
+      - define buttonNext '"text":"%pageTotal%","clickEvent":{"action":"run_command","value":"%clickNext%"},"hoverEvent":{"action":"show_text","value":"<gold>Next Page"}'      
       }
     - ^define prefix '"text":"<&5>|<&sp><&sp><&sp><&6>"'
     - ^define tpad '"text":"<&7.pad_right[%pad%].with[ ]>"'
@@ -504,9 +499,9 @@ lineWrap:
         - while stop
         }
         else {
-        - define brake '<t[<def[pass].contains[<&nl>]>]:<def[pass].index_of[<&nl>]>||<def[pass].last_index_of[<&sp>]>>'
+        - define brake '<tern[<def[pass].contains[<&nl>]>]:<def[pass].index_of[<&nl>]>||<def[pass].last_index_of[<&sp>]>>'
         - define increment '<def[increment].add[%brake%]||%brake%>'
-        - define passtrim '%c%<def[pass].unescaped.substring[1,<t[<def[brake].is[MORE].than[0]>]:%brake%||<def[pass].length>>]>'
+        - define passtrim '%c%<def[pass].unescaped.substring[1,<tern[<def[brake].is[MORE].than[0]>]:%brake%||<def[pass].length>>]>'
         - define lines '<def[lines].include[<def[passtrim].escaped>]||<def[lines]>>'
         - define c '<def[passtrim].last_color||<&f>>'
         - define stringLen '<def[stringLen].sub[%brake%]>'
@@ -584,7 +579,7 @@ paragraph:
   script:
     - define paragraphs '<def[raw_context].split_by[|].remove[1]>'
     - define lineLen '<def[raw_context].split_by[|].get[1]>'
-    - define lineLen '<t[<def[lineLen].is[matches].to[number].and[<def[lineLen].is[MORE].than[0]>]>]:%lineLen%||44>'
+    - define lineLen '<tern[<def[lineLen].is[matches].to[number].and[<def[lineLen].is[MORE].than[0]>]>]:%lineLen%||44>'
     - define result 'li@'
     - foreach '<def[paragraphs]>' {
       - define lines '<proc[lineWrap].context[<def[value]>|<def[lineLen]||44>]>'
