@@ -299,13 +299,13 @@ msgBoxed:
       }
       else {
      - define clickThis '/%command% <def[page].sub[1]>'
-     - define buttonThis '"text":"%page%","clickEvent":{"action":"run_command","value":"%clickThis%"},"hoverEvent":{"action":"show_text","value":"<gold>Previous Page"}'      }
+     - define buttonThis '"text":"%page%","clickEvent":{"action":"run_command","value":"%clickThis%"},"hoverEvent":{"action":"show_text","value":"<gold>Previous Page"}'
     - ^if %page% == %pageTotal% {
       - define buttonNext '"text":"%pageTotal%"'
       }
       else {
       - define clickNext '/%command% <def[page].add[1]>'
-      - define buttonNext '"text":"%pageTotal%","clickEvent":{"action":"run_command","value":"%clickNext%"},"hoverEvent":{"action":"show_text","value":"<gold>Next Page"}'      
+      - define buttonNext '"text":"%pageTotal%","clickEvent":{"action":"run_command","value":"%clickNext%"},"hoverEvent":{"action":"show_text","value":"<gold>Next Page"}'
       }
     - ^define prefix '"text":"<&5>|<&sp><&sp><&sp><&6>"'
     - ^define tpad '"text":"<&7.pad_right[%pad%].with[ ]>"'
