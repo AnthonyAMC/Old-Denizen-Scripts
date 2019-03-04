@@ -298,8 +298,9 @@ msgBoxed:
       - define buttonThis '"text":"1"'
       }
       else {
-     - define clickThis '/%command% <def[page].sub[1]>'
-     - define buttonThis '"text":"%page%","clickEvent":{"action":"run_command","value":"%clickThis%"},"hoverEvent":{"action":"show_text","value":"<gold>Previous Page"}'
+      - define clickThis '/%command% <def[page].sub[1]>'
+      - define buttonThis '"text":"%page%","clickEvent":{"action":"run_command","value":"%clickThis%"},"hoverEvent":{"action":"show_text","value":"<gold>Previous Page"}'
+      }
     - ^if %page% == %pageTotal% {
       - define buttonNext '"text":"%pageTotal%"'
       }
